@@ -51,7 +51,63 @@ CREATE TABLE IF NOT EXISTS audit_log (
     detail TEXT,
     at REAL NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at REAL NOT NULL,
+    updated_by TEXT
+);
+
+CREATE TABLE IF NOT EXISTS pages (
+    slug TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    visible INTEGER NOT NULL DEFAULT 1,
+    updated_at REAL NOT NULL,
+    updated_by TEXT
+);
 """
+
+
+DEFAULT_SETTINGS = {
+    "site.title": "Mino Bimaadiziwin · Community Services Atlas",
+    "site.tagline": "A living atlas of community-care programming across First Nations and partner organizations.",
+    "site.theme": "paper",
+    "site.accent": "#b8351e",
+    "site.elderModeDefault": "false",
+    "site.showJourneyGame": "true",
+    "site.showStoriesView": "true",
+    "site.showAnalyticsView": "true",
+    "admin.allowSelfSignup": "false",
+}
+
+DEFAULT_PAGES = [
+    {
+        "slug": "intro",
+        "title": "About this atlas",
+        "body": (
+            "The Mino Bimaadiziwin (Good Life) Community Services Atlas maps "
+            "community-care programming across First Nations and partner "
+            "organizations. Filter by Sacred Direction, service pillar, or "
+            "population — every view stays in sync."
+        ),
+    },
+    {
+        "slug": "acknowledgement",
+        "title": "Land acknowledgement",
+        "body": (
+            "We acknowledge that this work takes place on the traditional "
+            "territories of Anishinaabe, Cree, and Métis peoples. We honour "
+            "the knowledge keepers, past and present, who guide this work."
+        ),
+    },
+    {
+        "slug": "contact",
+        "title": "Contact",
+        "body": "For corrections, additions, or partnership inquiries, reach the project team via your community liaison.",
+    },
+]
 
 
 def _hash_password(password: str, salt: str) -> str:
@@ -90,6 +146,81 @@ def init_db() -> None:
                 detail="Default admin created",
                 conn=conn,
             )
+        # Seed default settings if missing
+        now = time.time()
+        for k, v in DEFAULT_SETTINGS.items():
+            conn.execute(
+                "INSERT OR IGNORE INTO settings(key, value, updated_at, updated_by) "
+                "VALUES(?,?,?,?)",
+                (k, v, now, "system"),
+            )
+        for p in DEFAULT_PAGES:
+            conn.execute(
+                "INSERT OR IGNORE INTO pages(slug, title, body, visible, updated_at, updated_by) "
+                "VALUES(?,?,?,1,?,?)",
+                (p["slug"], p["title"], p["body"], now, "system"),
+            )
+
+
+# ----------------------------- settings ----------------------------------- #
+
+def get_settings() -> dict[str, str]:
+    with get_conn() as conn:
+        rows = conn.execute("SELECT key, value FROM settings").fetchall()
+        return {r["key"]: r["value"] for r in rows}
+
+
+def set_setting(key: str, value: str, actor: str | None) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO settings(key, value, updated_at, updated_by) "
+            "VALUES(?,?,?,?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value, "
+            "updated_at=excluded.updated_at, updated_by=excluded.updated_by",
+            (key, value, time.time(), actor),
+        )
+
+
+def bulk_set_settings(values: dict, actor: str | None) -> None:
+    for k, v in values.items():
+        set_setting(k, str(v), actor)
+
+
+# ------------------------------- pages ------------------------------------ #
+
+def list_pages(only_visible: bool = False) -> list[dict]:
+    with get_conn() as conn:
+        sql = "SELECT * FROM pages"
+        if only_visible:
+            sql += " WHERE visible = 1"
+        sql += " ORDER BY slug"
+        rows = conn.execute(sql).fetchall()
+        return [dict(r) for r in rows]
+
+
+def get_page(slug: str) -> dict | None:
+    with get_conn() as conn:
+        r = conn.execute("SELECT * FROM pages WHERE slug = ?", (slug,)).fetchone()
+        return dict(r) if r else None
+
+
+def upsert_page(slug: str, title: str, body: str, visible: bool, actor: str | None) -> dict:
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO pages(slug, title, body, visible, updated_at, updated_by) "
+            "VALUES(?,?,?,?,?,?) "
+            "ON CONFLICT(slug) DO UPDATE SET title=excluded.title, body=excluded.body, "
+            "visible=excluded.visible, updated_at=excluded.updated_at, updated_by=excluded.updated_by",
+            (slug, title, body, 1 if visible else 0, time.time(), actor),
+        )
+        r = conn.execute("SELECT * FROM pages WHERE slug = ?", (slug,)).fetchone()
+        return dict(r)
+
+
+def delete_page(slug: str) -> bool:
+    with get_conn() as conn:
+        cur = conn.execute("DELETE FROM pages WHERE slug = ?", (slug,))
+        return cur.rowcount > 0
 
 
 def create_user(

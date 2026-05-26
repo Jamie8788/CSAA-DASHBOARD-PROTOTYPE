@@ -107,6 +107,17 @@ class EditIn(BaseModel):
     departments: list | None = None
 
 
+class SettingsIn(BaseModel):
+    values: dict
+
+
+class PageIn(BaseModel):
+    slug: str = Field(min_length=1, max_length=80)
+    title: str = Field(min_length=1, max_length=200)
+    body: str = ""
+    visible: bool = True
+
+
 # ------------------------------ health ------------------------------------ #
 
 @app.get("/api/health")
@@ -360,6 +371,55 @@ def an_full() -> dict:
 @app.get("/api/audit")
 def audit_log(_: dict = Depends(auth.require_admin), limit: int = 100) -> dict:
     return {"events": db.recent_audit(limit)}
+
+
+# ----------------------------- settings ----------------------------------- #
+
+@app.get("/api/settings")
+def settings_get() -> dict:
+    """Public — the dashboard reads these to customise the UI."""
+    return db.get_settings()
+
+
+@app.put("/api/settings")
+def settings_update(payload: SettingsIn, actor: dict = Depends(auth.require_admin)) -> dict:
+    db.bulk_set_settings(payload.values, actor["username"])
+    db.log_audit(actor["username"], "settings.update", None,
+                 f"keys: {', '.join(payload.values.keys())}")
+    return db.get_settings()
+
+
+# ----------------------------- pages -------------------------------------- #
+
+@app.get("/api/pages")
+def pages_list(visible_only: bool = False) -> dict:
+    return {"pages": db.list_pages(only_visible=visible_only)}
+
+
+@app.get("/api/pages/{slug}")
+def pages_get(slug: str) -> dict:
+    p = db.get_page(slug)
+    if not p:
+        raise HTTPException(404, "Page not found")
+    return p
+
+
+@app.put("/api/pages/{slug}")
+def pages_upsert(slug: str, payload: PageIn,
+                 actor: dict = Depends(auth.require_admin)) -> dict:
+    p = db.upsert_page(payload.slug or slug, payload.title, payload.body,
+                       payload.visible, actor["username"])
+    db.log_audit(actor["username"], "page.upsert", payload.slug or slug)
+    return p
+
+
+@app.delete("/api/pages/{slug}")
+def pages_delete(slug: str, actor: dict = Depends(auth.require_admin)) -> dict:
+    ok = db.delete_page(slug)
+    if not ok:
+        raise HTTPException(404, "Page not found")
+    db.log_audit(actor["username"], "page.delete", slug)
+    return {"ok": True}
 
 
 # --------------------------- static hosting ------------------------------- #

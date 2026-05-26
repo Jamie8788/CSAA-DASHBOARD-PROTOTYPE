@@ -54,6 +54,8 @@ function CMSAppInner() {
     { key: 'analytics', label: 'Analytics', ico: '◐' },
     { key: 'upload', label: 'Upload data', ico: '⌹' },
     { key: 'communities', label: 'Communities', ico: '☷' },
+    { key: 'pages', label: 'Pages & content', ico: '☰' },
+    { key: 'settings', label: 'Site settings', ico: '⚙' },
     { key: 'users', label: 'Admin users', ico: '✦' },
     { key: 'site', label: 'Open dashboard ↗', ico: '→', external: '/' },
   ];
@@ -89,6 +91,8 @@ function CMSAppInner() {
         {view === 'analytics' && <window.AnalyticsView />}
         {view === 'upload' && <window.UploadView />}
         {view === 'communities' && <window.CommunitiesView />}
+        {view === 'pages' && <window.PagesView />}
+        {view === 'settings' && <window.SettingsView />}
         {view === 'users' && <window.UsersView me={me} />}
       </main>
     </div>

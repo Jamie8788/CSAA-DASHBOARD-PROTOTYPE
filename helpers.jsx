@@ -265,6 +265,50 @@ window.buildAll = buildAll;
 
 const CMS_STORAGE_KEY = 'mino-atlas-cms-v3';
 const CMS_PASSWORD = 'mino2025'; // shared admin password (community trust)
+const ATLAS_TOKEN_KEY = 'atlas-cms-token';
+const ATLAS_USER_KEY = 'atlas-cms-user';
+
+// Try the backend for sign-in first (so admin uploads persist for everyone).
+// Falls back to the legacy local-only password check if the backend is gone.
+async function backendSignIn(username, password) {
+  try {
+    const form = new FormData();
+    form.append('username', username);
+    form.append('password', password);
+    const res = await fetch('/api/auth/login', { method: 'POST', body: form, credentials: 'include' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.access_token) {
+      localStorage.setItem(ATLAS_TOKEN_KEY, data.access_token);
+      localStorage.setItem(ATLAS_USER_KEY, JSON.stringify(data.user || {}));
+      return data;
+    }
+  } catch (e) { /* offline — fall through */ }
+  return null;
+}
+
+async function backendUploadXlsx(file) {
+  const token = localStorage.getItem(ATLAS_TOKEN_KEY);
+  if (!token) return { ok: false, error: 'Not authenticated to backend' };
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('/api/communities/upload', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      body: fd,
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => null);
+      return { ok: false, error: (detail && detail.detail) || res.statusText };
+    }
+    return { ok: true, body: await res.json() };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+window.backendUploadXlsx = backendUploadXlsx;
 
 function loadCMS() {
   try { return JSON.parse(localStorage.getItem(CMS_STORAGE_KEY) || '{}'); }
@@ -300,7 +344,16 @@ function CMSProvider({ children }) {
 
   useEffect(() => { saveCMS(cms); }, [cms]);
 
-  function signIn(password) {
+  // Try backend first (username defaults to 'admin'), fall back to local password.
+  // Returns true synchronously if the local password matches so the UI snaps in,
+  // and the backend login runs in parallel to issue a token for uploads.
+  function signIn(password, username = 'admin') {
+    backendSignIn(username, password).then((ok) => {
+      if (ok) {
+        sessionStorage.setItem('mino-admin', '1');
+        setIsAdmin(true);
+      }
+    });
     if (password === CMS_PASSWORD) {
       sessionStorage.setItem('mino-admin', '1');
       setIsAdmin(true);
@@ -310,6 +363,9 @@ function CMSProvider({ children }) {
   }
   function signOut() {
     sessionStorage.removeItem('mino-admin');
+    localStorage.removeItem(ATLAS_TOKEN_KEY);
+    localStorage.removeItem(ATLAS_USER_KEY);
+    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(()=>{});
     setIsAdmin(false);
   }
 
@@ -478,12 +534,30 @@ function AdminToolbar() {
     r.readAsText(f);
   }
 
-  // Import a fresh Excel sheet — parses on the client and replaces the dataset.
-  function onImportXLSX(e) {
+  // Import a fresh Excel sheet.
+  // Preferred path: send to the backend so the new dataset persists for every
+  // visitor and the analytics endpoints recompute against it.
+  // Fallback: parse client-side and store in this browser only (legacy).
+  async function onImportXLSX(e) {
     const f = e.target.files[0];
     if (!f) return;
+
+    // 1) Try backend upload — this is the "state of the art" path the admin wants.
+    const result = await window.backendUploadXlsx(f);
+    if (result.ok) {
+      const r = result.body || {};
+      alert(`Master sheet uploaded.\n\n${r.records || '?'} records · dataset v${r.version || '?'}\n\nReloading so everyone sees the new data…`);
+      setTimeout(() => window.location.reload(), 400);
+      return;
+    }
+    console.warn('[atlas] Backend upload failed:', result.error);
+
+    // 2) Fallback: parse in browser and store in localStorage (visible only here).
     if (typeof XLSX === 'undefined') {
-      alert('Excel parser is still loading. Try again in a moment.');
+      alert(
+        'Backend not reachable and the in-browser Excel parser is still loading.\n\n'
+        + 'Backend said: ' + (result.error || 'unknown') + '\n\nTry again in a moment.'
+      );
       return;
     }
     const reader = new FileReader();
@@ -494,7 +568,11 @@ function AdminToolbar() {
         const records = window.parseSheetWorkbook(wb);
         if (!records || !records.length) { alert('No records parsed from the sheet.'); return; }
         cms.replaceDataset(records);
-        alert(`Imported ${records.length} records from ${f.name}. Dashboard updated.`);
+        alert(
+          `Backend unavailable — imported ${records.length} records LOCALLY only.\n\n`
+          + 'Reason: ' + (result.error || 'no backend')
+          + '\n\nStart the server and try again for the changes to be visible to everyone.'
+        );
       } catch (err) {
         console.error(err);
         alert('Could not parse Excel file: ' + err.message);

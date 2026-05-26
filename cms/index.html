@@ -8,7 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="cms.css" />
+<base href="/cms/" />
+<link rel="stylesheet" href="/cms/cms.css" />
 </head>
 <body>
 <div id="root"></div>
@@ -19,14 +20,16 @@
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/recharts@2.13.3/umd/Recharts.js" crossorigin="anonymous"></script>
 
-<script type="text/babel" data-presets="env,react" src="api.js"></script>
-<script type="text/babel" data-presets="env,react" src="ui.jsx"></script>
-<script type="text/babel" data-presets="env,react" src="login.jsx"></script>
-<script type="text/babel" data-presets="env,react" src="upload.jsx"></script>
-<script type="text/babel" data-presets="env,react" src="communities.jsx"></script>
-<script type="text/babel" data-presets="env,react" src="users.jsx"></script>
-<script type="text/babel" data-presets="env,react" src="analytics.jsx"></script>
-<script type="text/babel" data-presets="env,react" src="app.jsx"></script>
+<script src="/cms/api.js"></script>
+<script type="text/babel" data-presets="env,react" src="/cms/ui.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="/cms/login.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="/cms/upload.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="/cms/communities.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="/cms/users.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="/cms/analytics.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="/cms/settings.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="/cms/pages.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="/cms/app.jsx"></script>
 
 <script type="text/babel" data-presets="env,react">
   const root = ReactDOM.createRoot(document.getElementById('root'));

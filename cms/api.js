@@ -98,6 +98,16 @@
       quality: () => request('GET', '/api/analytics/quality'),
     },
     audit: (limit = 100) => request('GET', `/api/audit?limit=${limit}`),
+    settings: {
+      get: () => request('GET', '/api/settings'),
+      update: (values) => request('PUT', '/api/settings', { values }),
+    },
+    pages: {
+      list: () => request('GET', '/api/pages'),
+      get: (slug) => request('GET', `/api/pages/${encodeURIComponent(slug)}`),
+      upsert: (slug, payload) => request('PUT', `/api/pages/${encodeURIComponent(slug)}`, payload),
+      remove: (slug) => request('DELETE', `/api/pages/${encodeURIComponent(slug)}`),
+    },
   };
 
   window.API = API;
