@@ -23,6 +23,7 @@ If a workbook only has a single sheet (the legacy format), everything still
 works — the cross-reference panels just come back empty.
 """
 from __future__ import annotations
+import difflib
 import re
 import unicodedata
 from pathlib import Path
@@ -40,20 +41,204 @@ def _ps():
 
 
 # --- normalisation -------------------------------------------------------- #
+#
+# Community name matching is fuzzy. Real-world examples we need to match:
+#
+#   Master sheet                                           ↔  85-list
+#   ─────────────────────────────────────────────────────  ↔  ────────────────────
+#   Batchewana First Nation (Association of Iroquois...)   ↔  Batchewana First Nation
+#   Big Trout Lake #272 / Kitchenuhmaykoosib Inninuwug FN  ↔  Big Trout Lake #272 / Kitchenuhmaykoosib...
+#   Cree Nation of Mistissini                              ↔  The Mistassini/Cree First Nation  (renamed)
+#   Mattagami First Nation (Nishnawbe Aski Nation - Wa...) ↔  Mattagami First Nation
+#
+# Strategy: every name produces a SET of candidate keys. Match if any overlap.
+# Keys ignore: parenthetical suffixes, "#NNN" band numbers, slash-separated
+# alternate spellings, "The " prefix, whitespace, punctuation, and the
+# "First Nation"/"First Nations" suffix (normalized to "fn").
 
 _NORM_RX = re.compile(r"[\s\(\)\/,'\-\.#&]")
 _FN_RX = re.compile(r"firstnations?")
+_HASH_NUM_RX = re.compile(r"#\s*\d+")
+_PAREN_RX = re.compile(r"\s*\([^)]*\)")
+_THE_PREFIX_RX = re.compile(r"^the\s+")
+
+# Region keywords that appear in the right-side "extras" column of the 85-list
+# sheet — used to extract a region hint and drop it from the name itself.
+_REGION_HINTS = {"north", "south", "east", "west", "central",
+                 "algoma district first nation communities"}
 
 
-def normalize(name: str) -> str:
-    if not name:
-        return ""
-    s = unicodedata.normalize("NFKD", str(name)).encode("ascii", "ignore").decode("ascii")
+def _normalize_key(fragment: str) -> str:
+    """Reduce a name fragment to a comparable key."""
+    s = unicodedata.normalize("NFKD", str(fragment)).encode("ascii", "ignore").decode("ascii")
     s = s.lower()
-    s = re.sub(r"\s+", " ", s)
+    s = _THE_PREFIX_RX.sub("", s)
+    s = _HASH_NUM_RX.sub("", s)
+    s = re.sub(r"\s+", " ", s).strip()
     s = _NORM_RX.sub("", s)
     s = _FN_RX.sub("fn", s)
     return s.strip()
+
+
+def name_keys(name: str) -> set[str]:
+    """Return all candidate keys for a community name (handles aliases)."""
+    if not name:
+        return set()
+    s = unicodedata.normalize("NFKD", str(name)).encode("ascii", "ignore").decode("ascii")
+    # Drop parenthetical suffixes like "(AIAI)" or "(Nishnawbe Aski Nation - …)"
+    s = _PAREN_RX.sub("", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    # Slash-separated alternates: each side is a candidate
+    parts = [p.strip() for p in s.split("/") if p.strip()]
+    keys: set[str] = set()
+    for p in parts:
+        k = _normalize_key(p)
+        if k:
+            keys.add(k)
+    # Also store the full string as a key (some names contain `/` in their official form)
+    full = _normalize_key(s)
+    if full:
+        keys.add(full)
+    return keys
+
+
+# Tokens too generic to base a match on alone.
+_GENERIC_TOKENS = {
+    "first", "nation", "nations", "fn", "the", "of", "and", "council",
+    "tribe", "tribal", "community", "communities", "band", "people",
+    "peoples", "association", "centre", "center", "organization",
+    "indigenous", "anishinaabe", "anishnaabe", "anishnawbek", "mi'kmaq",
+    "cree", "ojibwe", "ojibway", "river", "lake", "bay", "island",
+    "the", "st", "st.", "saint",
+}
+
+
+def _tokens(name: str) -> set[str]:
+    """Significant tokens from a name — for token-overlap matching."""
+    if not name:
+        return set()
+    s = unicodedata.normalize("NFKD", str(name)).encode("ascii", "ignore").decode("ascii")
+    s = _PAREN_RX.sub("", s)
+    s = _HASH_NUM_RX.sub("", s)
+    s = s.lower()
+    toks = re.findall(r"[a-z']+", s)
+    sig = {t for t in toks if t not in _GENERIC_TOKENS and len(t) >= 3}
+    return sig
+
+
+def _fuzzy_ratio(a: str, b: str) -> float:
+    """0..1 string similarity via difflib (handles typos like Mistassini/Mistissini)."""
+    if not a or not b:
+        return 0.0
+    return difflib.SequenceMatcher(None, a, b).ratio()
+
+
+def smart_match(name: str, candidates: list[dict], name_field: str = "name") -> dict | None:
+    """Find the best candidate match for `name` from `candidates`.
+
+    Four-pass strategy (most-precise first):
+
+      1. EXACT       — name_keys() overlap (handles parens, slashes, hash numbers)
+      2. WEIGHTED    — shared tokens scored by uniqueness × length. A token that
+                       appears in only ONE candidate (e.g., "Akwesasne") is much
+                       stronger evidence than one in many (e.g., "Chippewas").
+      3. FUZZY-TOK   — at least one pair of distinct long tokens has >= 0.85 fuzzy
+                       similarity AND ratio < 1.0 (catches typos like
+                       "Mistassini" ↔ "Mistissini"; rejects common-word false
+                       positives where ratio == 1.0).
+      4. FUZZY-ALL   — full normalised string similarity >= 0.90 (last resort).
+    """
+    if not name or not candidates:
+        return None
+
+    target_keys = name_keys(name)
+    target_tokens = _tokens(name)
+
+    # Pass 1 — EXACT key overlap.
+    for c in candidates:
+        c_keys = c.get("_keys") or name_keys(c.get(name_field, ""))
+        if target_keys & c_keys:
+            return c
+
+    # Pass 2 — WEIGHTED token overlap.
+    # Build token frequency across the candidate pool — rare tokens are gold.
+    from collections import Counter
+    token_freq: Counter = Counter()
+    for c in candidates:
+        c_tokens = c.get("_tokens") or _tokens(c.get(name_field, ""))
+        for t in c_tokens:
+            token_freq[t] += 1
+    best = None
+    best_score = 0.0
+    for c in candidates:
+        c_tokens = c.get("_tokens") or _tokens(c.get(name_field, ""))
+        shared = target_tokens & c_tokens
+        if not shared:
+            continue
+        score = 0.0
+        for t in shared:
+            uniqueness = 1.0 / token_freq[t]  # 1.0 if unique, 0.25 if 4 candidates have it
+            score += uniqueness * len(t)
+        if score > best_score:
+            best_score = score
+            best = c
+    # Threshold 6.0 means: ONE 6+ char token unique to 1 candidate (1.0×6=6),
+    # or one 9+ char token in <=2 candidates (e.g., 0.5×9=4.5 would FAIL — good,
+    # that's the "Chippewas of Sarnia/Nawash" common-word case). Multiple shared
+    # tokens easily clear the bar.
+    if best and best_score >= 6.0:
+        return best
+
+    # Pass 3 — fuzzy token match (catches single-letter typos).
+    # Skips:
+    #   - identical tokens (already considered in Pass 2)
+    #   - tokens where one is a substring of the other (e.g., "chippewa"/
+    #     "chippewas" is stem variation, not a typo — those should rely on
+    #     other distinctive tokens to match in Pass 2 instead).
+    best = None
+    best_ratio = 0.0
+    for c in candidates:
+        c_tokens = c.get("_tokens") or _tokens(c.get(name_field, ""))
+        for tt in target_tokens:
+            if len(tt) < 6:
+                continue
+            for ct in c_tokens:
+                if len(ct) < 6 or tt == ct:
+                    continue
+                if tt in ct or ct in tt:
+                    continue  # substring relation → not a typo
+                r = _fuzzy_ratio(tt, ct)
+                if 0.85 <= r < 1.0 and r > best_ratio:
+                    best_ratio = r
+                    best = c
+    if best:
+        return best
+
+    # Pass 4 — full-string fuzzy (very strict threshold).
+    target_full = max(target_keys, key=len) if target_keys else ""
+    best = None
+    best_ratio = 0.0
+    for c in candidates:
+        c_keys = c.get("_keys") or name_keys(c.get(name_field, ""))
+        for k in c_keys:
+            r = _fuzzy_ratio(target_full, k)
+            if r > best_ratio:
+                best_ratio = r
+                best = c
+    if best and best_ratio >= 0.90:
+        return best
+
+    return None
+
+
+def normalize(name: str) -> str:
+    """Primary normalized key — kept for backward compat with the rest of the code.
+
+    Returns the first key from name_keys(), or empty string. New code should
+    use name_keys() and check for set intersection.
+    """
+    keys = name_keys(name)
+    return next(iter(sorted(keys, key=len, reverse=True))) if keys else ""
 
 
 # Pre-clean fragments that show up inside parens in the 85-list right column
@@ -68,8 +253,11 @@ def clean_community_name(name: str) -> tuple[str, str]:
     m = PAREN_REGION_RX.search(s)
     region = ""
     if m:
-        region = m.group(1).strip()
-        s = PAREN_REGION_RX.sub("", s).strip()
+        candidate = m.group(1).strip()
+        # Only treat the parens as a region hint if it's actually a region.
+        if candidate.lower() in _REGION_HINTS:
+            region = candidate
+            s = PAREN_REGION_RX.sub("", s).strip()
     return s, region
 
 
@@ -85,6 +273,135 @@ def _read_sheet(wb, name: str) -> list[list[str]]:
             continue
         rows.append(["" if v is None else str(v) for v in raw])
     return rows
+
+
+# Header signatures for each known sheet type. score_sheet_as() scans the
+# first 5 rows of any sheet, counts how many of these patterns it sees,
+# and picks the highest-scoring sheet for each type. This makes detection
+# robust to sheet renames, reordering, garbage tabs, and the original
+# 'Master Sheet' being moved or duplicated.
+
+_MASTER_SIGNATURES = [
+    r"community.*link", r"contact.*info", r"physical.*health",
+    r"mental.*health", r"spiritual", r"emotional",
+    r"survivor", r"youth", r"connect.*survivors?.*youth",
+    r"population", r"strategic.*plan", r"annual.*general", r"financial",
+]
+
+_LIST85_SIGNATURES = [
+    r"list.*85.*communit", r"\b85\s+communit", r"\bfirst nation\b",
+    r"\bnumber\b", r"\bcommunity\b",
+]
+
+_MISSING_SIGNATURES = [
+    r"community/organi[sz]ation", r"specific.*item", r"\bstatus\b",
+    r"\bdi?escription\b", r"missing.*information",
+]
+
+_REVIEW_SIGNATURES = [
+    r"community/organi[sz]ation", r"specific.*item",
+    r"needs.*review", r"\bstatus\b",
+]
+
+_CORRECTION_SIGNATURES = [
+    r"community/organi[sz]ation", r"specific.*item",
+    r"\bdi?escription\b", r"correction",
+]
+
+_ADDITIONAL_SIGNATURES = [
+    r"additional.*link", r"community.*link", r"physical.*health",
+]
+
+
+def _score_sheet_against(sheet_name: str, rows: list[list[str]],
+                         signatures: list[str]) -> int:
+    """Return a 0..N score for how strongly this sheet matches a signature list.
+
+    Looks at:
+      - the sheet name itself (gentle bonus if any signature pattern matches)
+      - the first 5 rows of cell text (main signal — these are usually headers)
+    """
+    score = 0
+    name_blob = sheet_name.lower()
+    cell_blob = ""
+    for r in rows[:5]:
+        for c in r:
+            if c:
+                cell_blob += " " + str(c).lower()
+    for pat in signatures:
+        if re.search(pat, name_blob):
+            score += 1
+        if re.search(pat, cell_blob):
+            score += 2
+    # Bonus for sheets with substantial data (real master sheet has many rows).
+    nonempty = sum(1 for r in rows if any(c and str(c).strip() for c in r))
+    if nonempty >= 50:
+        score += 3
+    elif nonempty >= 20:
+        score += 1
+    return score
+
+
+def detect_sheets(wb) -> dict[str, str | None]:
+    """Auto-detect which sheet plays each role, by header content (not name).
+
+    Returns a dict like:
+      { 'master': 'Master Sheet',
+        'list85': 'List of 85 communities',
+        'missing': 'Missing Information',
+        'review':  'Needs Review',
+        'correction': 'Correction sheet',
+        'additional': 'Additional links' }
+
+    Each value can be None if no sheet scored high enough. Garbage tabs
+    (Colour Codes, Notes, Sandbox, etc.) end up unassigned.
+    """
+    # Pre-load row data for every sheet once.
+    sheets_data = [(name, _read_sheet(wb, name)) for name in wb.sheetnames]
+
+    def best(signatures: list[str], min_score: int = 5,
+             exclude: set[str] | None = None) -> str | None:
+        exclude = exclude or set()
+        ranked = []
+        for name, rows in sheets_data:
+            if name in exclude or not rows:
+                continue
+            s = _score_sheet_against(name, rows, signatures)
+            if s >= min_score:
+                ranked.append((s, name))
+        ranked.sort(reverse=True)
+        return ranked[0][1] if ranked else None
+
+    # Master first — it's the most distinctive (many narrative columns).
+    master = best(_MASTER_SIGNATURES, min_score=8)
+    used = {master} if master else set()
+
+    list85 = best(_LIST85_SIGNATURES, min_score=4, exclude=used)
+    if list85:
+        used.add(list85)
+
+    # Missing / Review / Correction all share most columns — disambiguate by
+    # the distinguishing keyword in name + headers.
+    missing = best(_MISSING_SIGNATURES, min_score=5, exclude=used)
+    if missing:
+        used.add(missing)
+    review = best(_REVIEW_SIGNATURES, min_score=5, exclude=used)
+    if review:
+        used.add(review)
+    correction = best(_CORRECTION_SIGNATURES, min_score=5, exclude=used)
+    if correction:
+        used.add(correction)
+
+    additional = best(_ADDITIONAL_SIGNATURES, min_score=4, exclude=used)
+
+    return {
+        "master": master,
+        "list85": list85,
+        "missing": missing,
+        "review": review,
+        "correction": correction,
+        "additional": additional,
+    }
 
 
 def _find_sheet(wb, candidates: list[str]) -> str | None:
@@ -103,11 +420,15 @@ def _find_sheet(wb, candidates: list[str]) -> str | None:
 
 # --- structured readers per sheet ---------------------------------------- #
 
-def read_master_sheet(wb) -> list[dict]:
-    """Master Sheet → enriched community records, via tools/process_sheet.py."""
-    sheet = _find_sheet(wb, ["Master Sheet", "Master", "Programs"])
+def read_master_sheet(wb, sheet: str | None = None) -> list[dict]:
+    """Master Sheet → enriched community records, via tools/process_sheet.py.
+
+    `sheet` can be passed explicitly (preferred — comes from content-based
+    detection in ingest_workbook). If not, fall back to name-based search.
+    """
     if not sheet:
-        # Fall back to whatever the first sheet is.
+        sheet = _find_sheet(wb, ["Master Sheet", "Master", "Programs"])
+    if not sheet:
         sheet = wb.sheetnames[0]
     rows = _read_sheet(wb, sheet)
     if not rows:
@@ -116,9 +437,10 @@ def read_master_sheet(wb) -> list[dict]:
     return ps.process_rows(rows, previous=None, verbose=False)
 
 
-def read_85_list(wb) -> dict:
+def read_85_list(wb, sheet: str | None = None) -> dict:
     """Returns {'official': [{number, name, note}], 'inMasterNotInList': [{number, name, region}]}."""
-    sheet = _find_sheet(wb, ["List of 85 communities", "List of communities", "85 communities"])
+    if not sheet:
+        sheet = _find_sheet(wb, ["List of 85 communities", "List of communities", "85 communities"])
     if not sheet:
         return {"official": [], "inMasterNotInList": []}
     rows = _read_sheet(wb, sheet)
@@ -163,9 +485,10 @@ def read_85_list(wb) -> dict:
     return {"official": official, "inMasterNotInList": extra}
 
 
-def read_annotations(wb, sheet_name: str, kind: str) -> list[dict]:
+def read_annotations(wb, sheet_name: str, kind: str, sheet: str | None = None) -> list[dict]:
     """Generic reader for Missing Information / Needs Review / Correction sheet."""
-    sheet = _find_sheet(wb, [sheet_name])
+    if not sheet:
+        sheet = _find_sheet(wb, [sheet_name])
     if not sheet:
         return []
     rows = _read_sheet(wb, sheet)
@@ -201,8 +524,9 @@ def read_annotations(wb, sheet_name: str, kind: str) -> list[dict]:
     return out
 
 
-def read_additional_links(wb) -> list[dict]:
-    sheet = _find_sheet(wb, ["Additional links", "Additional Links"])
+def read_additional_links(wb, sheet: str | None = None) -> list[dict]:
+    if not sheet:
+        sheet = _find_sheet(wb, ["Additional links", "Additional Links"])
     if not sheet:
         return []
     rows = _read_sheet(wb, sheet)
@@ -229,48 +553,80 @@ def read_additional_links(wb) -> list[dict]:
 # --- main entry ----------------------------------------------------------- #
 
 def ingest_workbook(path: Path) -> dict:
-    """Read the whole workbook and produce a structured snapshot."""
+    """Read the whole workbook and produce a structured snapshot.
+
+    Detection of which sheet plays which role is CONTENT-BASED, not name-
+    based — see detect_sheets(). Garbage tabs ('Colour Codes', 'Notes',
+    'Sandbox') are ignored. A renamed Master Sheet still works.
+    """
     wb = load_workbook(filename=str(path), data_only=True, read_only=True)
+    detected = detect_sheets(wb)
 
-    master_records = read_master_sheet(wb)
-    list85 = read_85_list(wb)
-    missing = read_annotations(wb, "Missing Information", "missing")
-    review = read_annotations(wb, "Needs Review", "review")
-    corrections = read_annotations(wb, "Correction sheet", "correction")
-    extra_links = read_additional_links(wb)
+    master_records = read_master_sheet(wb, detected["master"])
+    list85 = read_85_list(wb, detected["list85"])
+    missing = read_annotations(wb, "Missing Information", "missing", detected["missing"])
+    review = read_annotations(wb, "Needs Review", "review", detected["review"])
+    corrections = read_annotations(wb, "Correction sheet", "correction", detected["correction"])
+    extra_links = read_additional_links(wb, detected["additional"])
 
-    # Cross-reference: stamp each master record with whether it appears in the
-    # canonical 85-list, and attach related annotations + corrections.
-    by_key_85 = {c["key"]: c for c in list85["official"]}
-    by_key_extra = {c["key"]: c for c in list85["inMasterNotInList"]}
-
-    ann_by_community: dict[str, list[dict]] = {}
+    # Precompute keys and tokens for every entry (one-time, makes smart_match fast).
+    for rec in master_records:
+        rec["_keys"] = name_keys(rec.get("name", ""))
+        rec["_tokens"] = _tokens(rec.get("name", ""))
+    for entry in list85["official"]:
+        entry["_keys"] = name_keys(entry["name"])
+        entry["_tokens"] = _tokens(entry["name"])
+    for entry in list85["inMasterNotInList"]:
+        entry["_keys"] = name_keys(entry["name"])
+        entry["_tokens"] = _tokens(entry["name"])
+    all_annotations = []
     for batch in (missing, review, corrections):
         for a in batch:
-            ann_by_community.setdefault(a["communityKey"], []).append(a)
+            a["_keys"] = name_keys(a["community"])
+            a["_tokens"] = _tokens(a["community"])
+            all_annotations.append(a)
 
+    # Cross-reference each master record against the 85 list + extras + annotations.
+    # Uses the 3-pass smart matcher (exact → token-overlap → fuzzy).
     for rec in master_records:
-        key = normalize(rec.get("name", ""))
-        rec["nameKey"] = key
-        rec["in85List"] = key in by_key_85
-        rec["in85Extra"] = key in by_key_extra
-        if key in by_key_85:
-            rec["officialNumber"] = by_key_85[key]["number"]
-            if by_key_85[key].get("note"):
-                rec["listNote"] = by_key_85[key]["note"]
-        elif key in by_key_extra:
+        rec["nameKey"] = sorted(rec["_keys"])[0] if rec["_keys"] else ""
+
+        list85_match = smart_match(rec.get("name", ""), list85["official"])
+        extra_match = (smart_match(rec.get("name", ""), list85["inMasterNotInList"])
+                       if not list85_match else None)
+
+        rec["in85List"] = list85_match is not None
+        rec["in85Extra"] = extra_match is not None
+        if list85_match:
+            rec["officialNumber"] = list85_match["number"]
+            if list85_match.get("note"):
+                rec["listNote"] = list85_match["note"]
+        elif extra_match:
             rec["officialNumber"] = None
-            rec["extraSection"] = by_key_extra[key].get("region")
-        rec["annotations"] = ann_by_community.get(key, [])
-        rec["missingCount"] = sum(1 for a in rec["annotations"] if a["kind"] == "missing")
-        rec["reviewCount"] = sum(1 for a in rec["annotations"] if a["kind"] == "review")
-        rec["correctionCount"] = sum(1 for a in rec["annotations"] if a["kind"] == "correction")
+            rec["extraSection"] = extra_match.get("region")
+
+        # Annotations: match each annotation entry against this record, dedupe.
+        seen = set()
+        record_anns: list[dict] = []
+        for a in all_annotations:
+            # An annotation belongs to this record if its name maps to it.
+            if rec["_keys"] & a["_keys"] or (
+                len(rec["_tokens"] & a["_tokens"]) >= 2
+            ):
+                sig = (a.get("kind"), a.get("item"), a.get("date"), a.get("description", "")[:50])
+                if sig in seen:
+                    continue
+                seen.add(sig)
+                record_anns.append(a)
+        rec["annotations"] = record_anns
+        rec["missingCount"] = sum(1 for a in record_anns if a["kind"] == "missing")
+        rec["reviewCount"] = sum(1 for a in record_anns if a["kind"] == "review")
+        rec["correctionCount"] = sum(1 for a in record_anns if a["kind"] == "correction")
 
     # Coverage85: for every official community, was a master sheet record found?
-    by_master_key = {normalize(r.get("name", "")): r for r in master_records}
     coverage_items = []
     for entry in list85["official"]:
-        matched = by_master_key.get(entry["key"])
+        matched = smart_match(entry["name"], master_records)
         coverage_items.append({
             "number": entry["number"],
             "name": entry["name"],
@@ -280,6 +636,17 @@ def ingest_workbook(path: Path) -> dict:
             "matchedDirection": (matched or {}).get("direction"),
             "matchedAnnotations": len((matched or {}).get("annotations", [])),
         })
+
+    # Strip internal _keys/_tokens before serialising (they're sets, not JSON-friendly).
+    def _clean(d: dict) -> dict:
+        return {k: v for k, v in d.items() if not k.startswith("_")}
+    master_records = [_clean(r) for r in master_records]
+    list85["official"] = [_clean(e) for e in list85["official"]]
+    list85["inMasterNotInList"] = [_clean(e) for e in list85["inMasterNotInList"]]
+    for batch in (missing, review, corrections):
+        for a in batch:
+            a.pop("_keys", None)
+            a.pop("_tokens", None)
 
     return {
         "records": master_records,
@@ -298,8 +665,10 @@ def ingest_workbook(path: Path) -> dict:
         "additionalLinks": extra_links,
         "meta": {
             "sheets": wb.sheetnames,
+            "detectedSheets": detected,
             "masterRows": len(master_records),
             "list85Official": len(list85["official"]),
             "list85Extra": len(list85["inMasterNotInList"]),
+            "unusedSheets": [s for s in wb.sheetnames if s not in detected.values()],
         },
     }
