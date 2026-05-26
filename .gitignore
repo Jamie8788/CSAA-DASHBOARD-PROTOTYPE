@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Data / runtime
+server/atlas.db
+server/atlas.db-journal
+uploads/*.xlsx
+uploads/*.xls
+uploads/*.csv
+uploads/*.png
+uploads/*.jpg
+uploads/*.jpeg
+!uploads/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+.thumbnail
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log

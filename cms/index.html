@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="paper">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mino Bimaadiziwin — Admin CMS</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="cms.css" />
+</head>
+<body>
+<div id="root"></div>
+
+<!-- React 18 + Babel for direct JSX hosting (no build step) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/recharts@2.13.3/umd/Recharts.js" crossorigin="anonymous"></script>
+
+<script type="text/babel" data-presets="env,react" src="api.js"></script>
+<script type="text/babel" data-presets="env,react" src="ui.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="login.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="upload.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="communities.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="users.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="analytics.jsx"></script>
+<script type="text/babel" data-presets="env,react" src="app.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<window.CMSApp />);
+</script>
+</body>
+</html>

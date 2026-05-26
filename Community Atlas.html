@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="paper" data-text-size="M">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mino Bimaadiziwin · Community Services Atlas</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,300;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="animations.css" />
+
+<!-- Leaflet (free / open-source mapping) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<script>
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "layout": "balanced",
+  "density": "normal"
+}/*EDITMODE-END*/;
+window.TWEAK_DEFAULTS = TWEAK_DEFAULTS;
+</script>
+</head>
+<body style="font-family: Inter" data-theme="paper" data-text-size="M">
+<div id="root"></div>
+
+<!-- React + Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Data: bundled dataset (used as fallback when backend is unreachable) -->
+<script src="communities-data.js"></script>
+<!-- API bridge: when served by the FastAPI backend, fetches live dataset -->
+<script src="api-bridge.js"></script>
+
+<!-- Tweaks panel -->
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<!-- Components -->
+<script type="text/babel" src="helpers.jsx"></script>
+<script type="text/babel" src="map.jsx"></script>
+<script type="text/babel" src="card.jsx"></script>
+<script type="text/babel" src="drawer.jsx"></script>
+<script type="text/babel" src="analytics.jsx"></script>
+<script type="text/babel" src="journey-game.jsx"></script>
+<script type="text/babel" src="stories-view.jsx"></script>
+<script type="text/babel" src="stats-view.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+
+<!-- SheetJS for Excel import in admin mode -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<!-- Scroll-reveal helper -->
+<script src="reveal.js"></script>
+
+<script type="text/babel">
+(async () => {
+  // Wait for the API bridge if it kicked off a fetch; ignore failures.
+  if (window.__ATLAS_API_READY) {
+    try { await window.__ATLAS_API_READY; } catch (e) {}
+  }
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<window.App />);
+})();
+</script>
+</body>
+</html>
