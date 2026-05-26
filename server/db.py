@@ -223,11 +223,19 @@ def _row(result) -> dict | None:
 # ----------------------------- init --------------------------------------- #
 
 def _try_alter(conn, stmt: str) -> None:
-    """Run an ALTER that may fail if the column/index already exists."""
+    """Run an ALTER that may fail if the column/index already exists.
+
+    On Postgres a failed statement poisons the entire transaction, so we wrap
+    this in a SAVEPOINT (begin_nested) — the rollback only undoes the failed
+    sub-statement, leaving the outer transaction intact. SQLite also supports
+    SAVEPOINTs so the same code path works on both backends.
+    """
+    sp = conn.begin_nested()
     try:
         conn.execute(text(stmt))
+        sp.commit()
     except Exception:
-        pass
+        sp.rollback()
 
 
 def init_db() -> None:
