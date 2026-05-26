@@ -68,14 +68,65 @@
   function applySettingsToDocument(s) {
     if (!s) return;
     if (s['site.title']) document.title = s['site.title'];
-    if (s['site.accent']) {
-      document.documentElement.style.setProperty('--accent-override', s['site.accent']);
-    }
+
+    // Theme — the CSS only defines: paper, dawn, forest, midnight.
+    // Anything else falls back to paper.
+    const validThemes = new Set(['paper', 'dawn', 'forest', 'midnight']);
     if (s['site.theme']) {
-      document.documentElement.dataset.theme = s['site.theme'];
+      const t = validThemes.has(s['site.theme']) ? s['site.theme'] : 'paper';
+      document.documentElement.dataset.theme = t;
     }
+
+    // Accent color — the dashboard's CSS uses --south (the medicine-wheel
+    // colour) as the primary accent. We override it AND its variants by
+    // injecting a <style> element with computed shades.
+    if (s['site.accent']) {
+      const accent = s['site.accent'].trim();
+      const overrides = buildAccentOverrides(accent);
+      injectStyle('atlas-settings-overrides', overrides);
+    } else {
+      injectStyle('atlas-settings-overrides', '');
+    }
+
     // Dispatch a custom event so React components can re-read.
     window.dispatchEvent(new CustomEvent('atlas:settings', { detail: s }));
+  }
+
+  // Compute light + dark variants of a hex color (no library needed).
+  function shadeHex(hex, percent) {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!m) return hex;
+    let r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
+    const t = percent < 0 ? 0 : 255;
+    const p = Math.abs(percent);
+    r = Math.round((t - r) * p + r);
+    g = Math.round((t - g) * p + g);
+    b = Math.round((t - b) * p + b);
+    return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
+  }
+
+  function buildAccentOverrides(accent) {
+    const deep  = shadeHex(accent, -0.35);   // darker
+    const soft  = shadeHex(accent,  0.30);   // lighter
+    const glaze = shadeHex(accent,  0.65);   // very light
+    return `:root {
+      --south: ${accent};
+      --south-deep: ${deep};
+      --south-soft: ${soft};
+      --south-glaze: ${glaze};
+      --p-physical: ${accent};
+      --bridge: ${deep};
+    }`;
+  }
+
+  function injectStyle(id, css) {
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('style');
+      el.id = id;
+      document.head.appendChild(el);
+    }
+    el.textContent = css;
   }
 
   // -------------- live SSE subscription -----------------------------------

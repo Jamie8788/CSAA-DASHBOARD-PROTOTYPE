@@ -173,11 +173,16 @@ def normalize(s: str) -> str:
 
 
 def is_section_row(cells: list[str]) -> bool:
+    """A section header is a row with ONLY column A filled, and the value is a
+    known section name. Be strict: a short A-only value (like 'test1') is a
+    WIP community record, not a section header. We'd rather show a sparse
+    row in the dashboard than silently drop the team's data.
+    """
     a = (cells[0] or '').strip().lower()
     other = sum(1 for c in cells[1:] if (c or '').strip())
     if other > 0:
         return False
-    return a in SECTION_NAMES or len(a) < 80
+    return a in SECTION_NAMES
 
 
 def classify(rec: dict) -> dict:

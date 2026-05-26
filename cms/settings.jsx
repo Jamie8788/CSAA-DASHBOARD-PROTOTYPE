@@ -9,7 +9,7 @@ const SETTING_GROUPS = [
       { key: 'site.tagline', label: 'Tagline / sub-title', type: 'textarea' },
       { key: 'site.accent', label: 'Accent colour (CSS)', type: 'color' },
       { key: 'site.theme', label: 'Default theme', type: 'select',
-        options: ['paper', 'dawn', 'dusk', 'night'] },
+        options: ['paper', 'dawn', 'forest', 'midnight'] },
     ],
   },
   {
@@ -35,16 +35,29 @@ function SettingsView() {
   const [dirty, setDirty] = useState_s({});
   const [loading, setLoading] = useState_s(true);
   const [busy, setBusy] = useState_s(false);
+  const [health, setHealth] = useState_s(null);
 
   async function load() {
     setLoading(true);
     try {
-      const v = await API.settings.get();
+      const [v, h] = await Promise.all([API.settings.get(), API.health()]);
       setValues(v); setDirty({});
+      setHealth(h);
     } catch (e) { toast.push('Load failed: ' + e.message, 'error'); }
     finally { setLoading(false); }
   }
   useEffect_s(() => { load(); }, []);
+
+  async function resetAll() {
+    if (!confirm('Reset ALL site settings back to defaults? Pages, communities, and admin accounts are not affected.')) return;
+    setBusy(true);
+    try {
+      const next = await API.settings.reset();
+      setValues(next); setDirty({});
+      toast.push('Settings reset to defaults.', 'success');
+    } catch (e) { toast.push('Reset failed: ' + e.message, 'error'); }
+    finally { setBusy(false); }
+  }
 
   function set(k, v) {
     setValues((vs) => ({ ...vs, [k]: v }));
@@ -76,6 +89,29 @@ function SettingsView() {
         Control how the public dashboard looks and behaves. Changes apply
         live on next page load.
       </p>
+
+      {health && !health.persistent && (
+        <div className="card" style={{ background: 'rgba(184,53,30,0.08)', borderColor: 'var(--danger)' }}>
+          <h3 style={{ color: 'var(--danger)' }}>⚠ Data will NOT persist across redeploys</h3>
+          <p className="small">
+            The backend is using <strong>SQLite</strong> on Render's ephemeral disk. Every redeploy
+            wipes uploads, edits, settings, pages, and admin user history.
+          </p>
+          <p className="small muted">
+            To fix: in Render → <strong>Environment</strong> → set <code className="mono">DATABASE_URL</code> to
+            your Supabase Session pooler connection string. Render redeploys
+            and the next boot will use Postgres.
+            Detected backend: <code className="mono">{health.backend}</code>.
+          </p>
+        </div>
+      )}
+      {health && health.persistent && (
+        <div className="card" style={{ background: 'rgba(107,141,107,0.10)', borderColor: 'var(--good)' }}>
+          <p className="small" style={{ margin: 0 }}>
+            ✓ Backend: <code className="mono">{health.backend}</code> — your changes persist across redeploys.
+          </p>
+        </div>
+      )}
 
       {SETTING_GROUPS.map((group) => (
         <div className="card" key={group.title}>
@@ -109,9 +145,13 @@ function SettingsView() {
         </table>
       </div>
 
-      <div style={{ position: 'sticky', bottom: 16, marginTop: 24 }}>
+      <div style={{ position: 'sticky', bottom: 16, marginTop: 24, display: 'flex', gap: 8 }}>
         <button className="btn" disabled={busy || dirtyCount === 0} onClick={save}>
           {busy ? <window.Spinner /> : `Save ${dirtyCount} change${dirtyCount === 1 ? '' : 's'}`}
+        </button>
+        <button className="btn ghost" disabled={busy} onClick={resetAll}
+                title="Restore every site setting to its first-boot default">
+          ⟲ Reset to defaults
         </button>
       </div>
     </div>

@@ -147,9 +147,12 @@ class PageIn(BaseModel):
 @app.get("/api/health")
 def health() -> dict:
     ds = db.current_dataset()
+    backend = "postgres" if db.IS_POSTGRES else "sqlite"
     return {
         "status": "ok",
         "version": app.version,
+        "backend": backend,
+        "persistent": backend == "postgres",
         "dataset": {
             "loaded": ds is not None,
             "records": ds["record_count"] if ds else 0,
@@ -547,6 +550,16 @@ def settings_update(payload: SettingsIn, actor: dict = Depends(auth.require_admi
     db.log_audit(actor["username"], "settings.update", None,
                  f"keys: {', '.join(payload.values.keys())}")
     events.publish("settings.updated", {"keys": list(payload.values.keys())})
+    return db.get_settings()
+
+
+@app.post("/api/settings/reset")
+def settings_reset(actor: dict = Depends(auth.require_admin)) -> dict:
+    """Reset all site.* settings back to their first-boot defaults."""
+    db.bulk_set_settings(db.DEFAULT_SETTINGS, actor["username"])
+    db.log_audit(actor["username"], "settings.reset", None,
+                 f"reset {len(db.DEFAULT_SETTINGS)} keys to defaults")
+    events.publish("settings.updated", {"keys": list(db.DEFAULT_SETTINGS.keys())})
     return db.get_settings()
 
 

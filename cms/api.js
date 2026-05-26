@@ -101,6 +101,7 @@
     settings: {
       get: () => request('GET', '/api/settings'),
       update: (values) => request('PUT', '/api/settings', { values }),
+      reset: () => request('POST', '/api/settings/reset'),
     },
     pages: {
       list: () => request('GET', '/api/pages'),
