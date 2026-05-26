@@ -630,29 +630,37 @@ def list_nav(slot: str | None = None) -> list[dict]:
 
 
 def upsert_nav(item: dict, actor: str | None) -> dict:
+    # Build the params dict explicitly so bind names match the SQL,
+    # regardless of what the caller's dict happens to be keyed by
+    # (the API receives `position`/`label`/`visible`, the SQL uses
+    # `:pos`/`:lbl`/`:vis`).
+    params = {
+        "slot": item.get("slot", "main"),
+        "pos": int(item.get("position", 0)),
+        "lbl": item.get("label", ""),
+        "view": item.get("view", ""),
+        "icon": item.get("icon"),
+        "vis": 1 if item.get("visible", True) else 0,
+        "u": time.time(),
+        "by": actor,
+    }
     with get_conn() as conn:
         if item.get("id"):
+            params["id"] = item["id"]
             conn.execute(
                 text("UPDATE nav_items SET slot=:slot, position=:pos, label=:lbl, "
                      "view=:view, icon=:icon, visible=:vis, updated_at=:u, updated_by=:by "
                      "WHERE id=:id"),
-                {**item, "u": time.time(), "by": actor,
-                 "vis": 1 if item.get("visible") else 0},
+                params,
             )
             return _row(conn.execute(
                 text("SELECT * FROM nav_items WHERE id = :id"), {"id": item["id"]}
             )) or {}
         else:
-            result = conn.execute(
+            conn.execute(
                 text("INSERT INTO nav_items(slot, position, label, view, icon, visible, "
                      "updated_at, updated_by) VALUES(:slot,:pos,:lbl,:view,:icon,:vis,:u,:by)"),
-                {"slot": item.get("slot", "main"),
-                 "pos": int(item.get("position", 0)),
-                 "lbl": item.get("label", ""),
-                 "view": item.get("view", ""),
-                 "icon": item.get("icon"),
-                 "vis": 1 if item.get("visible", True) else 0,
-                 "u": time.time(), "by": actor},
+                params,
             )
             new_id = conn.execute(text("SELECT MAX(id) AS mx FROM nav_items")).scalar()
             return _row(conn.execute(
