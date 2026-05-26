@@ -55,14 +55,18 @@ def write_communities_js(records: list[dict]) -> None:
 # --- enrichment so the API surfaces the same shape the dashboard expects --- #
 
 _NA_VALUES = {"missing information", "needs review", "duplicate record",
-              "no definite value", "n/a", ""}
+              "no definite value", "n/a", "na", "-", ""}
 
 
 def _is_na(value: Any) -> bool:
+    """A field counts as N/A only if it's truly empty or one of the known
+    placeholder phrases. Even a single character like 'b' or 'v' (often used
+    as WIP scratch values) should count as filled — otherwise the team's
+    test data silently disappears from the dashboard."""
     if value is None:
         return True
     s = str(value).strip().lower()
-    return s in _NA_VALUES or len(s) < 2
+    return s in _NA_VALUES
 
 
 def _slugify(s: str) -> str:

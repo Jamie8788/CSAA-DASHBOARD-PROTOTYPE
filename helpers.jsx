@@ -8,7 +8,10 @@ const { useState, useEffect, useMemo, useRef, createContext, useContext } = Reac
 function NA(v) {
   if (v === null || v === undefined) return true;
   const s = String(v).trim().toLowerCase();
-  return ['missing information','needs review','duplicate record','no definite value','n/a',''].includes(s) || s.length < 2;
+  // A field counts as N/A only if it's truly empty or a known placeholder.
+  // Even single-character values (e.g. 'b' used as WIP scratch input) count
+  // as filled — otherwise the team's test data vanishes from the dashboard.
+  return ['missing information','needs review','duplicate record','no definite value','n/a','na','-',''].includes(s);
 }
 
 const PILLARS = [
