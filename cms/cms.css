@@ -20,30 +20,70 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); fo
 a { color: var(--accent); }
 
 /* Layout */
-.cms-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.cms-shell {
+  display: grid; grid-template-columns: 260px 1fr; min-height: 100vh;
+  transition: grid-template-columns 220ms ease;
+}
+.cms-shell.collapsed { grid-template-columns: 64px 1fr; }
 .cms-sidebar {
   background: var(--paper);
   border-right: 1px solid var(--border);
-  padding: 24px 16px;
+  padding: 16px 12px 16px 12px;
   display: flex; flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   position: sticky; top: 0; height: 100vh; overflow: auto;
+  transition: padding 220ms ease;
 }
+.cms-shell.collapsed .cms-sidebar { padding: 16px 8px; }
+.sidebar-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 8px; }
 .cms-sidebar .brand {
-  font-weight: 700; font-size: 16px;
-  letter-spacing: -0.01em; line-height: 1.2; margin-bottom: 16px;
+  font-weight: 700; font-size: 15px;
+  letter-spacing: -0.01em; line-height: 1.2;
+  display: flex; flex-direction: column;
 }
-.cms-sidebar .brand small { display: block; color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+.cms-sidebar .brand .brand-title { font-size: 14px; }
+.cms-shell.collapsed .cms-sidebar .brand .brand-title { text-align: center; font-size: 18px; }
+.cms-sidebar .brand small {
+  display: block; color: var(--muted); font-weight: 500;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+.collapse-btn {
+  background: transparent; border: 1px solid var(--border); color: var(--muted);
+  width: 28px; height: 28px; border-radius: 6px; cursor: pointer; padding: 0;
+  font-size: 16px; line-height: 1; flex-shrink: 0;
+}
+.collapse-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.nav-group { margin-bottom: 4px; }
+.nav-group .group-head {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  background: transparent; border: none; color: var(--muted);
+  padding: 8px 10px 4px; font: inherit; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+  cursor: pointer; border-radius: 4px;
+}
+.nav-group .group-head:hover { color: var(--ink); }
+.nav-group .group-caret { font-size: 10px; opacity: 0.6; }
+.nav-group.external { margin-top: 8px; border-top: 1px dashed var(--border); padding-top: 8px; }
+.nav-group.external a { text-decoration: none; }
+
 .cms-sidebar nav button {
   display: flex; align-items: center; gap: 10px;
   width: 100%; text-align: left;
-  padding: 10px 12px;
+  padding: 8px 12px;
   background: transparent; border: none; cursor: pointer;
-  border-radius: 6px; color: var(--ink); font: inherit; font-weight: 500;
+  border-radius: 6px; color: var(--ink); font: inherit; font-weight: 500; font-size: 13px;
+  transition: background 120ms ease;
 }
-.cms-sidebar nav button:hover { background: rgba(0,0,0,0.04); }
+.cms-sidebar nav button:hover { background: rgba(0,0,0,0.05); }
 .cms-sidebar nav button.active { background: var(--ink); color: var(--paper); }
-.cms-sidebar nav button .ico { font-family: var(--font-mono); width: 20px; text-align: center; }
+.cms-sidebar nav button .ico {
+  font-family: var(--font-mono); width: 20px; text-align: center; flex-shrink: 0;
+}
+.cms-shell.collapsed .cms-sidebar nav button { justify-content: center; padding: 10px 0; }
+.cms-shell.collapsed .cms-sidebar nav button .ico { width: auto; }
+
 .cms-sidebar .spacer { flex: 1; }
 .cms-sidebar .user-block {
   border-top: 1px solid var(--border);

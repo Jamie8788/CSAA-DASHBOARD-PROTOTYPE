@@ -10,11 +10,50 @@ function CMSApp() {
 }
 window.CMSApp = CMSApp;
 
+const NAV_GROUPS = [
+  {
+    title: 'Insights',
+    items: [
+      { key: 'analytics',   label: 'Analytics',         ico: '◐' },
+    ],
+  },
+  {
+    title: 'Content',
+    items: [
+      { key: 'communities', label: 'Communities',       ico: '☷' },
+      { key: 'pages',       label: 'Pages & content',   ico: '☰' },
+      { key: 'navigation',  label: 'Navigation',        ico: '⇆' },
+    ],
+  },
+  {
+    title: 'Data',
+    items: [
+      { key: 'upload',      label: 'Upload data',       ico: '⌹' },
+    ],
+  },
+  {
+    title: 'Configuration',
+    items: [
+      { key: 'settings',    label: 'Site settings',     ico: '⚙' },
+      { key: 'users',       label: 'Admin users',       ico: '✦' },
+    ],
+  },
+];
+
 function CMSAppInner() {
   const toast = window.useToast();
   const [me, setMe] = useState_app(null);
   const [loading, setLoading] = useState_app(true);
-  const [view, setView] = useState_app('analytics');
+  const [view, setView] = useState_app(() => localStorage.getItem('cms-view') || 'analytics');
+  const [collapsed, setCollapsed] = useState_app(() => localStorage.getItem('cms-sb-collapsed') === '1');
+  const [openGroups, setOpenGroups] = useState_app(() => {
+    try { return JSON.parse(localStorage.getItem('cms-sb-groups') || '{}'); }
+    catch { return {}; }
+  });
+
+  useEffect_app(() => { localStorage.setItem('cms-view', view); }, [view]);
+  useEffect_app(() => { localStorage.setItem('cms-sb-collapsed', collapsed ? '1' : '0'); }, [collapsed]);
+  useEffect_app(() => { localStorage.setItem('cms-sb-groups', JSON.stringify(openGroups)); }, [openGroups]);
 
   useEffect_app(() => {
     let cancelled = false;
@@ -50,48 +89,77 @@ function CMSAppInner() {
     toast.push('Signed out');
   }
 
-  const NAV = [
-    { key: 'analytics', label: 'Analytics', ico: '◐' },
-    { key: 'upload', label: 'Upload data', ico: '⌹' },
-    { key: 'communities', label: 'Communities', ico: '☷' },
-    { key: 'pages', label: 'Pages & content', ico: '☰' },
-    { key: 'settings', label: 'Site settings', ico: '⚙' },
-    { key: 'users', label: 'Admin users', ico: '✦' },
-    { key: 'site', label: 'Open dashboard ↗', ico: '→', external: '/' },
-  ];
+  function toggleGroup(title) {
+    setOpenGroups((s) => ({ ...s, [title]: !(s[title] !== false) }));
+  }
 
   return (
-    <div className="cms-shell">
+    <div className={`cms-shell${collapsed ? ' collapsed' : ''}`}>
       <aside className="cms-sidebar">
-        <div className="brand">
-          <small>Mino Bimaadiziwin</small>
-          Community Atlas CMS
+        <div className="sidebar-top">
+          <div className="brand">
+            {!collapsed && <small>Mino Bimaadiziwin</small>}
+            <span className="brand-title">{collapsed ? 'M.' : 'Community Atlas CMS'}</span>
+          </div>
+          <button className="collapse-btn"
+                  title={collapsed ? 'Expand' : 'Collapse'}
+                  onClick={() => setCollapsed((c) => !c)}>
+            {collapsed ? '›' : '‹'}
+          </button>
         </div>
+
         <nav>
-          {NAV.map((n) => n.external
-            ? <a key={n.key} href={n.external} target="_blank" rel="noopener noreferrer">
-                <button><span className="ico">{n.ico}</span>{n.label}</button>
-              </a>
-            : (
-              <button key={n.key}
-                      className={view === n.key ? 'active' : ''}
-                      onClick={() => setView(n.key)}>
-                <span className="ico">{n.ico}</span>{n.label}
+          {NAV_GROUPS.map((g) => {
+            const isOpen = openGroups[g.title] !== false;
+            return (
+              <div key={g.title} className="nav-group">
+                {!collapsed && (
+                  <button className="group-head" onClick={() => toggleGroup(g.title)}>
+                    <span className="group-title">{g.title}</span>
+                    <span className="group-caret">{isOpen ? '▾' : '▸'}</span>
+                  </button>
+                )}
+                {(isOpen || collapsed) && g.items.map((n) => (
+                  <button key={n.key}
+                          className={view === n.key ? 'active' : ''}
+                          onClick={() => setView(n.key)}
+                          title={collapsed ? n.label : ''}>
+                    <span className="ico">{n.ico}</span>
+                    {!collapsed && <span>{n.label}</span>}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+          <div className="nav-group external">
+            <a href="/" target="_blank" rel="noopener noreferrer">
+              <button title="Open public dashboard">
+                <span className="ico">→</span>
+                {!collapsed && <span>Open dashboard ↗</span>}
               </button>
-            ))}
+            </a>
+          </div>
         </nav>
+
         <div className="spacer" />
-        <div className="user-block">
-          <div><strong>{me.username}</strong></div>
-          <div className="role">{me.role}</div>
-          <button className="signout" onClick={signOut}>Sign out</button>
-        </div>
+        {!collapsed && (
+          <div className="user-block">
+            <div><strong>{me.username}</strong></div>
+            <div className="role">{me.role}</div>
+            <button className="signout" onClick={signOut}>Sign out</button>
+          </div>
+        )}
+        {collapsed && (
+          <button className="signout" onClick={signOut} title="Sign out"
+                  style={{ width: 32, margin: '8px auto', padding: '6px 0' }}>⎋</button>
+        )}
       </aside>
       <main className="cms-main">
         {view === 'analytics' && <window.AnalyticsView />}
         {view === 'upload' && <window.UploadView />}
         {view === 'communities' && <window.CommunitiesView />}
         {view === 'pages' && <window.PagesView />}
+        {view === 'navigation' && <window.NavigationView />}
         {view === 'settings' && <window.SettingsView />}
         {view === 'users' && <window.UsersView me={me} />}
       </main>

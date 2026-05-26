@@ -31,8 +31,11 @@
   const coverageP = fetch(BASE + '/api/communities/coverage85', { credentials: 'include' })
     .then((r) => r.ok ? r.json() : null).catch(() => null);
 
-  window.__ATLAS_API_READY = Promise.all([datasetP, settingsP, pagesP, coverageP]).then(
-    ([dataset, settings, pages, coverage]) => {
+  const navP = fetch(BASE + '/api/nav?slot=main', { credentials: 'include' })
+    .then((r) => r.ok ? r.json() : null).catch(() => null);
+
+  window.__ATLAS_API_READY = Promise.all([datasetP, settingsP, pagesP, coverageP, navP]).then(
+    ([dataset, settings, pages, coverage, nav]) => {
       if (dataset && Array.isArray(dataset.records) && dataset.records.length) {
         window.COMMUNITIES = dataset.records;
         window.ATLAS_DATASET_INFO = {
@@ -55,6 +58,9 @@
       }
       if (coverage) {
         window.ATLAS_COVERAGE85 = coverage;
+      }
+      if (nav && Array.isArray(nav.items)) {
+        window.ATLAS_NAV = nav.items.filter((n) => n.visible);
       }
     }
   );
@@ -105,6 +111,13 @@
         window.ATLAS_PAGES = {};
         r.pages.forEach((p) => { window.ATLAS_PAGES[p.slug] = p; });
         window.dispatchEvent(new CustomEvent('atlas:pages'));
+      }
+    });
+    es.addEventListener('nav.updated', async () => {
+      const r = await fetch(BASE + '/api/nav?slot=main').then((r) => r.json()).catch(() => null);
+      if (r && r.items) {
+        window.ATLAS_NAV = r.items.filter((n) => n.visible);
+        window.dispatchEvent(new CustomEvent('atlas:nav'));
       }
     });
     es.onerror = () => {

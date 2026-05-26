@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reset password — Mino Bimaadiziwin CMS</title>
+<base href="/cms/" />
+<link rel="stylesheet" href="/cms/cms.css" />
+</head>
+<body>
+<div class="login-wrap">
+  <form class="login-card" id="resetForm">
+    <h1>Reset password</h1>
+    <p class="sub" id="info">Enter your new password.</p>
+    <div class="form-row">
+      <label>New password</label>
+      <input type="password" id="pw" minlength="6" required autofocus />
+    </div>
+    <div class="form-row">
+      <label>Confirm new password</label>
+      <input type="password" id="pw2" minlength="6" required />
+    </div>
+    <button class="btn" id="submit" type="submit" style="width:100%;justify-content:center;">Set new password</button>
+    <div class="err" id="err"></div>
+    <p class="small muted" style="margin-top:16px;">
+      <a href="/cms/">← Back to sign in</a>
+    </p>
+  </form>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const token = params.get('token');
+const info = document.getElementById('info');
+const err = document.getElementById('err');
+const submit = document.getElementById('submit');
+
+if (!token) {
+  info.textContent = 'No token supplied. The reset link is required to set a new password.';
+  submit.disabled = true;
+}
+
+document.getElementById('resetForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  err.textContent = '';
+  const pw = document.getElementById('pw').value;
+  const pw2 = document.getElementById('pw2').value;
+  if (pw !== pw2) { err.textContent = 'Passwords do not match.'; return; }
+  if (pw.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
+  submit.disabled = true;
+  submit.textContent = 'Saving…';
+  try {
+    const r = await fetch('/api/auth/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password: pw }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.detail || r.statusText);
+    info.textContent = 'Password updated. Redirecting to sign-in…';
+    submit.style.display = 'none';
+    setTimeout(() => { location.href = '/cms/'; }, 1400);
+  } catch (e) {
+    err.textContent = e.message || 'Reset failed.';
+    submit.disabled = false;
+    submit.textContent = 'Set new password';
+  }
+});
+</script>
+</body>
+</html>

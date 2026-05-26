@@ -108,6 +108,16 @@
       upsert: (slug, payload) => request('PUT', `/api/pages/${encodeURIComponent(slug)}`, payload),
       remove: (slug) => request('DELETE', `/api/pages/${encodeURIComponent(slug)}`),
     },
+    nav: {
+      list: (slot) => request('GET', '/api/nav' + (slot ? '?slot=' + encodeURIComponent(slot) : '')),
+      upsert: (item) => request('PUT', '/api/nav', item),
+      remove: (id) => request('DELETE', `/api/nav/${id}`),
+    },
+    auth: {
+      requestReset: (username) => request('POST', '/api/auth/request-reset', { username }),
+      reset: (token, password) => request('POST', '/api/auth/reset', { token, password }),
+      setEmail: (username, email) => request('POST', `/api/users/${encodeURIComponent(username)}/email`, { email }),
+    },
   };
 
   window.API = API;

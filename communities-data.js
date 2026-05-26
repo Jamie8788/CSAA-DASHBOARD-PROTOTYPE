@@ -7740,7 +7740,9 @@ window.COMMUNITIES = [
     "annotations": [],
     "missingCount": 0,
     "reviewCount": 0,
-    "correctionCount": 0
+    "correctionCount": 0,
+    "lat": null,
+    "lon": null
   },
   {
     "name": "ANCFSAO - ASSOCIATION OF NATIVE CHILD AND FAMILY SERVICE AGENCIES OF ONTARIO",
@@ -8515,7 +8517,9 @@ window.COMMUNITIES = [
     "annotations": [],
     "missingCount": 0,
     "reviewCount": 0,
-    "correctionCount": 0
+    "correctionCount": 0,
+    "lat": null,
+    "lon": null
   },
   {
     "name": "Nishnawbe Aski Nation",
@@ -8772,7 +8776,9 @@ window.COMMUNITIES = [
     ],
     "missingCount": 1,
     "reviewCount": 0,
-    "correctionCount": 0
+    "correctionCount": 0,
+    "lat": null,
+    "lon": null
   },
   {
     "name": "Cree Board of Health and \nSocial Services of James Bay",
@@ -8820,7 +8826,9 @@ window.COMMUNITIES = [
     "annotations": [],
     "missingCount": 0,
     "reviewCount": 0,
-    "correctionCount": 0
+    "correctionCount": 0,
+    "lat": null,
+    "lon": null
   },
   {
     "name": "Mushkegowuk Council",
@@ -8931,7 +8939,9 @@ window.COMMUNITIES = [
     ],
     "missingCount": 3,
     "reviewCount": 0,
-    "correctionCount": 0
+    "correctionCount": 0,
+    "lat": null,
+    "lon": null
   },
   {
     "name": "ACCESS Open Minds\n(Esprits Ouverts)",
@@ -9076,7 +9086,9 @@ window.COMMUNITIES = [
     ],
     "missingCount": 8,
     "reviewCount": 0,
-    "correctionCount": 0
+    "correctionCount": 0,
+    "lat": null,
+    "lon": null
   },
   {
     "name": "Map of Indigenous Communities in Ontario",
@@ -9107,7 +9119,9 @@ window.COMMUNITIES = [
     "annotations": [],
     "missingCount": 0,
     "reviewCount": 0,
-    "correctionCount": 0
+    "correctionCount": 0,
+    "lat": null,
+    "lon": null
   },
   {
     "name": "Indigenous Friendship Center (Sault Ste. Marie/Elliot Lake)",

@@ -275,24 +275,39 @@ function Hero({ totalCommunities, totalOrgs, grandPop, view, setView, filtered, 
           </div>
         </div>
       </div>
-      <div className="nav-strip">
-        <button className={`nav-tab ${view==='map'?'on':''}`} onClick={() => setView('map')}>
-          ◉  Map · Search <span className="count">{filtered}</span>
-        </button>
-        <button className={`nav-tab ${view==='list'?'on':''}`} onClick={() => setView('list')}>
-          ☷  Directory <span className="count">{all}</span>
-        </button>
-        <button className={`nav-tab ${view==='stories'?'on':''}`} onClick={() => setView('stories')}>
-          ❋  Community Stories
-        </button>
-        <button className={`nav-tab ${view==='stats'?'on':''}`} onClick={() => setView('stats')}>
-          ◭  Insights & Stories
-        </button>
-        <button className={`nav-tab ${view==='coverage'?'on':''}`} onClick={() => setView('coverage')}>
-          ⌧  Coverage (85)
-        </button>
-      </div>
+      <NavStrip view={view} setView={setView} filtered={filtered} all={all} />
     </header>
+  );
+}
+
+function NavStrip({ view, setView, filtered, all }) {
+  const [items, setItems] = useState(() => window.ATLAS_NAV || null);
+  useEffect(() => {
+    function h() { setItems(window.ATLAS_NAV ? [...window.ATLAS_NAV] : null); }
+    window.addEventListener('atlas:nav', h);
+    return () => window.removeEventListener('atlas:nav', h);
+  }, []);
+  // Fallback when backend not reachable
+  const DEFAULT_NAV = [
+    { view: 'map',      label: 'Map · Search',       icon: '◉' },
+    { view: 'list',     label: 'Directory',          icon: '☷' },
+    { view: 'stories',  label: 'Community Stories',  icon: '❋' },
+    { view: 'stats',    label: 'Insights & Stories', icon: '◭' },
+    { view: 'coverage', label: 'Coverage (85)',      icon: '⌧' },
+  ];
+  const navItems = items && items.length ? items : DEFAULT_NAV;
+  return (
+    <div className="nav-strip">
+      {navItems.map((n) => (
+        <button key={n.view}
+                className={`nav-tab ${view === n.view ? 'on' : ''}`}
+                onClick={() => setView(n.view)}>
+          {n.icon ? `${n.icon}  ` : ''}{n.label}
+          {n.view === 'map' && filtered != null && <span className="count">{filtered}</span>}
+          {n.view === 'list' && all != null && <span className="count">{all}</span>}
+        </button>
+      ))}
+    </div>
   );
 }
 

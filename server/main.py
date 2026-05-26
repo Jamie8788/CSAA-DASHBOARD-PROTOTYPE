@@ -50,7 +50,7 @@ from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import analytics, auth, config, db, events, processor, workbook
+from . import analytics, auth, config, db, events, mailer, processor, workbook
 
 
 app = FastAPI(
@@ -95,10 +95,34 @@ class UserIn(BaseModel):
     username: str = Field(min_length=2, max_length=80)
     password: str = Field(min_length=4, max_length=200)
     role: str = "admin"
+    email: str | None = None
 
 
 class PasswordIn(BaseModel):
     password: str = Field(min_length=4, max_length=200)
+
+
+class EmailIn(BaseModel):
+    email: str | None = None
+
+
+class ResetRequestIn(BaseModel):
+    username: str
+
+
+class ResetConfirmIn(BaseModel):
+    token: str = Field(min_length=10)
+    password: str = Field(min_length=4, max_length=200)
+
+
+class NavItemIn(BaseModel):
+    id: int | None = None
+    slot: str = "main"
+    position: int = 0
+    label: str = Field(min_length=1, max_length=80)
+    view: str = Field(min_length=1, max_length=80)
+    icon: str | None = None
+    visible: bool = True
 
 
 class EditIn(BaseModel):
@@ -166,6 +190,53 @@ def me(user: dict = Depends(auth.get_current_user)) -> dict:
     return user
 
 
+@app.post("/api/auth/request-reset")
+def auth_request_reset(payload: ResetRequestIn, request: Request) -> dict:
+    """Generate a single-use password reset token.
+
+    Always returns a 200 (no information leak). Behaviour:
+    - if SMTP is configured AND the user has an email on file → email the link
+    - otherwise → return `resetUrl` in the response so an admin can share it.
+    """
+    user = db.get_user(payload.username)
+    if not user:
+        # Don't reveal whether the user exists.
+        return {"ok": True, "delivery": "n/a"}
+
+    token = db.create_reset_token(user["username"])
+    base = (config.PUBLIC_BASE_URL or str(request.base_url).rstrip("/"))
+    reset_url = f"{base}/cms/reset.html?token={token}"
+
+    delivery = "manual"
+    if user.get("email") and mailer.is_configured():
+        ok = mailer.send(
+            user["email"],
+            "Mino Bimaadiziwin CMS — password reset",
+            f"Hello {user['username']},\n\nUse this link to reset your password "
+            f"(expires in 1 hour):\n\n{reset_url}\n\nIf you didn't request this, ignore this email.",
+        )
+        delivery = "email" if ok else "manual"
+
+    db.log_audit("system", "password.reset.request", user["username"], delivery)
+    out: dict = {"ok": True, "delivery": delivery}
+    # Only echo the URL back when we couldn't email it (admin needs to share it).
+    if delivery != "email":
+        out["resetUrl"] = reset_url
+    return out
+
+
+@app.post("/api/auth/reset")
+def auth_reset(payload: ResetConfirmIn) -> dict:
+    username = db.consume_reset_token(payload.token)
+    if not username:
+        raise HTTPException(400, "Invalid or expired token")
+    ok = db.change_password(username, payload.password)
+    if not ok:
+        raise HTTPException(404, "User no longer exists")
+    db.log_audit(username, "password.reset.complete")
+    return {"ok": True}
+
+
 # ------------------------------ users ------------------------------------- #
 
 @app.get("/api/users")
@@ -176,11 +247,21 @@ def users_list(_: dict = Depends(auth.require_admin)) -> dict:
 @app.post("/api/users", status_code=201)
 def users_create(payload: UserIn, actor: dict = Depends(auth.require_admin)) -> dict:
     try:
-        u = db.create_user(payload.username, payload.password, payload.role)
+        u = db.create_user(payload.username, payload.password, payload.role, payload.email)
     except Exception as e:
         raise HTTPException(400, f"Could not create user: {e}")
     db.log_audit(actor["username"], "user.create", payload.username)
     return u
+
+
+@app.post("/api/users/{username}/email")
+def users_set_email(username: str, payload: EmailIn,
+                    actor: dict = Depends(auth.require_admin)) -> dict:
+    ok = db.set_user_email(username, payload.email)
+    if not ok:
+        raise HTTPException(404, "User not found")
+    db.log_audit(actor["username"], "user.email", username, payload.email or "(cleared)")
+    return {"ok": True}
 
 
 @app.delete("/api/users/{username}")
@@ -501,6 +582,32 @@ def pages_delete(slug: str, actor: dict = Depends(auth.require_admin)) -> dict:
         raise HTTPException(404, "Page not found")
     db.log_audit(actor["username"], "page.delete", slug)
     events.publish("page.deleted", {"slug": slug})
+    return {"ok": True}
+
+
+# --------------------------- navigation items ---------------------------- #
+# Lets the admin reorder/rename/hide/show the dashboard's top navigation.
+
+@app.get("/api/nav")
+def nav_list(slot: str | None = None) -> dict:
+    return {"items": db.list_nav(slot=slot)}
+
+
+@app.put("/api/nav")
+def nav_upsert(payload: NavItemIn, actor: dict = Depends(auth.require_admin)) -> dict:
+    item = db.upsert_nav(payload.model_dump(), actor["username"])
+    db.log_audit(actor["username"], "nav.upsert", payload.view)
+    events.publish("nav.updated", {"view": payload.view})
+    return item
+
+
+@app.delete("/api/nav/{nav_id}")
+def nav_delete(nav_id: int, actor: dict = Depends(auth.require_admin)) -> dict:
+    ok = db.delete_nav(nav_id)
+    if not ok:
+        raise HTTPException(404, "Nav item not found")
+    db.log_audit(actor["username"], "nav.delete", str(nav_id))
+    events.publish("nav.updated", {"id": nav_id, "deleted": True})
     return {"ok": True}
 
 
