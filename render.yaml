@@ -1,0 +1,46 @@
+# Render Blueprint — deploy this whole stack with one click.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# What this creates:
+#   1. A Python web service (the FastAPI backend + dashboard + CMS)
+#   2. Sensible production env vars (you fill in DATABASE_URL + secrets in UI)
+#
+# Database: bring your own Supabase Postgres (recommended) by pasting
+# DATABASE_URL in Render's Environment tab. The free Supabase tier is more
+# generous than Render's free Postgres.
+
+services:
+  - type: web
+    name: mino-bimaadiziwin-atlas
+    runtime: python
+    plan: free                # bump to "starter" ($7/mo) to remove cold starts
+    region: oregon            # change to a region close to you / your users
+    buildCommand: pip install --upgrade pip && pip install -r server/requirements.txt
+    startCommand: uvicorn server.main:app --host 0.0.0.0 --port $PORT --workers 2
+    healthCheckPath: /api/health
+    autoDeploy: true          # redeploy on every push to main
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.10
+      - key: ATLAS_JWT_SECRET
+        generateValue: true   # Render auto-generates a strong secret
+      - key: ATLAS_ADMIN_PASSWORD
+        sync: false           # you set this in the dashboard
+      - key: DATABASE_URL
+        sync: false           # paste your Supabase connection string here
+      - key: PUBLIC_BASE_URL
+        sync: false           # set to https://<your-render-url> after first deploy
+      - key: ATLAS_CORS_ORIGINS
+        value: "*"
+      # Optional SMTP for password-reset emails — leave unset if you'll share
+      # reset links manually from the CMS Admin Users panel.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false

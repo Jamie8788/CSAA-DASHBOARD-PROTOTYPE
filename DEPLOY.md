@@ -1,8 +1,45 @@
-# Deployment guide — Railway + Supabase + Hostinger
+# Deployment guide — Render / Railway + Supabase + Hostinger
 
-This repo is set up to deploy as a **single Python service on Railway**, with **Supabase Postgres** as the database. The dashboard, CMS, and FastAPI backend all run from the same service.
+This repo is set up to deploy as a **single Python service** on **Render**, **Railway**, or any Docker host, with **Supabase Postgres** as the database. The dashboard, CMS, and FastAPI backend all run from the same service.
 
-For ~1,000 users this stack costs roughly **$5/month total** (Railway hobby pod) or stays on the **free tier** if your traffic is low.
+For ~1,000 users this stack costs **$0–$7/month total** depending on whether you can tolerate cold starts on the free tier.
+
+## Render vs Railway — which one?
+
+| | Render | Railway |
+|---|---|---|
+| Free tier | yes, but sleeps after 15 min idle (cold start ~30 s) | $5 trial credit then $5/mo minimum |
+| First paid tier | $7/mo (Starter) — no cold starts | $5/mo (Hobby) — no cold starts |
+| Setup ease | one-click Blueprint (`render.yaml` in this repo) | one-click via `railway.json` |
+| What I recommend | **Render** if you already use it | Railway if you're starting fresh |
+
+Both platforms work identically with this repo — the `render.yaml`, `railway.json`, `Procfile`, and `Dockerfile` are all checked in. Pick whichever you're comfortable with.
+
+---
+
+## Render — one-click deploy (recommended if you already use it)
+
+1. Sign in at <https://render.com>.
+2. **New → Blueprint** → pick `Jamie8788/CSAA-DASHBOARD-PROTOTYPE` from your repos.
+3. Render reads `render.yaml`, shows the service it'll create, and asks for the three secrets:
+   - `ATLAS_ADMIN_PASSWORD` — set a strong password for first-time admin login.
+   - `DATABASE_URL` — paste the Supabase connection string (see "Supabase" below).
+   - `PUBLIC_BASE_URL` — leave blank for now; you'll fill it in once Render gives you a URL.
+4. Click **Apply**. Build takes 3–5 min.
+5. Your service URL appears at the top of the page. Copy it.
+6. Go back to **Environment** → set `PUBLIC_BASE_URL=https://<your-render-url>` → save. Render auto-redeploys.
+7. Open `https://<your-url>/api/health` — should show `{"status":"ok",...}`.
+
+That's it. Now jump to **Custom domain** below if you want to point Hostinger at it.
+
+### Render free vs paid
+
+- **Free**: the service sleeps after 15 minutes of no traffic. Next request waits ~30 seconds for cold start. Fine for a project that gets sporadic use; bad for a live community site.
+- **Starter ($7/mo)**: always-on. Worth it before you go public.
+
+---
+
+## Railway — alternative (only if you prefer Railway)
 
 ---
 
@@ -126,9 +163,9 @@ For higher concurrency, Supabase exposes a **transaction pooler** on port 6543. 
 
 ---
 
-## 2. Railway — deploy the app
+### Railway deploy steps
 
-You said Railway already has access to your GitHub repo — great. If not: sign in to <https://railway.com>, click **New project → Deploy from GitHub repo → Jamie8788/CSAA-DASHBOARD-PROTOTYPE**.
+If Railway already has access to your GitHub repo, great. If not: sign in to <https://railway.com>, click **New project → Deploy from GitHub repo → Jamie8788/CSAA-DASHBOARD-PROTOTYPE**.
 
 ### 2a. Set environment variables
 
