@@ -160,6 +160,8 @@ function AppInner() {
           setRegions={setRegions} setOrgTypes={setOrgTypes} setPillars={setPillars} />
       ) : view === 'stories' ? (
         <window.StoriesView all={all} onSelect={setSelectedId} />
+      ) : view === 'coverage' ? (
+        <window.CoverageView onSelect={setSelectedId} setView={setView} />
       ) : (
         <div className="main-grid">
           <FilterRail
@@ -285,6 +287,9 @@ function Hero({ totalCommunities, totalOrgs, grandPop, view, setView, filtered, 
         </button>
         <button className={`nav-tab ${view==='stats'?'on':''}`} onClick={() => setView('stats')}>
           ◭  Insights & Stories
+        </button>
+        <button className={`nav-tab ${view==='coverage'?'on':''}`} onClick={() => setView('coverage')}>
+          ⌧  Coverage (85)
         </button>
       </div>
     </header>

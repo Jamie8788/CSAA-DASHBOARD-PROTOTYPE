@@ -46,11 +46,11 @@ from fastapi import (
     FastAPI, HTTPException, UploadFile, File, Form, Depends, Request, Response, status
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import analytics, auth, config, db, processor
+from . import analytics, auth, config, db, events, processor, workbook
 
 
 app = FastAPI(
@@ -269,6 +269,7 @@ def communities_activate(version: int, actor: dict = Depends(auth.require_admin)
     ds = db.current_dataset()
     if ds:
         processor.write_communities_js(ds["records"])
+    events.publish("dataset.updated", {"version": version, "activated": True})
     return {"ok": True, "version": version}
 
 
@@ -285,19 +286,50 @@ async def communities_upload(
         shutil.copyfileobj(file.file, f)
 
     previous = (db.current_dataset() or {}).get("records") or []
+    snapshot: dict | None = None
     try:
-        records = processor.process_file(target, previous=previous)
+        # State-of-the-art path: full multi-sheet ingestion (Master Sheet +
+        # 85-list + Missing/Review/Correction + Additional Links). Only
+        # works for .xlsx — for .csv we fall back to the simple processor.
+        if suffix in (".xlsx", ".xls"):
+            snapshot = workbook.ingest_workbook(target)
+            records = snapshot["records"]
+            # Carry forward lat/lon from previous dataset where missing
+            by_name = {processor._slugify(r.get("name", "")): r for r in previous}
+            for r in records:
+                if r.get("lat") is None or r.get("lon") is None:
+                    prior = by_name.get(processor._slugify(r.get("name", "")))
+                    if prior:
+                        r.setdefault("lat", prior.get("lat"))
+                        r.setdefault("lon", prior.get("lon"))
+        else:
+            records = processor.process_file(target, previous=previous)
     except Exception as e:
         raise HTTPException(400, f"Processing failed: {e}")
 
     if not records:
         raise HTTPException(400, "No records parsed from file")
 
-    version = db.save_dataset(records, source_filename=file.filename, uploaded_by=actor["username"])
+    version = db.save_dataset(
+        records,
+        source_filename=file.filename,
+        uploaded_by=actor["username"],
+        snapshot=snapshot,
+    )
     processor.write_communities_js(records)
     db.log_audit(actor["username"], "dataset.upload",
                  file.filename, f"v{version}, {len(records)} records")
-    return {"ok": True, "version": version, "records": len(records)}
+    events.publish("dataset.updated", {
+        "version": version,
+        "records": len(records),
+        "source": file.filename,
+        "annotations": (snapshot or {}).get("annotations", {}).get("totals", {}),
+    })
+    out = {"ok": True, "version": version, "records": len(records)}
+    if snapshot:
+        out["meta"] = snapshot["meta"]
+        out["annotations"] = snapshot["annotations"]["totals"]
+    return out
 
 
 @app.post("/api/communities/{community_id}/edit")
@@ -311,6 +343,7 @@ def communities_edit(community_id: str, payload: EditIn,
     edit_id = db.save_edit(community_id, merged, actor["username"])
     db.log_audit(actor["username"], "community.edit", community_id,
                  f"fields: {', '.join(merged.keys())}")
+    events.publish("community.edited", {"id": community_id, "fields": list(merged.keys())})
     return {"ok": True, "editId": edit_id}
 
 
@@ -318,7 +351,53 @@ def communities_edit(community_id: str, payload: EditIn,
 def communities_delete(community_id: str, actor: dict = Depends(auth.require_admin)) -> dict:
     db.save_edit(community_id, {"_deleted": True}, actor["username"])
     db.log_audit(actor["username"], "community.delete", community_id)
+    events.publish("community.deleted", {"id": community_id})
     return {"ok": True}
+
+
+# ----------------------- workbook cross-references ------------------------ #
+
+@app.get("/api/communities/coverage85")
+def coverage85() -> dict:
+    """85-community canonical list × whether each appears in the master sheet."""
+    snap = db.current_snapshot()
+    if not snap:
+        return {"items": [], "summary": {"total": 0, "covered": 0, "missing": 0}}
+    items = snap.get("coverage85", [])
+    covered = sum(1 for c in items if c.get("inMaster"))
+    return {
+        "items": items,
+        "extras": snap.get("list85", {}).get("inMasterNotInList", []),
+        "summary": {
+            "total": len(items),
+            "covered": covered,
+            "missing": len(items) - covered,
+        },
+    }
+
+
+@app.get("/api/communities/annotations")
+def workbook_annotations(community: str | None = None) -> dict:
+    """Missing-info / Needs-review / Correction items, optionally filtered."""
+    snap = db.current_snapshot()
+    if not snap:
+        return {"missing": [], "review": [], "corrections": [], "totals": {}}
+    ann = snap.get("annotations", {})
+    if community:
+        key = workbook.normalize(community)
+        return {
+            "missing": [a for a in ann.get("missing", []) if a.get("communityKey") == key],
+            "review": [a for a in ann.get("review", []) if a.get("communityKey") == key],
+            "corrections": [a for a in ann.get("corrections", []) if a.get("communityKey") == key],
+        }
+    return {
+        "missing": ann.get("missing", []),
+        "review": ann.get("review", []),
+        "corrections": ann.get("corrections", []),
+        "totals": ann.get("totals", {}),
+        "additionalLinks": snap.get("additionalLinks", []),
+        "meta": snap.get("meta", {}),
+    }
 
 
 # ----------------------------- analytics ---------------------------------- #
@@ -386,6 +465,7 @@ def settings_update(payload: SettingsIn, actor: dict = Depends(auth.require_admi
     db.bulk_set_settings(payload.values, actor["username"])
     db.log_audit(actor["username"], "settings.update", None,
                  f"keys: {', '.join(payload.values.keys())}")
+    events.publish("settings.updated", {"keys": list(payload.values.keys())})
     return db.get_settings()
 
 
@@ -410,6 +490,7 @@ def pages_upsert(slug: str, payload: PageIn,
     p = db.upsert_page(payload.slug or slug, payload.title, payload.body,
                        payload.visible, actor["username"])
     db.log_audit(actor["username"], "page.upsert", payload.slug or slug)
+    events.publish("page.updated", {"slug": payload.slug or slug})
     return p
 
 
@@ -419,7 +500,29 @@ def pages_delete(slug: str, actor: dict = Depends(auth.require_admin)) -> dict:
     if not ok:
         raise HTTPException(404, "Page not found")
     db.log_audit(actor["username"], "page.delete", slug)
+    events.publish("page.deleted", {"slug": slug})
     return {"ok": True}
+
+
+# ----------------------------- SSE channel -------------------------------- #
+
+@app.get("/api/events")
+async def event_stream() -> StreamingResponse:
+    """Server-Sent Events — clients reconnect automatically.
+    Emits dataset.updated, community.edited, settings.updated, page.updated, etc.
+    """
+    async def gen():
+        async for chunk in events.subscribe():
+            yield chunk
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 # --------------------------- static hosting ------------------------------- #

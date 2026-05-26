@@ -67,6 +67,15 @@ CREATE TABLE IF NOT EXISTS pages (
     updated_at REAL NOT NULL,
     updated_by TEXT
 );
+
+CREATE TABLE IF NOT EXISTS workbook_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    dataset_id INTEGER NOT NULL,
+    payload TEXT NOT NULL,
+    created_at REAL NOT NULL,
+    FOREIGN KEY (dataset_id) REFERENCES datasets(id)
+);
+CREATE INDEX IF NOT EXISTS idx_snapshots_dataset ON workbook_snapshots(dataset_id);
 """
 
 
@@ -295,18 +304,41 @@ def save_dataset(
     records: list[dict],
     source_filename: str | None,
     uploaded_by: str | None,
+    snapshot: dict | None = None,
 ) -> int:
     payload = json.dumps(records, ensure_ascii=False)
     with get_conn() as conn:
         row = conn.execute("SELECT COALESCE(MAX(version), 0) AS v FROM datasets").fetchone()
         new_version = (row["v"] or 0) + 1
         conn.execute("UPDATE datasets SET is_current = 0")
-        conn.execute(
+        cur = conn.execute(
             "INSERT INTO datasets(version, source_filename, uploaded_by, uploaded_at, "
             "record_count, payload, is_current) VALUES(?,?,?,?,?,?,1)",
             (new_version, source_filename, uploaded_by, time.time(), len(records), payload),
         )
+        if snapshot is not None:
+            conn.execute(
+                "INSERT INTO workbook_snapshots(dataset_id, payload, created_at) VALUES(?,?,?)",
+                (cur.lastrowid, json.dumps(snapshot, ensure_ascii=False), time.time()),
+            )
         return new_version
+
+
+def current_snapshot() -> dict | None:
+    """Return the most recent workbook_snapshot for the current dataset, or None."""
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT s.payload FROM workbook_snapshots s "
+            "JOIN datasets d ON s.dataset_id = d.id "
+            "WHERE d.is_current = 1 "
+            "ORDER BY s.created_at DESC LIMIT 1"
+        ).fetchone()
+        if not row:
+            return None
+        try:
+            return json.loads(row["payload"])
+        except json.JSONDecodeError:
+            return None
 
 
 def current_dataset() -> dict | None:
