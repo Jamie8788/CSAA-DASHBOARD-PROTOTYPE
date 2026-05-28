@@ -496,6 +496,178 @@ def compare_regions(records: list[dict], regions: list[str] | None = None) -> di
     return {"regions": regions, "metrics": metrics}
 
 
+def find_peers(records: list[dict], name: str, k: int = 6) -> dict:
+    """Return the K most similar communities to `name` by service narrative."""
+    df = _records_to_df(records)
+    if df.empty or not name:
+        return {"target": name, "peers": []}
+
+    name_l = name.strip().lower()
+    matches = [i for i, r in enumerate(records)
+               if str(r.get("name", "")).strip().lower() == name_l]
+    if not matches:
+        # Try partial match
+        matches = [i for i, r in enumerate(records)
+                   if name_l in str(r.get("name", "")).strip().lower()]
+        if not matches:
+            return {"target": name, "peers": [], "error": "Community not found"}
+    target_idx = matches[0]
+    target = records[target_idx]
+    docs = [_community_text(r) for r in records]
+    if not docs[target_idx].strip():
+        return {"target": name, "peers": []}
+    try:
+        vec = TfidfVectorizer(
+            stop_words="english", max_features=5000,
+            ngram_range=(1, 2), min_df=1,
+        )
+        mat = vec.fit_transform(docs)
+        sim = cosine_similarity(mat[target_idx], mat).ravel()
+    except ValueError:
+        return {"target": name, "peers": []}
+
+    order = sim.argsort()[::-1]
+    peers = []
+    for j in order:
+        if j == target_idx:
+            continue
+        if sim[j] < 0.1:
+            break
+        if len(peers) >= k:
+            break
+        r = records[j]
+        peers.append({
+            "name": r.get("name", ""),
+            "direction": r.get("direction", ""),
+            "type": r.get("type", ""),
+            "score": round(float(sim[j]), 3),
+            "id": r.get("id"),
+            "pillars": [p for p in ("Physical", "Mental", "Spiritual", "Emotional")
+                        if r.get(f"has{p}")],
+        })
+    return {
+        "target": target.get("name", ""),
+        "targetDirection": target.get("direction", ""),
+        "targetType": target.get("type", ""),
+        "peers": peers,
+    }
+
+
+def find_gaps_for(records: list[dict], name: str) -> dict:
+    """For one community, list things its peers do that it doesn't.
+
+    Compares the target's pillar coverage and presence of optional fields
+    (youth, survivors, AGM, financials, strategic plan, etc.) against the
+    top-5 most similar peer communities. Surfaces concrete opportunities.
+    """
+    peer_result = find_peers(records, name, k=8)
+    if not peer_result.get("peers"):
+        return {"target": name, "gaps": [], "peers": []}
+
+    df = _records_to_df(records)
+    by_name = {r.get("name", ""): r for r in records}
+    target = by_name.get(peer_result["target"])
+    if not target:
+        return {"target": name, "gaps": [], "peers": []}
+
+    fields = [
+        ("hasPhysical",   "Physical health programming"),
+        ("hasMental",     "Mental health programming"),
+        ("hasSpiritual",  "Spiritual support programming"),
+        ("hasEmotional",  "Emotional support programming"),
+        ("hasYouth",      "Youth programming"),
+        ("hasSurvivors",  "Survivor support"),
+        ("hasConnect",    "Connecting generations"),
+    ]
+    optional_fields = [
+        ("strategicPlan", "Strategic plan"),
+        ("agm",           "Annual general meeting"),
+        ("financials",    "Financial statements"),
+    ]
+
+    peers = [by_name[p["name"]] for p in peer_result["peers"] if p["name"] in by_name]
+    gaps = []
+    for key, label in fields:
+        if target.get(key):
+            continue
+        offering_peers = [p.get("name", "") for p in peers if p.get(key)]
+        if offering_peers:
+            gaps.append({
+                "field": key, "label": label,
+                "peerCount": len(offering_peers),
+                "peers": offering_peers[:5],
+                "severity": "high" if len(offering_peers) >= 3 else "medium",
+            })
+    for key, label in optional_fields:
+        if str(target.get(key, "") or "").strip():
+            continue
+        offering = [p.get("name", "") for p in peers
+                    if str(p.get(key, "") or "").strip()]
+        if offering:
+            gaps.append({
+                "field": key, "label": label,
+                "peerCount": len(offering),
+                "peers": offering[:5],
+                "severity": "low",
+            })
+
+    return {
+        "target": peer_result["target"],
+        "targetDirection": peer_result["targetDirection"],
+        "gaps": gaps,
+        "peers": peer_result["peers"],
+    }
+
+
+def spotlight(records: list[dict], name: str) -> dict:
+    """Comprehensive single-community deep-dive — every fact in one payload."""
+    name_l = (name or "").strip().lower()
+    target = None
+    for r in records:
+        if str(r.get("name", "")).strip().lower() == name_l:
+            target = r
+            break
+    if not target:
+        for r in records:
+            if name_l and name_l in str(r.get("name", "")).strip().lower():
+                target = r
+                break
+    if not target:
+        return {"error": "Community not found", "query": name}
+
+    pillars = []
+    for k, label in [("physical", "Physical Health"), ("mental", "Mental Health"),
+                     ("spiritual", "Spiritual Support"), ("emotional", "Emotional Support")]:
+        text_val = str(target.get(k, "") or "").strip()
+        pillars.append({
+            "key": k, "label": label,
+            "documented": bool(text_val) and text_val.lower() not in
+                {"missing information", "needs review", "n/a", "no definite value"},
+            "preview": text_val[:240],
+            "wordCount": len(text_val.split()) if text_val else 0,
+        })
+
+    return {
+        "name": target.get("name", ""),
+        "direction": target.get("direction", ""),
+        "type": target.get("type", ""),
+        "section": target.get("section", ""),
+        "population": target.get("population", "") or "",
+        "link": target.get("link", "") or "",
+        "pillars": pillars,
+        "youth":     str(target.get("youth", "") or "")[:400],
+        "survivors": str(target.get("survivors", "") or "")[:400],
+        "connect":   str(target.get("connect", "") or "")[:400],
+        "strategicPlan": str(target.get("strategicPlan", "") or "")[:200],
+        "agm":           str(target.get("agm", "") or "")[:200],
+        "financials":    str(target.get("financials", "") or "")[:200],
+        "notes":         str(target.get("notes", "") or "")[:400],
+        "contactPreview": str(target.get("contact", "") or "")[:400],
+        "staffCount": len(target.get("staff") or []),
+        "id": target.get("id"),
+    }
+
+
 def storytelling_facts(records: list[dict]) -> dict:
     """Plain-language facts an elder or new visitor can immediately understand.
 

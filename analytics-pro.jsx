@@ -47,14 +47,38 @@ function useCountTo(target, durationMs = 900) {
 
 
 function AnalyticsProView({ all, onSelect, setView }) {
-  // Filter set local to this view — the user can narrow analytics without
-  // affecting the main map/list filters.
-  const [localDir, setLocalDir]   = useStateAP('all');
+  // Analytics-wide filters: every panel honors these.
+  const [filters, setFilters] = useStateAP({
+    dir: 'all', type: 'all', pop: 'all', pillars: new Set(),
+  });
   const [report, setReport]       = useStateAP(null);
   const [duplicates, setDup]      = useStateAP(null);
   const [comparison, setComp]     = useStateAP(null);
   const [facts, setFacts]         = useStateAP(null);
   const [loading, setLoading]     = useStateAP(true);
+  const [presentMode, setPresent] = useStateAP(false);
+  const [spotlightName, setSpotName] = useStateAP(null);
+  const [compareNames, setCompareNames] = useStateAP({ a: '', b: '' });
+  const [gapsTarget, setGapsTarget] = useStateAP('');
+
+  // Apply filters to the in-memory community list so KPIs/charts react.
+  const filteredAll = useMemoAP(() => {
+    if (!Array.isArray(all)) return [];
+    return all.filter((c) => {
+      if (filters.dir !== 'all' && c.direction !== filters.dir) return false;
+      if (filters.type !== 'all' && c.orgType !== filters.type) return false;
+      if (filters.pop !== 'all') {
+        const b = window.popBucket && window.popBucket(c.population);
+        if (b !== filters.pop) return false;
+      }
+      if (filters.pillars.size > 0) {
+        for (const p of filters.pillars) {
+          if (!c['has' + p[0].toUpperCase() + p.slice(1)]) return false;
+        }
+      }
+      return true;
+    });
+  }, [all, filters]);
 
   // Pull every analytic in parallel so the dashboard paints fast.
   useEffectAP(() => {
@@ -104,23 +128,57 @@ function AnalyticsProView({ all, onSelect, setView }) {
           <p className="ap-eyebrow">Live · powered by the master sheet</p>
           <h2 className="ap-title">What does the data tell us?</h2>
           <p className="ap-sub">
-            Every number you see below is computed live from the team's current
-            Excel sheet. Hover any card for plain-English context.
+            Every number below is computed live from the team's master sheet.
+            Use the filter bar to focus the whole page on one region, org type,
+            population size, or pillar.
           </p>
+          <div className="ap-hero-actions">
+            <button className="ap-cta" onClick={() => setPresent(true)}>
+              ▶ Open presentation mode
+            </button>
+            <button className="ap-cta ghost" onClick={() => {
+              window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }}>
+              💬 Ask the atlas
+            </button>
+          </div>
         </div>
         <div className="ap-kpi-strip">
-          <KPI value={ov.total} label="Communities & partners" sub="documented in the atlas" />
-          <KPI value={ov.hasAllPillars} label="All 4 pillars" sub="physical + mental + spiritual + emotional"
-               accent="south" />
-          <KPI value={ov.populationTotal} label="People served"
-               sub="across all documented communities" big />
+          <KPI value={(filteredAll && filteredAll.length) || ov.total} label="Communities shown"
+               sub={filteredAll.length !== (ov.total || 0) ? `filtered from ${ov.total}` : 'in the atlas'} />
+          <KPI value={filteredAll.filter(c => c.hasPhysical && c.hasMental && c.hasSpiritual && c.hasEmotional).length}
+               label="All 4 pillars" sub="physical + mental + spiritual + emotional" accent="south" />
+          <KPI value={filteredAll.reduce((s, c) => s + (c.population || 0), 0)} label="People served"
+               sub="in the current filter" big />
           <KPI value={Math.round((ov.completenessScore || 0) * 100)} suffix="%"
-               label="Average completeness" sub="fields filled in on each record" accent="east" />
+               label="Avg completeness" sub="fields filled per record" accent="east" />
         </div>
       </header>
 
+      {/* ────────── Filter bar (sticky) ────────── */}
+      <AnalyticsFilters all={all} filters={filters} setFilters={setFilters}
+                        filteredCount={filteredAll.length} totalCount={(all || []).length} />
+
       {/* ────────── Storytelling carousel ────────── */}
       {facts && facts.facts && <StoryCarousel facts={facts.facts} />}
+
+      {/* ────────── Spotlight + Gap Analyzer ────────── */}
+      <div className="ap-row two-col">
+        <Panel title="Community spotlight"
+               sub="Pick any community to see a deep dive — every documented field, pillar by pillar, plus what's still missing on file.">
+          <CommunitySpotlight all={all} value={spotlightName} onChange={setSpotName} onPick={(n) => {
+            const hit = (all || []).find((c) => c.name === n);
+            if (hit && onSelect) onSelect(hit.id);
+          }} />
+        </Panel>
+        <Panel title="Service gap analyzer"
+               sub="Compares a community against the 5 most similar ones in the sheet (by service narrative). Surfaces concrete programs the peers have but this one doesn't.">
+          <ServiceGapAnalyzer all={all} value={gapsTarget} onChange={setGapsTarget} onPick={(n) => {
+            const hit = (all || []).find((c) => c.name === n);
+            if (hit && onSelect) onSelect(hit.id);
+          }} />
+        </Panel>
+      </div>
 
       {/* ────────── Direction clock + pillar gauges ────────── */}
       <div className="ap-row two-col">
@@ -144,6 +202,12 @@ function AnalyticsProView({ all, onSelect, setView }) {
       <Panel title="Service overlaps the team should know about"
              sub="When two communities describe a service in very similar words, it's worth checking — they may share a partner, copy from the same source, or could collaborate. The list below is automatic and based only on the sheet's own wording.">
         <DuplicatePanel duplicates={duplicates} />
+      </Panel>
+
+      {/* ────────── Compare any two communities ────────── */}
+      <Panel title="Compare two communities, side by side"
+             sub="Pick any two communities from the list. The table fills in instantly with each pillar, optional fields (AGM, strategic plan, financials), staff count, and a green/red dot for whether the row is documented. Useful for peer-learning, story-telling, and gap analysis.">
+        <CompareTwo all={all} value={compareNames} onChange={setCompareNames} />
       </Panel>
 
       {/* ────────── Region comparison ────────── */}
@@ -180,6 +244,14 @@ function AnalyticsProView({ all, onSelect, setView }) {
         All numbers and snippets above are computed live from the most-recent master sheet.
         When the team uploads a new version through the CMS, this page refreshes automatically.
       </p>
+
+      {presentMode && (
+        <PresentationMode
+          overview={ov} facts={facts && facts.facts} comparison={comparison}
+          duplicates={duplicates} report={report}
+          onClose={() => setPresent(false)}
+        />
+      )}
     </section>
   );
 }
@@ -503,6 +575,415 @@ function ClusterPanel({ clusters, onPick }) {
     </ul>
   );
 }
+
+// ─────────── new components ────────────────────────────────────────────
+
+function AnalyticsFilters({ all, filters, setFilters, filteredCount, totalCount }) {
+  const directions = ['East', 'South', 'West', 'North', 'Central'];
+  const orgTypes = useMemoAP(() => {
+    const s = new Set((all || []).map((c) => c.orgType).filter(Boolean));
+    return Array.from(s);
+  }, [all]);
+  const pops = [
+    { key: 'under500', label: '<500' },
+    { key: 'mid', label: '500–1.5k' },
+    { key: 'large', label: '1.5–5k' },
+    { key: 'xlarge', label: '5k+' },
+  ];
+  const pillars = ['physical', 'mental', 'spiritual', 'emotional'];
+
+  function togglePillar(p) {
+    setFilters((f) => {
+      const next = new Set(f.pillars);
+      if (next.has(p)) next.delete(p); else next.add(p);
+      return { ...f, pillars: next };
+    });
+  }
+  function clearAll() {
+    setFilters({ dir: 'all', type: 'all', pop: 'all', pillars: new Set() });
+  }
+  const anyActive = filters.dir !== 'all' || filters.type !== 'all'
+                  || filters.pop !== 'all' || filters.pillars.size > 0;
+
+  return (
+    <div className="ap-filters">
+      <div className="ap-filters-row">
+        <div className="ap-filter-group">
+          <label>Direction</label>
+          <select value={filters.dir} onChange={(e) => setFilters((f) => ({ ...f, dir: e.target.value }))}>
+            <option value="all">All</option>
+            {directions.map((d) => <option key={d}>{d}</option>)}
+          </select>
+        </div>
+        <div className="ap-filter-group">
+          <label>Organisation type</label>
+          <select value={filters.type} onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value }))}>
+            <option value="all">All</option>
+            {orgTypes.map((t) => <option key={t}>{t}</option>)}
+          </select>
+        </div>
+        <div className="ap-filter-group">
+          <label>Population</label>
+          <select value={filters.pop} onChange={(e) => setFilters((f) => ({ ...f, pop: e.target.value }))}>
+            <option value="all">Any</option>
+            {pops.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+          </select>
+        </div>
+        <div className="ap-filter-group ap-filter-pillars">
+          <label>Must include pillars</label>
+          <div className="ap-pillar-toggles">
+            {pillars.map((p) => (
+              <button key={p}
+                      className={`ap-pill${filters.pillars.has(p) ? ' on' : ''}`}
+                      onClick={() => togglePillar(p)}>{p}</button>
+            ))}
+          </div>
+        </div>
+        <div className="ap-filter-meta">
+          <span className="ap-filter-count">
+            <strong>{filteredCount}</strong> of {totalCount}
+          </span>
+          {anyActive && (
+            <button className="ap-link" onClick={clearAll}>clear filters</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CommunityPicker({ all, value, onChange, placeholder }) {
+  const [open, setOpen] = useStateAP(false);
+  const [q, setQ] = useStateAP('');
+  const items = useMemoAP(() => {
+    const arr = (all || []).map((c) => c.name).filter(Boolean).sort();
+    const qq = q.trim().toLowerCase();
+    return qq ? arr.filter((n) => n.toLowerCase().includes(qq)) : arr;
+  }, [all, q]);
+  return (
+    <div className="ap-picker">
+      <input
+        value={open ? q : (value || '')}
+        onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 180)}
+        placeholder={placeholder || 'Search a community…'}
+      />
+      {open && items.length > 0 && (
+        <ul className="ap-picker-list">
+          {items.slice(0, 12).map((n) => (
+            <li key={n}>
+              <button onMouseDown={(e) => { e.preventDefault(); onChange(n); setQ(''); setOpen(false); }}>
+                {n}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function CommunitySpotlight({ all, value, onChange, onPick }) {
+  const [data, setData] = useStateAP(null);
+  const [loading, setLoading] = useStateAP(false);
+
+  useEffectAP(() => {
+    if (!value) { setData(null); return; }
+    let alive = true;
+    setLoading(true);
+    fetch('/api/analytics/spotlight?name=' + encodeURIComponent(value))
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (alive) { setData(d); setLoading(false); } })
+      .catch(() => alive && setLoading(false));
+    return () => { alive = false; };
+  }, [value]);
+
+  return (
+    <div className="ap-spotlight">
+      <CommunityPicker all={all} value={value} onChange={onChange}
+                       placeholder="Pick a community to spotlight…" />
+      {loading && <p className="ap-empty">Loading deep dive…</p>}
+      {!loading && !data && (
+        <p className="ap-empty">Start typing a community name above to see its full record.</p>
+      )}
+      {data && data.name && (
+        <div className="ap-spot-body">
+          <div className="ap-spot-head">
+            <h4>{data.name}</h4>
+            <span className={`ap-pill ap-dir-${data.direction}`}>{data.direction}</span>
+            <span className="ap-pill">{data.type}</span>
+            {data.population && <span className="ap-pill">pop. {data.population}</span>}
+            <button className="ap-link" onClick={() => onPick && onPick(data.name)}>
+              open full drawer ↗
+            </button>
+          </div>
+          <div className="ap-spot-pillars">
+            {data.pillars.map((p) => (
+              <div key={p.key} className={`ap-spot-pillar${p.documented ? ' on' : ''}`}>
+                <div className="ap-spot-pillar-head">
+                  <strong>{p.label}</strong>
+                  <span className={`ap-dot ${p.documented ? 'on' : 'off'}`} />
+                </div>
+                {p.documented && <p className="ap-spot-preview">{p.preview}…</p>}
+                {p.documented && <span className="muted small">{p.wordCount} words on file</span>}
+                {!p.documented && <span className="muted small">Not documented</span>}
+              </div>
+            ))}
+          </div>
+          {(data.youth || data.survivors || data.connect) && (
+            <details className="ap-spot-extra">
+              <summary>Additional programs</summary>
+              {data.youth && <p><strong>Youth:</strong> {data.youth}</p>}
+              {data.survivors && <p><strong>Survivors:</strong> {data.survivors}</p>}
+              {data.connect && <p><strong>Connecting generations:</strong> {data.connect}</p>}
+            </details>
+          )}
+          <div className="ap-spot-meta">
+            <span><strong>{data.staffCount}</strong> contacts on file</span>
+            {data.strategicPlan && <span>· strategic plan ✓</span>}
+            {data.agm && <span>· AGM ✓</span>}
+            {data.financials && <span>· financials ✓</span>}
+            {data.link && <a href={data.link} target="_blank" rel="noopener noreferrer">website ↗</a>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ServiceGapAnalyzer({ all, value, onChange, onPick }) {
+  const [data, setData] = useStateAP(null);
+  const [loading, setLoading] = useStateAP(false);
+
+  useEffectAP(() => {
+    if (!value) { setData(null); return; }
+    let alive = true;
+    setLoading(true);
+    fetch('/api/analytics/gaps_for?name=' + encodeURIComponent(value))
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (alive) { setData(d); setLoading(false); } })
+      .catch(() => alive && setLoading(false));
+    return () => { alive = false; };
+  }, [value]);
+
+  return (
+    <div>
+      <CommunityPicker all={all} value={value} onChange={onChange}
+                       placeholder="Pick a community to analyze gaps for…" />
+      {loading && <p className="ap-empty">Finding peer communities…</p>}
+      {!loading && !data && (
+        <p className="ap-empty">Pick a community to see what its closest peers offer that it doesn't.</p>
+      )}
+      {data && data.gaps && (
+        <>
+          {data.peers && data.peers.length > 0 && (
+            <div className="ap-gap-peers">
+              <span className="muted small">Closest peers in the sheet:</span>
+              {data.peers.slice(0, 5).map((p) => (
+                <button key={p.name} className="ap-pill ap-link-like"
+                        onClick={() => onPick && onPick(p.name)}>
+                  {p.name} <span className="ap-pill-n">{Math.round(p.score * 100)}%</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {data.gaps.length === 0 ? (
+            <p className="ap-empty">
+              {data.target} appears to document everything its peers do. Great coverage on file!
+            </p>
+          ) : (
+            <ul className="ap-gaps">
+              {data.gaps.map((g, i) => (
+                <li key={i} className={`ap-gap sev-${g.severity}`}>
+                  <div className="ap-gap-head">
+                    <strong>{g.label}</strong>
+                    <span className="ap-pill">{g.peerCount} peer{g.peerCount === 1 ? '' : 's'} offer this</span>
+                  </div>
+                  <div className="ap-gap-peers-list">
+                    Peers documenting it: {g.peers.map((n, j) => (
+                      <button key={j} className="ap-link" onClick={() => onPick && onPick(n)}>
+                        {n}{j < g.peers.length - 1 ? ', ' : ''}
+                      </button>
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function CompareTwo({ all, value, onChange }) {
+  function set(k, v) { onChange({ ...value, [k]: v }); }
+  const a = (all || []).find((c) => c.name === value.a);
+  const b = (all || []).find((c) => c.name === value.b);
+
+  const rows = [
+    { k: 'direction',  label: 'Direction' },
+    { k: 'orgType',    label: 'Type' },
+    { k: 'population', label: 'Population', fmt: (v) => v ? Number(v).toLocaleString() : '—' },
+    { k: 'hasPhysical',label: 'Physical health programming', dot: true },
+    { k: 'hasMental',  label: 'Mental health programming',   dot: true },
+    { k: 'hasSpiritual',label:'Spiritual support',           dot: true },
+    { k: 'hasEmotional',label:'Emotional support',           dot: true },
+    { k: 'hasYouth',    label:'Youth programming',           dot: true },
+    { k: 'hasSurvivors',label:'Survivor support',            dot: true },
+    { k: 'strategicPlan', label: 'Strategic plan', truthy: true },
+    { k: 'agm',         label: 'AGM / annual report', truthy: true },
+    { k: 'financials',  label: 'Financial statements', truthy: true },
+  ];
+
+  function cell(c, row) {
+    if (!c) return <span className="muted">—</span>;
+    const v = c[row.k];
+    if (row.dot) return <span className={`ap-dot ${v ? 'on' : 'off'}`} />;
+    if (row.truthy) {
+      const filled = !!(v && String(v).trim() && !['missing information', 'needs review', 'n/a'].includes(String(v).trim().toLowerCase()));
+      return <span className={`ap-dot ${filled ? 'on' : 'off'}`} />;
+    }
+    if (row.fmt) return row.fmt(v);
+    return v || <span className="muted">—</span>;
+  }
+
+  function score(c) {
+    if (!c) return 0;
+    return ['Physical','Mental','Spiritual','Emotional','Youth','Survivors']
+      .filter((p) => c['has' + p]).length;
+  }
+
+  return (
+    <div className="ap-compare2">
+      <div className="ap-compare2-pickers">
+        <div>
+          <label className="ap-cmp-lbl">Community A</label>
+          <CommunityPicker all={all} value={value.a} onChange={(n) => set('a', n)} placeholder="Pick community A…" />
+        </div>
+        <div className="ap-vs">vs</div>
+        <div>
+          <label className="ap-cmp-lbl">Community B</label>
+          <CommunityPicker all={all} value={value.b} onChange={(n) => set('b', n)} placeholder="Pick community B…" />
+        </div>
+      </div>
+
+      {(a || b) && (
+        <table className="ap-compare2-tbl">
+          <thead>
+            <tr>
+              <th></th>
+              <th>{a ? a.name : <span className="muted">(pick one)</span>}</th>
+              <th>{b ? b.name : <span className="muted">(pick one)</span>}</th>
+            </tr>
+            <tr>
+              <th className="ap-cmp-meta">Documented pillars</th>
+              <td className="ap-cmp-score">{score(a)}/6</td>
+              <td className="ap-cmp-score">{score(b)}/6</td>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.k}>
+                <th>{row.label}</th>
+                <td>{cell(a, row)}</td>
+                <td>{cell(b, row)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+function PresentationMode({ overview, facts, comparison, duplicates, report, onClose }) {
+  const slides = useMemoAP(() => {
+    const out = [];
+    out.push({
+      title: 'Mino Bimaadiziwin Atlas',
+      sub: 'Live data from the master sheet',
+      big: overview.total || 0, bigLabel: 'communities documented',
+      colour: 'south',
+    });
+    out.push({
+      title: 'Service pillar coverage',
+      sub: 'How many communities document each pillar',
+      grid: ['physical', 'mental', 'spiritual', 'emotional'].map((p) => ({
+        label: p, value: (overview.pillarsCovered && overview.pillarsCovered[p]) || 0,
+      })),
+    });
+    if (facts) {
+      facts.forEach((f) => out.push({ title: f.kicker, sub: '', big: f.fact, bigLabel: '' }));
+    }
+    if (comparison && comparison.metrics) {
+      out.push({
+        title: 'By direction',
+        sub: 'Communities documented in each Sacred Direction',
+        grid: comparison.metrics.map((m) => ({ label: m.direction, value: m.communities })),
+      });
+    }
+    if (duplicates && duplicates.summary) {
+      out.push({
+        title: 'Service overlaps detected',
+        sub: 'High-similarity wording across communities',
+        big: duplicates.summary.totalPairs || 0,
+        bigLabel: 'similar service descriptions on file',
+      });
+    }
+    return out;
+  }, [overview, facts, comparison, duplicates]);
+
+  const [i, setI] = useStateAP(0);
+  useEffectAP(() => {
+    function k(e) {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowRight' || e.key === ' ') setI((x) => Math.min(slides.length - 1, x + 1));
+      if (e.key === 'ArrowLeft') setI((x) => Math.max(0, x - 1));
+    }
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  }, [slides.length, onClose]);
+
+  if (!slides.length) return null;
+  const s = slides[i];
+
+  return (
+    <div className="ap-presentation" onClick={(e) => { if (e.target.classList.contains('ap-presentation')) onClose(); }}>
+      <div className="ap-pres-card" key={i}>
+        <p className="ap-pres-eyebrow">slide {i + 1} of {slides.length}</p>
+        <h3 className={`ap-pres-title${s.colour ? ' colour-' + s.colour : ''}`}>{s.title}</h3>
+        {s.sub && <p className="ap-pres-sub">{s.sub}</p>}
+        {s.big != null && (
+          <div className="ap-pres-big">
+            <span className="ap-pres-big-num">{typeof s.big === 'number' ? s.big.toLocaleString() : s.big}</span>
+            {s.bigLabel && <span className="ap-pres-big-label">{s.bigLabel}</span>}
+          </div>
+        )}
+        {s.grid && (
+          <div className="ap-pres-grid">
+            {s.grid.map((g) => (
+              <div key={g.label} className="ap-pres-cell">
+                <span className="ap-pres-cell-num">{Number(g.value).toLocaleString()}</span>
+                <span className="ap-pres-cell-lbl">{g.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="ap-pres-controls">
+          <button onClick={() => setI((x) => Math.max(0, x - 1))} disabled={i === 0}>◀</button>
+          <span className="ap-pres-progress">
+            {slides.map((_, j) => <span key={j} className={j === i ? 'on' : ''} />)}
+          </span>
+          <button onClick={() => setI((x) => Math.min(slides.length - 1, x + 1))} disabled={i === slides.length - 1}>▶</button>
+          <button onClick={onClose} className="ap-pres-close">✕ close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function AskTheAtlas({ onPick }) {
   const [q, setQ] = useStateAP('');

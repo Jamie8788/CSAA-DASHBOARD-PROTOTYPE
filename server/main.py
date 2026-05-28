@@ -563,6 +563,21 @@ def an_facts() -> dict:
     return analytics.storytelling_facts(_build_records())
 
 
+@app.get("/api/analytics/peers")
+def an_peers(name: str, k: int = 6) -> dict:
+    return analytics.find_peers(_build_records(), name, k=k)
+
+
+@app.get("/api/analytics/gaps_for")
+def an_gaps_for(name: str) -> dict:
+    return analytics.find_gaps_for(_build_records(), name)
+
+
+@app.get("/api/analytics/spotlight")
+def an_spotlight(name: str) -> dict:
+    return analytics.spotlight(_build_records(), name)
+
+
 @app.get("/api/audit")
 def audit_log(_: dict = Depends(auth.require_admin), limit: int = 100) -> dict:
     return {"events": db.recent_audit(limit)}
