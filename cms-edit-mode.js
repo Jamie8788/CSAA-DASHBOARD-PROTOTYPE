@@ -1,0 +1,208 @@
+/* Edit-mode overlay — injected into the public dashboard when it's loaded
+ * inside the CMS Page Builder iframe with ?_cms=edit. NEVER loaded in
+ * production / public visits.
+ *
+ * What it does:
+ *   1. Outlines every element tagged with `data-cms-bind="kind:key"` on hover.
+ *   2. On click, sends `{type:'cms.select', kind, key, value, rect}` to the
+ *      parent window via postMessage. The parent CMS then shows a floating
+ *      inspector right next to the element so the admin edits in place.
+ *   3. Receives `{type:'cms.preview', kind, key, value}` from the parent —
+ *      live-previews the change locally without a reload.
+ *   4. Optional contenteditable inline mode (double-click) for text blocks.
+ *
+ * Postmessage protocol (parent ↔ iframe):
+ *   parent → iframe : { type:'cms.preview', kind, key, value }
+ *   iframe → parent : { type:'cms.ready' }
+ *   iframe → parent : { type:'cms.select', kind, key, value, rect }
+ *   iframe → parent : { type:'cms.inlineSave', kind, key, value }  (Ctrl+Enter)
+ *   iframe → parent : { type:'cms.cancel' }                         (Esc)
+ */
+(function () {
+  if (window.__ATLAS_EDIT_MODE_LOADED) return;
+  window.__ATLAS_EDIT_MODE_LOADED = true;
+
+  // Only run when explicitly invited (?_cms=edit OR window.ATLAS_EDIT_MODE)
+  const params = new URLSearchParams(location.search);
+  const inEdit = params.get('_cms') === 'edit' || window.ATLAS_EDIT_MODE;
+  if (!inEdit) return;
+
+  // Tell the parent we're up and which keys we can edit.
+  function announce() {
+    try {
+      const targets = Array.from(document.querySelectorAll('[data-cms-bind]'))
+        .map((el) => el.getAttribute('data-cms-bind'));
+      window.parent.postMessage(
+        { type: 'cms.ready', targets, url: location.href },
+        '*'
+      );
+    } catch (e) { /* parent might not be same-origin in some hosts */ }
+  }
+
+  // --- styling --------------------------------------------------------------
+  const style = document.createElement('style');
+  style.textContent = `
+    [data-cms-bind] {
+      outline: 2px dashed transparent;
+      outline-offset: 4px;
+      cursor: pointer;
+      transition: outline-color 120ms ease, background 120ms ease;
+      position: relative;
+    }
+    [data-cms-bind]:hover {
+      outline-color: #b8351e;
+      background: rgba(184,53,30,0.04);
+    }
+    [data-cms-bind].cms-selected {
+      outline: 2px solid #b8351e !important;
+      outline-offset: 4px;
+      background: rgba(184,53,30,0.06);
+    }
+    [data-cms-bind][data-cms-inline] {
+      outline-color: #6b8d6b;
+    }
+    .cms-tag {
+      position: absolute; top: -22px; left: -2px;
+      background: #1a1612; color: #fbf7ec;
+      font: 600 10px 'JetBrains Mono', ui-monospace, monospace;
+      padding: 2px 6px; border-radius: 3px 3px 0 0;
+      pointer-events: none;
+      opacity: 0; transition: opacity 120ms ease;
+      z-index: 9999;
+    }
+    [data-cms-bind]:hover .cms-tag,
+    [data-cms-bind].cms-selected .cms-tag { opacity: 1; }
+    .cms-edit-banner {
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+      background: rgba(184,53,30,0.95); color: white;
+      padding: 6px 14px; border-radius: 16px;
+      font: 600 11px 'Inter', system-ui, sans-serif;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      pointer-events: none;
+      z-index: 100000;
+    }
+    [contenteditable="true"] {
+      outline: 2px solid #6b8d6b !important;
+      background: rgba(107,141,107,0.10) !important;
+      cursor: text !important;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Persistent banner so admin always knows they're in edit mode.
+  const banner = document.createElement('div');
+  banner.className = 'cms-edit-banner';
+  banner.textContent = '✎ CMS edit mode — click any outlined element to edit';
+  document.body.appendChild(banner);
+
+  // --- decorate ------------------------------------------------------------
+  function decorate() {
+    document.querySelectorAll('[data-cms-bind]').forEach((el) => {
+      if (el.querySelector(':scope > .cms-tag')) return;
+      const bind = el.getAttribute('data-cms-bind') || '';
+      const tag = document.createElement('span');
+      tag.className = 'cms-tag';
+      tag.textContent = bind;
+      el.appendChild(tag);
+    });
+  }
+  // Decorate now + whenever React re-renders (MutationObserver).
+  decorate();
+  const mo = new MutationObserver(() => decorate());
+  mo.observe(document.body, { childList: true, subtree: true });
+
+  // --- selection / click → tell parent -------------------------------------
+  let selected = null;
+  function clearSelection() {
+    if (selected) selected.classList.remove('cms-selected');
+    selected = null;
+  }
+
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-cms-bind]');
+    if (!el) {
+      clearSelection();
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    clearSelection();
+    selected = el;
+    el.classList.add('cms-selected');
+    const bind = el.getAttribute('data-cms-bind') || '';
+    const [kind, ...keyParts] = bind.split(':');
+    const key = keyParts.join(':');
+    const value = el.getAttribute('data-cms-value') ?? el.textContent.trim();
+    const rect = el.getBoundingClientRect();
+    window.parent.postMessage({
+      type: 'cms.select',
+      kind, key, value,
+      rect: { x: rect.x, y: rect.y, w: rect.width, h: rect.height },
+    }, '*');
+  }, true);
+
+  // Double-click → enable contenteditable inline. Ctrl+Enter saves, Esc cancels.
+  document.addEventListener('dblclick', (e) => {
+    const el = e.target.closest('[data-cms-bind][data-cms-inline]');
+    if (!el) return;
+    e.preventDefault();
+    el.setAttribute('contenteditable', 'true');
+    el.focus();
+    document.execCommand('selectAll', false, null);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const el = document.activeElement;
+    if (!el || el.getAttribute('contenteditable') !== 'true') return;
+    if (e.key === 'Escape') {
+      el.removeAttribute('contenteditable');
+      window.parent.postMessage({ type: 'cms.cancel' }, '*');
+    } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      const bind = el.getAttribute('data-cms-bind') || '';
+      const [kind, ...keyParts] = bind.split(':');
+      const key = keyParts.join(':');
+      const value = el.textContent;
+      el.removeAttribute('contenteditable');
+      window.parent.postMessage({ type: 'cms.inlineSave', kind, key, value }, '*');
+    }
+  });
+
+  // --- receive live previews from parent -----------------------------------
+  window.addEventListener('message', (e) => {
+    const msg = e.data;
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.type === 'cms.preview') {
+      const sel = `[data-cms-bind="${msg.kind}:${msg.key}"]`;
+      document.querySelectorAll(sel).forEach((el) => {
+        // Replace the visible text without touching React's tree too much.
+        // Re-renders may overwrite this; that's fine — saving via API and
+        // SSE-driven reload makes the change permanent.
+        const tag = el.querySelector(':scope > .cms-tag');
+        for (const node of Array.from(el.childNodes)) {
+          if (node === tag) continue;
+          if (node.nodeType === Node.TEXT_NODE) node.remove();
+        }
+        const txt = document.createTextNode(msg.value || '');
+        el.insertBefore(txt, tag);
+      });
+    } else if (msg.type === 'cms.scrollTo') {
+      const sel = `[data-cms-bind="${msg.kind}:${msg.key}"]`;
+      const el = document.querySelector(sel);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        clearSelection();
+        selected = el;
+        el.classList.add('cms-selected');
+      }
+    }
+  });
+
+  // Boot
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(announce, 400));
+  } else {
+    setTimeout(announce, 400);
+  }
+})();

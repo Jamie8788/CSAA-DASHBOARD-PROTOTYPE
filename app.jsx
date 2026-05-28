@@ -245,33 +245,57 @@ function App() {
   return <window.CMSProvider><AppInner /></window.CMSProvider>;
 }
 
+function getSetting(key, fallback) {
+  const s = window.ATLAS_SETTINGS || {};
+  return s[key] != null && s[key] !== '' ? s[key] : fallback;
+}
+
 function Hero({ totalCommunities, totalOrgs, grandPop, view, setView, filtered, all }) {
+  // Subscribe to live setting updates from the CMS via SSE.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    function h() { setTick((t) => t + 1); }
+    window.addEventListener('atlas:settings', h);
+    return () => window.removeEventListener('atlas:settings', h);
+  }, []);
+
+  const eyebrowText = getSetting('site.heroEyebrow', 'Mino Bimaadiziwin');
+  const heroTitle   = getSetting('site.heroTitle',   'A living atlas of community care.');
+  const subLead     = getSetting('site.heroSubtitleLead',  'Find');
+  const subTrail    = getSetting('site.heroSubtitleTrail',
+    'programming across {communities} First Nations and {partners} partner organizations.')
+      .replace('{communities}', totalCommunities)
+      .replace('{partners}', totalOrgs);
+  const lblCommunities = getSetting('site.statCommunitiesLabel', 'Communities');
+  const lblPartners    = getSetting('site.statPartnersLabel',    'Partners');
+  const lblPeople      = getSetting('site.statPeopleLabel',      'People');
+
   return (
     <header className="hero">
       <div className="hero-row">
         <div className="hero-brand">
           <div className="hero-eyebrow">
-            <span className="badge">Mino Bimaadiziwin</span>
+            <span className="badge" data-cms-bind="setting:site.heroEyebrow" data-cms-inline="1">{eyebrowText}</span>
             <span className="pulse"></span>
             <span>Living atlas · {new Date().toLocaleDateString('en-CA',{month:'short', year:'numeric'})}</span>
           </div>
-          <h1 className="hero-title">A living atlas of <span className="em">community care</span>.</h1>
-          <p className="hero-sub">
-            Find <span className="roll"><span>physical health</span><span>mental health</span><span>spiritual support</span><span>emotional support</span></span> programming across {totalCommunities} First Nations and {totalOrgs} partner organizations.
+          <h1 className="hero-title" data-cms-bind="setting:site.heroTitle" data-cms-inline="1">{heroTitle}</h1>
+          <p className="hero-sub" data-cms-bind="setting:site.heroSubtitleTrail">
+            <span data-cms-bind="setting:site.heroSubtitleLead" data-cms-inline="1">{subLead}</span> <span className="roll"><span>physical health</span><span>mental health</span><span>spiritual support</span><span>emotional support</span></span> {subTrail}
           </p>
         </div>
         <div className="hero-stats">
           <div className="hero-stat">
             <div className="num"><span className="accent">{totalCommunities}</span></div>
-            <div className="label">Communities</div>
+            <div className="label" data-cms-bind="setting:site.statCommunitiesLabel" data-cms-inline="1">{lblCommunities}</div>
           </div>
           <div className="hero-stat">
             <div className="num">{totalOrgs}</div>
-            <div className="label">Partners</div>
+            <div className="label" data-cms-bind="setting:site.statPartnersLabel" data-cms-inline="1">{lblPartners}</div>
           </div>
           <div className="hero-stat">
             <div className="num">{Math.round(grandPop/1000)}<span style={{fontSize:22}}>k</span></div>
-            <div className="label">People</div>
+            <div className="label" data-cms-bind="setting:site.statPeopleLabel" data-cms-inline="1">{lblPeople}</div>
           </div>
         </div>
       </div>

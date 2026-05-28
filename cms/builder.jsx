@@ -1,105 +1,93 @@
 /* global React, API */
 /*
- * Page Builder — state-of-the-art CMS view.
+ * Page Builder — visual, state-of-the-art CMS editor.
  *
- *   Left  : section tree of the public dashboard. Each section shows its
- *           current state and links to the right editor (page, setting,
- *           nav item) so the admin sees the whole site at a glance.
- *   Right : live iframe of the public dashboard, sandboxed. Auto-refreshes
- *           on every CMS change via SSE — admin sees their edits land in
- *           real time, side-by-side.
+ * Left column   : sitemap of dashboard sections + block palette.
+ * Center column : live dashboard iframe with edit-mode overlay. Click any
+ *                 outlined element to open the floating inspector. Toolbar
+ *                 has Edit ↔ Preview toggle and Mobile / Tablet / Desktop /
+ *                 Full responsive width toggles.
+ * Right column  : floating inspector — appears when an element is selected
+ *                 on the iframe. Edits update the iframe live (postMessage
+ *                 preview) and auto-save to the backend after 800 ms of
+ *                 idle typing.
  *
- * No drag-on-canvas (the dashboard is a SPA with complex React state),
- * but the tree is fully interactive: click a section → open the right
- * editor; hover → highlight; show/hide → toggles dashboard visibility
- * via the relevant setting or nav item.
+ * Postmessage protocol shared with cms-edit-mode.js (see that file).
  */
 const { useState: useState_b, useEffect: useEffect_b, useRef: useRef_b,
         useMemo: useMemo_b, useCallback: useCallback_b } = React;
 
-// Map of dashboard sections to which CMS entity (page / setting / nav) controls them.
+
 const DASHBOARD_STRUCTURE = [
-  {
-    group: 'Header',
-    sections: [
-      { key: 'banner',  label: 'Status banner',
-        description: 'The dark top strip with rotating facts and season.',
-        controls: [{ kind: 'setting', key: 'site.title', label: 'Site title' }] },
-      { key: 'hero',    label: 'Hero',
-        description: 'Big editorial title, tagline, big stats (Communities / Partners / People).',
-        controls: [
-          { kind: 'setting', key: 'site.title',   label: 'Site title' },
-          { kind: 'setting', key: 'site.tagline', label: 'Tagline / subtitle' },
-          { kind: 'page',    key: 'intro',         label: 'Intro page content' },
-        ] },
-      { key: 'nav',     label: 'Top navigation strip',
-        description: 'Map / Directory / Stories / Insights / Coverage tabs.',
-        controls: [{ kind: 'nav', label: 'Reorder / rename / hide tabs' }] },
-    ],
-  },
-  {
-    group: 'Main content',
-    sections: [
-      { key: 'filter',  label: 'Filter rail (left)',
-        description: 'Region, direction, service pillar, population filters.',
-        controls: [{ kind: 'info', label: 'Auto-built from the master sheet' }] },
-      { key: 'map',     label: 'Map view',
-        description: 'Leaflet map with custom medicine-wheel markers, clusters, and the direction compass.',
-        controls: [
-          { kind: 'page', key: 'map-intro', label: 'Map view description' },
-        ] },
-      { key: 'directory', label: 'Directory cards',
-        description: 'Grid of community cards under the map; sort by name / population / completeness.',
-        controls: [
-          { kind: 'page', key: 'directory-intro', label: 'Directory view description' },
-        ] },
-      { key: 'drawer',  label: 'Detail drawer',
-        description: 'Right-hand panel that opens when a community is clicked. All editable per-record from the Communities tab.',
-        controls: [{ kind: 'jump', view: 'communities', label: 'Edit community records' }] },
-    ],
-  },
-  {
-    group: 'Auxiliary views',
-    sections: [
-      { key: 'stories', label: 'Community Stories tab',
-        description: 'Tab that surfaces real quotes from the master sheet.',
-        controls: [
-          { kind: 'setting', key: 'site.showStoriesView', label: 'Show / hide tab' },
-        ] },
-      { key: 'stats',   label: 'Insights & Stories tab',
-        description: 'In-page analytics view.',
-        controls: [
-          { kind: 'setting', key: 'site.showAnalyticsView', label: 'Show / hide tab' },
-        ] },
-      { key: 'coverage',label: 'Coverage (85) tab',
-        description: 'Cross-references the master sheet against the official 85-community list.',
-        controls: [
-          { kind: 'setting', key: 'site.showCoverageView', label: 'Show / hide tab' },
-        ] },
-      { key: 'journey', label: 'Journey Game',
-        description: 'Sacred-direction journey mini-game.',
-        controls: [
-          { kind: 'setting', key: 'site.showJourneyGame', label: 'Show / hide tab' },
-        ] },
-    ],
-  },
-  {
-    group: 'Footer / global',
-    sections: [
-      { key: 'acknowledge', label: 'Land acknowledgement',
-        description: 'Honouring the original peoples — shown in headers and footer.',
-        controls: [{ kind: 'page', key: 'acknowledgement', label: 'Acknowledgement copy' }] },
-      { key: 'contact', label: 'Contact panel',
-        description: 'Reach the project team.',
-        controls: [{ kind: 'page', key: 'contact', label: 'Contact copy' }] },
-      { key: 'theme', label: 'Theme & accent',
-        description: 'Theme presets (paper / dawn / forest / midnight) and the accent color used across the site.',
-        controls: [
-          { kind: 'setting', key: 'site.theme',  label: 'Theme' },
-          { kind: 'setting', key: 'site.accent', label: 'Accent color' },
-        ] },
-    ],
-  },
+  { group: 'Header', sections: [
+    { key: 'banner',  label: 'Status banner',
+      description: 'Top dark strip with rotating facts and the current season.',
+      controls: [{ kind: 'setting', key: 'site.title', label: 'Site title' }] },
+    { key: 'hero',    label: 'Hero',
+      description: 'Big editorial title, tagline, stats (Communities / Partners / People).',
+      controls: [
+        { kind: 'setting', key: 'site.heroEyebrow', label: 'Eyebrow badge' },
+        { kind: 'setting', key: 'site.heroTitle',   label: 'Hero title' },
+        { kind: 'setting', key: 'site.heroSubtitleLead',  label: 'Tagline lead' },
+        { kind: 'setting', key: 'site.heroSubtitleTrail', label: 'Tagline trail' },
+        { kind: 'setting', key: 'site.statCommunitiesLabel', label: 'Stat: Communities' },
+        { kind: 'setting', key: 'site.statPartnersLabel',    label: 'Stat: Partners' },
+        { kind: 'setting', key: 'site.statPeopleLabel',      label: 'Stat: People' },
+        { kind: 'page',    key: 'intro', label: 'Intro page' },
+      ] },
+    { key: 'nav',     label: 'Top navigation strip',
+      description: 'Map / Directory / Stories / Insights / Coverage tabs.',
+      controls: [{ kind: 'nav', label: 'Reorder / rename / hide tabs' }] },
+  ]},
+  { group: 'Main content', sections: [
+    { key: 'filter',  label: 'Filter rail (left)',
+      description: 'Region, direction, service pillar, population filters.',
+      controls: [{ kind: 'info', label: 'Auto-built from the master sheet' }] },
+    { key: 'map',     label: 'Map view',
+      description: 'Leaflet map with custom markers, clusters, and direction compass.',
+      controls: [{ kind: 'page', key: 'map-intro', label: 'Map view description' }] },
+    { key: 'directory', label: 'Directory cards',
+      description: 'Grid of community cards under the map.',
+      controls: [{ kind: 'page', key: 'directory-intro', label: 'Directory description' }] },
+    { key: 'drawer',  label: 'Detail drawer',
+      description: 'Right-hand panel that opens when a community is clicked.',
+      controls: [{ kind: 'jump', view: 'communities', label: 'Edit community records →' }] },
+  ]},
+  { group: 'Auxiliary views', sections: [
+    { key: 'stories', label: 'Community Stories tab',
+      description: 'Surfaces real quotes from the master sheet.',
+      controls: [{ kind: 'setting', key: 'site.showStoriesView', label: 'Show / hide tab' }] },
+    { key: 'stats',   label: 'Insights & Stories tab',
+      description: 'In-page analytics view.',
+      controls: [{ kind: 'setting', key: 'site.showAnalyticsView', label: 'Show / hide tab' }] },
+    { key: 'coverage',label: 'Coverage (85) tab',
+      description: 'Master sheet × official 85-community list.',
+      controls: [{ kind: 'setting', key: 'site.showCoverageView', label: 'Show / hide tab' }] },
+    { key: 'journey', label: 'Journey Game',
+      description: 'Sacred-direction mini-game.',
+      controls: [{ kind: 'setting', key: 'site.showJourneyGame', label: 'Show / hide tab' }] },
+  ]},
+  { group: 'Footer / global', sections: [
+    { key: 'acknowledge', label: 'Land acknowledgement',
+      description: 'Honouring the original peoples — in header and footer.',
+      controls: [{ kind: 'page', key: 'acknowledgement', label: 'Acknowledgement copy' }] },
+    { key: 'contact', label: 'Contact panel',
+      description: 'Reach the project team.',
+      controls: [{ kind: 'page', key: 'contact', label: 'Contact copy' }] },
+    { key: 'theme', label: 'Theme & accent',
+      description: 'Theme presets and the accent colour.',
+      controls: [
+        { kind: 'setting', key: 'site.theme',  label: 'Theme' },
+        { kind: 'setting', key: 'site.accent', label: 'Accent colour' },
+      ] },
+  ]},
+];
+
+const DEVICE_WIDTHS = [
+  { key: 'mobile',  label: '📱', width:  390, name: 'Mobile (390)' },
+  { key: 'tablet',  label: '📲', width:  820, name: 'Tablet (820)' },
+  { key: 'desktop', label: '💻', width: 1280, name: 'Desktop (1280)' },
+  { key: 'full',    label: '⛶',  width: null, name: 'Full width' },
 ];
 
 
@@ -110,44 +98,69 @@ function BuilderView({ setView }) {
   const [pages, setPages] = useState_b({});
   const [settings, setSettings] = useState_b({});
   const [nav, setNav] = useState_b([]);
-  const [selectedKey, setSelectedKey] = useState_b(null);
-  const [editTarget, setEditTarget] = useState_b(null);
+  const [editMode, setEditMode] = useState_b(true);
+  const [device, setDevice] = useState_b('full');
+  const [inspector, setInspector] = useState_b(null);   // { kind, key, value, rect }
+  const saveTimerRef = useRef_b(null);
 
   async function reloadCmsData() {
     try {
       const [p, s, n] = await Promise.all([
-        API.pages.list(),
-        API.settings.get(),
-        API.nav.list('main'),
+        API.pages.list(), API.settings.get(), API.nav.list('main'),
       ]);
-      const pMap = {};
-      (p.pages || []).forEach((x) => { pMap[x.slug] = x; });
-      setPages(pMap);
-      setSettings(s);
-      setNav(n.items || []);
-    } catch (e) { /* swallow — partial-render is fine */ }
+      const pMap = {}; (p.pages || []).forEach((x) => { pMap[x.slug] = x; });
+      setPages(pMap); setSettings(s); setNav(n.items || []);
+    } catch (e) { /* swallow */ }
   }
 
-  function refreshPreview() {
-    setReloadKey((k) => k + 1);
-  }
-
+  function refreshPreview() { setReloadKey((k) => k + 1); }
   useEffect_b(() => { reloadCmsData(); }, []);
 
-  // SSE: when something in the CMS changes, both reload the preview AND
-  // re-fetch the relevant CMS data so the section tree stays in sync.
+  // SSE: refresh data + preview when something changes.
   useEffect_b(() => {
-    function refresh() { reloadCmsData(); refreshPreview(); }
-    const events = ['atlas:pages', 'atlas:settings', 'atlas:nav', 'atlas:dataset', 'atlas:community'];
-    events.forEach((e) => window.addEventListener(e, refresh));
-    return () => events.forEach((e) => window.removeEventListener(e, refresh));
+    function refresh() { reloadCmsData(); }
+    function reloadIframe() { refreshPreview(); }
+    ['atlas:pages', 'atlas:settings', 'atlas:nav'].forEach((e) => window.addEventListener(e, refresh));
+    ['atlas:dataset', 'atlas:community'].forEach((e) => window.addEventListener(e, reloadIframe));
+    return () => {
+      ['atlas:pages', 'atlas:settings', 'atlas:nav'].forEach((e) => window.removeEventListener(e, refresh));
+      ['atlas:dataset', 'atlas:community'].forEach((e) => window.removeEventListener(e, reloadIframe));
+    };
   }, []);
+
+  // Receive postMessages from the iframe.
+  useEffect_b(() => {
+    function onMsg(e) {
+      const msg = e.data;
+      if (!msg || typeof msg !== 'object') return;
+      if (msg.type === 'cms.ready') {
+        // iframe loaded successfully
+      } else if (msg.type === 'cms.select') {
+        setInspector({ kind: msg.kind, key: msg.key, value: msg.value, rect: msg.rect });
+      } else if (msg.type === 'cms.inlineSave') {
+        saveValue(msg.kind, msg.key, msg.value, /*immediate*/ true);
+      } else if (msg.type === 'cms.cancel') {
+        setInspector(null);
+      }
+    }
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  function postToIframe(msg) {
+    const iframe = iframeRef.current;
+    if (!iframe || !iframe.contentWindow) return;
+    iframe.contentWindow.postMessage(msg, '*');
+  }
 
   function handleControl(control) {
     if (control.kind === 'page') {
-      setEditTarget({ kind: 'page', slug: control.key });
+      const p = pages[control.key] || { slug: control.key, title: '', body: '', visible: true };
+      setInspector({ kind: 'page', key: control.key, value: p.body, page: p });
+      postToIframe({ type: 'cms.scrollTo', kind: 'page', key: control.key });
     } else if (control.kind === 'setting') {
-      setEditTarget({ kind: 'setting', key: control.key });
+      setInspector({ kind: 'setting', key: control.key, value: settings[control.key] });
+      postToIframe({ type: 'cms.scrollTo', kind: 'setting', key: control.key });
     } else if (control.kind === 'nav') {
       setView && setView('navigation');
     } else if (control.kind === 'jump') {
@@ -155,12 +168,38 @@ function BuilderView({ setView }) {
     }
   }
 
+  async function saveValue(kind, key, value, immediate) {
+    // Debounced auto-save unless `immediate` is true (e.g. inline Ctrl+Enter).
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    const doSave = async () => {
+      try {
+        if (kind === 'setting') {
+          await API.settings.update({ [key]: value });
+          setSettings((s) => ({ ...s, [key]: value }));
+        } else if (kind === 'page') {
+          const existing = pages[key] || { slug: key, title: key, body: '', visible: true };
+          await API.pages.upsert(key, { ...existing, slug: key, body: value });
+          setPages((p) => ({ ...p, [key]: { ...existing, body: value } }));
+        }
+      } catch (e) { toast.push('Save failed: ' + e.message, 'error'); }
+    };
+    if (immediate) { doSave(); }
+    else { saveTimerRef.current = setTimeout(doSave, 800); }
+  }
+
+  function previewValue(kind, key, value) {
+    postToIframe({ type: 'cms.preview', kind, key, value });
+  }
+
+  const previewWidth = DEVICE_WIDTHS.find((d) => d.key === device)?.width;
+  const iframeSrc = editMode ? `/?_cms=edit&r=${reloadKey}` : `/?r=${reloadKey}`;
+
   return (
     <div>
       <h1>Page builder</h1>
       <p className="subhead">
-        See the entire public dashboard structure in one view. Click any section
-        to jump to its editor; the live preview on the right updates instantly.
+        Click any outlined element in the live preview to edit it. Changes auto-save
+        and broadcast to every open dashboard in real time.
       </p>
 
       <div className="builder-grid">
@@ -169,54 +208,65 @@ function BuilderView({ setView }) {
             <div key={g.group} className="builder-group">
               <h3 className="builder-group-title">{g.group}</h3>
               {g.sections.map((sec) => (
-                <SectionRow
-                  key={sec.key}
-                  section={sec}
-                  selected={selectedKey === sec.key}
-                  onSelect={() => setSelectedKey(sec.key)}
-                  onControl={handleControl}
-                  pages={pages}
-                  settings={settings}
-                  nav={nav}
-                />
+                <SectionRow key={sec.key} section={sec} onControl={handleControl}
+                            pages={pages} settings={settings} nav={nav} />
               ))}
             </div>
           ))}
+
+          <BlockPalette pages={pages} onAdd={async (slug, title) => {
+            try {
+              await API.pages.upsert(slug, { slug, title, body: '', visible: true });
+              toast.push(`Added page "${slug}"`, 'success');
+              reloadCmsData();
+            } catch (e) { toast.push('Failed to add: ' + e.message, 'error'); }
+          }} />
         </div>
 
         <div className="builder-preview">
           <div className="preview-toolbar">
-            <span className="mono small muted">Live preview</span>
-            <span className="spacer" />
+            <span className="toggle-group">
+              <button className={`tgl${editMode ? ' on' : ''}`} onClick={() => setEditMode(true)}>✎ Edit</button>
+              <button className={`tgl${!editMode ? ' on' : ''}`} onClick={() => setEditMode(false)}>👁 Preview</button>
+            </span>
+            <span className="toggle-group" title="Responsive preview">
+              {DEVICE_WIDTHS.map((d) => (
+                <button key={d.key}
+                        className={`tgl${device === d.key ? ' on' : ''}`}
+                        title={d.name}
+                        onClick={() => setDevice(d.key)}>{d.label}</button>
+              ))}
+            </span>
+            <span style={{ flex: 1 }} />
             <button className="btn-link" onClick={refreshPreview}>↻ Refresh</button>
-            <a href="/" target="_blank" rel="noopener noreferrer" className="btn-link">Open in new tab ↗</a>
+            <a href="/" target="_blank" rel="noopener noreferrer" className="btn-link">Open ↗</a>
           </div>
-          <iframe
-            ref={iframeRef}
-            key={reloadKey}
-            src={"/?_cms=" + reloadKey}
-            title="Public dashboard preview"
-            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-          />
+          <div className="preview-stage">
+            <div className="iframe-shell"
+                 style={previewWidth ? { width: previewWidth + 'px', margin: '0 auto' } : { width: '100%' }}>
+              <iframe
+                ref={iframeRef}
+                key={reloadKey + ':' + editMode}
+                src={iframeSrc}
+                title="Public dashboard preview"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {editTarget && editTarget.kind === 'page' && (
-        <InlinePageEditor
-          slug={editTarget.slug}
-          existing={pages[editTarget.slug]}
-          onSaved={() => { setEditTarget(null); reloadCmsData(); }}
-          onClose={() => setEditTarget(null)}
-          toast={toast}
-        />
-      )}
-      {editTarget && editTarget.kind === 'setting' && (
-        <InlineSettingEditor
-          settingKey={editTarget.key}
-          value={settings[editTarget.key]}
-          onSaved={() => { setEditTarget(null); reloadCmsData(); }}
-          onClose={() => setEditTarget(null)}
-          toast={toast}
+      {inspector && (
+        <Inspector
+          inspector={inspector}
+          pages={pages}
+          settings={settings}
+          onChange={(value) => {
+            setInspector((i) => i ? { ...i, value } : null);
+            previewValue(inspector.kind, inspector.key, value);
+            saveValue(inspector.kind, inspector.key, value);
+          }}
+          onClose={() => setInspector(null)}
         />
       )}
     </div>
@@ -225,43 +275,34 @@ function BuilderView({ setView }) {
 window.BuilderView = BuilderView;
 
 
-function SectionRow({ section, selected, onSelect, onControl, pages, settings, nav }) {
-  function badge(control) {
-    if (control.kind === 'page') {
-      const p = pages[control.key];
+function SectionRow({ section, onControl, pages, settings, nav }) {
+  function badge(c) {
+    if (c.kind === 'page') {
+      const p = pages[c.key];
       if (!p) return <span className="badge missing">not set</span>;
       if (!p.visible) return <span className="badge hidden">hidden</span>;
-      return <span className="badge ok">page · {p.title.slice(0, 24)}</span>;
+      return <span className="badge ok">{(p.title || '').slice(0, 24)}</span>;
     }
-    if (control.kind === 'setting') {
-      const v = settings[control.key];
+    if (c.kind === 'setting') {
+      const v = settings[c.key];
       if (v == null || v === '') return <span className="badge missing">empty</span>;
       if (v === 'true') return <span className="badge ok">enabled</span>;
       if (v === 'false') return <span className="badge hidden">disabled</span>;
       return <span className="badge ok">{String(v).slice(0, 24)}</span>;
     }
-    if (control.kind === 'nav') {
-      const visible = nav.filter((n) => n.visible).length;
-      return <span className="badge ok">{visible} tabs visible</span>;
+    if (c.kind === 'nav') {
+      const vis = nav.filter((n) => n.visible).length;
+      return <span className="badge ok">{vis} tabs visible</span>;
     }
     return null;
   }
-
   return (
-    <div
-      className={`builder-section${selected ? ' selected' : ''}`}
-      onClick={onSelect}
-    >
-      <div className="section-head">
-        <strong>{section.label}</strong>
-      </div>
-      <p className="small muted" style={{ margin: '4px 0 8px' }}>
-        {section.description}
-      </p>
+    <div className="builder-section">
+      <div className="section-head"><strong>{section.label}</strong></div>
+      <p className="small muted" style={{ margin: '4px 0 8px' }}>{section.description}</p>
       <div className="section-controls">
         {section.controls.map((c, i) => (
-          <button key={i}
-                  className="control-row"
+          <button key={i} className="control-row"
                   onClick={(e) => { e.stopPropagation(); onControl(c); }}>
             <span className="control-label">{c.label}</span>
             {badge(c)}
@@ -274,99 +315,95 @@ function SectionRow({ section, selected, onSelect, onControl, pages, settings, n
 }
 
 
-function InlinePageEditor({ slug, existing, onSaved, onClose, toast }) {
-  const [title, setTitle] = useState_b(existing ? existing.title : '');
-  const [body, setBody] = useState_b(existing ? existing.body : '');
-  const [visible, setVisible] = useState_b(existing ? !!existing.visible : true);
-  const [busy, setBusy] = useState_b(false);
-
-  async function save() {
-    setBusy(true);
-    try {
-      await API.pages.upsert(slug, { slug, title, body, visible });
-      toast.push('Page saved.', 'success');
-      onSaved();
-    } catch (e) { toast.push('Save failed: ' + e.message, 'error'); }
-    finally { setBusy(false); }
+function BlockPalette({ pages, onAdd }) {
+  const [slug, setSlug] = useState_b('');
+  const [title, setTitle] = useState_b('');
+  function commit() {
+    const s = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-|-$/g, '');
+    if (!s || !title) return;
+    onAdd(s, title);
+    setSlug(''); setTitle('');
   }
-
   return (
-    <div className="edit-panel">
-      <button className="close" onClick={onClose}>×</button>
-      <h2 style={{ marginTop: 0 }}>Edit page · {slug}</h2>
+    <div className="builder-section">
+      <h3 className="builder-group-title" style={{ marginTop: 0 }}>+ New page block</h3>
+      <p className="small muted" style={{ margin: '0 0 8px' }}>
+        Adds a new content block accessible by slug. Use it in the dashboard via
+        <code> window.ATLAS_PAGES['slug'] </code> or as a CMS-bound element.
+      </p>
       <div className="form-row">
-        <label>Title</label>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
-      </div>
-      <div className="form-row">
-        <label>Body</label>
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} style={{ minHeight: 240 }} />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title (e.g. Volunteer info)" />
       </div>
       <div className="form-row">
-        <label>
-          <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
-          &nbsp;<span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 400 }}>Visible on dashboard</span>
-        </label>
+        <input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="slug (e.g. volunteer-info)" className="mono small" />
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn" disabled={busy || !title} onClick={save}>
-          {busy ? <window.Spinner /> : 'Save'}
-        </button>
-        <button className="btn ghost" onClick={onClose}>Cancel</button>
-      </div>
+      <button className="btn" disabled={!slug || !title} onClick={commit}>+ Add page</button>
     </div>
   );
 }
 
 
-function InlineSettingEditor({ settingKey, value, onSaved, onClose, toast }) {
-  const [v, setV] = useState_b(value == null ? '' : String(value));
-  const [busy, setBusy] = useState_b(false);
-  const isBool = v === 'true' || v === 'false';
-  const isColor = settingKey.toLowerCase().includes('accent') || settingKey.toLowerCase().includes('color');
+function Inspector({ inspector, pages, settings, onChange, onClose }) {
+  const { kind, key, value } = inspector;
+  const ref = useRef_b(null);
+  const isBool = value === 'true' || value === 'false';
+  const isColor = (key || '').toLowerCase().includes('accent') || (key || '').toLowerCase().includes('color');
+  const isTheme = key === 'site.theme';
 
-  async function save() {
-    setBusy(true);
-    try {
-      await API.settings.update({ [settingKey]: v });
-      toast.push('Setting saved.', 'success');
-      onSaved();
-    } catch (e) { toast.push('Save failed: ' + e.message, 'error'); }
-    finally { setBusy(false); }
+  // Auto-focus the input on open
+  useEffect_b(() => {
+    if (ref.current) { ref.current.focus(); ref.current.select && ref.current.select(); }
+  }, []);
+
+  function field() {
+    if (isBool) {
+      return (
+        <select value={String(value)} onChange={(e) => onChange(e.target.value)}>
+          <option value="true">enabled (true)</option>
+          <option value="false">disabled (false)</option>
+        </select>
+      );
+    }
+    if (isTheme) {
+      return (
+        <select value={String(value || 'paper')} onChange={(e) => onChange(e.target.value)}>
+          {['paper', 'dawn', 'forest', 'midnight'].map((o) => <option key={o}>{o}</option>)}
+        </select>
+      );
+    }
+    if (isColor) {
+      return (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input ref={ref} type="color" value={value || '#b8351e'}
+                 onChange={(e) => onChange(e.target.value)}
+                 style={{ width: 60, padding: 0, height: 38 }} />
+          <input value={value || ''} onChange={(e) => onChange(e.target.value)} />
+        </div>
+      );
+    }
+    if (kind === 'page' || (kind === 'setting' && (key || '').toLowerCase().includes('tagline') || (kind === 'setting' && key === 'site.heroSubtitleTrail'))) {
+      return <textarea ref={ref} value={value || ''} onChange={(e) => onChange(e.target.value)} style={{ minHeight: 200 }} />;
+    }
+    return <input ref={ref} value={value || ''} onChange={(e) => onChange(e.target.value)} />;
   }
 
   return (
-    <div className="edit-panel">
-      <button className="close" onClick={onClose}>×</button>
-      <h2 style={{ marginTop: 0 }}>Edit setting</h2>
-      <p className="mono small muted">{settingKey}</p>
-      <div className="form-row" style={{ marginTop: 16 }}>
+    <div className="inspector">
+      <div className="inspector-head">
+        <strong>{kind === 'page' ? '🗎 Page' : '⚙ Setting'}</strong>
+        <span className="mono small muted" style={{ marginLeft: 8 }}>{key}</span>
+        <span style={{ flex: 1 }} />
+        <span className="small muted" style={{ marginRight: 8 }}>Auto-saves</span>
+        <button className="btn-link" onClick={onClose}>Close ×</button>
+      </div>
+      <div className="form-row">
         <label>Value</label>
-        {isBool ? (
-          <select value={v} onChange={(e) => setV(e.target.value)}>
-            <option value="true">enabled (true)</option>
-            <option value="false">disabled (false)</option>
-          </select>
-        ) : isColor ? (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input type="color" value={v || '#b8351e'} onChange={(e) => setV(e.target.value)}
-                   style={{ width: 60, padding: 0, height: 38 }} />
-            <input value={v} onChange={(e) => setV(e.target.value)} />
-          </div>
-        ) : settingKey === 'site.theme' ? (
-          <select value={v} onChange={(e) => setV(e.target.value)}>
-            {['paper', 'dawn', 'forest', 'midnight'].map((o) => <option key={o}>{o}</option>)}
-          </select>
-        ) : (
-          <textarea value={v} onChange={(e) => setV(e.target.value)} />
-        )}
+        {field()}
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn" disabled={busy} onClick={save}>
-          {busy ? <window.Spinner /> : 'Save'}
-        </button>
-        <button className="btn ghost" onClick={onClose}>Cancel</button>
-      </div>
+      <p className="small muted" style={{ marginTop: 8 }}>
+        Type to live-preview in the iframe. Auto-saves to backend 800 ms after you stop.
+        Ctrl+S to save immediately.
+      </p>
     </div>
   );
 }

@@ -139,6 +139,13 @@ def _ddl() -> list[str]:
 DEFAULT_SETTINGS = {
     "site.title": "Mino Bimaadiziwin · Community Services Atlas",
     "site.tagline": "A living atlas of community-care programming across First Nations and partner organizations.",
+    "site.heroEyebrow": "Mino Bimaadiziwin",
+    "site.heroTitle": "A living atlas of community care.",
+    "site.heroSubtitleLead": "Find",
+    "site.heroSubtitleTrail": "programming across {communities} First Nations and {partners} partner organizations.",
+    "site.statCommunitiesLabel": "Communities",
+    "site.statPartnersLabel": "Partners",
+    "site.statPeopleLabel": "People",
     "site.theme": "paper",
     "site.accent": "#b8351e",
     "site.elderModeDefault": "false",
