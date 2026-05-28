@@ -338,6 +338,37 @@ def init_db() -> None:
                     {"slot": n["slot"], "pos": n["position"], "lbl": n["label"],
                      "view": n["view"], "icon": n["icon"], "u": now, "by": "system"},
                 )
+        # Migration — add Analytics nav item if it doesn't exist yet (for
+        # databases that were seeded before the Analytics tab was added).
+        rows = conn.execute(text("SELECT view FROM nav_items WHERE slot = 'main'")).fetchall()
+        existing_views = {r[0] for r in rows}
+        if "analytics" not in existing_views:
+            # Bump positions 3+ to make room, then insert at position 3.
+            conn.execute(text(
+                "UPDATE nav_items SET position = position + 1 "
+                "WHERE slot = 'main' AND position >= 3"
+            ))
+            conn.execute(
+                text("INSERT INTO nav_items(slot, position, label, view, icon, visible, "
+                     "updated_at, updated_by) "
+                     "VALUES('main', 3, 'Analytics', 'analytics', '◐', 1, :u, 'migration')"),
+                {"u": now},
+            )
+
+        # Migration — clean settings that got polluted by the old textContent
+        # bug (where CMS bind-tag text got concatenated into saved values).
+        # Detect by the literal "setting:" substring inside the value.
+        polluted = conn.execute(
+            text("SELECT key, value FROM settings WHERE value LIKE '%setting:%'")
+        ).fetchall()
+        for k, v in polluted:
+            default = DEFAULT_SETTINGS.get(k)
+            if default is not None:
+                conn.execute(
+                    text("UPDATE settings SET value = :v, updated_at = :u, "
+                         "updated_by = 'migration' WHERE key = :k"),
+                    {"v": default, "u": now, "k": k},
+                )
         # Seed layouts only if missing.
         for name, blocks in DEFAULT_LAYOUTS.items():
             conn.execute(

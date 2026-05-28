@@ -212,6 +212,25 @@
   const mo = new MutationObserver(() => decorate());
   mo.observe(document.body, { childList: true, subtree: true });
 
+  // Read element text WITHOUT including any CMS-injected children (bind tags,
+  // section handles). Critical: el.textContent would otherwise concatenate
+  // the bind-tag label into the value and pollute the saved setting.
+  function getCleanText(el) {
+    let txt = '';
+    for (const node of el.childNodes) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        if (node.classList && (
+          node.classList.contains('cms-tag') ||
+          node.classList.contains('cms-section-handle')
+        )) continue;
+        txt += getCleanText(node);
+      } else if (node.nodeType === Node.TEXT_NODE) {
+        txt += node.textContent || '';
+      }
+    }
+    return txt;
+  }
+
   // --- selection / click → tell parent -------------------------------------
   let selected = null;
   function clearSelection() {
@@ -233,7 +252,7 @@
     const bind = el.getAttribute('data-cms-bind') || '';
     const [kind, ...keyParts] = bind.split(':');
     const key = keyParts.join(':');
-    const value = el.getAttribute('data-cms-value') ?? el.textContent.trim();
+    const value = el.getAttribute('data-cms-value') ?? getCleanText(el).trim();
     const rect = el.getBoundingClientRect();
     window.parent.postMessage({
       type: 'cms.select',
@@ -263,7 +282,7 @@
       const bind = el.getAttribute('data-cms-bind') || '';
       const [kind, ...keyParts] = bind.split(':');
       const key = keyParts.join(':');
-      const value = el.textContent;
+      const value = getCleanText(el);    // ← exclude CMS-injected tag children
       el.removeAttribute('contenteditable');
       window.parent.postMessage({ type: 'cms.inlineSave', kind, key, value }, '*');
     }
