@@ -540,6 +540,29 @@ def an_full() -> dict:
     return analytics.full_report(_build_records())
 
 
+@app.get("/api/analytics/duplicates")
+def an_duplicates(min_similarity: float = 0.45) -> dict:
+    return analytics.detect_duplicate_services(_build_records(), min_similarity=min_similarity)
+
+
+@app.get("/api/analytics/search")
+def an_search(q: str, limit: int = 8) -> dict:
+    """Free retrieval-based 'chatbot' — TF-IDF over the master sheet,
+    cites communities, no external API calls, no usage costs."""
+    return analytics.semantic_search(_build_records(), q, limit=limit)
+
+
+@app.get("/api/analytics/compare")
+def an_compare(regions: str | None = None) -> dict:
+    region_list = [r.strip() for r in regions.split(",")] if regions else None
+    return analytics.compare_regions(_build_records(), region_list)
+
+
+@app.get("/api/analytics/facts")
+def an_facts() -> dict:
+    return analytics.storytelling_facts(_build_records())
+
+
 @app.get("/api/audit")
 def audit_log(_: dict = Depends(auth.require_admin), limit: int = 100) -> dict:
     return {"events": db.recent_audit(limit)}

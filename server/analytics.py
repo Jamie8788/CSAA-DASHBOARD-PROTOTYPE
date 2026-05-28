@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler
 
 
@@ -289,3 +290,265 @@ def full_report(records: list[dict]) -> dict:
         "coverageMatrix": coverage_matrix(records),
         "quality": quality_report(records),
     }
+
+
+# ============================================================================
+# State-of-the-art additions: duplicate detection, semantic search, region
+# comparison, narrative search — all driven by the actual master sheet.
+# ============================================================================
+
+def _community_text(rec: dict) -> str:
+    """Concatenate every narrative field on a record into one searchable blob."""
+    parts = []
+    for k in ("name", "section", "physical", "mental", "spiritual", "emotional",
+              "youth", "survivors", "connect", "contact", "strategicPlan",
+              "agm", "financials", "notes", "populationNote"):
+        v = rec.get(k)
+        if v:
+            parts.append(str(v))
+    return "\n".join(parts)
+
+
+def detect_duplicate_services(records: list[dict], min_similarity: float = 0.45,
+                              max_per_pillar: int = 30) -> dict:
+    """Find services described in very similar terms across different communities.
+
+    For each pillar (physical / mental / spiritual / emotional / youth /
+    survivors), compute pairwise cosine similarity of the TF-IDF vectors of
+    each community's narrative for that pillar. Pairs above `min_similarity`
+    are surfaced as potential service overlaps the team can investigate.
+
+    This is the "are 5 communities really running the SAME diabetes program
+    or is each one different?" question.
+    """
+    df = _records_to_df(records)
+    if df.empty:
+        return {"perPillar": {}}
+
+    pillar_keys = PILLAR_KEYS + ["youth", "survivors"]
+    out: dict[str, list[dict]] = {}
+
+    for pkey in pillar_keys:
+        if pkey not in df.columns:
+            out[pkey] = []
+            continue
+        sub = df[df[pkey].fillna("").astype(str).str.strip().str.len() > 20].copy()
+        if len(sub) < 3:
+            out[pkey] = []
+            continue
+        docs = sub[pkey].fillna("").astype(str).tolist()
+        try:
+            vec = TfidfVectorizer(
+                stop_words="english", max_features=3000,
+                ngram_range=(1, 2), min_df=1,
+            )
+            mat = vec.fit_transform(docs)
+            sim = cosine_similarity(mat)
+        except ValueError:
+            out[pkey] = []
+            continue
+
+        names = sub["name"].tolist()
+        directions = sub["direction"].fillna("").tolist() if "direction" in sub.columns else [""] * len(sub)
+        pairs = []
+        for i in range(len(docs)):
+            for j in range(i + 1, len(docs)):
+                s = float(sim[i, j])
+                if s >= min_similarity:
+                    pairs.append({
+                        "communityA": names[i],
+                        "directionA": directions[i],
+                        "communityB": names[j],
+                        "directionB": directions[j],
+                        "similarity": round(s, 3),
+                        "snippetA": docs[i][:200],
+                        "snippetB": docs[j][:200],
+                        "sameDirection": directions[i] == directions[j],
+                    })
+        pairs.sort(key=lambda p: p["similarity"], reverse=True)
+        out[pkey] = pairs[:max_per_pillar]
+
+    # Summary stats — how many overlaps, how many cross-direction, etc.
+    summary = {
+        "totalPairs": sum(len(v) for v in out.values()),
+        "byPillar": {k: len(v) for k, v in out.items()},
+        "crossDirection": sum(1 for v in out.values() for p in v if not p["sameDirection"]),
+    }
+    return {"perPillar": out, "summary": summary}
+
+
+def semantic_search(records: list[dict], query: str, limit: int = 8) -> dict:
+    """TF-IDF retrieval — the free "AI chatbot" backend. Always cites communities.
+
+    Returns the top-N communities whose combined narrative is most similar to
+    the user's question, along with the matching snippet that contains the
+    highest-scoring terms. Pure scikit-learn; no external API calls.
+    """
+    df = _records_to_df(records)
+    if df.empty or not query or len(query.strip()) < 2:
+        return {"query": query, "results": [], "answer": ""}
+
+    docs = [_community_text(r) for r in records]
+    nonempty_idx = [i for i, d in enumerate(docs) if len(d.strip()) > 10]
+    if len(nonempty_idx) < 2:
+        return {"query": query, "results": [], "answer": ""}
+
+    nonempty_docs = [docs[i] for i in nonempty_idx]
+    try:
+        vec = TfidfVectorizer(
+            stop_words="english", max_features=8000,
+            ngram_range=(1, 2), min_df=1,
+        )
+        mat = vec.fit_transform(nonempty_docs + [query])
+        sim = cosine_similarity(mat[-1], mat[:-1]).ravel()
+    except ValueError:
+        return {"query": query, "results": [], "answer": ""}
+
+    # Find best snippet per top match — sentence with most query terms.
+    query_terms = set(re.findall(r"\w+", query.lower()))
+    query_terms = {t for t in query_terms if len(t) >= 3}
+
+    def best_snippet(doc: str) -> str:
+        sentences = re.split(r"(?<=[.!?])\s+|\n+", doc)
+        scored = []
+        for s in sentences:
+            s = s.strip()
+            if 20 <= len(s) <= 320:
+                hits = sum(1 for w in re.findall(r"\w+", s.lower()) if w in query_terms)
+                if hits > 0:
+                    scored.append((hits, s))
+        if scored:
+            scored.sort(reverse=True)
+            return scored[0][1]
+        return doc[:240]
+
+    order = sim.argsort()[::-1]
+    results = []
+    for rank in order:
+        if sim[rank] < 0.02:
+            break
+        if len(results) >= limit:
+            break
+        rec_idx = nonempty_idx[rank]
+        rec = records[rec_idx]
+        snippet = best_snippet(nonempty_docs[rank])
+        results.append({
+            "name": rec.get("name", ""),
+            "direction": rec.get("direction", ""),
+            "type": rec.get("type", ""),
+            "score": round(float(sim[rank]), 3),
+            "snippet": snippet,
+            "id": rec.get("id"),
+        })
+
+    # Build a conversational summary — first sentence of the top result, with
+    # citation to the community. Honest about uncertainty.
+    if results:
+        top = results[0]
+        if top["score"] >= 0.20:
+            answer = (f'Based on the master sheet, {top["name"]} '
+                      f'({top["direction"] or "—"}) has the most relevant information: '
+                      f'"{top["snippet"]}"')
+            if len(results) > 1:
+                others = ", ".join(r["name"] for r in results[1:4])
+                answer += f"\n\nOther communities with related programs: {others}."
+        else:
+            answer = ("I found some matches but nothing very strong in the sheet. "
+                      "Try rephrasing or use more specific words "
+                      "(e.g. 'diabetes', 'youth mental health', 'elder care').")
+    else:
+        answer = ("I couldn't find a clear match in the master sheet for that question. "
+                  "Try different keywords or browse the directory directly.")
+
+    return {"query": query, "results": results, "answer": answer}
+
+
+def compare_regions(records: list[dict], regions: list[str] | None = None) -> dict:
+    """Side-by-side comparison: KPIs per direction (East / South / West / North).
+
+    Useful for the team to answer questions like "are West communities better
+    served for spiritual support than East?"
+    """
+    df = _records_to_df(records)
+    if df.empty:
+        return {"regions": [], "metrics": []}
+
+    regions = regions or [d for d in DIRECTIONS if d in df["direction"].unique()]
+    metrics = []
+    for d in regions:
+        sub = df[df["direction"] == d]
+        if len(sub) == 0:
+            continue
+        pop = pd.to_numeric(sub.get("populationNumeric"), errors="coerce")
+        metrics.append({
+            "direction": d,
+            "communities": int(len(sub)),
+            "pillarsAvg": round(float(sub[PILLAR_FLAGS].sum(axis=1).mean()), 2),
+            "physical":   _safe_int(sub["hasPhysical"].sum()),
+            "mental":     _safe_int(sub["hasMental"].sum()),
+            "spiritual":  _safe_int(sub["hasSpiritual"].sum()),
+            "emotional":  _safe_int(sub["hasEmotional"].sum()),
+            "youth":      _safe_int(sub["hasYouth"].sum()),
+            "survivors":  _safe_int(sub["hasSurvivors"].sum()),
+            "totalPop":   float(pop.sum(skipna=True)) if pop.notna().any() else 0,
+            "medianPop":  float(pop.median(skipna=True)) if pop.notna().any() else 0,
+        })
+    return {"regions": regions, "metrics": metrics}
+
+
+def storytelling_facts(records: list[dict]) -> dict:
+    """Plain-language facts an elder or new visitor can immediately understand.
+
+    Used as rotating cards on the analytics dashboard. Numbers are derived
+    from the live sheet; the wording is fixed (sentences in English).
+    """
+    df = _records_to_df(records)
+    if df.empty:
+        return {"facts": []}
+
+    total = len(df)
+    has_all = _safe_int(df[PILLAR_FLAGS].all(axis=1).sum())
+    has_youth = _safe_int(df["hasYouth"].sum())
+    has_survivors = _safe_int(df["hasSurvivors"].sum())
+
+    pop = pd.to_numeric(df.get("populationNumeric"), errors="coerce")
+    pop_total = int(pop.sum(skipna=True)) if pop.notna().any() else 0
+    pop_largest = ""
+    if pop.notna().any():
+        idx = pop.idxmax()
+        if idx in df.index:
+            pop_largest = str(df.loc[idx, "name"])
+
+    most_documented = ""
+    if "completenessScore" in df.columns or True:
+        # Re-use quality scoring inline (lightweight)
+        cols = [c for c in PILLAR_KEYS + ["youth", "survivors", "contact",
+                                          "strategicPlan", "agm", "financials"]
+                if c in df.columns]
+        if cols:
+            scores = df[cols].apply(
+                lambda r: sum(1 for c in cols if str(r.get(c, "") or "").strip()
+                              and str(r.get(c, "") or "").strip().lower()
+                              not in {"missing information", "needs review", "n/a"}),
+                axis=1,
+            )
+            best_idx = scores.idxmax()
+            if best_idx in df.index:
+                most_documented = str(df.loc[best_idx, "name"])
+
+    facts = [
+        {"kicker": "Communities", "fact": f"{total} communities and partner organizations are documented in the atlas."},
+        {"kicker": "All four pillars",
+         "fact": f"{has_all} of {total} document all four service pillars "
+                 f"(physical, mental, spiritual, emotional)."},
+        {"kicker": "Youth", "fact": f"{has_youth} communities have documented youth programming."},
+        {"kicker": "Survivors", "fact": f"{has_survivors} communities have documented survivor support."},
+        {"kicker": "People served",
+         "fact": f"Together these communities serve roughly {pop_total:,} people."},
+    ]
+    if pop_largest:
+        facts.append({"kicker": "Largest", "fact": f"The largest community by reported population is {pop_largest}."})
+    if most_documented:
+        facts.append({"kicker": "Most documented",
+                      "fact": f"{most_documented} has the most complete record on file."})
+    return {"facts": facts}

@@ -211,8 +211,9 @@ DEFAULT_NAV = [
     {"slot": "main", "position": 0, "label": "Map · Search", "view": "map", "icon": "◉", "visible": 1},
     {"slot": "main", "position": 1, "label": "Directory", "view": "list", "icon": "☷", "visible": 1},
     {"slot": "main", "position": 2, "label": "Community Stories", "view": "stories", "icon": "❋", "visible": 1},
-    {"slot": "main", "position": 3, "label": "Insights & Stories", "view": "stats", "icon": "◭", "visible": 1},
-    {"slot": "main", "position": 4, "label": "Coverage (85)", "view": "coverage", "icon": "⌧", "visible": 1},
+    {"slot": "main", "position": 3, "label": "Analytics", "view": "analytics", "icon": "◐", "visible": 1},
+    {"slot": "main", "position": 4, "label": "Insights & Stories", "view": "stats", "icon": "◭", "visible": 1},
+    {"slot": "main", "position": 5, "label": "Coverage (85)", "view": "coverage", "icon": "⌧", "visible": 1},
 ]
 
 

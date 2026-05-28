@@ -167,7 +167,9 @@ function AppInner() {
 
       <BlockRenderer slot={`view.${view}.header`} blocks={[]} ctx={heroCtx} />
 
-      {view === 'stats' ? (
+      {view === 'analytics' ? (
+        <window.AnalyticsProView all={all} onSelect={setSelectedId} setView={setView} />
+      ) : view === 'stats' ? (
         <window.StatsView all={all} onSelect={setSelectedId} setView={setView}
           setRegions={setRegions} setOrgTypes={setOrgTypes} setPillars={setPillars} />
       ) : view === 'stories' ? (
@@ -511,11 +513,12 @@ function NavStrip({ view, setView, filtered, all }) {
   }, []);
   // Fallback when backend not reachable
   const DEFAULT_NAV = [
-    { view: 'map',      label: 'Map · Search',       icon: '◉' },
-    { view: 'list',     label: 'Directory',          icon: '☷' },
-    { view: 'stories',  label: 'Community Stories',  icon: '❋' },
-    { view: 'stats',    label: 'Insights & Stories', icon: '◭' },
-    { view: 'coverage', label: 'Coverage (85)',      icon: '⌧' },
+    { view: 'map',       label: 'Map · Search',       icon: '◉' },
+    { view: 'list',      label: 'Directory',          icon: '☷' },
+    { view: 'stories',   label: 'Community Stories',  icon: '❋' },
+    { view: 'analytics', label: 'Analytics',          icon: '◐' },
+    { view: 'stats',     label: 'Insights & Stories', icon: '◭' },
+    { view: 'coverage',  label: 'Coverage (85)',      icon: '⌧' },
   ];
   const navItems = items && items.length ? items : DEFAULT_NAV;
   return (
