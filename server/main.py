@@ -129,6 +129,11 @@ class LayoutIn(BaseModel):
     blocks: list[dict]
 
 
+class StyleIn(BaseModel):
+    properties: dict = Field(default_factory=dict)
+    customCss: str | None = ""
+
+
 class EditIn(BaseModel):
     fields: dict = Field(default_factory=dict)
     staff: list | None = None
@@ -660,6 +665,42 @@ def layouts_reset(name: str, actor: dict = Depends(auth.require_admin)) -> dict:
     db.log_audit(actor["username"], "layout.reset", name)
     events.publish("layout.updated", {"name": name, "reset": True})
     return {"name": name, "blocks": blocks}
+
+
+# --------------------------- element styles ------------------------------- #
+
+@app.get("/api/styles")
+def styles_all() -> dict:
+    """Public — dashboard reads these on every page load to inject CSS."""
+    return db.list_styles()
+
+
+@app.get("/api/styles/{selector:path}")
+def styles_get(selector: str) -> dict:
+    s = db.get_style(selector)
+    if not s:
+        return {"selector": selector, "properties": {}, "customCss": ""}
+    return s
+
+
+@app.put("/api/styles/{selector:path}")
+def styles_set(selector: str, payload: StyleIn,
+               actor: dict = Depends(auth.require_admin)) -> dict:
+    s = db.save_style(selector, payload.properties, payload.customCss, actor["username"])
+    db.log_audit(actor["username"], "style.update", selector,
+                 f"{len(payload.properties)} props")
+    events.publish("style.updated", {"selector": selector})
+    return s
+
+
+@app.delete("/api/styles/{selector:path}")
+def styles_delete(selector: str, actor: dict = Depends(auth.require_admin)) -> dict:
+    ok = db.delete_style(selector)
+    if not ok:
+        raise HTTPException(404, "Style not found")
+    db.log_audit(actor["username"], "style.delete", selector)
+    events.publish("style.updated", {"selector": selector, "deleted": True})
+    return {"ok": True}
 
 
 # ----------------------------- SSE channel -------------------------------- #

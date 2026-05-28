@@ -37,8 +37,11 @@
   const layoutsP = fetch(BASE + '/api/layouts', { credentials: 'include' })
     .then((r) => r.ok ? r.json() : null).catch(() => null);
 
-  window.__ATLAS_API_READY = Promise.all([datasetP, settingsP, pagesP, coverageP, navP, layoutsP]).then(
-    ([dataset, settings, pages, coverage, nav, layouts]) => {
+  const stylesP = fetch(BASE + '/api/styles', { credentials: 'include' })
+    .then((r) => r.ok ? r.json() : null).catch(() => null);
+
+  window.__ATLAS_API_READY = Promise.all([datasetP, settingsP, pagesP, coverageP, navP, layoutsP, stylesP]).then(
+    ([dataset, settings, pages, coverage, nav, layouts, styles]) => {
       if (dataset && Array.isArray(dataset.records) && dataset.records.length) {
         window.COMMUNITIES = dataset.records;
         window.ATLAS_DATASET_INFO = {
@@ -68,8 +71,52 @@
       if (layouts && typeof layouts === 'object') {
         window.ATLAS_LAYOUTS = layouts;
       }
+      if (styles && typeof styles === 'object') {
+        window.ATLAS_STYLES = styles;
+        injectElementStyles(styles);
+      }
     }
   );
+
+  // --- per-element style injection ----------------------------------------
+  // Compiles { selector: { properties, customCss } } into a single <style>
+  // tag with rules that target [data-cms-bind] / [data-cms-section]
+  // attributes.
+  function selectorToCSS(sel) {
+    if (sel.startsWith('bind:'))    return `[data-cms-bind="${sel.slice(5)}"]`;
+    if (sel.startsWith('section:')) return `[data-cms-section="${sel.slice(8)}"]`;
+    return sel;  // already a CSS selector (advanced use)
+  }
+  function camelToKebab(s) { return s.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()); }
+  function buildElementStylesCSS(styles) {
+    const out = [];
+    Object.values(styles).forEach((entry) => {
+      const sel = selectorToCSS(entry.selector || '');
+      if (!sel) return;
+      const propsCss = Object.entries(entry.properties || {})
+        .filter(([_, v]) => v != null && v !== '')
+        .map(([k, v]) => `  ${camelToKebab(k)}: ${v};`)
+        .join('\n');
+      if (propsCss) out.push(`${sel} {\n${propsCss}\n}`);
+      if (entry.customCss && entry.customCss.trim()) {
+        // Sanitise: forbid </style> and <script> in custom CSS.
+        const safe = String(entry.customCss).replace(/<\/?(style|script)[^>]*>/gi, '');
+        out.push(`${sel} {\n${safe}\n}`);
+      }
+    });
+    return out.join('\n\n');
+  }
+  function injectElementStyles(styles) {
+    const css = buildElementStylesCSS(styles);
+    let el = document.getElementById('atlas-element-styles');
+    if (!el) {
+      el = document.createElement('style');
+      el.id = 'atlas-element-styles';
+      document.head.appendChild(el);
+    }
+    el.textContent = css;
+  }
+  window.__ATLAS_INJECT_STYLES = injectElementStyles;
 
   function applySettingsToDocument(s) {
     if (!s) return;
@@ -182,6 +229,14 @@
       if (r && typeof r === 'object') {
         window.ATLAS_LAYOUTS = r;
         window.dispatchEvent(new CustomEvent('atlas:layouts'));
+      }
+    });
+    es.addEventListener('style.updated', async () => {
+      const r = await fetch(BASE + '/api/styles').then((r) => r.json()).catch(() => null);
+      if (r && typeof r === 'object') {
+        window.ATLAS_STYLES = r;
+        if (window.__ATLAS_INJECT_STYLES) window.__ATLAS_INJECT_STYLES(r);
+        window.dispatchEvent(new CustomEvent('atlas:styles'));
       }
     });
     es.onerror = () => {

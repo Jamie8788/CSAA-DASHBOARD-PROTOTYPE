@@ -139,6 +139,13 @@ def _ddl() -> list[str]:
             updated_at DOUBLE PRECISION NOT NULL,
             updated_by TEXT
         )""",
+        """CREATE TABLE IF NOT EXISTS element_styles (
+            selector TEXT PRIMARY KEY,
+            properties TEXT NOT NULL,
+            custom_css TEXT,
+            updated_at DOUBLE PRECISION NOT NULL,
+            updated_by TEXT
+        )""",
     ]
 
 
@@ -762,3 +769,70 @@ def reset_layout(name: str, actor: str | None) -> list[dict]:
     """Restore a layout to its default."""
     default = DEFAULT_LAYOUTS.get(name, [])
     return save_layout(name, default, actor)
+
+
+# --------------------------- element styles ------------------------------- #
+# Per-element style overrides. `selector` is a dotted key like:
+#   "bind:setting:site.heroTitle"   -> [data-cms-bind="setting:site.heroTitle"]
+#   "section:header:h-hero"         -> [data-cms-section="header:h-hero"]
+# `properties` is a JSON object of {camelCaseProperty: value}.
+# `custom_css` is a free-form CSS string scoped to the selector.
+
+def list_styles() -> dict[str, dict]:
+    with get_conn() as conn:
+        rows = _rows(conn.execute(text(
+            "SELECT selector, properties, custom_css FROM element_styles"
+        )))
+    out = {}
+    for r in rows:
+        try:
+            props = json.loads(r["properties"] or "{}")
+        except json.JSONDecodeError:
+            props = {}
+        out[r["selector"]] = {
+            "selector": r["selector"],
+            "properties": props,
+            "customCss": r.get("custom_css") or "",
+        }
+    return out
+
+
+def get_style(selector: str) -> dict | None:
+    with get_conn() as conn:
+        r = _row(conn.execute(
+            text("SELECT selector, properties, custom_css FROM element_styles "
+                 "WHERE selector = :s"), {"s": selector}
+        ))
+        if not r:
+            return None
+        try:
+            props = json.loads(r["properties"] or "{}")
+        except json.JSONDecodeError:
+            props = {}
+        return {"selector": r["selector"], "properties": props,
+                "customCss": r.get("custom_css") or ""}
+
+
+def save_style(selector: str, properties: dict, custom_css: str | None,
+               actor: str | None) -> dict:
+    payload = json.dumps(properties or {}, ensure_ascii=False)
+    with get_conn() as conn:
+        conn.execute(
+            text("INSERT INTO element_styles(selector, properties, custom_css, "
+                 "updated_at, updated_by) VALUES(:s,:p,:c,:u,:by) "
+                 "ON CONFLICT(selector) DO UPDATE SET "
+                 "properties=EXCLUDED.properties, custom_css=EXCLUDED.custom_css, "
+                 "updated_at=EXCLUDED.updated_at, updated_by=EXCLUDED.updated_by"),
+            {"s": selector, "p": payload, "c": custom_css or "",
+             "u": time.time(), "by": actor},
+        )
+    return {"selector": selector, "properties": properties or {}, "customCss": custom_css or ""}
+
+
+def delete_style(selector: str) -> bool:
+    with get_conn() as conn:
+        result = conn.execute(
+            text("DELETE FROM element_styles WHERE selector = :s"),
+            {"s": selector},
+        )
+        return result.rowcount > 0

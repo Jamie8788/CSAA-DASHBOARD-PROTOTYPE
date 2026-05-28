@@ -499,16 +499,79 @@ function BlockPalette({ pages, onAdd }) {
 function Inspector({ inspector, pages, settings, onChange, onClose }) {
   const { kind, key, value } = inspector;
   const ref = useRef_b(null);
+  const [tab, setTab] = useState_b('content');
   const isBool = value === 'true' || value === 'false';
   const isColor = (key || '').toLowerCase().includes('accent') || (key || '').toLowerCase().includes('color');
   const isTheme = key === 'site.theme';
+
+  // Selector used by the styles backend.
+  const styleSelector = `bind:${kind}:${key}`;
+
+  // Local style state (loaded from server on open, edited locally, posted to
+  // iframe live, debounced-saved to backend).
+  const [styleProps, setStyleProps] = useState_b({});
+  const [customCss, setCustomCss] = useState_b('');
+  const [loadedStyle, setLoadedStyle] = useState_b(false);
+  const styleSaveTimer = useRef_b(null);
+
+  useEffect_b(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const s = await API.styles.get(styleSelector);
+        if (cancelled) return;
+        setStyleProps(s.properties || {});
+        setCustomCss(s.customCss || '');
+      } catch (e) { /* swallow */ }
+      finally { if (!cancelled) setLoadedStyle(true); }
+    })();
+    return () => { cancelled = true; };
+  }, [styleSelector]);
 
   // Auto-focus the input on open
   useEffect_b(() => {
     if (ref.current) { ref.current.focus(); ref.current.select && ref.current.select(); }
   }, []);
 
-  function field() {
+  function previewStyleToIframe(props, css) {
+    const iframe = document.querySelector('.builder-preview iframe');
+    if (!iframe || !iframe.contentWindow) return;
+    iframe.contentWindow.postMessage({
+      type: 'cms.stylePreview',
+      selector: styleSelector,
+      properties: props,
+      customCss: css,
+    }, '*');
+  }
+  function saveStyleDebounced(props, css) {
+    if (styleSaveTimer.current) clearTimeout(styleSaveTimer.current);
+    styleSaveTimer.current = setTimeout(() => {
+      API.styles.save(styleSelector, props, css).catch(() => {});
+    }, 800);
+  }
+  function updateStyle(patch) {
+    const next = { ...styleProps, ...patch };
+    Object.keys(next).forEach((k) => { if (next[k] === '' || next[k] == null) delete next[k]; });
+    setStyleProps(next);
+    previewStyleToIframe(next, customCss);
+    saveStyleDebounced(next, customCss);
+  }
+  function updateCustomCss(v) {
+    setCustomCss(v);
+    previewStyleToIframe(styleProps, v);
+    saveStyleDebounced(styleProps, v);
+  }
+  async function clearAllStyle() {
+    if (!confirm('Reset all style overrides on this element?')) return;
+    setStyleProps({}); setCustomCss('');
+    const iframe = document.querySelector('.builder-preview iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({ type: 'cms.styleClear', selector: styleSelector }, '*');
+    }
+    try { await API.styles.remove(styleSelector); } catch (e) {}
+  }
+
+  function contentField() {
     if (isBool) {
       return (
         <select value={String(value)} onChange={(e) => onChange(e.target.value)}>
@@ -534,8 +597,8 @@ function Inspector({ inspector, pages, settings, onChange, onClose }) {
         </div>
       );
     }
-    if (kind === 'page' || (kind === 'setting' && (key || '').toLowerCase().includes('tagline') || (kind === 'setting' && key === 'site.heroSubtitleTrail'))) {
-      return <textarea ref={ref} value={value || ''} onChange={(e) => onChange(e.target.value)} style={{ minHeight: 200 }} />;
+    if (kind === 'page' || (kind === 'setting' && ((key || '').toLowerCase().includes('tagline') || key === 'site.heroSubtitleTrail'))) {
+      return <textarea ref={ref} value={value || ''} onChange={(e) => onChange(e.target.value)} style={{ minHeight: 160 }} />;
     }
     return <input ref={ref} value={value || ''} onChange={(e) => onChange(e.target.value)} />;
   }
@@ -546,17 +609,169 @@ function Inspector({ inspector, pages, settings, onChange, onClose }) {
         <strong>{kind === 'page' ? '🗎 Page' : '⚙ Setting'}</strong>
         <span className="mono small muted" style={{ marginLeft: 8 }}>{key}</span>
         <span style={{ flex: 1 }} />
-        <span className="small muted" style={{ marginRight: 8 }}>Auto-saves</span>
         <button className="btn-link" onClick={onClose}>Close ×</button>
       </div>
-      <div className="form-row">
-        <label>Value</label>
-        {field()}
+
+      <div className="inspector-tabs">
+        <button className={`tab${tab === 'content' ? ' on' : ''}`} onClick={() => setTab('content')}>Content</button>
+        <button className={`tab${tab === 'style'   ? ' on' : ''}`} onClick={() => setTab('style')}>Style</button>
+        <button className={`tab${tab === 'css'     ? ' on' : ''}`} onClick={() => setTab('css')}>CSS</button>
       </div>
-      <p className="small muted" style={{ marginTop: 8 }}>
-        Type to live-preview in the iframe. Auto-saves to backend 800 ms after you stop.
-        Ctrl+S to save immediately.
-      </p>
+
+      {tab === 'content' && (
+        <div className="inspector-body">
+          <div className="form-row">{contentField()}</div>
+          <p className="small muted" style={{ marginTop: 8 }}>
+            Live preview as you type · auto-saves after 800 ms.
+          </p>
+        </div>
+      )}
+
+      {tab === 'style' && (
+        <div className="inspector-body">
+          <StyleEditor properties={styleProps} onChange={updateStyle} />
+          <div style={{ marginTop: 12, display: 'flex', gap: 6 }}>
+            <button className="btn ghost" onClick={clearAllStyle}>⟲ Reset element style</button>
+          </div>
+        </div>
+      )}
+
+      {tab === 'css' && (
+        <div className="inspector-body">
+          <p className="small muted" style={{ margin: '0 0 8px' }}>
+            Custom CSS rules scoped to this element. Auto-saves after 800 ms.
+            Targets: <span className="mono small">{styleSelector}</span>.
+          </p>
+          <textarea value={customCss} onChange={(e) => updateCustomCss(e.target.value)}
+                    placeholder={'font-family: serif;\ntext-shadow: 0 1px 0 #fff;'}
+                    style={{ minHeight: 180, fontFamily: 'var(--font-mono)', fontSize: 12 }} />
+        </div>
+      )}
     </div>
+  );
+}
+
+
+/* StyleEditor — grouped Typography / Spacing / Background / Border / Effects
+ * pickers. Each control updates `properties` immediately via onChange.
+ */
+function StyleEditor({ properties, onChange }) {
+  function set(k, v) { onChange({ [k]: v }); }
+  function val(k, d = '') { return properties[k] != null ? properties[k] : d; }
+
+  return (
+    <div className="style-editor">
+      <details open><summary>Typography</summary>
+        <div className="style-grid">
+          <Field label="Size"   ><UnitInput value={val('fontSize')} onChange={(v) => set('fontSize', v)} units={['px','rem','em','%']} /></Field>
+          <Field label="Weight" >
+            <select value={val('fontWeight')} onChange={(e) => set('fontWeight', e.target.value)}>
+              <option value="">—</option>
+              {['300','400','500','600','700','800'].map((w) => <option key={w}>{w}</option>)}
+            </select>
+          </Field>
+          <Field label="Line"   ><UnitInput value={val('lineHeight')} onChange={(v) => set('lineHeight', v)} units={['','px','rem','%']} /></Field>
+          <Field label="Letter" ><UnitInput value={val('letterSpacing')} onChange={(v) => set('letterSpacing', v)} units={['px','em']} /></Field>
+          <Field label="Color"  ><ColorInput value={val('color')} onChange={(v) => set('color', v)} /></Field>
+          <Field label="Align"  >
+            <select value={val('textAlign')} onChange={(e) => set('textAlign', e.target.value)}>
+              <option value="">—</option>
+              {['left','center','right','justify'].map((o) => <option key={o}>{o}</option>)}
+            </select>
+          </Field>
+          <Field label="Transform">
+            <select value={val('textTransform')} onChange={(e) => set('textTransform', e.target.value)}>
+              <option value="">—</option>
+              {['none','uppercase','lowercase','capitalize'].map((o) => <option key={o}>{o}</option>)}
+            </select>
+          </Field>
+          <Field label="Family">
+            <input value={val('fontFamily')} onChange={(e) => set('fontFamily', e.target.value)} placeholder="Inter, serif…" />
+          </Field>
+        </div>
+      </details>
+
+      <details open><summary>Spacing</summary>
+        <div className="style-grid">
+          <Field label="M ↑"><UnitInput value={val('marginTop')}    onChange={(v) => set('marginTop', v)} /></Field>
+          <Field label="M →"><UnitInput value={val('marginRight')}  onChange={(v) => set('marginRight', v)} /></Field>
+          <Field label="M ↓"><UnitInput value={val('marginBottom')} onChange={(v) => set('marginBottom', v)} /></Field>
+          <Field label="M ←"><UnitInput value={val('marginLeft')}   onChange={(v) => set('marginLeft', v)} /></Field>
+          <Field label="P ↑"><UnitInput value={val('paddingTop')}    onChange={(v) => set('paddingTop', v)} /></Field>
+          <Field label="P →"><UnitInput value={val('paddingRight')}  onChange={(v) => set('paddingRight', v)} /></Field>
+          <Field label="P ↓"><UnitInput value={val('paddingBottom')} onChange={(v) => set('paddingBottom', v)} /></Field>
+          <Field label="P ←"><UnitInput value={val('paddingLeft')}   onChange={(v) => set('paddingLeft', v)} /></Field>
+        </div>
+      </details>
+
+      <details><summary>Background</summary>
+        <div className="style-grid">
+          <Field label="Color"  ><ColorInput value={val('backgroundColor')} onChange={(v) => set('backgroundColor', v)} /></Field>
+          <Field label="Opacity"><UnitInput value={val('opacity')} onChange={(v) => set('opacity', v)} units={['']} placeholder="0–1" /></Field>
+        </div>
+      </details>
+
+      <details><summary>Border</summary>
+        <div className="style-grid">
+          <Field label="Width" ><UnitInput value={val('borderWidth')} onChange={(v) => set('borderWidth', v)} /></Field>
+          <Field label="Style" >
+            <select value={val('borderStyle')} onChange={(e) => set('borderStyle', e.target.value)}>
+              <option value="">—</option>
+              {['none','solid','dashed','dotted'].map((o) => <option key={o}>{o}</option>)}
+            </select>
+          </Field>
+          <Field label="Color" ><ColorInput value={val('borderColor')} onChange={(v) => set('borderColor', v)} /></Field>
+          <Field label="Radius"><UnitInput value={val('borderRadius')} onChange={(v) => set('borderRadius', v)} /></Field>
+        </div>
+      </details>
+
+      <details><summary>Effects</summary>
+        <div className="style-grid">
+          <Field label="Shadow"><input value={val('boxShadow')} onChange={(e) => set('boxShadow', e.target.value)} placeholder="0 2px 6px rgba(0,0,0,.1)" /></Field>
+          <Field label="Transform"><input value={val('transform')} onChange={(e) => set('transform', e.target.value)} placeholder="rotate(0) scale(1)" /></Field>
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <label className="style-field">
+      <span className="style-label">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function UnitInput({ value, onChange, units = ['px','rem','em','%'], placeholder }) {
+  // Parse "12px" → { n: '12', u: 'px' }
+  const m = String(value || '').match(/^(-?\d*\.?\d*)\s*([a-z%]*)\s*$/i);
+  const n = m ? m[1] : '';
+  const u = m ? (m[2] || units[0]) : units[0];
+  function setN(nn) { onChange(nn === '' ? '' : `${nn}${u}`); }
+  function setU(uu) { onChange(n === '' ? '' : `${n}${uu}`); }
+  return (
+    <span style={{ display: 'inline-flex', gap: 2 }}>
+      <input value={n} onChange={(e) => setN(e.target.value)} placeholder={placeholder || '0'}
+             style={{ width: 60 }} />
+      {units.length > 1 ? (
+        <select value={u} onChange={(e) => setU(e.target.value)} style={{ width: 56 }}>
+          {units.map((x) => <option key={x} value={x}>{x || '–'}</option>)}
+        </select>
+      ) : <span className="small muted" style={{ alignSelf: 'center', paddingLeft: 2 }}>{u}</span>}
+    </span>
+  );
+}
+
+function ColorInput({ value, onChange }) {
+  return (
+    <span style={{ display: 'inline-flex', gap: 4 }}>
+      <input type="color" value={value || '#000000'}
+             onChange={(e) => onChange(e.target.value)}
+             style={{ width: 32, height: 28, padding: 0, border: '1px solid var(--border)' }} />
+      <input value={value || ''} onChange={(e) => onChange(e.target.value)}
+             placeholder="—" style={{ width: 80 }} />
+    </span>
   );
 }

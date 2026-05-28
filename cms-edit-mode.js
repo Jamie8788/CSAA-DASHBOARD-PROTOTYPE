@@ -270,6 +270,12 @@
   });
 
   // --- receive live previews from parent -----------------------------------
+  function camelToKebab(s) { return s.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()); }
+  function selectorOf(stored) {
+    if (stored.startsWith('bind:'))    return `[data-cms-bind="${stored.slice(5)}"]`;
+    if (stored.startsWith('section:')) return `[data-cms-section="${stored.slice(8)}"]`;
+    return stored;
+  }
   window.addEventListener('message', (e) => {
     const msg = e.data;
     if (!msg || typeof msg !== 'object') return;
@@ -287,6 +293,26 @@
         const txt = document.createTextNode(msg.value || '');
         el.insertBefore(txt, tag);
       });
+    } else if (msg.type === 'cms.stylePreview') {
+      // Live style preview — inject a <style> block keyed to the selector
+      // so we can replace/clear it without affecting other elements.
+      const id = 'cms-style-preview-' + msg.selector.replace(/[^a-z0-9_-]/gi, '_');
+      let st = document.getElementById(id);
+      if (!st) {
+        st = document.createElement('style');
+        st.id = id;
+        document.head.appendChild(st);
+      }
+      const cssSel = selectorOf(msg.selector);
+      const props = Object.entries(msg.properties || {})
+        .filter(([_, v]) => v != null && v !== '')
+        .map(([k, v]) => `  ${camelToKebab(k)}: ${v};`).join('\n');
+      const custom = String(msg.customCss || '').replace(/<\/?(style|script)[^>]*>/gi, '');
+      st.textContent = `${cssSel} {\n${props}\n${custom}\n}`;
+    } else if (msg.type === 'cms.styleClear') {
+      const id = 'cms-style-preview-' + msg.selector.replace(/[^a-z0-9_-]/gi, '_');
+      const st = document.getElementById(id);
+      if (st) st.remove();
     } else if (msg.type === 'cms.scrollTo') {
       const sel = `[data-cms-bind="${msg.kind}:${msg.key}"]`;
       const el = document.querySelector(sel);

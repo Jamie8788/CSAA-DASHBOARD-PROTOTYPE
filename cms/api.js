@@ -120,6 +120,14 @@
       save: (name, blocks) => request('PUT', `/api/layouts/${encodeURIComponent(name)}`, { blocks }),
       reset: (name) => request('POST', `/api/layouts/${encodeURIComponent(name)}/reset`),
     },
+    styles: {
+      all: () => request('GET', '/api/styles'),
+      get: (selector) => request('GET', `/api/styles/${encodeURIComponent(selector)}`),
+      save: (selector, properties, customCss) => request(
+        'PUT', `/api/styles/${encodeURIComponent(selector)}`,
+        { properties, customCss }),
+      remove: (selector) => request('DELETE', `/api/styles/${encodeURIComponent(selector)}`),
+    },
     auth: {
       requestReset: (username) => request('POST', '/api/auth/request-reset', { username }),
       reset: (token, password) => request('POST', '/api/auth/reset', { token, password }),
