@@ -150,6 +150,15 @@
       grip.textContent = '⋮⋮';
       const label = document.createElement('span');
       label.textContent = blockType || sectionRef;
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'cms-handle-hide';
+      resetBtn.title = 'Reset all styles on this section';
+      resetBtn.textContent = '⟲';
+      resetBtn.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        window.parent.postMessage({ type: 'cms.resetSectionStyles',
+          selector: 'section:' + sectionRef }, '*');
+      });
       const hideBtn = document.createElement('button');
       hideBtn.className = 'cms-handle-hide';
       hideBtn.title = 'Hide this section';
@@ -159,7 +168,7 @@
         const [slot, id] = sectionRef.split(':');
         window.parent.postMessage({ type: 'cms.hideSection', slot, id }, '*');
       });
-      handle.append(grip, label, hideBtn);
+      handle.append(grip, label, resetBtn, hideBtn);
       // Drag events live on the handle so users can click into the section
       // body without dragging accidentally.
       handle.addEventListener('dragstart', (e) => {
@@ -282,8 +291,15 @@
       const bind = el.getAttribute('data-cms-bind') || '';
       const [kind, ...keyParts] = bind.split(':');
       const key = keyParts.join(':');
-      const value = getCleanText(el);    // ← exclude CMS-injected tag children
+      const value = getCleanText(el).trim();
       el.removeAttribute('contenteditable');
+      if (!value) {
+        // Refuse to save an empty inline edit — would hide the element on the
+        // public site. Tell the parent so it can show a toast or restore.
+        window.parent.postMessage({ type: 'cms.inlineRejected', kind, key,
+          reason: 'Empty value rejected — the field would have become invisible. Use the Inspector if you really want to delete it.' }, '*');
+        return;
+      }
       window.parent.postMessage({ type: 'cms.inlineSave', kind, key, value }, '*');
     }
   });

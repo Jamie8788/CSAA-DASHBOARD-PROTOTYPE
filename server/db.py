@@ -369,6 +369,41 @@ def init_db() -> None:
                          "updated_by = 'migration' WHERE key = :k"),
                     {"v": default, "u": now, "k": k},
                 )
+
+        # Migration — heal hero* and stat label settings that were saved as
+        # empty / whitespace strings (caused the hero title to vanish on the
+        # public site). Reset every site.hero* and site.stat* key that's
+        # empty after trim() back to its DEFAULT_SETTINGS value.
+        all_settings = conn.execute(text("SELECT key, value FROM settings")).fetchall()
+        for k, v in all_settings:
+            if not (k.startswith("site.hero") or k.startswith("site.stat") or k == "site.title"):
+                continue
+            if (v or "").strip():
+                continue
+            default = DEFAULT_SETTINGS.get(k)
+            if default:
+                conn.execute(
+                    text("UPDATE settings SET value = :v, updated_at = :u, "
+                         "updated_by = 'migration' WHERE key = :k"),
+                    {"v": default, "u": now, "k": k},
+                )
+
+        # Migration — drop element_styles overrides that set color to
+        # 'transparent' or that match the paper background (would hide text).
+        # Most common accidental "I made my text invisible" trap.
+        try:
+            danger_rows = conn.execute(text(
+                "SELECT selector, properties FROM element_styles "
+                "WHERE properties LIKE '%transparent%' OR properties LIKE '%#f5ede0%' "
+                "OR properties LIKE '%#fbf7ec%' OR properties LIKE '%#fbf6ec%'"
+            )).fetchall()
+            for sel, _ in danger_rows:
+                conn.execute(
+                    text("DELETE FROM element_styles WHERE selector = :s"),
+                    {"s": sel},
+                )
+        except Exception:
+            pass  # element_styles table may not exist on very old DBs
         # Seed layouts only if missing.
         for name, blocks in DEFAULT_LAYOUTS.items():
             conn.execute(

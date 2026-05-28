@@ -264,7 +264,11 @@ function App() {
 
 function getSetting(key, fallback) {
   const s = window.ATLAS_SETTINGS || {};
-  return s[key] != null && s[key] !== '' ? s[key] : fallback;
+  const v = s[key];
+  // Fall back to default for null / undefined / empty / whitespace-only.
+  if (v == null) return fallback;
+  const trimmed = String(v).trim();
+  return trimmed === '' ? fallback : v;
 }
 
 

@@ -85,6 +85,38 @@ const DASHBOARD_STRUCTURE = [
 
 // All layout slots the CMS knows about. Used by the Layout Manager so
 // admins see every editable surface in one place.
+// Hard-coded fallbacks for the common bound settings — used by the "Reset to
+// default" button in the Inspector's Content tab when the value is broken.
+const SETTING_DEFAULTS = {
+  'site.title':              'Mino Bimaadiziwin · Community Services Atlas',
+  'site.tagline':            'A living atlas of community-care programming across First Nations and partner organizations.',
+  'site.heroEyebrow':        'Mino Bimaadiziwin',
+  'site.heroTitle':          'A living atlas of community care.',
+  'site.heroSubtitleLead':   'Find',
+  'site.heroSubtitleTrail':  'programming across {communities} First Nations and {partners} partner organizations.',
+  'site.statCommunitiesLabel': 'Communities',
+  'site.statPartnersLabel':    'Partners',
+  'site.statPeopleLabel':      'People',
+  'site.theme':              'paper',
+  'site.accent':             '#b8351e',
+};
+
+// Common "paper" background colors — used by the invisibility-trap warning.
+const PAPER_COLORS = new Set(['transparent', '#f5ede0', '#fbf7ec', '#fbf6ec',
+                              '#ece2cf', '#ddd0b5', '#e8dcc1', 'white', '#ffffff']);
+
+function isInvisibilityTrap(props) {
+  if (!props || typeof props !== 'object') return null;
+  const color = String(props.color || '').toLowerCase();
+  const bg    = String(props.backgroundColor || '').toLowerCase();
+  if (PAPER_COLORS.has(color)) return 'text colour matches the paper background — text will be invisible';
+  if (String(props.opacity || '').trim() === '0') return 'opacity is 0 — element will be invisible';
+  if (props.display === 'none') return 'display is none — element will be hidden';
+  if (String(props.fontSize || '').trim() === '0' || String(props.fontSize || '').trim() === '0px') return 'font size is 0 — text will be invisible';
+  if (color && color === bg) return 'text colour matches background colour';
+  return null;
+}
+
 const ALL_LAYOUTS = [
   { slot: 'header',              label: 'Global · top of every page' },
   { slot: 'view.map.header',     label: 'Map view · above content' },
@@ -189,6 +221,12 @@ function BuilderView({ setView }) {
         applyReorder(msg.slot, msg.from, msg.to, msg.position);
       } else if (msg.type === 'cms.hideSection') {
         applyHide(msg.slot, msg.id);
+      } else if (msg.type === 'cms.inlineRejected') {
+        toast.push(msg.reason || 'Empty value rejected.', 'error', 5000);
+      } else if (msg.type === 'cms.resetSectionStyles' && msg.selector) {
+        API.styles.remove(msg.selector).then(() => {
+          toast.push('Section styles reset.', 'success');
+        }).catch(() => {});
       }
     }
     window.addEventListener('message', onMsg);
@@ -778,8 +816,30 @@ function Inspector({ inspector, pages, settings, onChange, onClose }) {
       {tab === 'content' && (
         <div className="inspector-body">
           <div className="form-row">{contentField()}</div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+            {SETTING_DEFAULTS[key] && kind === 'setting' && (
+              <button className="btn ghost small"
+                      onClick={() => onChange(SETTING_DEFAULTS[key])}
+                      title={`Restore "${SETTING_DEFAULTS[key]}"`}>
+                ⟲ Reset to default
+              </button>
+            )}
+            {kind === 'setting' && (
+              <button className="btn ghost small"
+                      onClick={() => onChange('')}
+                      title="Clear (will fall back to default on dashboard)">
+                ✕ Clear value
+              </button>
+            )}
+          </div>
+          {String(value || '').trim() === '' && (
+            <p className="small" style={{ color: 'var(--warn)', marginTop: 8 }}>
+              ⚠ Value is empty — the dashboard will fall back to the default text.
+            </p>
+          )}
           <p className="small muted" style={{ marginTop: 8 }}>
-            Live preview as you type · auto-saves after 800 ms.
+            Live preview as you type · auto-saves after 800 ms. Empty inline edits
+            (Ctrl+Enter on the canvas) are rejected automatically.
           </p>
         </div>
       )}
@@ -813,6 +873,15 @@ function Inspector({ inspector, pages, settings, onChange, onClose }) {
 
       {tab === 'style' && (
         <div className="inspector-body">
+          {(() => {
+            const trap = isInvisibilityTrap(currentScopeProps);
+            return trap ? (
+              <div className="invis-warn">
+                ⚠ <strong>{trap}.</strong> Click "Reset this scope" to undo,
+                or change the colour/opacity to something visible.
+              </div>
+            ) : null;
+          })()}
           <StyleEditor properties={currentScopeProps} onChange={updateStyle} />
           <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <button className="btn ghost" onClick={clearCurrentScope}>
