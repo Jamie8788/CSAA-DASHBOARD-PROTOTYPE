@@ -98,6 +98,7 @@ function BuilderView({ setView }) {
   const [pages, setPages] = useState_b({});
   const [settings, setSettings] = useState_b({});
   const [nav, setNav] = useState_b([]);
+  const [layouts, setLayouts] = useState_b({ header: [], footer: [] });
   const [editMode, setEditMode] = useState_b(true);
   const [device, setDevice] = useState_b('full');
   const [inspector, setInspector] = useState_b(null);   // { kind, key, value, rect }
@@ -105,12 +106,38 @@ function BuilderView({ setView }) {
 
   async function reloadCmsData() {
     try {
-      const [p, s, n] = await Promise.all([
+      const [p, s, n, L] = await Promise.all([
         API.pages.list(), API.settings.get(), API.nav.list('main'),
+        API.layouts.all(),
       ]);
       const pMap = {}; (p.pages || []).forEach((x) => { pMap[x.slug] = x; });
       setPages(pMap); setSettings(s); setNav(n.items || []);
+      setLayouts({ header: L.header || [], footer: L.footer || [] });
     } catch (e) { /* swallow */ }
+  }
+
+  async function saveLayout(slot, blocks) {
+    try {
+      await API.layouts.save(slot, blocks);
+      setLayouts((L) => ({ ...L, [slot]: blocks }));
+    } catch (e) { toast.push('Layout save failed: ' + e.message, 'error'); }
+  }
+
+  function applyReorder(slot, fromId, toId, position) {
+    const list = [...(layouts[slot] || [])];
+    const fromIdx = list.findIndex((b) => b.id === fromId);
+    const toIdx   = list.findIndex((b) => b.id === toId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const [picked] = list.splice(fromIdx, 1);
+    const insertAt = list.findIndex((b) => b.id === toId);
+    list.splice(position === 'after' ? insertAt + 1 : insertAt, 0, picked);
+    saveLayout(slot, list);
+  }
+
+  function applyHide(slot, id) {
+    const list = (layouts[slot] || []).map((b) =>
+      b.id === id ? { ...b, visible: false } : b);
+    saveLayout(slot, list);
   }
 
   function refreshPreview() { setReloadKey((k) => k + 1); }
@@ -141,6 +168,10 @@ function BuilderView({ setView }) {
         saveValue(msg.kind, msg.key, msg.value, /*immediate*/ true);
       } else if (msg.type === 'cms.cancel') {
         setInspector(null);
+      } else if (msg.type === 'cms.reorder') {
+        applyReorder(msg.slot, msg.from, msg.to, msg.position);
+      } else if (msg.type === 'cms.hideSection') {
+        applyHide(msg.slot, msg.id);
       }
     }
     window.addEventListener('message', onMsg);
@@ -221,6 +252,20 @@ function BuilderView({ setView }) {
               reloadCmsData();
             } catch (e) { toast.push('Failed to add: ' + e.message, 'error'); }
           }} />
+
+          <LayoutManager
+            layouts={layouts}
+            pages={pages}
+            onChange={saveLayout}
+            onResetSlot={async (slot) => {
+              if (!confirm(`Reset ${slot} layout to defaults?`)) return;
+              try {
+                const r = await API.layouts.reset(slot);
+                setLayouts((L) => ({ ...L, [slot]: r.blocks }));
+                toast.push(`${slot} layout reset.`, 'success');
+              } catch (e) { toast.push('Reset failed: ' + e.message, 'error'); }
+            }}
+          />
         </div>
 
         <div className="builder-preview">
@@ -311,6 +356,114 @@ function SectionRow({ section, onControl, pages, settings, nav }) {
         ))}
       </div>
     </div>
+  );
+}
+
+
+function LayoutManager({ layouts, pages, onChange, onResetSlot }) {
+  const [addingSlot, setAddingSlot] = useState_b(null);
+  const [newSlug, setNewSlug] = useState_b('');
+
+  function move(slot, idx, delta) {
+    const list = [...(layouts[slot] || [])];
+    const j = idx + delta;
+    if (j < 0 || j >= list.length) return;
+    [list[idx], list[j]] = [list[j], list[idx]];
+    onChange(slot, list);
+  }
+  function toggle(slot, id) {
+    const list = (layouts[slot] || []).map((b) =>
+      b.id === id ? { ...b, visible: !b.visible } : b);
+    onChange(slot, list);
+  }
+  function remove(slot, id) {
+    if (!confirm('Remove this block from the layout?')) return;
+    const list = (layouts[slot] || []).filter((b) => b.id !== id);
+    onChange(slot, list);
+  }
+  function addPage(slot) {
+    if (!newSlug.trim()) return;
+    const id = `${slot[0]}-p-${Date.now().toString(36)}`;
+    const blocks = [...(layouts[slot] || []),
+      { id, type: 'page', visible: true, props: { slug: newSlug.trim() } }];
+    onChange(slot, blocks);
+    setAddingSlot(null); setNewSlug('');
+  }
+  function addSpacer(slot, size) {
+    const id = `${slot[0]}-sp-${Date.now().toString(36)}`;
+    const blocks = [...(layouts[slot] || []),
+      { id, type: 'spacer', visible: true, props: { size } }];
+    onChange(slot, blocks);
+  }
+
+  function renderSlot(slot) {
+    const list = layouts[slot] || [];
+    return (
+      <div className="builder-section" key={slot}>
+        <h3 className="builder-group-title" style={{ marginTop: 0,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Layout · {slot}</span>
+          <button className="btn-link" onClick={() => onResetSlot(slot)}>reset</button>
+        </h3>
+        <p className="small muted" style={{ margin: '0 0 8px' }}>
+          {list.length} block{list.length === 1 ? '' : 's'} · drag the blue ⋮⋮ on the
+          live preview, or use the arrows below.
+        </p>
+        <table className="tbl small" style={{ marginBottom: 8 }}>
+          <tbody>
+            {list.map((b, i) => (
+              <tr key={b.id}>
+                <td style={{ width: 60 }}>
+                  <button className="btn-link" disabled={i === 0} onClick={() => move(slot, i, -1)}>↑</button>&nbsp;
+                  <button className="btn-link" disabled={i === list.length - 1} onClick={() => move(slot, i, +1)}>↓</button>
+                </td>
+                <td>
+                  <span className="mono small">{b.type}</span>
+                  {b.props && b.props.slug && <span className="muted small"> · {b.props.slug}</span>}
+                  {b.props && b.props.size && <span className="muted small"> · {b.props.size}</span>}
+                </td>
+                <td style={{ width: 80 }}>
+                  <button className="btn-link" onClick={() => toggle(slot, b.id)}>
+                    {b.visible ? 'hide' : 'show'}
+                  </button>
+                </td>
+                <td style={{ width: 60 }}>
+                  <button className="btn-link" style={{ color: 'var(--danger)' }}
+                          onClick={() => remove(slot, b.id)}>remove</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          {addingSlot === slot ? (
+            <>
+              <select value={newSlug} onChange={(e) => setNewSlug(e.target.value)} style={{ width: 'auto' }}>
+                <option value="">Choose page…</option>
+                {Object.keys(pages).map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <button className="btn" onClick={() => addPage(slot)} disabled={!newSlug}>Add</button>
+              <button className="btn ghost" onClick={() => { setAddingSlot(null); setNewSlug(''); }}>Cancel</button>
+            </>
+          ) : (
+            <>
+              <button className="btn ghost" onClick={() => setAddingSlot(slot)}>+ Page block</button>
+              <button className="btn ghost" onClick={() => addSpacer(slot, 'sm')}>+ Spacer (sm)</button>
+              <button className="btn ghost" onClick={() => addSpacer(slot, 'md')}>+ Spacer (md)</button>
+              <button className="btn ghost" onClick={() => addSpacer(slot, 'lg')}>+ Spacer (lg)</button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <h3 className="builder-group-title" style={{ marginTop: 16 }}>Section layouts</h3>
+      {renderSlot('header')}
+      {renderSlot('footer')}
+    </>
   );
 }
 

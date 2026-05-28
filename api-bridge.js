@@ -34,8 +34,11 @@
   const navP = fetch(BASE + '/api/nav?slot=main', { credentials: 'include' })
     .then((r) => r.ok ? r.json() : null).catch(() => null);
 
-  window.__ATLAS_API_READY = Promise.all([datasetP, settingsP, pagesP, coverageP, navP]).then(
-    ([dataset, settings, pages, coverage, nav]) => {
+  const layoutsP = fetch(BASE + '/api/layouts', { credentials: 'include' })
+    .then((r) => r.ok ? r.json() : null).catch(() => null);
+
+  window.__ATLAS_API_READY = Promise.all([datasetP, settingsP, pagesP, coverageP, navP, layoutsP]).then(
+    ([dataset, settings, pages, coverage, nav, layouts]) => {
       if (dataset && Array.isArray(dataset.records) && dataset.records.length) {
         window.COMMUNITIES = dataset.records;
         window.ATLAS_DATASET_INFO = {
@@ -61,6 +64,9 @@
       }
       if (nav && Array.isArray(nav.items)) {
         window.ATLAS_NAV = nav.items.filter((n) => n.visible);
+      }
+      if (layouts && typeof layouts === 'object') {
+        window.ATLAS_LAYOUTS = layouts;
       }
     }
   );
@@ -169,6 +175,13 @@
       if (r && r.items) {
         window.ATLAS_NAV = r.items.filter((n) => n.visible);
         window.dispatchEvent(new CustomEvent('atlas:nav'));
+      }
+    });
+    es.addEventListener('layout.updated', async () => {
+      const r = await fetch(BASE + '/api/layouts').then((r) => r.json()).catch(() => null);
+      if (r && typeof r === 'object') {
+        window.ATLAS_LAYOUTS = r;
+        window.dispatchEvent(new CustomEvent('atlas:layouts'));
       }
     });
     es.onerror = () => {

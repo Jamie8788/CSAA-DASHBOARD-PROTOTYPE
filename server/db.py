@@ -133,6 +133,12 @@ def _ddl() -> list[str]:
             updated_by TEXT
         )""",
         "CREATE INDEX IF NOT EXISTS idx_nav_slot ON nav_items(slot, position)",
+        """CREATE TABLE IF NOT EXISTS layouts (
+            name TEXT PRIMARY KEY,
+            payload TEXT NOT NULL,
+            updated_at DOUBLE PRECISION NOT NULL,
+            updated_by TEXT
+        )""",
     ]
 
 
@@ -201,6 +207,27 @@ DEFAULT_NAV = [
     {"slot": "main", "position": 3, "label": "Insights & Stories", "view": "stats", "icon": "◭", "visible": 1},
     {"slot": "main", "position": 4, "label": "Coverage (85)", "view": "coverage", "icon": "⌧", "visible": 1},
 ]
+
+
+# Layout = ordered list of blocks rendered above (header) or below (footer) the
+# view-switched main content area. Each block has:
+#   id       — stable handle
+#   type     — what to render: 'banner', 'admin-bar', 'a11y-panel', 'hero',
+#              'page' (props.slug), 'spacer', 'html' (props.html)
+#   visible  — show/hide flag
+#   props    — type-specific extras
+DEFAULT_LAYOUTS = {
+    "header": [
+        {"id": "h-banner", "type": "banner",     "visible": True, "props": {}},
+        {"id": "h-admin",  "type": "admin-bar",  "visible": True, "props": {}},
+        {"id": "h-a11y",   "type": "a11y-panel", "visible": True, "props": {}},
+        {"id": "h-hero",   "type": "hero",       "visible": True, "props": {}},
+    ],
+    "footer": [
+        {"id": "f-ack",     "type": "page", "visible": True, "props": {"slug": "acknowledgement"}},
+        {"id": "f-contact", "type": "page", "visible": True, "props": {"slug": "contact"}},
+    ],
+}
 
 
 # --------------------------- low-level helpers ---------------------------- #
@@ -290,6 +317,13 @@ def init_db() -> None:
                     {"slot": n["slot"], "pos": n["position"], "lbl": n["label"],
                      "view": n["view"], "icon": n["icon"], "u": now, "by": "system"},
                 )
+        # Seed layouts only if missing.
+        for name, blocks in DEFAULT_LAYOUTS.items():
+            conn.execute(
+                text("INSERT INTO layouts(name, payload, updated_at, updated_by) "
+                     "VALUES(:n,:p,:u,:by) ON CONFLICT (name) DO NOTHING"),
+                {"n": name, "p": json.dumps(blocks), "u": now, "by": "system"},
+            )
 
 
 # ----------------------------- users -------------------------------------- #
@@ -679,3 +713,52 @@ def delete_nav(nav_id: int) -> bool:
     with get_conn() as conn:
         result = conn.execute(text("DELETE FROM nav_items WHERE id = :id"), {"id": nav_id})
         return result.rowcount > 0
+
+
+# ----------------------------- layouts ------------------------------------ #
+
+def get_layout(name: str) -> list[dict]:
+    with get_conn() as conn:
+        row = _row(conn.execute(
+            text("SELECT payload FROM layouts WHERE name = :n"), {"n": name}
+        ))
+        if not row:
+            return DEFAULT_LAYOUTS.get(name, [])
+        try:
+            return json.loads(row["payload"])
+        except json.JSONDecodeError:
+            return DEFAULT_LAYOUTS.get(name, [])
+
+
+def get_all_layouts() -> dict[str, list[dict]]:
+    with get_conn() as conn:
+        rows = _rows(conn.execute(text("SELECT name, payload FROM layouts")))
+    out = {}
+    for r in rows:
+        try:
+            out[r["name"]] = json.loads(r["payload"])
+        except json.JSONDecodeError:
+            out[r["name"]] = []
+    # Make sure default layout names always present
+    for n, default in DEFAULT_LAYOUTS.items():
+        out.setdefault(n, default)
+    return out
+
+
+def save_layout(name: str, blocks: list[dict], actor: str | None) -> list[dict]:
+    payload = json.dumps(blocks, ensure_ascii=False)
+    with get_conn() as conn:
+        conn.execute(
+            text("INSERT INTO layouts(name, payload, updated_at, updated_by) "
+                 "VALUES(:n,:p,:u,:by) ON CONFLICT(name) DO UPDATE SET "
+                 "payload=EXCLUDED.payload, updated_at=EXCLUDED.updated_at, "
+                 "updated_by=EXCLUDED.updated_by"),
+            {"n": name, "p": payload, "u": time.time(), "by": actor},
+        )
+    return blocks
+
+
+def reset_layout(name: str, actor: str | None) -> list[dict]:
+    """Restore a layout to its default."""
+    default = DEFAULT_LAYOUTS.get(name, [])
+    return save_layout(name, default, actor)

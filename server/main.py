@@ -125,6 +125,10 @@ class NavItemIn(BaseModel):
     visible: bool = True
 
 
+class LayoutIn(BaseModel):
+    blocks: list[dict]
+
+
 class EditIn(BaseModel):
     fields: dict = Field(default_factory=dict)
     staff: list | None = None
@@ -622,6 +626,40 @@ def nav_delete(nav_id: int, actor: dict = Depends(auth.require_admin)) -> dict:
     db.log_audit(actor["username"], "nav.delete", str(nav_id))
     events.publish("nav.updated", {"id": nav_id, "deleted": True})
     return {"ok": True}
+
+
+# ----------------------------- layouts ------------------------------------ #
+# Layouts are ordered lists of "blocks" that the dashboard renders above
+# (slot=header) and below (slot=footer) the view-switched main content.
+# Admin can drag-and-drop reorder, toggle visibility, and add custom blocks.
+
+@app.get("/api/layouts")
+def layouts_all() -> dict:
+    """Public — the dashboard reads these on every page load."""
+    return db.get_all_layouts()
+
+
+@app.get("/api/layouts/{name}")
+def layouts_get(name: str) -> dict:
+    return {"name": name, "blocks": db.get_layout(name)}
+
+
+@app.put("/api/layouts/{name}")
+def layouts_set(name: str, payload: LayoutIn,
+                actor: dict = Depends(auth.require_admin)) -> dict:
+    blocks = db.save_layout(name, payload.blocks, actor["username"])
+    db.log_audit(actor["username"], "layout.update", name,
+                 f"{len(blocks)} blocks")
+    events.publish("layout.updated", {"name": name})
+    return {"name": name, "blocks": blocks}
+
+
+@app.post("/api/layouts/{name}/reset")
+def layouts_reset(name: str, actor: dict = Depends(auth.require_admin)) -> dict:
+    blocks = db.reset_layout(name, actor["username"])
+    db.log_audit(actor["username"], "layout.reset", name)
+    events.publish("layout.updated", {"name": name, "reset": True})
+    return {"name": name, "blocks": blocks}
 
 
 # ----------------------------- SSE channel -------------------------------- #

@@ -58,6 +58,37 @@
       outline-offset: 4px;
       background: rgba(184,53,30,0.06);
     }
+    [data-cms-section] {
+      position: relative;
+      outline: 2px dashed transparent;
+      outline-offset: -2px;
+      transition: outline-color 120ms ease;
+    }
+    [data-cms-section]:hover { outline-color: #1e6eb8; }
+    [data-cms-section].dragging { opacity: 0.4; }
+    [data-cms-section].drag-over-top    { box-shadow: inset 0 4px 0 #1e6eb8; }
+    [data-cms-section].drag-over-bottom { box-shadow: inset 0 -4px 0 #1e6eb8; }
+    .cms-section-handle {
+      position: absolute; top: 6px; left: 6px;
+      background: rgba(30,110,184,0.95); color: white;
+      padding: 4px 8px; border-radius: 4px;
+      font: 600 11px 'JetBrains Mono', ui-monospace, monospace;
+      cursor: grab; user-select: none;
+      z-index: 99998;
+      opacity: 0; pointer-events: none;
+      transition: opacity 120ms ease;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .cms-section-handle:hover { background: #1e6eb8; }
+    .cms-section-handle:active { cursor: grabbing; }
+    [data-cms-section]:hover .cms-section-handle { opacity: 1; pointer-events: auto; }
+    .cms-handle-grip { font-size: 14px; line-height: 1; }
+    .cms-handle-hide {
+      background: rgba(0,0,0,0.4); color: white;
+      border: none; border-radius: 3px; padding: 2px 6px;
+      cursor: pointer; font-size: 10px;
+    }
+    .cms-handle-hide:hover { background: rgba(184,53,30,0.95); }
     [data-cms-bind][data-cms-inline] {
       outline-color: #6b8d6b;
     }
@@ -105,6 +136,75 @@
       tag.className = 'cms-tag';
       tag.textContent = bind;
       el.appendChild(tag);
+    });
+    document.querySelectorAll('[data-cms-section]').forEach((el) => {
+      if (el.querySelector(':scope > .cms-section-handle')) return;
+      const sectionRef = el.getAttribute('data-cms-section') || '';
+      const blockType = el.getAttribute('data-cms-block-type') || '';
+      const handle = document.createElement('div');
+      handle.className = 'cms-section-handle';
+      handle.draggable = true;
+      handle.dataset.sectionRef = sectionRef;
+      const grip = document.createElement('span');
+      grip.className = 'cms-handle-grip';
+      grip.textContent = '⋮⋮';
+      const label = document.createElement('span');
+      label.textContent = blockType || sectionRef;
+      const hideBtn = document.createElement('button');
+      hideBtn.className = 'cms-handle-hide';
+      hideBtn.title = 'Hide this section';
+      hideBtn.textContent = '×';
+      hideBtn.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const [slot, id] = sectionRef.split(':');
+        window.parent.postMessage({ type: 'cms.hideSection', slot, id }, '*');
+      });
+      handle.append(grip, label, hideBtn);
+      // Drag events live on the handle so users can click into the section
+      // body without dragging accidentally.
+      handle.addEventListener('dragstart', (e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', sectionRef);
+        el.classList.add('dragging');
+      });
+      handle.addEventListener('dragend', () => {
+        el.classList.remove('dragging');
+        document.querySelectorAll('[data-cms-section]').forEach((x) => {
+          x.classList.remove('drag-over-top', 'drag-over-bottom');
+        });
+      });
+      el.appendChild(handle);
+
+      // Each section is also a drop target for sibling drops.
+      el.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const rect = el.getBoundingClientRect();
+        const top = (e.clientY - rect.top) < rect.height / 2;
+        el.classList.toggle('drag-over-top', top);
+        el.classList.toggle('drag-over-bottom', !top);
+      });
+      el.addEventListener('dragleave', () => {
+        el.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+      el.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const fromRef = e.dataTransfer.getData('text/plain');
+        const toRef = el.getAttribute('data-cms-section') || '';
+        el.classList.remove('drag-over-top', 'drag-over-bottom');
+        if (!fromRef || fromRef === toRef) return;
+        const rect = el.getBoundingClientRect();
+        const before = (e.clientY - rect.top) < rect.height / 2;
+        const [slot, fromId] = fromRef.split(':');
+        const [, toId] = toRef.split(':');
+        window.parent.postMessage({
+          type: 'cms.reorder',
+          slot,
+          from: fromId,
+          to: toId,
+          position: before ? 'before' : 'after',
+        }, '*');
+      });
     });
   }
   // Decorate now + whenever React re-renders (MutationObserver).

@@ -148,12 +148,22 @@ function AppInner() {
   const totalOrgs = all.length - totalCommunities;
   const grandPop = all.reduce((s,c) => s + (c.population||0), 0);
 
+  // Re-render when the layout changes via SSE so admin reordering shows up live.
+  const [, _setLayoutTick] = useState(0);
+  useEffect(() => {
+    function h() { _setLayoutTick((t) => t + 1); }
+    window.addEventListener('atlas:layouts', h);
+    return () => window.removeEventListener('atlas:layouts', h);
+  }, []);
+
+  const heroCtx = {
+    totalCommunities, totalOrgs, grandPop,
+    view, setView, filtered: filtered.length, all: all.length,
+  };
+
   return (
     <div className="app">
-      <window.GreetingBanner />
-      <div className="admin-slot"><window.AdminToolbar /></div>
-      <window.AccessibilityPanel />
-      <Hero totalCommunities={totalCommunities} totalOrgs={totalOrgs} grandPop={grandPop} view={view} setView={setView} filtered={filtered.length} all={all.length} />
+      <BlockRenderer slot="header" blocks={DEFAULT_HEADER} ctx={heroCtx} />
 
       {view === 'stats' ? (
         <window.StatsView all={all} onSelect={setSelectedId} setView={setView}
@@ -237,6 +247,8 @@ function AppInner() {
         </div>
       )}
       {view === 'stats' && <window.TeachingsRibbon />}
+
+      <BlockRenderer slot="footer" blocks={DEFAULT_FOOTER} ctx={heroCtx} />
     </div>
   );
 }
@@ -249,6 +261,93 @@ function getSetting(key, fallback) {
   const s = window.ATLAS_SETTINGS || {};
   return s[key] != null && s[key] !== '' ? s[key] : fallback;
 }
+
+
+// ============================================================================
+// BlockRenderer — renders a layout (header / footer) as a list of blocks.
+// Block types: banner, admin-bar, a11y-panel, hero, page, spacer, html.
+// Layout is driven by window.ATLAS_LAYOUTS[slot] (set by api-bridge.js).
+// Each block is wrapped with data-cms-section="<slot>:<id>" so the edit
+// overlay can target it for drag-and-drop reordering.
+// ============================================================================
+
+function PageBlock({ slug }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    function h() { setTick((t) => t + 1); }
+    window.addEventListener('atlas:pages', h);
+    return () => window.removeEventListener('atlas:pages', h);
+  }, []);
+  const pages = window.ATLAS_PAGES || {};
+  const page = pages[slug];
+  if (!page || !page.visible) return null;
+  return (
+    <section className="content-block page-block" data-cms-bind={`page:${slug}`}>
+      {page.title && <h3 className="block-title">{page.title}</h3>}
+      <div className="block-body">
+        {(page.body || '').split(/\n{2,}/).map((p, i) => <p key={i}>{p}</p>)}
+      </div>
+    </section>
+  );
+}
+
+function SpacerBlock({ size = 'md' }) {
+  const px = { sm: 16, md: 32, lg: 64 }[size] || 32;
+  return <div className="content-spacer" style={{ height: px }} aria-hidden="true" />;
+}
+
+function HtmlBlock({ html }) {
+  // Custom-HTML blocks are admin-authored. To keep XSS surface small we use
+  // a sanitised passthrough (no <script> tags allowed) — see api-bridge.
+  return <div className="content-html" dangerouslyInnerHTML={{ __html: html || '' }} />;
+}
+
+function BlockRenderer({ slot, blocks, ctx }) {
+  const layouts = window.ATLAS_LAYOUTS || {};
+  const list = (layouts[slot] && layouts[slot].length) ? layouts[slot] : (blocks || []);
+
+  return (
+    <>
+      {list.filter((b) => b.visible !== false).map((b) => {
+        const wrapAttrs = {
+          'data-cms-section': `${slot}:${b.id}`,
+          'data-cms-block-type': b.type,
+          key: b.id,
+        };
+        switch (b.type) {
+          case 'banner':
+            return <div {...wrapAttrs}><window.GreetingBanner /></div>;
+          case 'admin-bar':
+            return <div {...wrapAttrs} className="admin-slot"><window.AdminToolbar /></div>;
+          case 'a11y-panel':
+            return <div {...wrapAttrs}><window.AccessibilityPanel /></div>;
+          case 'hero':
+            return <div {...wrapAttrs}><Hero {...ctx} /></div>;
+          case 'page':
+            return <div {...wrapAttrs}><PageBlock slug={(b.props || {}).slug || ''} /></div>;
+          case 'spacer':
+            return <div {...wrapAttrs}><SpacerBlock size={(b.props || {}).size} /></div>;
+          case 'html':
+            return <div {...wrapAttrs}><HtmlBlock html={(b.props || {}).html} /></div>;
+          default:
+            return null;
+        }
+      })}
+    </>
+  );
+}
+
+// Default layouts when the API is unreachable (offline / standalone).
+const DEFAULT_HEADER = [
+  { id: 'h-banner', type: 'banner',     visible: true },
+  { id: 'h-admin',  type: 'admin-bar',  visible: true },
+  { id: 'h-a11y',   type: 'a11y-panel', visible: true },
+  { id: 'h-hero',   type: 'hero',       visible: true },
+];
+const DEFAULT_FOOTER = [
+  { id: 'f-ack',     type: 'page', visible: true, props: { slug: 'acknowledgement' } },
+  { id: 'f-contact', type: 'page', visible: true, props: { slug: 'contact' } },
+];
 
 function Hero({ totalCommunities, totalOrgs, grandPop, view, setView, filtered, all }) {
   // Subscribe to live setting updates from the CMS via SSE.
