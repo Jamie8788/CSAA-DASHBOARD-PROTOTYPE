@@ -165,6 +165,8 @@ function AppInner() {
     <div className="app">
       <BlockRenderer slot="header" blocks={DEFAULT_HEADER} ctx={heroCtx} />
 
+      <BlockRenderer slot={`view.${view}.header`} blocks={[]} ctx={heroCtx} />
+
       {view === 'stats' ? (
         <window.StatsView all={all} onSelect={setSelectedId} setView={setView}
           setRegions={setRegions} setOrgTypes={setOrgTypes} setPillars={setPillars} />
@@ -248,6 +250,7 @@ function AppInner() {
       )}
       {view === 'stats' && <window.TeachingsRibbon />}
 
+      <BlockRenderer slot={`view.${view}.footer`} blocks={[]} ctx={heroCtx} />
       <BlockRenderer slot="footer" blocks={DEFAULT_FOOTER} ctx={heroCtx} />
     </div>
   );
@@ -299,7 +302,89 @@ function SpacerBlock({ size = 'md' }) {
 function HtmlBlock({ html }) {
   // Custom-HTML blocks are admin-authored. To keep XSS surface small we use
   // a sanitised passthrough (no <script> tags allowed) — see api-bridge.
-  return <div className="content-html" dangerouslyInnerHTML={{ __html: html || '' }} />;
+  const safe = String(html || '').replace(/<\/?(script)[^>]*>/gi, '');
+  return <div className="content-html" dangerouslySetInnerHTML={{ __html: safe }} />;
+}
+
+function TextBlock({ text, align, size }) {
+  const cls = `content-text size-${size || 'md'} align-${align || 'left'}`;
+  const lines = String(text || '').split(/\n{2,}/);
+  return (
+    <div className={cls}>
+      {lines.map((p, i) => <p key={i}>{p}</p>)}
+    </div>
+  );
+}
+
+function HeadingBlock({ text, level, align }) {
+  const Tag = `h${Math.min(6, Math.max(1, parseInt(level || 2, 10)))}`;
+  return <Tag className={`content-heading align-${align || 'left'}`}>{text || ''}</Tag>;
+}
+
+function ImageBlock({ src, alt, width, caption, align }) {
+  if (!src) return null;
+  return (
+    <figure className={`content-image align-${align || 'center'}`}>
+      <img src={src} alt={alt || ''} style={width ? { maxWidth: width } : {}} />
+      {caption && <figcaption>{caption}</figcaption>}
+    </figure>
+  );
+}
+
+function ButtonBlock({ text, href, variant, align }) {
+  const cls = `content-button variant-${variant || 'primary'} align-${align || 'left'}`;
+  return (
+    <div className={cls}>
+      <a href={href || '#'} className="btn-block"
+         target={href && href.startsWith('http') ? '_blank' : undefined}
+         rel="noopener noreferrer">
+        {text || 'Click here'}
+      </a>
+    </div>
+  );
+}
+
+function DividerBlock({ style, color }) {
+  const dashed = style === 'dashed';
+  return <hr className="content-divider"
+    style={{ borderTop: `1px ${dashed ? 'dashed' : 'solid'} ${color || 'currentColor'}` }} />;
+}
+
+function EmbedBlock({ url, height, title }) {
+  if (!url) return null;
+  // Convert common URLs to embed format.
+  let src = url;
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+  if (yt) src = `https://www.youtube.com/embed/${yt[1]}`;
+  const vm = url.match(/vimeo\.com\/(\d+)/);
+  if (vm) src = `https://player.vimeo.com/video/${vm[1]}`;
+  return (
+    <div className="content-embed">
+      <iframe src={src} title={title || 'embed'} loading="lazy"
+              style={{ width: '100%', height: (height || 360) + 'px', border: 0 }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen />
+    </div>
+  );
+}
+
+function ColumnsBlock({ columns, gap, children, blocks, slot, ctx }) {
+  // Column children are themselves blocks rendered via BlockRenderer.
+  const n = parseInt(columns || 2, 10);
+  const items = Array.isArray(blocks) ? blocks : [];
+  return (
+    <div className="content-columns" style={{
+      display: 'grid',
+      gridTemplateColumns: `repeat(${n}, 1fr)`,
+      gap: (gap || 16) + 'px',
+    }}>
+      {Array.from({ length: n }).map((_, i) => (
+        <div key={i} className="column">
+          {items[i] && <BlockRenderer slot={`${slot}-c${i}`} blocks={[items[i]]} ctx={ctx} />}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function BlockRenderer({ slot, blocks, ctx }) {
@@ -329,6 +414,20 @@ function BlockRenderer({ slot, blocks, ctx }) {
             return <div {...wrapAttrs}><SpacerBlock size={(b.props || {}).size} /></div>;
           case 'html':
             return <div {...wrapAttrs}><HtmlBlock html={(b.props || {}).html} /></div>;
+          case 'text':
+            return <div {...wrapAttrs}><TextBlock {...(b.props || {})} /></div>;
+          case 'heading':
+            return <div {...wrapAttrs}><HeadingBlock {...(b.props || {})} /></div>;
+          case 'image':
+            return <div {...wrapAttrs}><ImageBlock {...(b.props || {})} /></div>;
+          case 'button':
+            return <div {...wrapAttrs}><ButtonBlock {...(b.props || {})} /></div>;
+          case 'divider':
+            return <div {...wrapAttrs}><DividerBlock {...(b.props || {})} /></div>;
+          case 'embed':
+            return <div {...wrapAttrs}><EmbedBlock {...(b.props || {})} /></div>;
+          case 'columns':
+            return <div {...wrapAttrs}><ColumnsBlock {...(b.props || {})} slot={slot + '-' + b.id} ctx={ctx} /></div>;
           default:
             return null;
         }

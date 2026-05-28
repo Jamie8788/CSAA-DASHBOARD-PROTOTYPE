@@ -234,6 +234,19 @@ DEFAULT_LAYOUTS = {
         {"id": "f-ack",     "type": "page", "visible": True, "props": {"slug": "acknowledgement"}},
         {"id": "f-contact", "type": "page", "visible": True, "props": {"slug": "contact"}},
     ],
+    # Per-view layouts — each main tab can have its own header/footer content.
+    # Default empty so existing dashboards behave the same; admins add custom
+    # text/heading/image/columns blocks via the CMS Page Builder.
+    "view.map.header":      [],
+    "view.map.footer":      [],
+    "view.list.header":     [],
+    "view.list.footer":     [],
+    "view.stories.header":  [],
+    "view.stories.footer":  [],
+    "view.stats.header":    [],
+    "view.stats.footer":    [],
+    "view.coverage.header": [],
+    "view.coverage.footer": [],
 }
 
 

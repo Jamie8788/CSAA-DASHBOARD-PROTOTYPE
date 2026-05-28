@@ -296,6 +296,8 @@
     } else if (msg.type === 'cms.stylePreview') {
       // Live style preview — inject a <style> block keyed to the selector
       // so we can replace/clear it without affecting other elements.
+      // Now handles nested state (default/hover/focus/active) and
+      // breakpoint (all/mobile/tablet/desktop) overrides.
       const id = 'cms-style-preview-' + msg.selector.replace(/[^a-z0-9_-]/gi, '_');
       let st = document.getElementById(id);
       if (!st) {
@@ -303,12 +305,21 @@
         st.id = id;
         document.head.appendChild(st);
       }
-      const cssSel = selectorOf(msg.selector);
-      const props = Object.entries(msg.properties || {})
-        .filter(([_, v]) => v != null && v !== '')
-        .map(([k, v]) => `  ${camelToKebab(k)}: ${v};`).join('\n');
-      const custom = String(msg.customCss || '').replace(/<\/?(style|script)[^>]*>/gi, '');
-      st.textContent = `${cssSel} {\n${props}\n${custom}\n}`;
+      st.textContent = (window.__ATLAS_COMPILE_STYLE_ENTRY
+        ? window.__ATLAS_COMPILE_STYLE_ENTRY({
+            selector: msg.selector,
+            properties: msg.properties,
+            customCss: msg.customCss,
+          }).join('\n\n')
+        : (() => {
+            // Fallback if the bridge helper isn't loaded.
+            const cssSel = selectorOf(msg.selector);
+            const props = Object.entries(msg.properties || {})
+              .filter(([_, v]) => v != null && v !== '')
+              .map(([k, v]) => `  ${camelToKebab(k)}: ${v};`).join('\n');
+            const custom = String(msg.customCss || '').replace(/<\/?(style|script)[^>]*>/gi, '');
+            return `${cssSel} {\n${props}\n${custom}\n}`;
+          })());
     } else if (msg.type === 'cms.styleClear') {
       const id = 'cms-style-preview-' + msg.selector.replace(/[^a-z0-9_-]/gi, '_');
       const st = document.getElementById(id);

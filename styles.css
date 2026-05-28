@@ -4868,3 +4868,81 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
     width: 240px !important;
   }
 }
+
+/* ====================================================================== */
+/* BlockRenderer content blocks (page, text, heading, image, button,      */
+/* divider, embed, columns) — CMS-managed content surfaces.               */
+/* ====================================================================== */
+
+.content-block, .content-text, .content-heading, .content-image,
+.content-button, .content-embed, .content-columns, .content-html {
+  max-width: 1200px;
+  margin: 16px auto;
+  padding: 0 32px;
+}
+
+.page-block .block-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 10px;
+  letter-spacing: -0.01em;
+}
+.page-block .block-body p {
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0 0 12px;
+}
+
+.content-text.size-sm p { font-size: 14px; line-height: 1.6; }
+.content-text.size-md p { font-size: 16px; line-height: 1.65; }
+.content-text.size-lg p { font-size: 19px; line-height: 1.55; }
+.content-text.align-center { text-align: center; }
+.content-text.align-right  { text-align: right; }
+.content-text p { margin: 0 0 12px; font-family: var(--serif); color: var(--ink-2); }
+
+.content-heading {
+  font-family: var(--serif);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin: 0;
+}
+.content-heading.align-center { text-align: center; }
+.content-heading.align-right  { text-align: right; }
+
+.content-image { text-align: center; }
+.content-image.align-left  { text-align: left; }
+.content-image.align-right { text-align: right; }
+.content-image img { max-width: 100%; height: auto; border-radius: 6px; }
+.content-image figcaption {
+  font-size: 13px; color: var(--ink-3); margin-top: 8px;
+}
+
+.content-button.align-center { text-align: center; }
+.content-button.align-right  { text-align: right; }
+.content-button .btn-block {
+  display: inline-block; padding: 10px 18px;
+  font-family: var(--sans); font-size: 14px; font-weight: 500;
+  border-radius: 6px; text-decoration: none;
+  border: 1px solid var(--south);
+}
+.content-button.variant-primary .btn-block { background: var(--south); color: white; }
+.content-button.variant-secondary .btn-block { background: transparent; color: var(--south); }
+.content-button.variant-ghost .btn-block { background: transparent; color: var(--ink); border-color: var(--line); }
+.content-button .btn-block:hover { opacity: 0.9; }
+
+.content-divider { border: 0; margin: 24px auto; }
+
+.content-embed iframe { display: block; border-radius: 6px; }
+
+.content-columns .column > * { margin: 0; padding: 0; }
+.content-columns .column .content-block,
+.content-columns .column .content-text,
+.content-columns .column .content-heading,
+.content-columns .column .content-image,
+.content-columns .column .content-button { margin: 0; padding: 0; }
+
+.content-spacer { width: 100%; }

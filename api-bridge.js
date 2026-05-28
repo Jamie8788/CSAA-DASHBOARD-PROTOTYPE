@@ -88,21 +88,91 @@
     return sel;  // already a CSS selector (advanced use)
   }
   function camelToKebab(s) { return s.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()); }
+  // State + breakpoint suffixes mapped to CSS pseudo-classes and media queries.
+  const STATE_SUFFIXES = { default: '', hover: ':hover', focus: ':focus', active: ':active' };
+  const BREAKPOINT_QUERIES = {
+    all: null,
+    mobile:  '@media (max-width: 640px)',
+    tablet:  '@media (min-width: 641px) and (max-width: 1024px)',
+    desktop: '@media (min-width: 1025px)',
+  };
+
+  function compileEntryToRules(entry) {
+    // Entry format (new):
+    //   properties: { default: {…}, hover: {…}, focus: {…}, active: {…} }
+    //               OR { default: { all:{…}, mobile:{…}, tablet:{…}, desktop:{…} },
+    //                    hover: { all:{…}, … }, … }
+    //               OR legacy flat: { fontSize: '32px', color: '#000' }
+    //   customCss: same nested shape OR flat string
+    const sel = selectorToCSS(entry.selector || '');
+    if (!sel) return [];
+    const rules = [];
+
+    const properties = entry.properties || {};
+    const customCss = entry.customCss || '';
+
+    // Normalize legacy flat shapes to the new nested form.
+    function normalize(blob) {
+      if (typeof blob === 'string') return { default: { all: blob } };
+      if (!blob || typeof blob !== 'object') return {};
+      // Already nested by state?
+      const keys = Object.keys(blob);
+      if (keys.some((k) => STATE_SUFFIXES.hasOwnProperty(k))) {
+        const out = {};
+        for (const state of keys) {
+          const inner = blob[state];
+          if (typeof inner === 'string') { out[state] = { all: inner }; continue; }
+          if (inner && typeof inner === 'object') {
+            const innerKeys = Object.keys(inner);
+            if (innerKeys.some((k) => BREAKPOINT_QUERIES.hasOwnProperty(k))) {
+              out[state] = inner;
+            } else {
+              out[state] = { all: inner };
+            }
+          }
+        }
+        return out;
+      }
+      // Flat: properties are directly at the root — treat as default/all.
+      return { default: { all: blob } };
+    }
+
+    const np = normalize(properties);
+    const nc = normalize(customCss);
+
+    function makeBody(propBlob, cssBlob) {
+      const parts = [];
+      if (propBlob && typeof propBlob === 'object') {
+        for (const [k, v] of Object.entries(propBlob)) {
+          if (v == null || v === '') continue;
+          parts.push(`  ${camelToKebab(k)}: ${v};`);
+        }
+      }
+      if (typeof cssBlob === 'string' && cssBlob.trim()) {
+        const safe = cssBlob.replace(/<\/?(style|script)[^>]*>/gi, '');
+        parts.push('  ' + safe.replace(/\n/g, '\n  '));
+      }
+      return parts.join('\n');
+    }
+
+    for (const state of Object.keys(STATE_SUFFIXES)) {
+      const stateProps = np[state] || {};
+      const stateCss = nc[state] || {};
+      for (const bp of Object.keys(BREAKPOINT_QUERIES)) {
+        const body = makeBody(stateProps[bp], stateCss[bp]);
+        if (!body) continue;
+        const rule = `${sel}${STATE_SUFFIXES[state]} {\n${body}\n}`;
+        const wrapped = BREAKPOINT_QUERIES[bp] ? `${BREAKPOINT_QUERIES[bp]} {\n${rule}\n}` : rule;
+        rules.push(wrapped);
+      }
+    }
+    return rules;
+  }
+
   function buildElementStylesCSS(styles) {
     const out = [];
     Object.values(styles).forEach((entry) => {
-      const sel = selectorToCSS(entry.selector || '');
-      if (!sel) return;
-      const propsCss = Object.entries(entry.properties || {})
-        .filter(([_, v]) => v != null && v !== '')
-        .map(([k, v]) => `  ${camelToKebab(k)}: ${v};`)
-        .join('\n');
-      if (propsCss) out.push(`${sel} {\n${propsCss}\n}`);
-      if (entry.customCss && entry.customCss.trim()) {
-        // Sanitise: forbid </style> and <script> in custom CSS.
-        const safe = String(entry.customCss).replace(/<\/?(style|script)[^>]*>/gi, '');
-        out.push(`${sel} {\n${safe}\n}`);
-      }
+      out.push(...compileEntryToRules(entry));
     });
     return out.join('\n\n');
   }
@@ -117,6 +187,8 @@
     el.textContent = css;
   }
   window.__ATLAS_INJECT_STYLES = injectElementStyles;
+  // Edit overlay uses this to compile a single entry into rules for live preview.
+  window.__ATLAS_COMPILE_STYLE_ENTRY = compileEntryToRules;
 
   function applySettingsToDocument(s) {
     if (!s) return;

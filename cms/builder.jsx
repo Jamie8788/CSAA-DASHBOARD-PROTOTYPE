@@ -83,6 +83,23 @@ const DASHBOARD_STRUCTURE = [
   ]},
 ];
 
+// All layout slots the CMS knows about. Used by the Layout Manager so
+// admins see every editable surface in one place.
+const ALL_LAYOUTS = [
+  { slot: 'header',              label: 'Global · top of every page' },
+  { slot: 'view.map.header',     label: 'Map view · above content' },
+  { slot: 'view.map.footer',     label: 'Map view · below content' },
+  { slot: 'view.list.header',    label: 'Directory · above content' },
+  { slot: 'view.list.footer',    label: 'Directory · below content' },
+  { slot: 'view.stories.header', label: 'Stories tab · above content' },
+  { slot: 'view.stories.footer', label: 'Stories tab · below content' },
+  { slot: 'view.stats.header',   label: 'Insights tab · above content' },
+  { slot: 'view.stats.footer',   label: 'Insights tab · below content' },
+  { slot: 'view.coverage.header',label: 'Coverage tab · above content' },
+  { slot: 'view.coverage.footer',label: 'Coverage tab · below content' },
+  { slot: 'footer',              label: 'Global · bottom of every page' },
+];
+
 const DEVICE_WIDTHS = [
   { key: 'mobile',  label: '📱', width:  390, name: 'Mobile (390)' },
   { key: 'tablet',  label: '📲', width:  820, name: 'Tablet (820)' },
@@ -362,7 +379,9 @@ function SectionRow({ section, onControl, pages, settings, nav }) {
 
 function LayoutManager({ layouts, pages, onChange, onResetSlot }) {
   const [addingSlot, setAddingSlot] = useState_b(null);
-  const [newSlug, setNewSlug] = useState_b('');
+  const [pickerType, setPickerType] = useState_b('page');
+  const [pickerProps, setPickerProps] = useState_b({});
+  const [expanded, setExpanded] = useState_b({ header: true, footer: true });
 
   function move(slot, idx, delta) {
     const list = [...(layouts[slot] || [])];
@@ -381,79 +400,164 @@ function LayoutManager({ layouts, pages, onChange, onResetSlot }) {
     const list = (layouts[slot] || []).filter((b) => b.id !== id);
     onChange(slot, list);
   }
-  function addPage(slot) {
-    if (!newSlug.trim()) return;
-    const id = `${slot[0]}-p-${Date.now().toString(36)}`;
+  function addBlock(slot, type, props) {
+    const id = `${slot.replace(/[^a-z]/gi, '')}-${type[0]}-${Date.now().toString(36)}`;
     const blocks = [...(layouts[slot] || []),
-      { id, type: 'page', visible: true, props: { slug: newSlug.trim() } }];
-    onChange(slot, blocks);
-    setAddingSlot(null); setNewSlug('');
-  }
-  function addSpacer(slot, size) {
-    const id = `${slot[0]}-sp-${Date.now().toString(36)}`;
-    const blocks = [...(layouts[slot] || []),
-      { id, type: 'spacer', visible: true, props: { size } }];
+      { id, type, visible: true, props: props || {} }];
     onChange(slot, blocks);
   }
 
-  function renderSlot(slot) {
+  function summary(b) {
+    const p = b.props || {};
+    if (b.type === 'page') return p.slug ? `page · ${p.slug}` : 'page';
+    if (b.type === 'heading') return `H${p.level || 2} · ${(p.text || '').slice(0, 30)}`;
+    if (b.type === 'text') return `text · ${(p.text || '').slice(0, 40)}`;
+    if (b.type === 'image') return `image · ${(p.src || '').slice(0, 30)}`;
+    if (b.type === 'button') return `button · ${p.text || ''}`;
+    if (b.type === 'embed') return `embed · ${(p.url || '').slice(0, 30)}`;
+    if (b.type === 'columns') return `columns · ${p.columns || 2}`;
+    if (b.type === 'spacer') return `spacer · ${p.size || 'md'}`;
+    if (b.type === 'divider') return `divider · ${p.style || 'solid'}`;
+    return b.type;
+  }
+
+  function renderPicker(slot) {
+    const p = pickerProps;
+    function set(k, v) { setPickerProps((s) => ({ ...s, [k]: v })); }
+    function commit() {
+      // Validation per type
+      if (pickerType === 'page' && !p.slug) return;
+      if (pickerType === 'heading' && !p.text) return;
+      if (pickerType === 'text' && !p.text) return;
+      addBlock(slot, pickerType, p);
+      setAddingSlot(null); setPickerProps({}); setPickerType('page');
+    }
+    return (
+      <div className="picker">
+        <div className="form-row" style={{ marginBottom: 4 }}>
+          <select value={pickerType} onChange={(e) => { setPickerType(e.target.value); setPickerProps({}); }}>
+            {['page','heading','text','image','button','divider','spacer','embed','columns','html'].map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+        {pickerType === 'page' && (
+          <select value={p.slug || ''} onChange={(e) => set('slug', e.target.value)}>
+            <option value="">Choose page…</option>
+            {Object.keys(pages).map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
+        {pickerType === 'heading' && (
+          <>
+            <input placeholder="Heading text" value={p.text || ''} onChange={(e) => set('text', e.target.value)} />
+            <select value={p.level || 2} onChange={(e) => set('level', e.target.value)}>
+              {[1,2,3,4,5,6].map((l) => <option key={l} value={l}>H{l}</option>)}
+            </select>
+          </>
+        )}
+        {pickerType === 'text' && (
+          <textarea placeholder="Paragraph text" rows={3}
+                    value={p.text || ''} onChange={(e) => set('text', e.target.value)} />
+        )}
+        {pickerType === 'image' && (
+          <>
+            <input placeholder="Image URL" value={p.src || ''} onChange={(e) => set('src', e.target.value)} />
+            <input placeholder="Alt text" value={p.alt || ''} onChange={(e) => set('alt', e.target.value)} />
+          </>
+        )}
+        {pickerType === 'button' && (
+          <>
+            <input placeholder="Button text" value={p.text || ''} onChange={(e) => set('text', e.target.value)} />
+            <input placeholder="Link (https://…)" value={p.href || ''} onChange={(e) => set('href', e.target.value)} />
+            <select value={p.variant || 'primary'} onChange={(e) => set('variant', e.target.value)}>
+              <option value="primary">Primary</option>
+              <option value="secondary">Secondary</option>
+              <option value="ghost">Ghost</option>
+            </select>
+          </>
+        )}
+        {pickerType === 'divider' && (
+          <select value={p.style || 'solid'} onChange={(e) => set('style', e.target.value)}>
+            <option value="solid">Solid</option>
+            <option value="dashed">Dashed</option>
+          </select>
+        )}
+        {pickerType === 'spacer' && (
+          <select value={p.size || 'md'} onChange={(e) => set('size', e.target.value)}>
+            <option value="sm">Small (16px)</option>
+            <option value="md">Medium (32px)</option>
+            <option value="lg">Large (64px)</option>
+          </select>
+        )}
+        {pickerType === 'embed' && (
+          <input placeholder="YouTube / Vimeo / iframe URL"
+                 value={p.url || ''} onChange={(e) => set('url', e.target.value)} />
+        )}
+        {pickerType === 'columns' && (
+          <select value={p.columns || 2} onChange={(e) => set('columns', Number(e.target.value))}>
+            <option value={2}>2 columns</option>
+            <option value={3}>3 columns</option>
+            <option value={4}>4 columns</option>
+          </select>
+        )}
+        {pickerType === 'html' && (
+          <textarea placeholder="<div>Raw HTML…</div>" rows={4}
+                    value={p.html || ''} onChange={(e) => set('html', e.target.value)} />
+        )}
+        <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+          <button className="btn" onClick={commit}>Add</button>
+          <button className="btn ghost" onClick={() => { setAddingSlot(null); setPickerProps({}); }}>Cancel</button>
+        </div>
+      </div>
+    );
+  }
+
+  function renderSlot(slot, label) {
     const list = layouts[slot] || [];
+    const isOpen = expanded[slot] !== false;
     return (
       <div className="builder-section" key={slot}>
         <h3 className="builder-group-title" style={{ marginTop: 0,
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Layout · {slot}</span>
-          <button className="btn-link" onClick={() => onResetSlot(slot)}>reset</button>
-        </h3>
-        <p className="small muted" style={{ margin: '0 0 8px' }}>
-          {list.length} block{list.length === 1 ? '' : 's'} · drag the blue ⋮⋮ on the
-          live preview, or use the arrows below.
-        </p>
-        <table className="tbl small" style={{ marginBottom: 8 }}>
-          <tbody>
-            {list.map((b, i) => (
-              <tr key={b.id}>
-                <td style={{ width: 60 }}>
-                  <button className="btn-link" disabled={i === 0} onClick={() => move(slot, i, -1)}>↑</button>&nbsp;
-                  <button className="btn-link" disabled={i === list.length - 1} onClick={() => move(slot, i, +1)}>↓</button>
-                </td>
-                <td>
-                  <span className="mono small">{b.type}</span>
-                  {b.props && b.props.slug && <span className="muted small"> · {b.props.slug}</span>}
-                  {b.props && b.props.size && <span className="muted small"> · {b.props.size}</span>}
-                </td>
-                <td style={{ width: 80 }}>
-                  <button className="btn-link" onClick={() => toggle(slot, b.id)}>
-                    {b.visible ? 'hide' : 'show'}
-                  </button>
-                </td>
-                <td style={{ width: 60 }}>
-                  <button className="btn-link" style={{ color: 'var(--danger)' }}
-                          onClick={() => remove(slot, b.id)}>remove</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          {addingSlot === slot ? (
-            <>
-              <select value={newSlug} onChange={(e) => setNewSlug(e.target.value)} style={{ width: 'auto' }}>
-                <option value="">Choose page…</option>
-                {Object.keys(pages).map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <button className="btn" onClick={() => addPage(slot)} disabled={!newSlug}>Add</button>
-              <button className="btn ghost" onClick={() => { setAddingSlot(null); setNewSlug(''); }}>Cancel</button>
-            </>
-          ) : (
-            <>
-              <button className="btn ghost" onClick={() => setAddingSlot(slot)}>+ Page block</button>
-              <button className="btn ghost" onClick={() => addSpacer(slot, 'sm')}>+ Spacer (sm)</button>
-              <button className="btn ghost" onClick={() => addSpacer(slot, 'md')}>+ Spacer (md)</button>
-              <button className="btn ghost" onClick={() => addSpacer(slot, 'lg')}>+ Spacer (lg)</button>
-            </>
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => setExpanded((e) => ({ ...e, [slot]: !isOpen }))}>
+          <span>{isOpen ? '▾' : '▸'} {label} <span className="muted small">({list.length})</span></span>
+          {isOpen && (
+            <button className="btn-link" onClick={(e) => { e.stopPropagation(); onResetSlot(slot); }}>reset</button>
           )}
-        </div>
+        </h3>
+        {isOpen && (
+          <>
+            {list.length > 0 ? (
+              <table className="tbl small" style={{ marginBottom: 8 }}>
+                <tbody>
+                  {list.map((b, i) => (
+                    <tr key={b.id}>
+                      <td style={{ width: 60 }}>
+                        <button className="btn-link" disabled={i === 0} onClick={() => move(slot, i, -1)}>↑</button>&nbsp;
+                        <button className="btn-link" disabled={i === list.length - 1} onClick={() => move(slot, i, +1)}>↓</button>
+                      </td>
+                      <td className="small">{summary(b)}</td>
+                      <td style={{ width: 80 }}>
+                        <button className="btn-link" onClick={() => toggle(slot, b.id)}>
+                          {b.visible ? 'hide' : 'show'}
+                        </button>
+                      </td>
+                      <td style={{ width: 60 }}>
+                        <button className="btn-link" style={{ color: 'var(--danger)' }}
+                                onClick={() => remove(slot, b.id)}>×</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="small muted" style={{ margin: '0 0 8px' }}>Empty — add a block below.</p>
+            )}
+            {addingSlot === slot ? renderPicker(slot) : (
+              <button className="btn ghost" onClick={() => setAddingSlot(slot)}>+ Add block</button>
+            )}
+          </>
+        )}
       </div>
     );
   }
@@ -461,8 +565,11 @@ function LayoutManager({ layouts, pages, onChange, onResetSlot }) {
   return (
     <>
       <h3 className="builder-group-title" style={{ marginTop: 16 }}>Section layouts</h3>
-      {renderSlot('header')}
-      {renderSlot('footer')}
+      <p className="small muted" style={{ margin: '0 0 8px' }}>
+        Every editable area on the dashboard, top to bottom. Add blocks
+        anywhere (text, image, columns, page, button, embed, etc.).
+      </p>
+      {ALL_LAYOUTS.map((l) => renderSlot(l.slot, l.label))}
     </>
   );
 }
@@ -500,6 +607,8 @@ function Inspector({ inspector, pages, settings, onChange, onClose }) {
   const { kind, key, value } = inspector;
   const ref = useRef_b(null);
   const [tab, setTab] = useState_b('content');
+  const [state, setState] = useState_b('default');     // default | hover | focus | active
+  const [breakpoint, setBreakpoint] = useState_b('all'); // all | mobile | tablet | desktop
   const isBool = value === 'true' || value === 'false';
   const isColor = (key || '').toLowerCase().includes('accent') || (key || '').toLowerCase().includes('color');
   const isTheme = key === 'site.theme';
@@ -509,10 +618,30 @@ function Inspector({ inspector, pages, settings, onChange, onClose }) {
 
   // Local style state (loaded from server on open, edited locally, posted to
   // iframe live, debounced-saved to backend).
+  // Nested shape: properties[state][breakpoint] = { fontSize, color, … }
   const [styleProps, setStyleProps] = useState_b({});
-  const [customCss, setCustomCss] = useState_b('');
-  const [loadedStyle, setLoadedStyle] = useState_b(false);
+  const [customCss, setCustomCss] = useState_b({});  // also nested
   const styleSaveTimer = useRef_b(null);
+
+  // Normalize whatever the server returns to the nested shape.
+  function normalizeStyles(raw) {
+    if (!raw || typeof raw !== 'object') return {};
+    const stateKeys = ['default', 'hover', 'focus', 'active'];
+    if (stateKeys.some((k) => k in raw)) {
+      const out = {};
+      for (const s of stateKeys) {
+        if (!(s in raw)) continue;
+        const inner = raw[s];
+        if (typeof inner === 'string') { out[s] = { all: inner }; continue; }
+        if (!inner || typeof inner !== 'object') continue;
+        const bpKeys = ['all', 'mobile', 'tablet', 'desktop'];
+        if (bpKeys.some((b) => b in inner)) out[s] = inner;
+        else out[s] = { all: inner };
+      }
+      return out;
+    }
+    return { default: { all: raw } };
+  }
 
   useEffect_b(() => {
     let cancelled = false;
@@ -520,10 +649,9 @@ function Inspector({ inspector, pages, settings, onChange, onClose }) {
       try {
         const s = await API.styles.get(styleSelector);
         if (cancelled) return;
-        setStyleProps(s.properties || {});
-        setCustomCss(s.customCss || '');
+        setStyleProps(normalizeStyles(s.properties || {}));
+        setCustomCss(normalizeStyles(s.customCss || ''));
       } catch (e) { /* swallow */ }
-      finally { if (!cancelled) setLoadedStyle(true); }
     })();
     return () => { cancelled = true; };
   }, [styleSelector]);
@@ -532,6 +660,11 @@ function Inspector({ inspector, pages, settings, onChange, onClose }) {
   useEffect_b(() => {
     if (ref.current) { ref.current.focus(); ref.current.select && ref.current.select(); }
   }, []);
+
+  // Current scope = properties[state][breakpoint] — what visual controls edit.
+  const currentScopeProps = (styleProps[state] || {})[breakpoint] || {};
+  const currentScopeCss   = (typeof customCss === 'string' ? customCss
+                            : (customCss[state] || {})[breakpoint]) || '';
 
   function previewStyleToIframe(props, css) {
     const iframe = document.querySelector('.builder-preview iframe');
@@ -550,25 +683,49 @@ function Inspector({ inspector, pages, settings, onChange, onClose }) {
     }, 800);
   }
   function updateStyle(patch) {
-    const next = { ...styleProps, ...patch };
-    Object.keys(next).forEach((k) => { if (next[k] === '' || next[k] == null) delete next[k]; });
-    setStyleProps(next);
-    previewStyleToIframe(next, customCss);
-    saveStyleDebounced(next, customCss);
+    const nextScope = { ...currentScopeProps, ...patch };
+    Object.keys(nextScope).forEach((k) => { if (nextScope[k] === '' || nextScope[k] == null) delete nextScope[k]; });
+    const nextStateMap = { ...(styleProps[state] || {}), [breakpoint]: nextScope };
+    if (Object.keys(nextScope).length === 0) delete nextStateMap[breakpoint];
+    const nextAll = { ...styleProps, [state]: nextStateMap };
+    if (Object.keys(nextStateMap).length === 0) delete nextAll[state];
+    setStyleProps(nextAll);
+    previewStyleToIframe(nextAll, customCss);
+    saveStyleDebounced(nextAll, customCss);
   }
   function updateCustomCss(v) {
-    setCustomCss(v);
-    previewStyleToIframe(styleProps, v);
-    saveStyleDebounced(styleProps, v);
+    const cssObj = typeof customCss === 'string' ? { default: { all: customCss } } : customCss;
+    const nextStateMap = { ...(cssObj[state] || {}), [breakpoint]: v };
+    if (!v) delete nextStateMap[breakpoint];
+    const nextAll = { ...cssObj, [state]: nextStateMap };
+    if (Object.keys(nextStateMap).length === 0) delete nextAll[state];
+    setCustomCss(nextAll);
+    previewStyleToIframe(styleProps, nextAll);
+    saveStyleDebounced(styleProps, nextAll);
   }
   async function clearAllStyle() {
-    if (!confirm('Reset all style overrides on this element?')) return;
-    setStyleProps({}); setCustomCss('');
+    if (!confirm('Reset ALL style overrides on this element (every state and breakpoint)?')) return;
+    setStyleProps({}); setCustomCss({});
     const iframe = document.querySelector('.builder-preview iframe');
     if (iframe && iframe.contentWindow) {
       iframe.contentWindow.postMessage({ type: 'cms.styleClear', selector: styleSelector }, '*');
     }
     try { await API.styles.remove(styleSelector); } catch (e) {}
+  }
+  function clearCurrentScope() {
+    const nextStateMap = { ...(styleProps[state] || {}) };
+    delete nextStateMap[breakpoint];
+    const nextAll = { ...styleProps, [state]: nextStateMap };
+    if (Object.keys(nextStateMap).length === 0) delete nextAll[state];
+    setStyleProps(nextAll);
+    const cssObj = typeof customCss === 'string' ? {} : customCss;
+    const nextCssState = { ...(cssObj[state] || {}) };
+    delete nextCssState[breakpoint];
+    const nextCss = { ...cssObj, [state]: nextCssState };
+    if (Object.keys(nextCssState).length === 0) delete nextCss[state];
+    setCustomCss(nextCss);
+    previewStyleToIframe(nextAll, nextCss);
+    saveStyleDebounced(nextAll, nextCss);
   }
 
   function contentField() {
@@ -627,22 +784,59 @@ function Inspector({ inspector, pages, settings, onChange, onClose }) {
         </div>
       )}
 
+      {(tab === 'style' || tab === 'css') && (
+        <div className="inspector-scope">
+          <div className="scope-group">
+            <span className="scope-lbl">State</span>
+            {['default', 'hover', 'focus', 'active'].map((s) => (
+              <button key={s} className={`tgl${state === s ? ' on' : ''}`}
+                      onClick={() => setState(s)}
+                      title={s === 'default' ? 'Base style' : `:${s} pseudo-class`}>
+                {s === 'default' ? '·' : ':'}{s === 'default' ? 'base' : s}
+              </button>
+            ))}
+          </div>
+          <div className="scope-group">
+            <span className="scope-lbl">Where</span>
+            {[
+              ['all',     '⛶ all'],
+              ['mobile',  '📱 ≤640'],
+              ['tablet',  '📲 641-1024'],
+              ['desktop', '💻 ≥1025'],
+            ].map(([b, lbl]) => (
+              <button key={b} className={`tgl${breakpoint === b ? ' on' : ''}`}
+                      onClick={() => setBreakpoint(b)}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {tab === 'style' && (
         <div className="inspector-body">
-          <StyleEditor properties={styleProps} onChange={updateStyle} />
-          <div style={{ marginTop: 12, display: 'flex', gap: 6 }}>
-            <button className="btn ghost" onClick={clearAllStyle}>⟲ Reset element style</button>
+          <StyleEditor properties={currentScopeProps} onChange={updateStyle} />
+          <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button className="btn ghost" onClick={clearCurrentScope}>
+              ⟲ Reset this scope
+            </button>
+            <button className="btn ghost" onClick={clearAllStyle}>
+              ⟲ Reset ALL styles
+            </button>
           </div>
+          <p className="small muted" style={{ marginTop: 8 }}>
+            Editing <strong>:{state}</strong> on <strong>{breakpoint === 'all' ? 'all screens' : breakpoint}</strong>.
+            Default + all = the base style. Hover/focus only apply on user interaction.
+          </p>
         </div>
       )}
 
       {tab === 'css' && (
         <div className="inspector-body">
           <p className="small muted" style={{ margin: '0 0 8px' }}>
-            Custom CSS rules scoped to this element. Auto-saves after 800 ms.
-            Targets: <span className="mono small">{styleSelector}</span>.
+            Custom CSS scoped to <span className="mono small">{styleSelector}{state !== 'default' ? ':' + state : ''}</span>
+            {breakpoint !== 'all' ? ` · ${breakpoint}` : ''}.
+            Auto-saves after 800 ms.
           </p>
-          <textarea value={customCss} onChange={(e) => updateCustomCss(e.target.value)}
+          <textarea value={currentScopeCss} onChange={(e) => updateCustomCss(e.target.value)}
                     placeholder={'font-family: serif;\ntext-shadow: 0 1px 0 #fff;'}
                     style={{ minHeight: 180, fontFamily: 'var(--font-mono)', fontSize: 12 }} />
         </div>
