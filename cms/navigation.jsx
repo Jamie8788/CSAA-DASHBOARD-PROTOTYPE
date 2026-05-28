@@ -89,6 +89,37 @@ function NavigationView() {
     });
   }
 
+  // HTML5 drag-and-drop reorder.
+  function dragStart(e, idx) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(idx));
+    e.currentTarget.classList.add('dragging');
+  }
+  function dragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    e.currentTarget.classList.add('drag-over');
+  }
+  function dragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+  function dragEnd(e) {
+    e.currentTarget.classList.remove('dragging');
+    document.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+  }
+  function drop(e, idx) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    const from = Number(e.dataTransfer.getData('text/plain'));
+    if (Number.isNaN(from) || from === idx) return;
+    setItems((xs) => {
+      const next = [...xs];
+      const [picked] = next.splice(from, 1);
+      next.splice(idx, 0, picked);
+      return next.map((x, i) => ({ ...x, position: i }));
+    });
+  }
+
   if (loading) return <div><h1>Navigation</h1><p><window.Spinner /></p></div>;
 
   const used = new Set(items.map((i) => i.view));
@@ -117,8 +148,16 @@ function NavigationView() {
           </thead>
           <tbody>
             {items.map((it, idx) => (
-              <tr key={it.id || it.view}>
-                <td style={{ width: 80 }}>
+              <tr key={it.id || it.view}
+                  draggable
+                  onDragStart={(e) => dragStart(e, idx)}
+                  onDragOver={dragOver}
+                  onDragLeave={dragLeave}
+                  onDragEnd={dragEnd}
+                  onDrop={(e) => drop(e, idx)}>
+                <td style={{ width: 110 }}>
+                  <span className="drag-handle" title="Drag to reorder">⋮⋮</span>
+                  &nbsp;
                   <button className="btn-link" disabled={idx === 0} onClick={() => move(idx, -1)}>↑</button>
                   &nbsp;
                   <button className="btn-link" disabled={idx === items.length - 1} onClick={() => move(idx, +1)}>↓</button>

@@ -20,6 +20,7 @@ const NAV_GROUPS = [
   {
     title: 'Content',
     items: [
+      { key: 'builder',     label: 'Page builder',      ico: '▦' },
       { key: 'communities', label: 'Communities',       ico: '☷' },
       { key: 'pages',       label: 'Pages & content',   ico: '☰' },
       { key: 'navigation',  label: 'Navigation',        ico: '⇆' },
@@ -157,6 +158,7 @@ function CMSAppInner() {
       <main className="cms-main">
         {view === 'analytics' && <window.AnalyticsView />}
         {view === 'upload' && <window.UploadView />}
+        {view === 'builder' && <window.BuilderView setView={setView} />}
         {view === 'communities' && <window.CommunitiesView />}
         {view === 'pages' && <window.PagesView />}
         {view === 'navigation' && <window.NavigationView />}

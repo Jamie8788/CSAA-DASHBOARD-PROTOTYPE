@@ -7,6 +7,7 @@ function PagesView() {
   const [loading, setLoading] = useState_p(true);
   const [editing, setEditing] = useState_p(null);
   const [creating, setCreating] = useState_p(false);
+  const [selected, setSelected] = useState_p(new Set());
 
   async function load() {
     setLoading(true);
@@ -36,6 +37,39 @@ function PagesView() {
     } catch (e) { toast.push('Delete failed: ' + e.message, 'error'); }
   }
 
+  function toggleOne(slug) {
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(slug)) next.delete(slug); else next.add(slug);
+      return next;
+    });
+  }
+  function toggleAll() {
+    setSelected((s) => s.size === pages.length ? new Set() : new Set(pages.map((p) => p.slug)));
+  }
+  async function bulkDelete() {
+    if (!selected.size) return;
+    if (!confirm(`Delete ${selected.size} page${selected.size === 1 ? '' : 's'}? This cannot be undone.`)) return;
+    try {
+      for (const slug of selected) await API.pages.remove(slug);
+      toast.push(`Deleted ${selected.size} page${selected.size === 1 ? '' : 's'}.`, 'success');
+      setSelected(new Set());
+      load();
+    } catch (e) { toast.push('Bulk delete failed: ' + e.message, 'error'); }
+  }
+  async function bulkHide(visible) {
+    if (!selected.size) return;
+    try {
+      for (const slug of selected) {
+        const p = pages.find((x) => x.slug === slug);
+        if (p) await API.pages.upsert(slug, { ...p, visible });
+      }
+      toast.push(`${visible ? 'Showed' : 'Hid'} ${selected.size} page${selected.size === 1 ? '' : 's'}.`, 'success');
+      setSelected(new Set());
+      load();
+    } catch (e) { toast.push('Failed: ' + e.message, 'error'); }
+  }
+
   if (loading) return <div><h1>Pages & content</h1><p><window.Spinner /></p></div>;
 
   return (
@@ -53,13 +87,23 @@ function PagesView() {
       <table className="tbl">
         <thead>
           <tr>
+            <th style={{ width: 30 }}>
+              <input type="checkbox"
+                     checked={pages.length > 0 && selected.size === pages.length}
+                     onChange={toggleAll} />
+            </th>
             <th>Slug</th><th>Title</th><th>Visible</th><th>Updated</th><th>By</th><th></th>
           </tr>
         </thead>
         <tbody>
-          {pages.length === 0 && <tr><td colSpan="6" className="muted">No pages yet.</td></tr>}
+          {pages.length === 0 && <tr><td colSpan="7" className="muted">No pages yet.</td></tr>}
           {pages.map((p) => (
-            <tr key={p.slug}>
+            <tr key={p.slug} className={selected.has(p.slug) ? 'selected' : ''}>
+              <td>
+                <input type="checkbox"
+                       checked={selected.has(p.slug)}
+                       onChange={() => toggleOne(p.slug)} />
+              </td>
               <td className="mono small">{p.slug}</td>
               <td><strong>{p.title}</strong>
                 <div className="small muted">{(p.body || '').slice(0, 80)}…</div></td>
@@ -75,6 +119,17 @@ function PagesView() {
           ))}
         </tbody>
       </table>
+
+      {selected.size > 0 && (
+        <div className="bulk-bar">
+          <span className="count">{selected.size} selected</span>
+          <span style={{ flex: 1 }} />
+          <button className="btn ghost" onClick={() => bulkHide(true)} style={{ color: 'white', borderColor: 'rgba(255,255,255,0.4)' }}>Show</button>
+          <button className="btn ghost" onClick={() => bulkHide(false)} style={{ color: 'white', borderColor: 'rgba(255,255,255,0.4)' }}>Hide</button>
+          <button className="btn danger" onClick={bulkDelete}>Delete selected</button>
+          <button className="btn ghost" onClick={() => setSelected(new Set())} style={{ color: 'white', borderColor: 'rgba(255,255,255,0.4)' }}>Cancel</button>
+        </div>
+      )}
 
       {(editing || creating) && (
         <PageEditor
