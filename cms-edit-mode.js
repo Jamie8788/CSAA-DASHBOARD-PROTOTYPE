@@ -62,12 +62,29 @@
       position: relative;
       outline: 2px dashed transparent;
       outline-offset: -2px;
-      transition: outline-color 120ms ease;
+      transition: outline-color 120ms ease, box-shadow 120ms ease;
     }
     [data-cms-section]:hover { outline-color: #1e6eb8; }
-    [data-cms-section].dragging { opacity: 0.4; }
-    [data-cms-section].drag-over-top    { box-shadow: inset 0 4px 0 #1e6eb8; }
-    [data-cms-section].drag-over-bottom { box-shadow: inset 0 -4px 0 #1e6eb8; }
+    [data-cms-section].dragging { opacity: 0.35; }
+    body.cms-dragging-active [data-cms-section] { outline-color: rgba(30,110,184,0.35); }
+    [data-cms-section].drag-over-top {
+      box-shadow: inset 0 5px 0 #1e6eb8, 0 -4px 12px rgba(30,110,184,0.35);
+    }
+    [data-cms-section].drag-over-bottom {
+      box-shadow: inset 0 -5px 0 #1e6eb8, 0 4px 12px rgba(30,110,184,0.35);
+    }
+    [data-cms-section].drag-over-top::before,
+    [data-cms-section].drag-over-bottom::after {
+      content: 'DROP HERE';
+      position: absolute; left: 50%; transform: translateX(-50%);
+      background: #1e6eb8; color: white;
+      padding: 2px 10px; border-radius: 3px;
+      font: 600 10px 'JetBrains Mono', ui-monospace, monospace;
+      letter-spacing: 0.08em; z-index: 99999;
+      pointer-events: none;
+    }
+    [data-cms-section].drag-over-top::before    { top: -10px; }
+    [data-cms-section].drag-over-bottom::after  { bottom: -10px; }
     .cms-section-handle {
       position: absolute; top: 6px; left: 6px;
       background: rgba(30,110,184,0.95); color: white;
@@ -170,14 +187,22 @@
       });
       handle.append(grip, label, resetBtn, hideBtn);
       // Drag events live on the handle so users can click into the section
-      // body without dragging accidentally.
+      // body without dragging accidentally. We use the parent SECTION as the
+      // drag image so users see the whole block following the cursor.
       handle.addEventListener('dragstart', (e) => {
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', sectionRef);
+        try {
+          // Position the drag image so the cursor sits where the user grabbed.
+          const rect = el.getBoundingClientRect();
+          e.dataTransfer.setDragImage(el, e.clientX - rect.left, e.clientY - rect.top);
+        } catch (_) { /* not supported in all browsers */ }
         el.classList.add('dragging');
+        document.body.classList.add('cms-dragging-active');
       });
       handle.addEventListener('dragend', () => {
         el.classList.remove('dragging');
+        document.body.classList.remove('cms-dragging-active');
         document.querySelectorAll('[data-cms-section]').forEach((x) => {
           x.classList.remove('drag-over-top', 'drag-over-bottom');
         });
@@ -294,10 +319,17 @@
       const value = getCleanText(el).trim();
       el.removeAttribute('contenteditable');
       if (!value) {
-        // Refuse to save an empty inline edit — would hide the element on the
-        // public site. Tell the parent so it can show a toast or restore.
         window.parent.postMessage({ type: 'cms.inlineRejected', kind, key,
           reason: 'Empty value rejected — the field would have become invisible. Use the Inspector if you really want to delete it.' }, '*');
+        return;
+      }
+      // Reject suspiciously short / single-letter values for hero / title fields
+      // where they almost certainly indicate an accidental keypress (e.g. typing
+      // "e" instead of editing). Layout-critical fields need real content.
+      const layoutCriticalKeys = ['site.heroTitle', 'site.title', 'site.tagline'];
+      if (layoutCriticalKeys.includes(key) && value.length < 4) {
+        window.parent.postMessage({ type: 'cms.inlineRejected', kind, key,
+          reason: `"${value}" is too short for ${key}. Use the Inspector if you really want to set it.` }, '*');
         return;
       }
       window.parent.postMessage({ type: 'cms.inlineSave', kind, key, value }, '*');
@@ -310,6 +342,32 @@
     if (stored.startsWith('bind:'))    return `[data-cms-bind="${stored.slice(5)}"]`;
     if (stored.startsWith('section:')) return `[data-cms-section="${stored.slice(8)}"]`;
     return stored;
+  }
+  // Append a "force-state" classed rule mirror: when the parent CMS sets the
+  // state picker to :hover, we want the user to SEE the hover style without
+  // actually hovering. We do this by adding both the hover pseudo-class rule
+  // AND a parallel rule with .cms-force-hover that we apply to the targeted
+  // element while the inspector is open.
+  function injectForceStateStyle(state) {
+    let st = document.getElementById('cms-force-state-style');
+    if (!st) {
+      st = document.createElement('style');
+      st.id = 'cms-force-state-style';
+      document.head.appendChild(st);
+    }
+    if (!state || state === 'default') { st.textContent = ''; return; }
+    // Auto-promote any selector with :state to also match .cms-force-<state>.
+    // We do this by looking at existing cms-style-preview-* blocks.
+    const rules = [];
+    document.querySelectorAll('style[id^="cms-style-preview-"]').forEach((s) => {
+      const txt = s.textContent || '';
+      // Replace ":hover {" etc. with ".cms-force-hover {" so the same rules
+      // apply when we add the class.
+      const adjusted = txt.replace(new RegExp(':' + state + '\\s*{', 'g'),
+                                    '.cms-force-' + state + ' {');
+      rules.push(adjusted);
+    });
+    st.textContent = rules.join('\n\n');
   }
   window.addEventListener('message', (e) => {
     const msg = e.data;
@@ -355,6 +413,18 @@
             const custom = String(msg.customCss || '').replace(/<\/?(style|script)[^>]*>/gi, '');
             return `${cssSel} {\n${props}\n${custom}\n}`;
           })());
+    } else if (msg.type === 'cms.forceState') {
+      // Add a class so the user sees :hover/:focus/:active styling without
+      // having to physically hover the element.
+      document.querySelectorAll('.cms-force-hover,.cms-force-focus,.cms-force-active')
+        .forEach((n) => n.classList.remove('cms-force-hover','cms-force-focus','cms-force-active'));
+      if (msg.state && msg.state !== 'default') {
+        const tgt = document.querySelector(selectorOf(msg.selector));
+        if (tgt) tgt.classList.add('cms-force-' + msg.state);
+        injectForceStateStyle(msg.state);
+      } else {
+        injectForceStateStyle(null);
+      }
     } else if (msg.type === 'cms.styleClear') {
       const id = 'cms-style-preview-' + msg.selector.replace(/[^a-z0-9_-]/gi, '_');
       const st = document.getElementById(id);

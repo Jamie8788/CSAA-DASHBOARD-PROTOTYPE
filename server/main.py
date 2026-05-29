@@ -774,6 +774,12 @@ def root_page() -> FileResponse:
     return FileResponse(DASHBOARD_ROOT / "Community Atlas.html")
 
 
+@app.get("/favicon.ico")
+def favicon() -> FileResponse:
+    """Browsers still request /favicon.ico — serve the SVG so we don't 404."""
+    return FileResponse(DASHBOARD_ROOT / "favicon.svg", media_type="image/svg+xml")
+
+
 @app.get("/cms")
 @app.get("/cms/")
 def cms_page() -> FileResponse:

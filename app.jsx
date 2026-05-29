@@ -510,10 +510,16 @@ function Hero({ totalCommunities, totalOrgs, grandPop, view, setView, filtered, 
 
 function NavStrip({ view, setView, filtered, all }) {
   const [items, setItems] = useState(() => window.ATLAS_NAV || null);
+  const [, setTickSettings] = useState(0);
   useEffect(() => {
     function h() { setItems(window.ATLAS_NAV ? [...window.ATLAS_NAV] : null); }
+    function s() { setTickSettings((t) => t + 1); }
     window.addEventListener('atlas:nav', h);
-    return () => window.removeEventListener('atlas:nav', h);
+    window.addEventListener('atlas:settings', s);
+    return () => {
+      window.removeEventListener('atlas:nav', h);
+      window.removeEventListener('atlas:settings', s);
+    };
   }, []);
   // Fallback when backend not reachable
   const DEFAULT_NAV = [
@@ -524,7 +530,21 @@ function NavStrip({ view, setView, filtered, all }) {
     { view: 'stats',     label: 'Insights & Stories', icon: '◭' },
     { view: 'coverage',  label: 'Coverage (85)',      icon: '⌧' },
   ];
-  const navItems = items && items.length ? items : DEFAULT_NAV;
+  let navItems = items && items.length ? items : DEFAULT_NAV;
+  // Honour the site.showXxxView settings — admins can hide views from CMS.
+  const settings = window.ATLAS_SETTINGS || {};
+  const VIEW_TOGGLES = {
+    stories:  'site.showStoriesView',
+    stats:    'site.showAnalyticsView',
+    coverage: 'site.showCoverageView',
+    analytics:'site.showAnalyticsView',
+  };
+  navItems = navItems.filter((n) => {
+    const settingKey = VIEW_TOGGLES[n.view];
+    if (!settingKey) return true;
+    const v = settings[settingKey];
+    return v == null || String(v).trim().toLowerCase() !== 'false';
+  });
   return (
     <div className="nav-strip">
       {navItems.map((n) => (

@@ -10,7 +10,16 @@ const DIR_INFO = [
 ];
 
 function StoriesView({ all, onSelect }) {
-  const [tab, setTab] = useState('journey');
+  // Honour site.showJourneyGame setting. If admin disabled it, start on quotes.
+  const settings = window.ATLAS_SETTINGS || {};
+  const journeyEnabled = String(settings['site.showJourneyGame'] || 'true').toLowerCase() !== 'false';
+  const [tab, setTab] = useState(journeyEnabled ? 'journey' : 'quotes');
+  const [, force] = useState(0);
+  useEffect(() => {
+    function s() { force((t) => t + 1); }
+    window.addEventListener('atlas:settings', s);
+    return () => window.removeEventListener('atlas:settings', s);
+  }, []);
 
   return (
     <div className="stories-view">
@@ -19,14 +28,14 @@ function StoriesView({ all, onSelect }) {
         <h2>Learn the atlas — by playing it.</h2>
         <p>Drive, paddle, and read your way through the territory. Every question and quote is pulled from the master sheet — nothing is invented.</p>
         <div className="stories-tabs">
-          <button className={tab==='journey'?'on':''} onClick={()=>setTab('journey')}>✦ Miikana · The Path</button>
+          {journeyEnabled && <button className={tab==='journey'?'on':''} onClick={()=>setTab('journey')}>✦ Miikana · The Path</button>}
           <button className={tab==='match'?'on':''} onClick={()=>setTab('match')}>◆ Match the service</button>
           <button className={tab==='roulette'?'on':''} onClick={()=>setTab('roulette')}>◉ Discover roulette</button>
           <button className={tab==='quotes'?'on':''} onClick={()=>setTab('quotes')}>● Quote wall</button>
         </div>
       </header>
 
-      {tab === 'journey' && <window.JourneyGame all={all} onSelect={onSelect} />}
+      {tab === 'journey' && journeyEnabled && <window.JourneyGame all={all} onSelect={onSelect} />}
       {tab === 'quotes' && <QuoteWall all={all} onSelect={onSelect} />}
       {tab === 'match' && <MatchGame all={all} onSelect={onSelect} />}
       {tab === 'roulette' && <RouletteGame all={all} onSelect={onSelect} />}

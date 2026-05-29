@@ -694,6 +694,24 @@ function Inspector({ inspector, pages, settings, onChange, onClose }) {
     return () => { cancelled = true; };
   }, [styleSelector]);
 
+  // When the user changes the state picker (default/hover/focus/active), tell
+  // the iframe to force-render that state so the user sees the style apply
+  // immediately without having to physically hover.
+  useEffect_b(() => {
+    const iframe = document.querySelector('.builder-preview iframe');
+    if (!iframe || !iframe.contentWindow) return;
+    iframe.contentWindow.postMessage({
+      type: 'cms.forceState', selector: styleSelector, state,
+    }, '*');
+    return () => {
+      if (iframe.contentWindow) {
+        iframe.contentWindow.postMessage({
+          type: 'cms.forceState', selector: styleSelector, state: 'default',
+        }, '*');
+      }
+    };
+  }, [state, styleSelector]);
+
   // Auto-focus the input on open
   useEffect_b(() => {
     if (ref.current) { ref.current.focus(); ref.current.select && ref.current.select(); }
