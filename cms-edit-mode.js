@@ -154,7 +154,21 @@
     .cms-resize-handle.tr { top: -6px;    right: -6px;  cursor: nesw-resize; }
     .cms-resize-handle.bl { bottom: -6px; left: -6px;   cursor: nesw-resize; }
     .cms-resize-handle.br { bottom: -6px; right: -6px;  cursor: nwse-resize; }
-    .cms-resize-handle:hover { transform: scale(1.25); transition: transform 120ms; }
+    .cms-resize-handle.n  { top: -6px;    left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+    .cms-resize-handle.s  { bottom: -6px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+    .cms-resize-handle.e  { right: -6px;  top: 50%;  transform: translateY(-50%); cursor: ew-resize; }
+    .cms-resize-handle.w  { left: -6px;   top: 50%;  transform: translateY(-50%); cursor: ew-resize; }
+    .cms-resize-handle.n,
+    .cms-resize-handle.s { background: #1e6eb8; }
+    .cms-resize-handle.e,
+    .cms-resize-handle.w { background: #d4a017; }
+    .cms-resize-handle:hover { transform: scale(1.4); transition: transform 120ms; }
+    .cms-resize-handle.n:hover { transform: translateX(-50%) scale(1.4); }
+    .cms-resize-handle.s:hover { transform: translateX(-50%) scale(1.4); }
+    .cms-resize-handle.e:hover { transform: translateY(-50%) scale(1.4); }
+    .cms-resize-handle.w:hover { transform: translateY(-50%) scale(1.4); }
+    body.cms-alt-down [data-cms-bind] { cursor: move !important; }
+    body.cms-alt-down [data-cms-bind]:hover { outline: 2px solid #6b8d6b !important; }
     .cms-resize-readout {
       position: absolute; top: -32px; left: 50%; transform: translateX(-50%);
       background: #1a1612; color: #fbf7ec;
@@ -257,15 +271,23 @@
         if (!fromRef || fromRef === toRef) return;
         const rect = el.getBoundingClientRect();
         const before = (e.clientY - rect.top) < rect.height / 2;
-        const [slot, fromId] = fromRef.split(':');
-        const [, toId] = toRef.split(':');
-        window.parent.postMessage({
-          type: 'cms.reorder',
-          slot,
-          from: fromId,
-          to: toId,
-          position: before ? 'before' : 'after',
-        }, '*');
+        // fromRef and toRef look like "<slot>:<id>". The slot can differ
+        // (e.g. dragging from header to footer) — handle both cases.
+        const [fromSlot, fromId] = fromRef.split(':');
+        const [toSlot,   toId]   = toRef.split(':');
+        if (fromSlot === toSlot) {
+          window.parent.postMessage({
+            type: 'cms.reorder',
+            slot: fromSlot, from: fromId, to: toId,
+            position: before ? 'before' : 'after',
+          }, '*');
+        } else {
+          window.parent.postMessage({
+            type: 'cms.crossSlotMove',
+            fromSlot, fromId, toSlot, toId,
+            position: before ? 'before' : 'after',
+          }, '*');
+        }
       });
     });
   }
@@ -319,8 +341,12 @@
     const tr = document.createElement('div'); tr.className = 'cms-resize-handle tr';
     const bl = document.createElement('div'); bl.className = 'cms-resize-handle bl';
     const br = document.createElement('div'); br.className = 'cms-resize-handle br';
+    const n  = document.createElement('div'); n.className  = 'cms-resize-handle n';
+    const s  = document.createElement('div'); s.className  = 'cms-resize-handle s';
+    const ew = document.createElement('div'); ew.className = 'cms-resize-handle e';
+    const wh = document.createElement('div'); wh.className = 'cms-resize-handle w';
     const readout = document.createElement('div'); readout.className = 'cms-resize-readout';
-    wrap.append(tl, tr, bl, br, readout);
+    wrap.append(tl, tr, bl, br, n, s, ew, wh, readout);
 
     // Position absolutely over the element
     function reposition() {
@@ -371,6 +397,79 @@
             selector: 'bind:' + bind,
             property: 'fontSize',
             value: Math.round(finalSize) + 'px',
+          }, '*');
+        }
+        handle.addEventListener('pointermove', onMove);
+        handle.addEventListener('pointerup', onUp);
+      });
+    });
+
+    // East / West handles → resize WIDTH (in px)
+    [ew, wh].forEach((handle, idx) => {
+      const sign = idx === 0 ? 1 : -1; // east grows, west shrinks
+      handle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        const startX = e.clientX;
+        const baseW = el.getBoundingClientRect().width;
+        handle.setPointerCapture(e.pointerId);
+        readout.textContent = `${Math.round(baseW)}px wide`;
+        document.body.style.userSelect = 'none';
+        function onMove(ev) {
+          const delta = (ev.clientX - startX) * sign;
+          const newW = Math.max(40, Math.min(1600, baseW + delta));
+          el.style.width = newW + 'px';
+          el.style.maxWidth = newW + 'px';
+          readout.textContent = `${Math.round(newW)}px wide`;
+          reposition();
+        }
+        function onUp() {
+          handle.removeEventListener('pointermove', onMove);
+          handle.removeEventListener('pointerup', onUp);
+          document.body.style.userSelect = '';
+          const finalW = Math.round(parseFloat(el.style.width));
+          el.style.width = ''; el.style.maxWidth = '';
+          const bind = el.getAttribute('data-cms-bind') || '';
+          window.parent.postMessage({
+            type: 'cms.styleResize',
+            selector: 'bind:' + bind,
+            property: 'width',
+            value: finalW + 'px',
+          }, '*');
+        }
+        handle.addEventListener('pointermove', onMove);
+        handle.addEventListener('pointerup', onUp);
+      });
+    });
+
+    // North / South handles → resize HEIGHT (or padding-block) in px
+    [n, s].forEach((handle, idx) => {
+      const sign = idx === 0 ? -1 : 1; // north up=shrink, south down=grow
+      handle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        const startY = e.clientY;
+        const baseH = el.getBoundingClientRect().height;
+        handle.setPointerCapture(e.pointerId);
+        readout.textContent = `${Math.round(baseH)}px tall`;
+        document.body.style.userSelect = 'none';
+        function onMove(ev) {
+          const delta = (ev.clientY - startY) * sign;
+          const newH = Math.max(20, Math.min(1200, baseH + delta));
+          el.style.height = newH + 'px';
+          readout.textContent = `${Math.round(newH)}px tall`;
+          reposition();
+        }
+        function onUp() {
+          handle.removeEventListener('pointermove', onMove);
+          handle.removeEventListener('pointerup', onUp);
+          document.body.style.userSelect = '';
+          const finalH = Math.round(parseFloat(el.style.height));
+          el.style.height = '';
+          const bind = el.getAttribute('data-cms-bind') || '';
+          window.parent.postMessage({
+            type: 'cms.styleResize',
+            selector: 'bind:' + bind,
+            property: 'height',
+            value: finalH + 'px',
           }, '*');
         }
         handle.addEventListener('pointermove', onMove);
@@ -559,6 +658,60 @@
         el.classList.add('cms-selected');
       }
     }
+  });
+
+  // --- Alt+drag = free-form translate ------------------------------------
+  // While Alt (or Option on macOS) is held, dragging any data-cms-bind
+  // element translates it via transform: translate(X,Y). On pointerup we
+  // persist as a style override so the position survives reload.
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Alt') document.body.classList.add('cms-alt-down');
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'Alt') document.body.classList.remove('cms-alt-down');
+  });
+  window.addEventListener('blur', () => {
+    document.body.classList.remove('cms-alt-down');
+  });
+
+  let dragSession = null;
+  document.addEventListener('pointerdown', (e) => {
+    if (!e.altKey) return;
+    if (e.target.closest('.cms-resize-handle, .cms-resize-handles, .cms-section-handle, .cms-tag')) return;
+    const el = e.target.closest('[data-cms-bind]');
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+    // Parse current transform translate (if any)
+    const tr = el.style.transform || getComputedStyle(el).transform;
+    let curX = 0, curY = 0;
+    const m = (typeof tr === 'string') ? tr.match(/translate\(\s*(-?\d+(?:\.\d+)?)px\s*,\s*(-?\d+(?:\.\d+)?)px/) : null;
+    if (m) { curX = parseFloat(m[1]); curY = parseFloat(m[2]); }
+    dragSession = { el, startX: e.clientX, startY: e.clientY, curX, curY };
+    el.setPointerCapture(e.pointerId);
+    document.body.style.userSelect = 'none';
+  }, true);
+  document.addEventListener('pointermove', (e) => {
+    if (!dragSession) return;
+    const dx = e.clientX - dragSession.startX;
+    const dy = e.clientY - dragSession.startY;
+    const newX = dragSession.curX + dx;
+    const newY = dragSession.curY + dy;
+    dragSession.el.style.transform = `translate(${Math.round(newX)}px, ${Math.round(newY)}px)`;
+  });
+  document.addEventListener('pointerup', () => {
+    if (!dragSession) return;
+    const { el } = dragSession;
+    const tr = el.style.transform || '';
+    el.style.transform = '';
+    document.body.style.userSelect = '';
+    dragSession = null;
+    const bind = el.getAttribute('data-cms-bind') || '';
+    window.parent.postMessage({
+      type: 'cms.styleResize',
+      selector: 'bind:' + bind,
+      property: 'transform',
+      value: tr,
+    }, '*');
   });
 
   // Boot

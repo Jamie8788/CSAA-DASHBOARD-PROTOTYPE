@@ -189,6 +189,26 @@ function BuilderView({ setView }) {
     saveLayout(slot, list);
   }
 
+  async function applyCrossSlotMove(fromSlot, fromId, toSlot, toId, position) {
+    const src = [...(layouts[fromSlot] || [])];
+    const dst = [...(layouts[toSlot]   || [])];
+    const fromIdx = src.findIndex((b) => b.id === fromId);
+    if (fromIdx < 0) return;
+    const [picked] = src.splice(fromIdx, 1);
+    const toIdx = dst.findIndex((b) => b.id === toId);
+    const insertAt = toIdx < 0 ? dst.length : (position === 'after' ? toIdx + 1 : toIdx);
+    dst.splice(insertAt, 0, picked);
+    // Persist BOTH layouts atomically.
+    try {
+      await Promise.all([
+        API.layouts.save(fromSlot, src),
+        API.layouts.save(toSlot,   dst),
+      ]);
+      setLayouts((L) => ({ ...L, [fromSlot]: src, [toSlot]: dst }));
+      toast.push(`Moved block from ${fromSlot} → ${toSlot}`, 'success');
+    } catch (e) { toast.push('Cross-section move failed: ' + e.message, 'error'); }
+  }
+
   function refreshPreview() { setReloadKey((k) => k + 1); }
   useEffect_b(() => { reloadCmsData(); }, []);
 
@@ -219,6 +239,8 @@ function BuilderView({ setView }) {
         setInspector(null);
       } else if (msg.type === 'cms.reorder') {
         applyReorder(msg.slot, msg.from, msg.to, msg.position);
+      } else if (msg.type === 'cms.crossSlotMove') {
+        applyCrossSlotMove(msg.fromSlot, msg.fromId, msg.toSlot, msg.toId, msg.position);
       } else if (msg.type === 'cms.hideSection') {
         applyHide(msg.slot, msg.id);
       } else if (msg.type === 'cms.inlineRejected') {
