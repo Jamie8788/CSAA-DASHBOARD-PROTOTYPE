@@ -741,6 +741,19 @@ def styles_delete(selector: str, actor: dict = Depends(auth.require_admin)) -> d
     return {"ok": True}
 
 
+@app.post("/api/styles/_reset_all")
+def styles_reset_all(actor: dict = Depends(auth.require_admin)) -> dict:
+    """Nuke every element_styles row — the panic button for when admins
+    have made things invisible through accumulated overrides."""
+    with db.get_conn() as conn:
+        from sqlalchemy import text as _t
+        n = conn.execute(_t("SELECT COUNT(*) FROM element_styles")).scalar() or 0
+        conn.execute(_t("DELETE FROM element_styles"))
+    db.log_audit(actor["username"], "style.reset_all", None, f"{n} overrides cleared")
+    events.publish("style.updated", {"resetAll": True})
+    return {"ok": True, "cleared": int(n)}
+
+
 # ----------------------------- SSE channel -------------------------------- #
 
 @app.get("/api/events")

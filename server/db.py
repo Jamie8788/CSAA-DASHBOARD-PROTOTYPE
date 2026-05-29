@@ -388,22 +388,63 @@ def init_db() -> None:
                     {"v": default, "u": now, "k": k},
                 )
 
-        # Migration — drop element_styles overrides that set color to
-        # 'transparent' or that match the paper background (would hide text).
-        # Most common accidental "I made my text invisible" trap.
+        # Migration — recursively scan element_styles for invisibility traps:
+        # any color/backgroundColor anywhere in the nested
+        # properties[state][breakpoint] tree whose value matches one of:
+        #   transparent, paper colors, near-white shades that hide text.
+        # Replaces my older LIKE-only scan which missed nested keys.
         try:
-            danger_rows = conn.execute(text(
-                "SELECT selector, properties FROM element_styles "
-                "WHERE properties LIKE '%transparent%' OR properties LIKE '%#f5ede0%' "
-                "OR properties LIKE '%#fbf7ec%' OR properties LIKE '%#fbf6ec%'"
+            DANGER_VALUES = {
+                "transparent",
+                "#fff", "#ffffff", "white",
+                "#f5ede0", "#fbf7ec", "#fbf6ec",
+                "#ece2cf", "#ddd0b5", "#e8dcc1",
+                "#fff8dc", "#faf0e6", "#fff5ee",
+            }
+            COLOR_KEYS = {"color", "backgroundColor"}
+
+            def has_invisibility_trap(obj):
+                if isinstance(obj, dict):
+                    for k, v in obj.items():
+                        if k in COLOR_KEYS and isinstance(v, str):
+                            if v.strip().lower() in DANGER_VALUES:
+                                return True
+                        elif isinstance(v, (dict, list)):
+                            if has_invisibility_trap(v):
+                                return True
+                elif isinstance(obj, list):
+                    for x in obj:
+                        if has_invisibility_trap(x):
+                            return True
+                return False
+
+            rows = conn.execute(text(
+                "SELECT selector, properties, custom_css FROM element_styles"
             )).fetchall()
-            for sel, _ in danger_rows:
-                conn.execute(
-                    text("DELETE FROM element_styles WHERE selector = :s"),
-                    {"s": sel},
-                )
-        except Exception:
-            pass  # element_styles table may not exist on very old DBs
+            for sel, props_json, custom in rows:
+                try:
+                    props = json.loads(props_json or "{}")
+                except json.JSONDecodeError:
+                    props = {}
+                bad = has_invisibility_trap(props)
+                # Also flag custom_css that contains color: transparent / paper
+                if not bad and custom:
+                    low = str(custom).lower()
+                    if any(d in low for d in
+                           ("color:transparent", "color: transparent",
+                            "color:#fff", "color: #fff",
+                            "color:white", "color: white",
+                            "color:#f5ede0", "color: #f5ede0",
+                            "opacity:0", "opacity: 0",
+                            "display:none", "display: none")):
+                        bad = True
+                if bad:
+                    conn.execute(
+                        text("DELETE FROM element_styles WHERE selector = :s"),
+                        {"s": sel},
+                    )
+        except Exception as e:
+            print(f"[db migration] style cleanup skipped: {e}")
         # Seed layouts only if missing.
         for name, blocks in DEFAULT_LAYOUTS.items():
             conn.execute(

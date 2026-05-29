@@ -127,6 +127,7 @@
         'PUT', `/api/styles/${encodeURIComponent(selector)}`,
         { properties, customCss }),
       remove: (selector) => request('DELETE', `/api/styles/${encodeURIComponent(selector)}`),
+      resetAll: () => request('POST', '/api/styles/_reset_all'),
     },
     auth: {
       requestReset: (username) => request('POST', '/api/auth/request-reset', { username }),

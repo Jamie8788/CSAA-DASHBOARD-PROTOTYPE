@@ -135,6 +135,34 @@
       background: rgba(107,141,107,0.10) !important;
       cursor: text !important;
     }
+    /* Resize handles on selected text elements */
+    .cms-resize-handles {
+      position: absolute;
+      pointer-events: none;
+      z-index: 99996;
+    }
+    .cms-resize-handle {
+      position: absolute;
+      width: 12px; height: 12px;
+      background: #b8351e;
+      border: 2px solid white;
+      border-radius: 50%;
+      pointer-events: auto;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+    .cms-resize-handle.tl { top: -6px;    left: -6px;   cursor: nwse-resize; }
+    .cms-resize-handle.tr { top: -6px;    right: -6px;  cursor: nesw-resize; }
+    .cms-resize-handle.bl { bottom: -6px; left: -6px;   cursor: nesw-resize; }
+    .cms-resize-handle.br { bottom: -6px; right: -6px;  cursor: nwse-resize; }
+    .cms-resize-handle:hover { transform: scale(1.25); transition: transform 120ms; }
+    .cms-resize-readout {
+      position: absolute; top: -32px; left: 50%; transform: translateX(-50%);
+      background: #1a1612; color: #fbf7ec;
+      padding: 3px 10px; border-radius: 4px;
+      font: 700 11px 'JetBrains Mono', ui-monospace, monospace;
+      pointer-events: none; white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
   `;
   document.head.appendChild(style);
 
@@ -267,12 +295,103 @@
 
   // --- selection / click → tell parent -------------------------------------
   let selected = null;
+  let resizeHandles = null;
+
+  function clearResizeHandles() {
+    if (resizeHandles && resizeHandles.parentNode) {
+      resizeHandles.parentNode.removeChild(resizeHandles);
+    }
+    resizeHandles = null;
+  }
+
+  function attachResizeHandles(el) {
+    clearResizeHandles();
+    // Only attach to elements with [data-cms-bind] — i.e. real editable
+    // text/setting elements, not nav containers etc.
+    if (!el || !el.matches('[data-cms-bind]')) return;
+    // Skip elements that visually shouldn't be resized (badges, color swatches).
+    const tag = el.tagName.toLowerCase();
+    if (!/^(h1|h2|h3|h4|h5|h6|p|span|div|li|a|button|strong|em|label)$/.test(tag)) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'cms-resize-handles';
+    const tl = document.createElement('div'); tl.className = 'cms-resize-handle tl';
+    const tr = document.createElement('div'); tr.className = 'cms-resize-handle tr';
+    const bl = document.createElement('div'); bl.className = 'cms-resize-handle bl';
+    const br = document.createElement('div'); br.className = 'cms-resize-handle br';
+    const readout = document.createElement('div'); readout.className = 'cms-resize-readout';
+    wrap.append(tl, tr, bl, br, readout);
+
+    // Position absolutely over the element
+    function reposition() {
+      if (!el.isConnected) { clearResizeHandles(); return; }
+      const rect = el.getBoundingClientRect();
+      wrap.style.position = 'fixed';
+      wrap.style.top    = rect.top + 'px';
+      wrap.style.left   = rect.left + 'px';
+      wrap.style.width  = rect.width + 'px';
+      wrap.style.height = rect.height + 'px';
+    }
+    reposition();
+    document.body.appendChild(wrap);
+
+    const reposOnScroll = () => reposition();
+    window.addEventListener('scroll', reposOnScroll, true);
+    window.addEventListener('resize', reposOnScroll);
+
+    // Drag-to-resize: changes font-size proportionally to vertical drag.
+    [tl, tr, bl, br].forEach((handle) => {
+      handle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        const startY = e.clientY;
+        const baseSize = parseFloat(getComputedStyle(el).fontSize) || 16;
+        const direction = handle.classList.contains('tl') || handle.classList.contains('tr') ? -1 : 1;
+        handle.setPointerCapture(e.pointerId);
+        readout.textContent = `${Math.round(baseSize)}px`;
+        document.body.style.userSelect = 'none';
+
+        function onMove(ev) {
+          const delta = (ev.clientY - startY) * direction;
+          const newSize = Math.max(8, Math.min(180, baseSize + delta * 0.6));
+          el.style.fontSize = newSize + 'px';
+          readout.textContent = `${Math.round(newSize)}px`;
+          reposition();
+        }
+        function onUp(ev) {
+          handle.removeEventListener('pointermove', onMove);
+          handle.removeEventListener('pointerup', onUp);
+          document.body.style.userSelect = '';
+          const finalSize = parseFloat(el.style.fontSize);
+          el.style.fontSize = ''; // remove the inline; let the style override take over
+          const bind = el.getAttribute('data-cms-bind') || '';
+          // Tell the parent CMS to persist the new font-size as a style
+          // override so it survives reload + applies to all visitors.
+          window.parent.postMessage({
+            type: 'cms.styleResize',
+            selector: 'bind:' + bind,
+            property: 'fontSize',
+            value: Math.round(finalSize) + 'px',
+          }, '*');
+        }
+        handle.addEventListener('pointermove', onMove);
+        handle.addEventListener('pointerup', onUp);
+      });
+    });
+
+    resizeHandles = wrap;
+  }
+
   function clearSelection() {
     if (selected) selected.classList.remove('cms-selected');
     selected = null;
+    clearResizeHandles();
   }
 
   document.addEventListener('click', (e) => {
+    // Ignore clicks on our own handles
+    if (e.target.closest && e.target.closest('.cms-resize-handle, .cms-resize-handles, .cms-section-handle, .cms-tag')) {
+      return;
+    }
     const el = e.target.closest('[data-cms-bind]');
     if (!el) {
       clearSelection();
@@ -283,6 +402,7 @@
     clearSelection();
     selected = el;
     el.classList.add('cms-selected');
+    attachResizeHandles(el);
     const bind = el.getAttribute('data-cms-bind') || '';
     const [kind, ...keyParts] = bind.split(':');
     const key = keyParts.join(':');

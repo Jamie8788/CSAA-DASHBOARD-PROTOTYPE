@@ -227,6 +227,27 @@ function BuilderView({ setView }) {
         API.styles.remove(msg.selector).then(() => {
           toast.push('Section styles reset.', 'success');
         }).catch(() => {});
+      } else if (msg.type === 'cms.styleResize' && msg.selector && msg.property) {
+        // Drag-to-resize from the canvas. Merge into existing default/all
+        // style scope so the new font-size persists for everyone.
+        (async () => {
+          try {
+            const cur = await API.styles.get(msg.selector);
+            const props = cur && typeof cur.properties === 'object' ? cur.properties : {};
+            // Normalize to nested form
+            let nested;
+            if (props.default || props.hover || props.focus || props.active) {
+              nested = props;
+            } else {
+              nested = { default: { all: props } };
+            }
+            const defAll = (nested.default && nested.default.all) || {};
+            const merged = { ...defAll, [msg.property]: msg.value };
+            nested.default = { ...(nested.default || {}), all: merged };
+            await API.styles.save(msg.selector, nested, cur ? cur.customCss : '');
+            toast.push(`${msg.property} → ${msg.value}`, 'success', 2000);
+          } catch (e) { toast.push('Resize save failed: ' + e.message, 'error'); }
+        })();
       }
     }
     window.addEventListener('message', onMsg);
@@ -338,6 +359,16 @@ function BuilderView({ setView }) {
               ))}
             </span>
             <span style={{ flex: 1 }} />
+            <button className="btn-link" onClick={async () => {
+              if (!confirm('Reset ALL visual style overrides? This wipes every per-element colour, font-size, spacing, etc. and restores the design defaults. Content (text, pages, layouts) is not affected.')) return;
+              try {
+                const r = await API.styles.resetAll();
+                toast.push(`Reset ${r.cleared} style override${r.cleared === 1 ? '' : 's'}. Refreshing…`, 'success');
+                setTimeout(refreshPreview, 400);
+              } catch (e) { toast.push('Reset failed: ' + e.message, 'error'); }
+            }} style={{ color: 'var(--danger)' }} title="Nuclear: wipe every per-element style override">
+              ☢ Reset styling
+            </button>
             <button className="btn-link" onClick={refreshPreview}>↻ Refresh</button>
             <a href="/" target="_blank" rel="noopener noreferrer" className="btn-link">Open ↗</a>
           </div>
