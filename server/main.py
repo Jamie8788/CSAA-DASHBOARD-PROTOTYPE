@@ -754,6 +754,74 @@ def styles_reset_all(actor: dict = Depends(auth.require_admin)) -> dict:
     return {"ok": True, "cleared": int(n)}
 
 
+@app.post("/api/styles/_reset_sizes")
+def styles_reset_sizes(actor: dict = Depends(auth.require_admin)) -> dict:
+    """Selective reset — strips ONLY dimensional properties (fontSize,
+    width, height, transform) from every element_styles row. Preserves
+    colours, padding/margin tweaks, and other styling. Use when admins
+    have accidentally drag-resized things to wrong sizes but don't want
+    to lose all their other style work."""
+    import json as _j
+    SIZE_KEYS = {"fontSize", "width", "height", "minWidth", "maxWidth",
+                 "minHeight", "maxHeight", "transform"}
+
+    def strip(obj):
+        """Recursively delete size-related properties. Returns count removed."""
+        n = 0
+        if isinstance(obj, dict):
+            for k in list(obj.keys()):
+                v = obj[k]
+                if k in SIZE_KEYS:
+                    del obj[k]; n += 1; continue
+                if isinstance(v, (dict, list)):
+                    n += strip(v)
+        elif isinstance(obj, list):
+            for x in obj:
+                n += strip(x)
+        return n
+
+    cleared = 0
+    rows_updated = 0
+    rows_deleted = 0
+    with db.get_conn() as conn:
+        from sqlalchemy import text as _t
+        rows = conn.execute(_t("SELECT selector, properties FROM element_styles")).fetchall()
+        for sel, props_json in rows:
+            try:
+                props = _j.loads(props_json or "{}")
+            except Exception:
+                continue
+            removed = strip(props)
+            if removed == 0:
+                continue
+            cleared += removed
+            # If the row has no properties left, delete it; otherwise update.
+            def empty(o):
+                if isinstance(o, dict):
+                    return all(empty(v) for v in o.values())
+                if isinstance(o, list):
+                    return all(empty(v) for v in o)
+                return o in (None, "", {}, [])
+            if empty(props):
+                conn.execute(_t("DELETE FROM element_styles WHERE selector = :s"),
+                             {"s": sel})
+                rows_deleted += 1
+            else:
+                conn.execute(
+                    _t("UPDATE element_styles SET properties = :p, "
+                       "updated_at = :u, updated_by = :by WHERE selector = :s"),
+                    {"p": _j.dumps(props), "u": __import__("time").time(),
+                     "by": actor["username"], "s": sel},
+                )
+                rows_updated += 1
+    db.log_audit(actor["username"], "style.reset_sizes", None,
+                 f"{cleared} size props removed, "
+                 f"{rows_updated} rows updated, {rows_deleted} rows deleted")
+    events.publish("style.updated", {"resetSizes": True})
+    return {"ok": True, "cleared": cleared,
+            "rowsUpdated": rows_updated, "rowsDeleted": rows_deleted}
+
+
 # ----------------------------- SSE channel -------------------------------- #
 
 @app.get("/api/events")

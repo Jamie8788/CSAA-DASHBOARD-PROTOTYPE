@@ -485,6 +485,48 @@ def init_db() -> None:
                             return True
                 return False
 
+            # Oversized dimensional values that almost certainly indicate an
+            # accidental drag-resize gone wrong — silently scrub them.
+            def _px_value(s):
+                if not isinstance(s, str):
+                    return None
+                m = _re.match(r"^\s*(-?\d+(?:\.\d+)?)\s*(px|em|rem|%)?\s*$", s.lower())
+                if not m:
+                    return None
+                val = float(m.group(1))
+                unit = m.group(2) or "px"
+                # Normalise to approximate pixels for comparison
+                if unit == "em" or unit == "rem":
+                    return val * 16
+                if unit == "%":
+                    return val * 10  # rough proxy
+                return val
+
+            def scrub_oversized(obj):
+                """Remove fontSize > 200, width > 3000, height > 3000 in place.
+                Returns True if anything was removed."""
+                changed = False
+                if isinstance(obj, dict):
+                    keys = list(obj.keys())
+                    for k in keys:
+                        v = obj[k]
+                        if k == "fontSize":
+                            px = _px_value(v) if isinstance(v, str) else None
+                            if px is not None and px > 200:
+                                del obj[k]; changed = True; continue
+                        elif k in ("width", "height"):
+                            px = _px_value(v) if isinstance(v, str) else None
+                            if px is not None and px > 3000:
+                                del obj[k]; changed = True; continue
+                        if isinstance(v, (dict, list)):
+                            if scrub_oversized(v):
+                                changed = True
+                elif isinstance(obj, list):
+                    for x in obj:
+                        if scrub_oversized(x):
+                            changed = True
+                return changed
+
             rows = conn.execute(text(
                 "SELECT selector, properties, custom_css FROM element_styles"
             )).fetchall()
@@ -511,6 +553,17 @@ def init_db() -> None:
                     conn.execute(
                         text("DELETE FROM element_styles WHERE selector = :s"),
                         {"s": sel},
+                    )
+                    continue
+                # Not invisibility-bad, but maybe contains oversized values
+                # from an accidental drag-resize. Scrub those in place.
+                if scrub_oversized(props):
+                    conn.execute(
+                        text("UPDATE element_styles SET properties = :p, "
+                             "updated_at = :u, updated_by = 'migration' "
+                             "WHERE selector = :s"),
+                        {"p": json.dumps(props, ensure_ascii=False),
+                         "u": now, "s": sel},
                     )
         except Exception as e:
             print(f"[db migration] style cleanup skipped: {e}")

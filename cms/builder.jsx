@@ -394,6 +394,16 @@ function BuilderView({ setView }) {
             </span>
             <span style={{ flex: 1 }} />
             <button className="btn-link" onClick={async () => {
+              if (!confirm('Reset every font-size, width, and height back to the design defaults? Colours, padding, and other style work are PRESERVED. Use this to undo accidental drag-resizes.')) return;
+              try {
+                const r = await API.styles.resetSizes();
+                toast.push(`Reset ${r.cleared} size value${r.cleared === 1 ? '' : 's'}. Refreshing…`, 'success');
+                setTimeout(refreshPreview, 400);
+              } catch (e) { toast.push('Reset failed: ' + e.message, 'error'); }
+            }} style={{ color: '#1e6eb8' }} title="Reset font sizes, widths and heights to defaults (keeps colours and other styles)">
+              ↔ Reset sizes
+            </button>
+            <button className="btn-link" onClick={async () => {
               if (!confirm('Reset ALL visual style overrides? This wipes every per-element colour, font-size, spacing, etc. and restores the design defaults. Content (text, pages, layouts) is not affected.')) return;
               try {
                 const r = await API.styles.resetAll();
