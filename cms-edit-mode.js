@@ -169,6 +169,25 @@
     .cms-resize-handle.w:hover { transform: translateY(-50%) scale(1.4); }
     body.cms-alt-down [data-cms-bind] { cursor: move !important; }
     body.cms-alt-down [data-cms-bind]:hover { outline: 2px solid #6b8d6b !important; }
+    .cms-restore-banner {
+      position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+      background: rgba(184,53,30,0.97); color: white;
+      padding: 12px 22px; border-radius: 8px;
+      font: 600 13px 'Inter', system-ui, sans-serif;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+      z-index: 100001;
+      display: flex; gap: 12px; align-items: center;
+      animation: cms-banner-in 220ms ease;
+    }
+    @keyframes cms-banner-in { from { opacity:0; transform:translateX(-50%) translateY(-10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+    .cms-restore-banner button {
+      background: white; color: #b8351e; border: none;
+      padding: 6px 14px; border-radius: 4px;
+      font: 700 12px 'JetBrains Mono', ui-monospace, monospace;
+      cursor: pointer; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .cms-restore-banner button:hover { opacity: 0.9; }
+    .cms-restore-banner .close { background: transparent; color: white; padding: 4px 8px; }
     .cms-resize-readout {
       position: absolute; top: -32px; left: 50%; transform: translateX(-50%);
       background: #1a1612; color: #fbf7ec;
@@ -388,16 +407,17 @@
           handle.removeEventListener('pointerup', onUp);
           document.body.style.userSelect = '';
           const finalSize = parseFloat(el.style.fontSize);
-          el.style.fontSize = ''; // remove the inline; let the style override take over
+          // Keep the inline style applied so the user sees the change
+          // immediately. The SSE round-trip below re-injects the persisted
+          // style; we then clear inline so the persisted override takes over.
           const bind = el.getAttribute('data-cms-bind') || '';
-          // Tell the parent CMS to persist the new font-size as a style
-          // override so it survives reload + applies to all visitors.
           window.parent.postMessage({
             type: 'cms.styleResize',
             selector: 'bind:' + bind,
             property: 'fontSize',
             value: Math.round(finalSize) + 'px',
           }, '*');
+          setTimeout(() => { if (el) el.style.fontSize = ''; }, 1500);
         }
         handle.addEventListener('pointermove', onMove);
         handle.addEventListener('pointerup', onUp);
@@ -427,7 +447,6 @@
           handle.removeEventListener('pointerup', onUp);
           document.body.style.userSelect = '';
           const finalW = Math.round(parseFloat(el.style.width));
-          el.style.width = ''; el.style.maxWidth = '';
           const bind = el.getAttribute('data-cms-bind') || '';
           window.parent.postMessage({
             type: 'cms.styleResize',
@@ -435,6 +454,7 @@
             property: 'width',
             value: finalW + 'px',
           }, '*');
+          setTimeout(() => { if (el) { el.style.width = ''; el.style.maxWidth = ''; } }, 1500);
         }
         handle.addEventListener('pointermove', onMove);
         handle.addEventListener('pointerup', onUp);
@@ -463,7 +483,6 @@
           handle.removeEventListener('pointerup', onUp);
           document.body.style.userSelect = '';
           const finalH = Math.round(parseFloat(el.style.height));
-          el.style.height = '';
           const bind = el.getAttribute('data-cms-bind') || '';
           window.parent.postMessage({
             type: 'cms.styleResize',
@@ -471,6 +490,7 @@
             property: 'height',
             value: finalH + 'px',
           }, '*');
+          setTimeout(() => { if (el) el.style.height = ''; }, 1500);
         }
         handle.addEventListener('pointermove', onMove);
         handle.addEventListener('pointerup', onUp);
@@ -484,6 +504,53 @@
     if (selected) selected.classList.remove('cms-selected');
     selected = null;
     clearResizeHandles();
+    clearRestoreBanner();
+  }
+
+  // --- Auto-detect "this element is invisible" ----------------------------
+  let restoreBanner = null;
+  function clearRestoreBanner() {
+    if (restoreBanner && restoreBanner.parentNode) restoreBanner.parentNode.removeChild(restoreBanner);
+    restoreBanner = null;
+  }
+  function checkInvisible(el) {
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none') return 'display is set to none';
+    if (cs.visibility === 'hidden' || cs.visibility === 'collapse') return 'visibility is hidden';
+    if (parseFloat(cs.opacity) === 0) return 'opacity is 0';
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return 'element has zero size';
+    if (rect.right < -50 || rect.bottom < -50 || rect.left > innerWidth + 50 || rect.top > innerHeight + 50) {
+      return 'element is positioned off-screen';
+    }
+    // Approximate "text colour same as background colour"
+    const colour = cs.color;
+    const bg = cs.backgroundColor;
+    if (colour && bg && colour !== 'rgba(0, 0, 0, 0)' && colour === bg) {
+      return 'text colour matches background colour';
+    }
+    return null;
+  }
+  function showRestoreBanner(el, reason) {
+    clearRestoreBanner();
+    const bind = el.getAttribute('data-cms-bind') || '';
+    const b = document.createElement('div');
+    b.className = 'cms-restore-banner';
+    const msg = document.createElement('span');
+    msg.textContent = '⚠ This element appears invisible (' + reason + ').';
+    const fix = document.createElement('button');
+    fix.textContent = 'Restore default style';
+    fix.addEventListener('click', () => {
+      window.parent.postMessage({ type: 'cms.healElement', selector: 'bind:' + bind }, '*');
+      clearRestoreBanner();
+    });
+    const close = document.createElement('button');
+    close.className = 'close';
+    close.textContent = '×';
+    close.addEventListener('click', clearRestoreBanner);
+    b.append(msg, fix, close);
+    document.body.appendChild(b);
+    restoreBanner = b;
   }
 
   document.addEventListener('click', (e) => {
@@ -502,6 +569,8 @@
     selected = el;
     el.classList.add('cms-selected');
     attachResizeHandles(el);
+    const invisReason = checkInvisible(el);
+    if (invisReason) showRestoreBanner(el, invisReason);
     const bind = el.getAttribute('data-cms-bind') || '';
     const [kind, ...keyParts] = bind.split(':');
     const key = keyParts.join(':');

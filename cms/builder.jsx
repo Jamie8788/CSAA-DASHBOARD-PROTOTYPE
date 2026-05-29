@@ -107,12 +107,20 @@ const PAPER_COLORS = new Set(['transparent', '#f5ede0', '#fbf7ec', '#fbf6ec',
 
 function isInvisibilityTrap(props) {
   if (!props || typeof props !== 'object') return null;
-  const color = String(props.color || '').toLowerCase();
-  const bg    = String(props.backgroundColor || '').toLowerCase();
+  const color = String(props.color || '').toLowerCase().trim();
+  const bg    = String(props.backgroundColor || '').toLowerCase().trim();
   if (PAPER_COLORS.has(color)) return 'text colour matches the paper background — text will be invisible';
-  if (String(props.opacity || '').trim() === '0') return 'opacity is 0 — element will be invisible';
-  if (props.display === 'none') return 'display is none — element will be hidden';
-  if (String(props.fontSize || '').trim() === '0' || String(props.fontSize || '').trim() === '0px') return 'font size is 0 — text will be invisible';
+  if (parseFloat(props.opacity) === 0 || String(props.opacity || '').trim() === '0') return 'opacity is 0 — element will be invisible';
+  if (props.display === 'none') return 'display: none — element is hidden';
+  if (['hidden', 'collapse'].includes(String(props.visibility || '').toLowerCase())) return 'visibility: hidden — element invisible';
+  const zero = new Set(['0', '0px', '0em', '0rem', '0%']);
+  if (zero.has(String(props.fontSize || '').trim())) return 'font-size is 0 — text invisible';
+  if (zero.has(String(props.width || '').trim()))  return 'width is 0 — element collapsed';
+  if (zero.has(String(props.height || '').trim())) return 'height is 0 — element collapsed';
+  const tr = String(props.transform || '').toLowerCase().replace(/\s+/g, '');
+  if (tr.includes('scale(0)') || tr.startsWith('scale(0,')) return 'transform: scale(0) — element shrunk to nothing';
+  const m = tr.match(/translate(?:x|y|)?\((-?\d+(?:\.\d+)?)/);
+  if (m && Math.abs(parseFloat(m[1])) > 2000) return `transform translates ${m[1]}px — pushed off-screen`;
   if (color && color === bg) return 'text colour matches background colour';
   return null;
 }
@@ -249,6 +257,10 @@ function BuilderView({ setView }) {
         API.styles.remove(msg.selector).then(() => {
           toast.push('Section styles reset.', 'success');
         }).catch(() => {});
+      } else if (msg.type === 'cms.healElement' && msg.selector) {
+        API.styles.remove(msg.selector).then(() => {
+          toast.push('Element style cleared — visibility restored.', 'success', 4000);
+        }).catch(() => toast.push('Heal failed.', 'error'));
       } else if (msg.type === 'cms.styleResize' && msg.selector && msg.property) {
         // Drag-to-resize from the canvas. Merge into existing default/all
         // style scope so the new font-size persists for everyone.

@@ -419,29 +419,66 @@ def init_db() -> None:
                 )
 
         # Migration — recursively scan element_styles for invisibility traps:
-        # any color/backgroundColor anywhere in the nested
-        # properties[state][breakpoint] tree whose value matches one of:
-        #   transparent, paper colors, near-white shades that hide text.
-        # Replaces my older LIKE-only scan which missed nested keys.
+        # ANY property anywhere in the nested {state:{breakpoint:{props}}} tree
+        # whose value would hide the element. Caught patterns include:
+        #   color/backgroundColor: transparent or paper colours
+        #   opacity: 0 (or very near 0)
+        #   display: none
+        #   visibility: hidden / collapse
+        #   fontSize: 0 / 0px / 0em / 0rem
+        #   width: 0 / 0px
+        #   height: 0 / 0px
+        #   transform: scale(0)
+        #   transform: translate(>1000px, …) — pushes off-screen
         try:
-            DANGER_VALUES = {
-                "transparent",
-                "#fff", "#ffffff", "white",
+            import re as _re
+            DANGER_COLORS = {
+                "transparent", "#fff", "#ffffff", "white",
                 "#f5ede0", "#fbf7ec", "#fbf6ec",
                 "#ece2cf", "#ddd0b5", "#e8dcc1",
                 "#fff8dc", "#faf0e6", "#fff5ee",
             }
-            COLOR_KEYS = {"color", "backgroundColor"}
+            ZERO_SIZES = {"0", "0px", "0em", "0rem", "0%"}
+
+            def is_dangerous_property(key, value):
+                if not isinstance(value, str):
+                    return False
+                v = value.strip().lower()
+                if key in ("color", "backgroundColor"):
+                    return v in DANGER_COLORS
+                if key == "opacity":
+                    try:
+                        return float(v) <= 0.05
+                    except ValueError:
+                        return False
+                if key == "display":
+                    return v == "none"
+                if key == "visibility":
+                    return v in ("hidden", "collapse")
+                if key in ("fontSize", "width", "height"):
+                    return v in ZERO_SIZES
+                if key == "transform":
+                    flat = v.replace(" ", "")
+                    if "scale(0)" in flat or "scale(0," in flat or "scale(0," in flat:
+                        return True
+                    # translate(Xpx, Ypx) with X or Y outside ±2000px = off-screen
+                    for m in _re.finditer(r"translate(?:x|y|)?\(([-\d., %a-z]+)\)", flat):
+                        nums = _re.findall(r"-?\d+(?:\.\d+)?", m.group(1))
+                        for n in nums:
+                            try:
+                                if abs(float(n)) > 2000:
+                                    return True
+                            except ValueError:
+                                pass
+                return False
 
             def has_invisibility_trap(obj):
                 if isinstance(obj, dict):
                     for k, v in obj.items():
-                        if k in COLOR_KEYS and isinstance(v, str):
-                            if v.strip().lower() in DANGER_VALUES:
-                                return True
-                        elif isinstance(v, (dict, list)):
-                            if has_invisibility_trap(v):
-                                return True
+                        if is_dangerous_property(k, v):
+                            return True
+                        if isinstance(v, (dict, list)) and has_invisibility_trap(v):
+                            return True
                 elif isinstance(obj, list):
                     for x in obj:
                         if has_invisibility_trap(x):
@@ -459,14 +496,16 @@ def init_db() -> None:
                 bad = has_invisibility_trap(props)
                 # Also flag custom_css that contains color: transparent / paper
                 if not bad and custom:
-                    low = str(custom).lower()
-                    if any(d in low for d in
-                           ("color:transparent", "color: transparent",
-                            "color:#fff", "color: #fff",
-                            "color:white", "color: white",
-                            "color:#f5ede0", "color: #f5ede0",
-                            "opacity:0", "opacity: 0",
-                            "display:none", "display: none")):
+                    low = str(custom).lower().replace(" ", "")
+                    bad_patterns = [
+                        "color:transparent", "color:#fff", "color:white",
+                        "color:#f5ede0", "color:#fbf7ec", "color:#fbf6ec",
+                        "opacity:0;", "opacity:0}",
+                        "display:none", "visibility:hidden", "visibility:collapse",
+                        "font-size:0", "width:0;", "height:0;",
+                        "transform:scale(0)",
+                    ]
+                    if any(p in low for p in bad_patterns):
                         bad = True
                 if bad:
                     conn.execute(
