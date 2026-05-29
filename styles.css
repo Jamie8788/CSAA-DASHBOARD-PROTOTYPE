@@ -5357,3 +5357,37 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
   .ap-pres-title { font-size: 36px; }
   .ap-pres-big-num { font-size: 80px; }
 }
+
+
+/* Form block (contact/inquiry) */
+.content-form {
+  max-width: 640px; margin: 16px auto; padding: 24px 32px;
+  background: var(--paper-card); border: 1px solid var(--line-soft);
+  border-radius: 10px;
+}
+.content-form .block-title {
+  font-family: var(--serif); font-size: 22px; font-weight: 600;
+  margin: 0 0 16px; letter-spacing: -0.01em;
+}
+.content-form .form-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+.content-form label {
+  font: 600 11px/1 var(--mono); letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.content-form input, .content-form textarea {
+  padding: 9px 12px; border: 1px solid var(--line-soft); border-radius: 5px;
+  background: var(--paper); font: inherit; font-size: 14px; color: var(--ink);
+}
+.content-form input:focus, .content-form textarea:focus {
+  outline: 2px solid var(--south); outline-offset: 1px;
+}
+.content-form .btn-block {
+  padding: 10px 18px; background: var(--south); color: white;
+  border: 1px solid var(--south); border-radius: 6px; font: 600 14px var(--sans);
+  cursor: pointer;
+}
+.content-form .btn-block:hover { opacity: 0.92; }
+.content-form .btn-block:disabled { opacity: 0.5; cursor: not-allowed; }
+.content-form .form-err { color: var(--south); font-size: 13px; margin: 4px 0 8px; }
+.content-form.sent { background: rgba(107,141,107,0.10); border-color: rgba(107,141,107,0.3); text-align: center; }
+.content-form.sent p { font-family: var(--serif); font-size: 17px; margin: 0; color: var(--ink); }

@@ -374,6 +374,67 @@ function EmbedBlock({ url, height, title }) {
   );
 }
 
+function FormBlock({ slug, title, fields, button, successMessage }) {
+  const [state, setState] = useState({});
+  const [busy, setBusy]   = useState(false);
+  const [sent, setSent]   = useState(false);
+  const [err, setErr]     = useState('');
+  const formFields = Array.isArray(fields) ? fields : [
+    { key: 'name',    label: 'Name',    type: 'text',     required: true  },
+    { key: 'email',   label: 'Email',   type: 'email',    required: true  },
+    { key: 'message', label: 'Message', type: 'textarea', required: true  },
+  ];
+  function set(k, v) { setState((s) => ({ ...s, [k]: v })); }
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true); setErr('');
+    try {
+      const r = await fetch('/api/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ form: slug || 'contact', fields: state }),
+      });
+      if (!r.ok) {
+        const j = await r.json().catch(() => null);
+        throw new Error((j && j.detail) || r.statusText);
+      }
+      setSent(true); setState({});
+    } catch (e) { setErr(e.message || 'Submit failed'); }
+    finally { setBusy(false); }
+  }
+  if (sent) {
+    return (
+      <section className="content-form sent">
+        <p>✓ {successMessage || 'Thank you — your message has been received.'}</p>
+      </section>
+    );
+  }
+  return (
+    <section className="content-form">
+      {title && <h3 className="block-title">{title}</h3>}
+      <form onSubmit={submit}>
+        {formFields.map((f) => (
+          <div className="form-row" key={f.key}>
+            <label htmlFor={`f-${f.key}`}>{f.label}{f.required ? ' *' : ''}</label>
+            {f.type === 'textarea' ? (
+              <textarea id={`f-${f.key}`} required={f.required} value={state[f.key] || ''}
+                        onChange={(e) => set(f.key, e.target.value)} rows={5} />
+            ) : (
+              <input id={`f-${f.key}`} type={f.type || 'text'} required={f.required}
+                     value={state[f.key] || ''}
+                     onChange={(e) => set(f.key, e.target.value)} />
+            )}
+          </div>
+        ))}
+        {err && <p className="form-err">{err}</p>}
+        <button type="submit" className="btn-block" disabled={busy}>
+          {busy ? 'Sending…' : (button || 'Send')}
+        </button>
+      </form>
+    </section>
+  );
+}
+
 function ColumnsBlock({ columns, gap, children, blocks, slot, ctx }) {
   // Column children are themselves blocks rendered via BlockRenderer.
   const n = parseInt(columns || 2, 10);
@@ -434,6 +495,8 @@ function BlockRenderer({ slot, blocks, ctx }) {
             return <div {...wrapAttrs}><EmbedBlock {...(b.props || {})} /></div>;
           case 'columns':
             return <div {...wrapAttrs}><ColumnsBlock {...(b.props || {})} slot={slot + '-' + b.id} ctx={ctx} /></div>;
+          case 'form':
+            return <div {...wrapAttrs}><FormBlock {...(b.props || {})} /></div>;
           default:
             return null;
         }

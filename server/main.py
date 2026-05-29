@@ -46,7 +46,7 @@ from fastapi import (
     FastAPI, HTTPException, UploadFile, File, Form, Depends, Request, Response, status
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -791,6 +791,158 @@ def root_page() -> FileResponse:
 def favicon() -> FileResponse:
     """Browsers still request /favicon.ico — serve the SVG so we don't 404."""
     return FileResponse(DASHBOARD_ROOT / "favicon.svg", media_type="image/svg+xml")
+
+
+# ============================ MEDIA LIBRARY ============================== #
+
+MEDIA_MAX_BYTES = 5 * 1024 * 1024  # 5 MB per file
+MEDIA_ALLOWED_TYPES = {
+    "image/jpeg", "image/png", "image/webp", "image/gif",
+    "image/svg+xml", "image/avif",
+}
+
+
+@app.post("/api/media")
+async def media_upload(
+    file: UploadFile = File(...),
+    alt: str = Form(""),
+    actor: dict = Depends(auth.require_admin),
+) -> dict:
+    import base64
+    content = await file.read()
+    if len(content) > MEDIA_MAX_BYTES:
+        raise HTTPException(400, f"File too large (max {MEDIA_MAX_BYTES // 1024} KB)")
+    mime = file.content_type or "application/octet-stream"
+    if mime not in MEDIA_ALLOWED_TYPES:
+        raise HTTPException(400, f"Unsupported media type: {mime}")
+    b64 = base64.b64encode(content).decode("ascii")
+    row = db.save_media(file.filename or "upload", mime, b64, len(content),
+                        alt or None, actor["username"])
+    db.log_audit(actor["username"], "media.upload", file.filename,
+                 f"{len(content)} bytes, {mime}")
+    events.publish("media.updated", {"id": row.get("id")})
+    return row
+
+
+@app.get("/api/media")
+def media_list(_: dict = Depends(auth.require_admin)) -> dict:
+    return {"items": db.list_media()}
+
+
+@app.get("/api/media/{media_id}")
+def media_get(media_id: int):
+    """Public — serve the raw image bytes so <img src="/api/media/12"> works."""
+    import base64
+    m = db.get_media_content(media_id)
+    if not m:
+        raise HTTPException(404, "Not found")
+    try:
+        raw = base64.b64decode(m["content_b64"])
+    except Exception:
+        raise HTTPException(500, "Corrupt media")
+    return Response(content=raw, media_type=m.get("mime_type") or "application/octet-stream",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.delete("/api/media/{media_id}")
+def media_delete(media_id: int, actor: dict = Depends(auth.require_admin)) -> dict:
+    ok = db.delete_media(media_id)
+    if not ok:
+        raise HTTPException(404, "Not found")
+    db.log_audit(actor["username"], "media.delete", str(media_id))
+    events.publish("media.updated", {"id": media_id, "deleted": True})
+    return {"ok": True}
+
+
+# ============================ SUBMISSIONS ================================ #
+
+class SubmissionIn(BaseModel):
+    form: str = Field(min_length=1, max_length=80)
+    fields: dict
+
+
+@app.post("/api/submissions")
+def submission_create(request: Request, payload: SubmissionIn) -> dict:
+    """Public — visitors POST here from form blocks on the dashboard."""
+    # Trim to keep storage sane
+    safe_fields = {
+        str(k)[:80]: str(v)[:4000] for k, v in (payload.fields or {}).items()
+    }
+    ip = request.client.host if request.client else None
+    ua = request.headers.get("user-agent", "")[:300]
+    sub_id = db.save_submission(payload.form, safe_fields, ip, ua)
+    events.publish("submission.received", {"form": payload.form, "id": sub_id})
+    # Optional email notification (uses the same SMTP env vars as password reset)
+    if mailer.is_configured():
+        try:
+            body_lines = [f"New submission to form '{payload.form}':", ""]
+            for k, v in safe_fields.items():
+                body_lines.append(f"  {k}: {v}")
+            body_lines.append("")
+            body_lines.append(f"From IP: {ip}, UA: {ua}")
+            mailer.send(config.SMTP_FROM, f"New form submission: {payload.form}",
+                        "\n".join(body_lines))
+        except Exception:
+            pass
+    return {"ok": True, "id": sub_id}
+
+
+@app.get("/api/submissions")
+def submissions_list(form: str | None = None,
+                     _: dict = Depends(auth.require_admin)) -> dict:
+    return {"items": db.list_submissions(form_slug=form),
+            "summary": db.submissions_summary()}
+
+
+@app.post("/api/submissions/{sub_id}/read")
+def submission_mark_read(sub_id: int,
+                         _: dict = Depends(auth.require_admin)) -> dict:
+    ok = db.mark_submission_read(sub_id)
+    if not ok:
+        raise HTTPException(404, "Not found")
+    return {"ok": True}
+
+
+@app.delete("/api/submissions/{sub_id}")
+def submission_delete(sub_id: int,
+                      actor: dict = Depends(auth.require_admin)) -> dict:
+    ok = db.delete_submission(sub_id)
+    if not ok:
+        raise HTTPException(404, "Not found")
+    db.log_audit(actor["username"], "submission.delete", str(sub_id))
+    return {"ok": True}
+
+
+# ============================ SEO ROUTES ================================= #
+
+@app.get("/robots.txt")
+def robots() -> Response:
+    s = db.get_settings()
+    allow = str(s.get("site.robotsAllow", "true")).lower() != "false"
+    body = "User-agent: *\n"
+    body += ("Allow: /\n" if allow else "Disallow: /\n")
+    body += "Disallow: /api/\n"
+    body += "Disallow: /cms\n"
+    body += f"Sitemap: {(s.get('site.canonicalUrl') or config.PUBLIC_BASE_URL or '').rstrip('/')}/sitemap.xml\n"
+    return Response(content=body, media_type="text/plain")
+
+
+@app.get("/sitemap.xml")
+def sitemap() -> Response:
+    """Sitemap listing every community as a deep-linked dashboard URL."""
+    s = db.get_settings()
+    base = (s.get("site.canonicalUrl") or config.PUBLIC_BASE_URL or "").rstrip("/")
+    records = _build_records()
+    urls = [f"<url><loc>{base}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>"]
+    for r in records[:5000]:
+        cid = r.get("id")
+        if not cid:
+            continue
+        urls.append(f"<url><loc>{base}/#id={cid}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>")
+    body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            + "\n".join(urls) + "\n</urlset>")
+    return Response(content=body, media_type="application/xml")
 
 
 @app.get("/cms")

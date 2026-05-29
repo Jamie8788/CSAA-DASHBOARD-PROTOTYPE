@@ -22,6 +22,19 @@ const SETTING_GROUPS = [
     ],
   },
   {
+    title: 'SEO & social',
+    keys: [
+      { key: 'site.metaDescription', label: 'Meta description (Google snippet)', type: 'textarea' },
+      { key: 'site.metaKeywords',    label: 'Meta keywords (comma-separated)',   type: 'text' },
+      { key: 'site.metaAuthor',      label: 'Author / project name',             type: 'text' },
+      { key: 'site.ogImage',         label: 'OG / Twitter share image URL',      type: 'text' },
+      { key: 'site.canonicalUrl',    label: 'Canonical site URL (https://…)',    type: 'text' },
+      { key: 'site.twitterCard',     label: 'Twitter card type',                 type: 'select',
+        options: ['summary', 'summary_large_image'] },
+      { key: 'site.robotsAllow',     label: 'Allow search engines (robots.txt)', type: 'bool' },
+    ],
+  },
+  {
     title: 'Admin',
     keys: [
       { key: 'admin.allowSelfSignup', label: 'Allow editor self-signup', type: 'bool' },

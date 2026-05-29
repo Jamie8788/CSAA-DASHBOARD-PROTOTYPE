@@ -190,9 +190,46 @@
   // Edit overlay uses this to compile a single entry into rules for live preview.
   window.__ATLAS_COMPILE_STYLE_ENTRY = compileEntryToRules;
 
+  // Render or update a <meta> tag in <head>.
+  function setMeta(attr, value, content) {
+    if (!content) return;
+    let el = document.head.querySelector(`meta[${attr}="${value}"]`);
+    if (!el) {
+      el = document.createElement('meta');
+      el.setAttribute(attr, value);
+      document.head.appendChild(el);
+    }
+    el.setAttribute('content', content);
+  }
+  function setLink(rel, href) {
+    if (!href) return;
+    let el = document.head.querySelector(`link[rel="${rel}"]`);
+    if (!el) {
+      el = document.createElement('link');
+      el.setAttribute('rel', rel);
+      document.head.appendChild(el);
+    }
+    el.setAttribute('href', href);
+  }
+
   function applySettingsToDocument(s) {
     if (!s) return;
     if (s['site.title']) document.title = s['site.title'];
+
+    // ---- SEO meta tags ----
+    setMeta('name', 'description', s['site.metaDescription']);
+    setMeta('name', 'keywords',    s['site.metaKeywords']);
+    setMeta('name', 'author',      s['site.metaAuthor']);
+    setMeta('property', 'og:title',       s['site.title']);
+    setMeta('property', 'og:description', s['site.metaDescription']);
+    setMeta('property', 'og:type',        'website');
+    setMeta('property', 'og:image',       s['site.ogImage']);
+    setMeta('property', 'og:url',         s['site.canonicalUrl']);
+    setMeta('name', 'twitter:card',        s['site.twitterCard'] || 'summary_large_image');
+    setMeta('name', 'twitter:title',       s['site.title']);
+    setMeta('name', 'twitter:description', s['site.metaDescription']);
+    setMeta('name', 'twitter:image',       s['site.ogImage']);
+    if (s['site.canonicalUrl']) setLink('canonical', s['site.canonicalUrl']);
 
     // Theme — the CSS only defines: paper, dawn, forest, midnight.
     // Anything else falls back to paper.

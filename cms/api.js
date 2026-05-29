@@ -98,6 +98,22 @@
       quality: () => request('GET', '/api/analytics/quality'),
     },
     audit: (limit = 100) => request('GET', `/api/audit?limit=${limit}`),
+    media: {
+      list: () => request('GET', '/api/media'),
+      upload: (file, alt) => {
+        const fd = new FormData();
+        fd.append('file', file);
+        if (alt) fd.append('alt', alt);
+        return request('POST', '/api/media', fd);
+      },
+      remove: (id) => request('DELETE', `/api/media/${id}`),
+      url: (id) => `/api/media/${id}`,
+    },
+    submissions: {
+      list: (form) => request('GET', '/api/submissions' + (form ? `?form=${encodeURIComponent(form)}` : '')),
+      markRead: (id) => request('POST', `/api/submissions/${id}/read`),
+      remove: (id) => request('DELETE', `/api/submissions/${id}`),
+    },
     settings: {
       get: () => request('GET', '/api/settings'),
       update: (values) => request('PUT', '/api/settings', { values }),

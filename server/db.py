@@ -146,6 +146,28 @@ def _ddl() -> list[str]:
             updated_at DOUBLE PRECISION NOT NULL,
             updated_by TEXT
         )""",
+        f"""CREATE TABLE IF NOT EXISTS media (
+            id {pk},
+            filename TEXT NOT NULL,
+            mime_type TEXT NOT NULL,
+            size_bytes INTEGER NOT NULL,
+            alt_text TEXT,
+            content_b64 TEXT NOT NULL,
+            uploaded_at DOUBLE PRECISION NOT NULL,
+            uploaded_by TEXT
+        )""",
+        "CREATE INDEX IF NOT EXISTS idx_media_uploaded ON media(uploaded_at)",
+        f"""CREATE TABLE IF NOT EXISTS submissions (
+            id {pk},
+            form_slug TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            visitor_ip TEXT,
+            visitor_ua TEXT,
+            received_at DOUBLE PRECISION NOT NULL,
+            read_at DOUBLE PRECISION,
+            notes TEXT
+        )""",
+        "CREATE INDEX IF NOT EXISTS idx_subs_form ON submissions(form_slug, received_at)",
     ]
 
 
@@ -167,6 +189,14 @@ DEFAULT_SETTINGS = {
     "site.showAnalyticsView": "true",
     "site.showCoverageView": "true",
     "admin.allowSelfSignup": "false",
+    # SEO
+    "site.metaDescription": "A living atlas of community-care programming across First Nations and partner organizations.",
+    "site.metaKeywords":    "First Nations, community care, atlas, services, programs",
+    "site.metaAuthor":      "Mino Bimaadiziwin project team",
+    "site.ogImage":         "",
+    "site.canonicalUrl":    "",
+    "site.twitterCard":     "summary_large_image",
+    "site.robotsAllow":     "true",
 }
 
 DEFAULT_PAGES = [
@@ -957,3 +987,110 @@ def delete_style(selector: str) -> bool:
             {"s": selector},
         )
         return result.rowcount > 0
+
+
+# ------------------------------ media ------------------------------------- #
+
+def save_media(filename: str, mime_type: str, content_b64: str,
+               size_bytes: int, alt_text: str | None, actor: str | None) -> dict:
+    with get_conn() as conn:
+        conn.execute(
+            text("INSERT INTO media(filename, mime_type, size_bytes, alt_text, "
+                 "content_b64, uploaded_at, uploaded_by) "
+                 "VALUES(:f,:m,:s,:a,:c,:t,:by)"),
+            {"f": filename, "m": mime_type, "s": size_bytes,
+             "a": alt_text, "c": content_b64, "t": time.time(), "by": actor},
+        )
+        new_id = conn.execute(text("SELECT MAX(id) AS mx FROM media")).scalar()
+        row = _row(conn.execute(
+            text("SELECT id, filename, mime_type, size_bytes, alt_text, "
+                 "uploaded_at, uploaded_by FROM media WHERE id = :id"),
+            {"id": new_id},
+        ))
+        return row or {}
+
+
+def list_media(limit: int = 200) -> list[dict]:
+    with get_conn() as conn:
+        return _rows(conn.execute(
+            text("SELECT id, filename, mime_type, size_bytes, alt_text, "
+                 "uploaded_at, uploaded_by FROM media "
+                 "ORDER BY uploaded_at DESC LIMIT :l"),
+            {"l": limit},
+        ))
+
+
+def get_media_content(media_id: int) -> dict | None:
+    with get_conn() as conn:
+        return _row(conn.execute(
+            text("SELECT id, filename, mime_type, content_b64 FROM media "
+                 "WHERE id = :id"),
+            {"id": media_id},
+        ))
+
+
+def delete_media(media_id: int) -> bool:
+    with get_conn() as conn:
+        result = conn.execute(
+            text("DELETE FROM media WHERE id = :id"), {"id": media_id})
+        return result.rowcount > 0
+
+
+# --------------------------- submissions ---------------------------------- #
+
+def save_submission(form_slug: str, payload: dict,
+                    visitor_ip: str | None, visitor_ua: str | None) -> int:
+    with get_conn() as conn:
+        conn.execute(
+            text("INSERT INTO submissions(form_slug, payload, visitor_ip, "
+                 "visitor_ua, received_at) VALUES(:s,:p,:ip,:ua,:t)"),
+            {"s": form_slug, "p": json.dumps(payload, ensure_ascii=False),
+             "ip": visitor_ip, "ua": visitor_ua, "t": time.time()},
+        )
+        return conn.execute(text("SELECT MAX(id) AS mx FROM submissions")).scalar() or 0
+
+
+def list_submissions(form_slug: str | None = None, limit: int = 200) -> list[dict]:
+    with get_conn() as conn:
+        if form_slug:
+            rows = _rows(conn.execute(
+                text("SELECT * FROM submissions WHERE form_slug = :s "
+                     "ORDER BY received_at DESC LIMIT :l"),
+                {"s": form_slug, "l": limit},
+            ))
+        else:
+            rows = _rows(conn.execute(
+                text("SELECT * FROM submissions ORDER BY received_at DESC LIMIT :l"),
+                {"l": limit},
+            ))
+    for r in rows:
+        try:
+            r["payload"] = json.loads(r["payload"])
+        except json.JSONDecodeError:
+            r["payload"] = {}
+    return rows
+
+
+def mark_submission_read(sub_id: int) -> bool:
+    with get_conn() as conn:
+        result = conn.execute(
+            text("UPDATE submissions SET read_at = :t WHERE id = :id"),
+            {"id": sub_id, "t": time.time()},
+        )
+        return result.rowcount > 0
+
+
+def delete_submission(sub_id: int) -> bool:
+    with get_conn() as conn:
+        result = conn.execute(
+            text("DELETE FROM submissions WHERE id = :id"), {"id": sub_id})
+        return result.rowcount > 0
+
+
+def submissions_summary() -> dict:
+    with get_conn() as conn:
+        total = conn.execute(text("SELECT COUNT(*) FROM submissions")).scalar() or 0
+        unread = conn.execute(
+            text("SELECT COUNT(*) FROM submissions WHERE read_at IS NULL")
+        ).scalar() or 0
+    return {"total": int(total), "unread": int(unread)}

@@ -527,7 +527,7 @@ function LayoutManager({ layouts, pages, onChange, onResetSlot }) {
       <div className="picker">
         <div className="form-row" style={{ marginBottom: 4 }}>
           <select value={pickerType} onChange={(e) => { setPickerType(e.target.value); setPickerProps({}); }}>
-            {['page','heading','text','image','button','divider','spacer','embed','columns','html'].map((t) => (
+            {['page','heading','text','image','button','divider','spacer','embed','columns','form','html'].map((t) => (
               <option key={t}>{t}</option>
             ))}
           </select>
@@ -590,6 +590,21 @@ function LayoutManager({ layouts, pages, onChange, onResetSlot }) {
             <option value={3}>3 columns</option>
             <option value={4}>4 columns</option>
           </select>
+        )}
+        {pickerType === 'form' && (
+          <>
+            <input placeholder="Form slug (e.g. contact, volunteer)"
+                   value={p.slug || ''} onChange={(e) => set('slug', e.target.value)} />
+            <input placeholder="Title (optional)"
+                   value={p.title || ''} onChange={(e) => set('title', e.target.value)} />
+            <input placeholder="Submit button text (default 'Send')"
+                   value={p.button || ''} onChange={(e) => set('button', e.target.value)} />
+            <p className="small muted" style={{ margin: '4px 0' }}>
+              Default fields: Name, Email, Message. Submissions go to
+              <span className="mono"> /api/submissions</span> and show up under
+              <strong> Data → Form submissions</strong>.
+            </p>
+          </>
         )}
         {pickerType === 'html' && (
           <textarea placeholder="<div>Raw HTML…</div>" rows={4}
