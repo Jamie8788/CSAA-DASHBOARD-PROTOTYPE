@@ -671,13 +671,16 @@ function CommunityPicker({ all, value, onChange, placeholder }) {
       />
       {open && items.length > 0 && (
         <ul className="ap-picker-list">
-          {items.slice(0, 12).map((n) => (
+          {items.map((n) => (
             <li key={n}>
               <button onMouseDown={(e) => { e.preventDefault(); onChange(n); setQ(''); setOpen(false); }}>
                 {n}
               </button>
             </li>
           ))}
+          <li className="ap-picker-count">
+            <span>{items.length} of {(all || []).length} communities</span>
+          </li>
         </ul>
       )}
     </div>

@@ -60,13 +60,56 @@ window.popBucket = popBucket;
 function pillarOn(c, key) { return c['has' + key[0].toUpperCase() + key.slice(1)]; }
 window.pillarOn = pillarOn;
 
+// autoLink — turn URLs, bare domains, and email addresses inside narrative
+// text into clickable anchors. Catches:
+//   https://x.com/foo            → linked
+//   www.example.ca               → linked (assumed https)
+//   northwesthealthline.ca       → linked (assumed https)
+//   contact@example.org          → mailto:
+//   (705) 555-1234               → tel:
+// Without ever dropping non-link surrounding text.
+const _LINK_RX = new RegExp(
+  '(' +
+    // full URLs first (greedy on path/query)
+    'https?:\\/\\/[^\\s<>()\\]]+'
+    + '|' +
+    // emails
+    '[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}'
+    + '|' +
+    // bare domains — name(.subdomain)* followed by a known TLD
+    '\\b(?:www\\.)?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?'
+    + '(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*'
+    + '\\.(?:ca|com|org|net|edu|gov|io|co|info|us|uk|dev|app|health|care|first|nation|cree)'
+    + '(?:\\/[^\\s<>()\\]]*)?'
+  + ')',
+  'gi',
+);
+function _hrefFor(token) {
+  const t = token.trim();
+  if (/^https?:\/\//i.test(t)) return t;
+  if (/^[\w._%+-]+@[\w.-]+\.[A-Za-z]{2,}$/.test(t)) return 'mailto:' + t;
+  return 'https://' + t.replace(/^www\./i, 'www.');
+}
 function autoLink(text) {
   if (!text) return text;
-  const re = /(https?:\/\/[^\s)]+)/g;
-  const parts = String(text).split(re);
-  return parts.map((p, i) => re.test(p)
-    ? <a key={i} href={p} target="_blank" rel="noopener noreferrer">{p.length > 50 ? p.slice(0, 50) + '…' : p}</a>
-    : <span key={i}>{p}</span>);
+  const s = String(text);
+  const out = [];
+  let last = 0;
+  let m;
+  _LINK_RX.lastIndex = 0;
+  while ((m = _LINK_RX.exec(s)) !== null) {
+    if (m.index > last) out.push(<span key={'t' + last}>{s.slice(last, m.index)}</span>);
+    const token = m[0];
+    out.push(
+      <a key={'l' + m.index} href={_hrefFor(token)}
+         target="_blank" rel="noopener noreferrer">
+        {token.length > 60 ? token.slice(0, 60) + '…' : token}
+      </a>
+    );
+    last = m.index + token.length;
+  }
+  if (last < s.length) out.push(<span key={'t' + last}>{s.slice(last)}</span>);
+  return out.length ? out : <span>{s}</span>;
 }
 window.autoLink = autoLink;
 

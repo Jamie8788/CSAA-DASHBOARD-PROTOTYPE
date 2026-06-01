@@ -401,16 +401,24 @@ function PillarServiceCard({ pillar, value, on, c, searchQuery }) {
   const [open, setOpen] = useState(true);
 
   // Extract links + word count for the meta line, but DO NOT drop any text.
+  // Also surface structured contact info (phone, email, bare domains) as
+  // quick-action chips above the narrative.
   const meta = useMemo(() => {
-    if (!value) return { links: [], wordCount: 0, paragraphs: [] };
+    if (!value) return { links: [], emails: [], phones: [], wordCount: 0, paragraphs: [] };
     const linkMatches = Array.from(value.matchAll(/(https?:\/\/[^\s)\]]+)/gi)).map(m => m[1]);
-    const links = [...new Set(linkMatches)];
+    // Bare domains like northwesthealthline.ca → prefixed for the chip row
+    const bareMatches = Array.from(value.matchAll(
+      /\b(?:www\.)?[a-z0-9][a-z0-9-]{1,62}(?:\.[a-z0-9-]{1,62})+\.(?:ca|com|org|net|edu|gov|io|co|info|us|uk|dev|app|health|care)(?:\/[^\s)\]]*)?/gi
+    )).map(m => m[0]).filter(d => !linkMatches.some(l => l.includes(d)));
+    const links = [...new Set([...linkMatches, ...bareMatches.map(d => 'https://' + d.replace(/^www\./i, 'www.'))])];
+    const emails = [...new Set(Array.from(value.matchAll(/[\w._%+-]+@[\w.-]+\.[A-Za-z]{2,}/g)).map(m => m[0]))];
+    const phones = [...new Set(Array.from(value.matchAll(
+      /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}(?:\s*(?:ext\.?|x)\s*\d+)?/gi
+    )).map(m => m[0].trim()))];
     const wordCount = value.replace(/https?:\/\/\S+/g, ' ').split(/\s+/).filter(Boolean).length;
-    // Split on blank lines OR sentence-ish boundaries, but keep ALL content.
-    // Falls back to single paragraph if no clear breaks.
     const byBlankLine = value.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
     const paragraphs = byBlankLine.length > 1 ? byBlankLine : [value.trim()];
-    return { links, wordCount, paragraphs };
+    return { links, emails, phones, wordCount, paragraphs };
   }, [value]);
 
   if (!on) {
@@ -459,6 +467,31 @@ function PillarServiceCard({ pillar, value, on, c, searchQuery }) {
 
         {open && (
           <>
+            {(meta.phones.length + meta.emails.length + meta.links.length) > 0 && (
+              <div className="pc-quickbar">
+                {meta.phones.slice(0, 6).map((p, i) => (
+                  <a key={'p' + i} className="pc-chip pc-chip-phone"
+                     href={'tel:' + p.replace(/[^\d+]/g, '')}>
+                    <span className="pc-chip-icon">☎</span>{p}
+                  </a>
+                ))}
+                {meta.emails.slice(0, 6).map((e, i) => (
+                  <a key={'e' + i} className="pc-chip pc-chip-email"
+                     href={'mailto:' + e}>
+                    <span className="pc-chip-icon">✉</span>{e}
+                  </a>
+                ))}
+                {meta.links.slice(0, 6).map((url, i) => {
+                  let host = url; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
+                  return (
+                    <a key={'u' + i} className="pc-chip pc-chip-link"
+                       href={url} target="_blank" rel="noopener noreferrer">
+                      <span className="pc-chip-icon">↗</span>{host}
+                    </a>
+                  );
+                })}
+              </div>
+            )}
             <div className="pc-fullbody" style={{ borderLeftColor: pillar.hex }}>
               {display}
             </div>
