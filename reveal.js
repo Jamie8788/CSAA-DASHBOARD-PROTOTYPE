@@ -41,12 +41,20 @@
     el.__revealed = true;
     if (reduceMotion) { el.classList.add('is-revealed'); return; }
     io.observe(el);
+    // Safety net: if the IO never fires (edge cases, off-screen-forever, etc.)
+    // force-reveal after 2.5s so content is NEVER permanently hidden.
+    setTimeout(() => { if (!el.classList.contains('is-revealed')) {
+      el.classList.add('is-revealed'); io.unobserve(el);
+    } }, 2500);
   }
   function observeView(el) {
     if (el.__inview) return;
     el.__inview = true;
     if (reduceMotion) { el.classList.add('in-view'); return; }
     ioView.observe(el);
+    setTimeout(() => { if (!el.classList.contains('in-view')) {
+      el.classList.add('in-view'); ioView.unobserve(el);
+    } }, 2500);
   }
 
   function scan() {

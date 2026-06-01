@@ -1190,20 +1190,20 @@ input:focus-visible,
 }
 @keyframes progressShimmer { to { background-position: 200% 0; } }
 
-/* ---- directional reveal variants (base hidden state) ---- */
-.reveal-on-scroll.reveal-up    { opacity: 0; transform: translateY(34px); }
-.reveal-on-scroll.reveal-left  { opacity: 0; transform: translateX(-40px); }
-.reveal-on-scroll.reveal-right { opacity: 0; transform: translateX(40px); }
-.reveal-on-scroll.reveal-scale { opacity: 0; transform: scale(0.92); }
-.reveal-on-scroll.reveal-fade  { opacity: 0; transform: none; }
+/* ---- directional reveal variants (base hidden state) — pronounced ---- */
+.reveal-on-scroll.reveal-up    { opacity: 0; transform: translateY(56px); }
+.reveal-on-scroll.reveal-left  { opacity: 0; transform: translateX(-64px); }
+.reveal-on-scroll.reveal-right { opacity: 0; transform: translateX(64px); }
+.reveal-on-scroll.reveal-scale { opacity: 0; transform: scale(0.86); }
+.reveal-on-scroll.reveal-fade  { opacity: 0; transform: translateY(20px); }
 .reveal-on-scroll.reveal-up,
 .reveal-on-scroll.reveal-left,
 .reveal-on-scroll.reveal-right,
 .reveal-on-scroll.reveal-scale,
 .reveal-on-scroll.reveal-fade {
   transition:
-    opacity 0.8s cubic-bezier(.2,.7,.3,1),
-    transform 0.8s cubic-bezier(.2,.7,.3,1);
+    opacity 0.7s cubic-bezier(.16,.84,.36,1),
+    transform 0.7s cubic-bezier(.16,.84,.36,1);
   transition-delay: var(--reveal-delay, 0s);
   will-change: transform, opacity;
 }
@@ -1239,24 +1239,33 @@ input:focus-visible,
 }
 @keyframes titleUnderline { to { width: 56px; } }
 
-/* ---- on-view chart growth: bars start collapsed, grow when scrolled to ---- */
-.ap-bar-fill.animate-on-view {
-  animation: none !important;          /* override the immediate mount grow */
-  transform: scaleX(0); transform-origin: left center;
-  transition: transform 1.05s cubic-bezier(.22,1,.36,1);
+/* ---- on-view chart growth — SAFE PATTERN ----
+   Elements are VISIBLE by default (no hidden state). The grow animation only
+   PLAYS when reveal.js adds .in-view. If the observer ever misfires, the
+   element is simply shown without animation — never permanently invisible. */
+.ap-bar-fill { transform-origin: left center; }
+.ap-bar-fill.animate-on-view.in-view {
+  animation: barGrowX 1.05s cubic-bezier(.22,1,.36,1) both;
 }
-.ap-bar-fill.animate-on-view.in-view { transform: scaleX(1); }
-
-/* coverage heat-map cells fade+scale in, cascading, when the table is reached */
-.ap-cov td.animate-on-view {
-  opacity: 0; transform: scale(0.8);
-  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(.2,.7,.3,1);
+@keyframes barGrowX {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
-.ap-cov td.animate-on-view.in-view { opacity: 1; transform: scale(1); }
 
-/* duplicate-finder similarity bars sweep in */
-.ap-dup-bar.animate-on-view {
-  transition: width 0.9s cubic-bezier(.22,1,.36,1) 0.1s;
+/* coverage heat-map cells pop in when the table is reached (visible by default) */
+.ap-cov td.animate-on-view.in-view {
+  animation: cellPop 0.5s cubic-bezier(.2,.7,.3,1) both;
+}
+@keyframes cellPop {
+  from { opacity: 0; transform: scale(0.82); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* coverage rings draw in when reached */
+.ap-ring.animate-on-view.in-view { animation: ringPop 0.6s cubic-bezier(.2,.7,.3,1) both; }
+@keyframes ringPop {
+  from { opacity: 0.2; transform: scale(0.9) rotate(-6deg); }
+  to   { opacity: 1;   transform: scale(1) rotate(0); }
 }
 
 /* ---- decorative floating orbs behind the analytics hero (non-interactive) -- */
@@ -1312,8 +1321,9 @@ input:focus-visible,
   .reveal-on-scroll.reveal-fade {
     opacity: 1 !important; transform: none !important; transition: none !important;
   }
-  .ap-bar-fill.animate-on-view { transform: scaleX(1) !important; transition: none !important; }
-  .ap-cov td.animate-on-view { opacity: 1 !important; transform: none !important; }
+  .ap-bar-fill.animate-on-view.in-view,
+  .ap-cov td.animate-on-view.in-view,
+  .ap-ring.animate-on-view.in-view { animation: none !important; transform: none !important; opacity: 1 !important; }
   .ap-hero::after,
   .ap-clock.in-view,
   .content, .stats-view, .stories-view, .ap-shell, .coverage-view {
