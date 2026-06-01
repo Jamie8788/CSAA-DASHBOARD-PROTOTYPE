@@ -167,7 +167,9 @@ function AppInner() {
 
       <BlockRenderer slot={`view.${view}.header`} blocks={[]} ctx={heroCtx} />
 
-      {view === 'analytics' ? (
+      {view === 'story' ? (
+        <window.AtlasStoryView all={all} onSelect={setSelectedId} setView={setView} />
+      ) : view === 'analytics' ? (
         <window.AnalyticsProView all={all} onSelect={setSelectedId} setView={setView} />
       ) : view === 'stats' ? (
         <window.StatsView all={all} onSelect={setSelectedId} setView={setView}
@@ -588,6 +590,7 @@ function NavStrip({ view, setView, filtered, all }) {
   const DEFAULT_NAV = [
     { view: 'map',       label: 'Map · Search',       icon: '◉' },
     { view: 'list',      label: 'Directory',          icon: '☷' },
+    { view: 'story',     label: 'Story Map',          icon: '✦' },
     { view: 'stories',   label: 'Community Stories',  icon: '❋' },
     { view: 'analytics', label: 'Analytics',          icon: '◐' },
     { view: 'stats',     label: 'Insights & Stories', icon: '◭' },

@@ -240,10 +240,11 @@ DEFAULT_PAGES = [
 DEFAULT_NAV = [
     {"slot": "main", "position": 0, "label": "Map · Search", "view": "map", "icon": "◉", "visible": 1},
     {"slot": "main", "position": 1, "label": "Directory", "view": "list", "icon": "☷", "visible": 1},
-    {"slot": "main", "position": 2, "label": "Community Stories", "view": "stories", "icon": "❋", "visible": 1},
-    {"slot": "main", "position": 3, "label": "Analytics", "view": "analytics", "icon": "◐", "visible": 1},
-    {"slot": "main", "position": 4, "label": "Insights & Stories", "view": "stats", "icon": "◭", "visible": 1},
-    {"slot": "main", "position": 5, "label": "Coverage (85)", "view": "coverage", "icon": "⌧", "visible": 1},
+    {"slot": "main", "position": 2, "label": "Story Map", "view": "story", "icon": "✦", "visible": 1},
+    {"slot": "main", "position": 3, "label": "Community Stories", "view": "stories", "icon": "❋", "visible": 1},
+    {"slot": "main", "position": 4, "label": "Analytics", "view": "analytics", "icon": "◐", "visible": 1},
+    {"slot": "main", "position": 5, "label": "Insights & Stories", "view": "stats", "icon": "◭", "visible": 1},
+    {"slot": "main", "position": 6, "label": "Coverage (85)", "view": "coverage", "icon": "⌧", "visible": 1},
 ]
 
 
@@ -382,6 +383,22 @@ def init_db() -> None:
                 text("INSERT INTO nav_items(slot, position, label, view, icon, visible, "
                      "updated_at, updated_by) "
                      "VALUES('main', 3, 'Analytics', 'analytics', '◐', 1, :u, 'migration')"),
+                {"u": now},
+            )
+
+        # Migration — add the scrollytelling Story Map nav item if missing.
+        rows = conn.execute(text("SELECT view FROM nav_items WHERE slot = 'main'")).fetchall()
+        existing_views = {r[0] for r in rows}
+        if "story" not in existing_views:
+            # Insert at position 2 (after Directory); shift the rest down.
+            conn.execute(text(
+                "UPDATE nav_items SET position = position + 1 "
+                "WHERE slot = 'main' AND position >= 2"
+            ))
+            conn.execute(
+                text("INSERT INTO nav_items(slot, position, label, view, icon, visible, "
+                     "updated_at, updated_by) "
+                     "VALUES('main', 2, 'Story Map', 'story', '✦', 1, :u, 'migration')"),
                 {"u": now},
             )
 
