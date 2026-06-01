@@ -5638,3 +5638,48 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
   .story-map-tint, .story-image-layer, .story-image-scrim { transition: none !important; }
   .story-card.is-active .story-card-dir { animation: none !important; }
 }
+
+/* ---- Story Map v3: richer seasonal wash, vignette, interactive markers ---- */
+
+/* seasonal wash = soft radial of the direction colour, not a flat fill */
+.story-map-tint {
+  position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  mix-blend-mode: multiply;
+  background:
+    radial-gradient(120% 90% at 70% 30%, var(--tint, #6b8d6b) 0%, transparent 55%),
+    radial-gradient(100% 80% at 20% 80%, var(--tint, #6b8d6b) 0%, transparent 60%);
+  opacity: 0.16;
+  transition: opacity 1.4s ease, background 1.4s ease, --tint 1.4s ease;
+}
+/* cinematic vignette so edges fall away and the card area stays readable */
+.story-map-vignette {
+  position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background:
+    radial-gradient(130% 120% at 50% 45%, transparent 55%, rgba(20,16,12,0.22) 100%);
+}
+
+/* interactive community markers on the story map */
+.story-cmarker {
+  cursor: pointer;
+  transition: stroke-width 0.15s ease, fill-opacity 0.15s ease;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+}
+.leaflet-tooltip.story-mtt {
+  background: rgba(20,16,12,0.92); color: #fbf7ec; border: none;
+  font: 600 11px/1.2 'Inter', system-ui, sans-serif; letter-spacing: 0.02em;
+  padding: 5px 10px; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+}
+.leaflet-tooltip.story-mtt::before { border-top-color: rgba(20,16,12,0.92); }
+
+/* progress dots: label on hover */
+.story-progress-dots span { position: relative; }
+.story-progress-dots span::after {
+  content: attr(title); position: absolute; right: 18px; top: 50%;
+  transform: translateY(-50%) translateX(6px); white-space: nowrap;
+  background: rgba(20,16,12,0.9); color: #fbf7ec;
+  font: 600 10px/1 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 4px 8px; border-radius: 4px; opacity: 0; pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.story-progress-dots span:hover::after { opacity: 1; transform: translateY(-50%) translateX(0); }

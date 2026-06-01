@@ -101,6 +101,8 @@ function AtlasStoryView({ all, setView, onSelect }) {
   const dirMarkersRef = useR_st({});
   const pulseRafRef = useR_st(null);
   const dropRafRef = useR_st(null);
+  const sparkRafRef = useR_st(null);
+  const sparkRef = useR_st(null);
   const [activeDir, setActiveDir] = useS_st('intro');
   const reduceMotion = window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -151,10 +153,19 @@ function AtlasStoryView({ all, setView, onSelect }) {
       const color = DIR_COLOR[dir] || '#6b8d6b';
       const m = L.circleMarker([lat, lng], {
         radius: 5, color: '#fff', weight: 1.2, fillColor: color, fillOpacity: 0.35, opacity: 0.5,
+        className: 'story-cmarker',
       });
-      m.__color = color; m.__c = c;
-      m.on('click', () => { if (onSelect && c.id) onSelect(c.id); });
-      m.bindTooltip(c.name, { direction: 'top', opacity: 0.9 });
+      m.__color = color; m.__c = c; m.__base = 5;
+      // hover: grow + glow + raise
+      m.on('mouseover', () => {
+        try { m.setRadius((m.__base || 5) + 5); m.setStyle({ fillOpacity: 1, opacity: 1, weight: 2.5 }); m.bringToFront(); } catch (e) {}
+      });
+      m.on('mouseout', () => {
+        try { m.setRadius(m.__base || 5); m.setStyle({ weight: m.__activeNow ? 2 : 1 }); } catch (e) {}
+      });
+      // click: fly + ping + open record
+      m.on('click', () => { pingAt(lat, lng, m.__color); if (onSelect && c.id) setTimeout(() => onSelect(c.id), reduceMotion ? 0 : 450); });
+      m.bindTooltip(c.name, { direction: 'top', opacity: 0.95, className: 'story-mtt' });
       m.addTo(markerLayerRef.current);
       (byDir[dir] = byDir[dir] || []).push(m);
     });
@@ -170,37 +181,91 @@ function AtlasStoryView({ all, setView, onSelect }) {
     return () => {
       if (pulseRafRef.current) cancelAnimationFrame(pulseRafRef.current);
       if (dropRafRef.current) cancelAnimationFrame(dropRafRef.current);
+      if (sparkRafRef.current) cancelAnimationFrame(sparkRafRef.current);
       try { map.remove(); } catch (e) {}
       mapRef.current = null;
     };
   }, [all, onSelect]);
 
-  // ---- stop the pulse/drop animations ----
+  // ---- stop the pulse/drop/spark animations ----
   function stopAnims() {
     if (pulseRafRef.current) { cancelAnimationFrame(pulseRafRef.current); pulseRafRef.current = null; }
     if (dropRafRef.current) { cancelAnimationFrame(dropRafRef.current); dropRafRef.current = null; }
+    if (sparkRafRef.current) { cancelAnimationFrame(sparkRafRef.current); sparkRafRef.current = null; }
+    sparkRef.current = null;
     try { haloLayerRef.current && haloLayerRef.current.clearLayers(); } catch (e) {}
     try { routeLayerRef.current && routeLayerRef.current.clearLayers(); } catch (e) {}
   }
 
-  // ---- pulsing radar halos for the active direction ----
+  // ---- one-off expanding ping at a point (used on click) ----
+  function pingAt(lat, lng, color) {
+    if (reduceMotion || !haloLayerRef.current || typeof L === 'undefined') return;
+    try {
+      const ping = L.circleMarker([lat, lng], { radius: 8, color: color || '#b8351e', weight: 2.5, fillOpacity: 0, opacity: 1 })
+        .addTo(haloLayerRef.current);
+      let s = null;
+      function pl(t) { if (s == null) s = t; const p = Math.min(1, (t - s) / 850);
+        try { ping.setRadius(8 + p * 34); ping.setStyle({ opacity: 1 - p, weight: 2.5 * (1 - p) }); } catch (e) {}
+        if (p < 1) requestAnimationFrame(pl); else { try { haloLayerRef.current.removeLayer(ping); } catch (e) {} } }
+      requestAnimationFrame(pl);
+    } catch (e) {}
+  }
+
+  // ---- pulsing radar halos (two concentric rings, offset phase) ----
   function startPulse(geoMarkers, color) {
     if (reduceMotion || !geoMarkers.length) return;
-    const halos = geoMarkers.map((m) => {
+    const rings = [];
+    geoMarkers.forEach((m) => {
       const ll = m.getLatLng();
-      return L.circleMarker(ll, { radius: 8, color, weight: 1.5, fillColor: color, fillOpacity: 0, opacity: 0.6 })
-        .addTo(haloLayerRef.current);
+      rings.push({ ring: L.circleMarker(ll, { radius: 8, color, weight: 2, fillColor: color, fillOpacity: 0, opacity: 0.65 }).addTo(haloLayerRef.current), off: 0 });
+      rings.push({ ring: L.circleMarker(ll, { radius: 8, color, weight: 1.5, fillColor: color, fillOpacity: 0, opacity: 0.5 }).addTo(haloLayerRef.current), off: 0.5 });
     });
     let t0 = null;
     function loop(t) {
       if (t0 == null) t0 = t;
-      const phase = ((t - t0) % 1800) / 1800;       // 0..1 over 1.8s
-      const r = 8 + phase * 26;
-      const op = 0.55 * (1 - phase);
-      halos.forEach((h) => { try { h.setRadius(r); h.setStyle({ opacity: op, weight: 1.5 - phase }); } catch (e) {} });
+      const base = ((t - t0) % 2000) / 2000;
+      rings.forEach(({ ring, off }) => {
+        const phase = (base + off) % 1;
+        const r = 8 + phase * 32;
+        const op = 0.6 * (1 - phase);
+        try { ring.setRadius(r); ring.setStyle({ opacity: op, weight: 2 * (1 - phase) }); } catch (e) {}
+      });
       pulseRafRef.current = requestAnimationFrame(loop);
     }
     pulseRafRef.current = requestAnimationFrame(loop);
+  }
+
+  // ---- a bright spark that travels along the route, looping ----
+  function startSpark(pts, color) {
+    if (reduceMotion || !pts || pts.length < 2 || !routeLayerRef.current) return;
+    try {
+      // cumulative segment lengths for even-speed travel
+      const seg = [];
+      let total = 0;
+      for (let i = 1; i < pts.length; i++) {
+        const dx = pts[i][0] - pts[i-1][0], dy = pts[i][1] - pts[i-1][1];
+        const d = Math.sqrt(dx*dx + dy*dy); seg.push(d); total += d;
+      }
+      if (total <= 0) return;
+      const spark = L.circleMarker(pts[0], { radius: 5, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1, opacity: 1 })
+        .addTo(routeLayerRef.current);
+      sparkRef.current = spark;
+      const period = 3400;
+      let t0 = null;
+      function loop(t) {
+        if (t0 == null) t0 = t;
+        const prog = ((t - t0) % period) / period;     // 0..1 along route
+        let dist = prog * total, i = 0;
+        while (i < seg.length && dist > seg[i]) { dist -= seg[i]; i++; }
+        if (i >= seg.length) i = seg.length - 1;
+        const f = seg[i] ? dist / seg[i] : 0;
+        const a = pts[i], b = pts[i+1] || pts[i];
+        const lat = a[0] + (b[0]-a[0]) * f, lng = a[1] + (b[1]-a[1]) * f;
+        try { spark.setLatLng([lat, lng]); } catch (e) {}
+        sparkRafRef.current = requestAnimationFrame(loop);
+      }
+      sparkRafRef.current = requestAnimationFrame(loop);
+    } catch (e) {}
   }
 
   // ---- markers drop in with a stagger ----
@@ -224,15 +289,15 @@ function AtlasStoryView({ all, setView, onSelect }) {
     dropRafRef.current = requestAnimationFrame(tick);
   }
 
-  // ---- self-drawing route polyline ----
+  // ---- self-drawing route polyline; returns the ordered points ----
   function drawRoute(geoMarkers, color) {
-    if (reduceMotion || geoMarkers.length < 2) return;
+    if (reduceMotion || geoMarkers.length < 2) return null;
     try {
       const pts = orderByNearest(geoMarkers.map((m) => {
         const ll = m.getLatLng(); return [ll.lat, ll.lng];
       }));
       const line = L.polyline(pts, {
-        color, weight: 2.5, opacity: 0.75, dashArray: null,
+        color, weight: 2.5, opacity: 0.7, dashArray: null,
         lineCap: 'round', lineJoin: 'round',
       }).addTo(routeLayerRef.current);
       const path = line._path;
@@ -245,7 +310,8 @@ function AtlasStoryView({ all, setView, onSelect }) {
         path.style.transition = 'stroke-dashoffset 1.7s cubic-bezier(.16,.84,.36,1)';
         path.style.strokeDashoffset = '0';
       }
-    } catch (e) {}
+      return pts;
+    } catch (e) { return null; }
   }
 
   // ---- react to scene change: fly + emphasise + animate ----
@@ -259,7 +325,7 @@ function AtlasStoryView({ all, setView, onSelect }) {
     const allM = Object.values(byDir).flat();
 
     if (activeDir === 'intro' || activeDir === 'outro') {
-      allM.forEach((m) => m.setStyle({ fillOpacity: 0.4, opacity: 0.55, weight: 1.2 }) || m.setRadius(5));
+      allM.forEach((m) => { m.__activeNow = false; m.__base = 5; m.setStyle({ fillOpacity: 0.4, opacity: 0.55, weight: 1.2 }); m.setRadius(5); });
       try { if (allM.length) map.flyToBounds(L.featureGroup(allM).getBounds().pad(0.15), { duration: dur }); } catch (e) {}
       return;
     }
@@ -268,6 +334,8 @@ function AtlasStoryView({ all, setView, onSelect }) {
     Object.entries(byDir).forEach(([dir, markers]) => {
       const on = dir === activeDir;
       markers.forEach((m) => {
+        m.__activeNow = on;
+        m.__base = on ? 8 : 3.5;
         m.setStyle({ fillOpacity: on ? 0.95 : 0.12, opacity: on ? 1 : 0.2, weight: on ? 2 : 1 });
         if (!on) m.setRadius(3.5);
         if (on) m.bringToFront();
@@ -293,8 +361,9 @@ function AtlasStoryView({ all, setView, onSelect }) {
     const delay = reduceMotion ? 0 : 650;
     const t = setTimeout(() => {
       dropIn(activeMarkers);
-      drawRoute(activeMarkers, color);
+      const pts = drawRoute(activeMarkers, color);
       startPulse(activeMarkers, color);
+      if (pts) setTimeout(() => startSpark(pts, color), 900);  // after the line finishes drawing
     }, delay);
     return () => clearTimeout(t);
   }, [activeDir, dirData, reduceMotion]);
@@ -356,8 +425,9 @@ function AtlasStoryView({ all, setView, onSelect }) {
       <div className="story-map-bg">
         <div ref={mapElRef} className="story-map" />
         <div className="story-map-tint"
-             style={{ background: DIR_COLOR[activeDir] || 'transparent',
-                      opacity: (activeDir === 'intro' || activeDir === 'outro') ? 0 : 0.07 }} />
+             style={{ '--tint': DIR_COLOR[activeDir] || '#6b8d6b',
+                      opacity: (activeDir === 'intro' || activeDir === 'outro') ? 0.35 : 1 }} />
+        <div className="story-map-vignette" />
         <div className={`story-image-layer${onImage ? ' show' : ''}`}
              style={onImage ? { backgroundImage: `url("${activeImage}")` } : null} />
         <div className={`story-image-scrim${onImage ? ' show' : ''}`} />
