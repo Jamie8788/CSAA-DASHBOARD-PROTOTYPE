@@ -1166,3 +1166,158 @@ input:focus-visible,
   position: relative;
   z-index: 2;
 }
+
+/* ============================================================================
+   SCROLL-ANIMATION PRO LAYER  (appended)
+   Directional reveals · scroll-progress bar · on-view chart growth ·
+   magnetic hover · tab crossfade · decorative motion. All opt-in via classes
+   added by reveal.js, all gated behind prefers-reduced-motion.
+============================================================================ */
+
+/* ---- slim scroll-progress bar pinned to the very top ---- */
+.cms-scroll-progress {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 3px; z-index: 9998;
+  transform: scaleX(0); transform-origin: left center;
+  background: linear-gradient(90deg,
+    var(--east, #d4a017), var(--south, #b8351e) 45%,
+    var(--bridge, #6b4358) 75%, var(--east, #d4a017));
+  background-size: 200% 100%;
+  animation: progressShimmer 6s linear infinite;
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(184,53,30,0.35);
+  will-change: transform;
+}
+@keyframes progressShimmer { to { background-position: 200% 0; } }
+
+/* ---- directional reveal variants (base hidden state) ---- */
+.reveal-on-scroll.reveal-up    { opacity: 0; transform: translateY(34px); }
+.reveal-on-scroll.reveal-left  { opacity: 0; transform: translateX(-40px); }
+.reveal-on-scroll.reveal-right { opacity: 0; transform: translateX(40px); }
+.reveal-on-scroll.reveal-scale { opacity: 0; transform: scale(0.92); }
+.reveal-on-scroll.reveal-fade  { opacity: 0; transform: none; }
+.reveal-on-scroll.reveal-up,
+.reveal-on-scroll.reveal-left,
+.reveal-on-scroll.reveal-right,
+.reveal-on-scroll.reveal-scale,
+.reveal-on-scroll.reveal-fade {
+  transition:
+    opacity 0.8s cubic-bezier(.2,.7,.3,1),
+    transform 0.8s cubic-bezier(.2,.7,.3,1);
+  transition-delay: var(--reveal-delay, 0s);
+  will-change: transform, opacity;
+}
+.reveal-on-scroll.reveal-up.is-revealed,
+.reveal-on-scroll.reveal-left.is-revealed,
+.reveal-on-scroll.reveal-right.is-revealed,
+.reveal-on-scroll.reveal-scale.is-revealed,
+.reveal-on-scroll.reveal-fade.is-revealed {
+  opacity: 1; transform: none;
+}
+
+/* ---- analytics panels: subtle lift + shadow on reveal & hover ---- */
+.ap-panel {
+  transition: transform 0.4s cubic-bezier(.2,.7,.3,1),
+              box-shadow 0.4s ease, opacity 0.8s ease;
+}
+.ap-panel.is-revealed:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 40px rgba(21,17,13,0.10), 0 4px 12px rgba(21,17,13,0.06);
+}
+.ap-kpi {
+  transition: transform 0.35s cubic-bezier(.2,.7,.3,1), box-shadow 0.35s ease, opacity 0.7s ease;
+}
+.ap-kpi:hover { transform: translateY(-4px) scale(1.015); }
+
+/* animated gradient underline that sweeps under panel titles on reveal */
+.ap-panel-title { position: relative; }
+.ap-panel.is-revealed .ap-panel-title::after {
+  content: ''; position: absolute; left: 0; bottom: -4px; height: 2px;
+  width: 0; background: linear-gradient(90deg, var(--south), var(--east));
+  animation: titleUnderline 0.9s cubic-bezier(.2,.7,.3,1) 0.2s forwards;
+  border-radius: 2px;
+}
+@keyframes titleUnderline { to { width: 56px; } }
+
+/* ---- on-view chart growth: bars start collapsed, grow when scrolled to ---- */
+.ap-bar-fill.animate-on-view {
+  animation: none !important;          /* override the immediate mount grow */
+  transform: scaleX(0); transform-origin: left center;
+  transition: transform 1.05s cubic-bezier(.22,1,.36,1);
+}
+.ap-bar-fill.animate-on-view.in-view { transform: scaleX(1); }
+
+/* coverage heat-map cells fade+scale in, cascading, when the table is reached */
+.ap-cov td.animate-on-view {
+  opacity: 0; transform: scale(0.8);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(.2,.7,.3,1);
+}
+.ap-cov td.animate-on-view.in-view { opacity: 1; transform: scale(1); }
+
+/* duplicate-finder similarity bars sweep in */
+.ap-dup-bar.animate-on-view {
+  transition: width 0.9s cubic-bezier(.22,1,.36,1) 0.1s;
+}
+
+/* ---- decorative floating orbs behind the analytics hero (non-interactive) -- */
+.ap-hero { position: relative; }
+.ap-hero::after {
+  content: ''; position: absolute; inset: -20% -10% auto auto;
+  width: 320px; height: 320px; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(212,160,23,0.16), transparent 60%),
+    radial-gradient(circle at 70% 70%, rgba(184,53,30,0.12), transparent 60%);
+  filter: blur(8px);
+  animation: orbDrift 16s ease-in-out infinite alternate;
+}
+.ap-hero > * { position: relative; z-index: 1; }
+@keyframes orbDrift {
+  0%   { transform: translate(0,0) scale(1); }
+  100% { transform: translate(-30px, 24px) scale(1.12); }
+}
+
+/* ---- smooth tab/view crossfade: the main content area eases in on change --- */
+.content, .stats-view, .stories-view, .ap-shell, .coverage-view {
+  animation: viewCrossfade 0.5s cubic-bezier(.2,.7,.3,1) both;
+}
+@keyframes viewCrossfade {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- direction clock: gentle continuous breathing once revealed ---- */
+.ap-clock.in-view { animation: clockBreathe 7s ease-in-out infinite; }
+@keyframes clockBreathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.012); }
+}
+
+/* ---- magnetic micro-lift on community/spotlight chips & cards ---- */
+.ap-pill, .pc-chip, .ap-chat-results li {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+.ap-pill:hover { transform: translateY(-1px); }
+
+/* ============================================================================
+   Reduced-motion: honour the OS setting — kill every decorative animation,
+   show everything in its final state, keep functional transitions minimal.
+============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .cms-scroll-progress { display: none !important; }
+  .reveal-on-scroll,
+  .reveal-on-scroll.reveal-up,
+  .reveal-on-scroll.reveal-left,
+  .reveal-on-scroll.reveal-right,
+  .reveal-on-scroll.reveal-scale,
+  .reveal-on-scroll.reveal-fade {
+    opacity: 1 !important; transform: none !important; transition: none !important;
+  }
+  .ap-bar-fill.animate-on-view { transform: scaleX(1) !important; transition: none !important; }
+  .ap-cov td.animate-on-view { opacity: 1 !important; transform: none !important; }
+  .ap-hero::after,
+  .ap-clock.in-view,
+  .content, .stats-view, .stories-view, .ap-shell, .coverage-view {
+    animation: none !important;
+  }
+  .ap-panel.is-revealed .ap-panel-title::after { animation: none !important; width: 56px; }
+}
