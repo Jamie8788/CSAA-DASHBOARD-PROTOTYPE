@@ -24,6 +24,7 @@ const NAV_GROUPS = [
       { key: 'communities', label: 'Communities',       ico: '☷' },
       { key: 'pages',       label: 'Pages & content',   ico: '☰' },
       { key: 'navigation',  label: 'Navigation',        ico: '⇆' },
+      { key: 'story',       label: 'Story Map',         ico: '✦' },
       { key: 'media',       label: 'Media library',     ico: '🖼' },
     ],
   },
@@ -165,6 +166,7 @@ function CMSAppInner() {
         {view === 'pages' && <window.PagesView />}
         {view === 'navigation' && <window.NavigationView />}
         {view === 'media' && <window.MediaView />}
+        {view === 'story' && <window.StoryEditorView />}
         {view === 'submissions' && <window.SubmissionsView />}
         {view === 'settings' && <window.SettingsView />}
         {view === 'users' && <window.UsersView me={me} />}

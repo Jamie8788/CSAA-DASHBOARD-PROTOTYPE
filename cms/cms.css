@@ -423,6 +423,20 @@ table.tbl tbody tr.gap-high { background: rgba(184, 53, 30, 0.05); }
   padding: 6px 12px; display: flex; gap: 12px; font-size: 12px;
 }
 tr.unread td { background: rgba(212,160,23,0.06); }
+
+/* Story editor image preview + picker */
+.story-img-preview {
+  width: 100%; aspect-ratio: 16/9; border: 1px solid var(--border);
+  border-radius: 8px; background-size: cover; background-position: center;
+  background-color: #ece2cf;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+}
+.media-pick {
+  background: var(--paper); border: 1px solid var(--border); border-radius: 8px;
+  overflow: hidden; cursor: pointer; padding: 0; text-align: left;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.media-pick:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: var(--accent); }
 @media (max-width: 720px) {
   .cms-shell { grid-template-columns: 1fr; }
   .cms-sidebar { position: relative; height: auto; flex-direction: row; flex-wrap: wrap; }
