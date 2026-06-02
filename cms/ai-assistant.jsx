@@ -83,7 +83,7 @@ function AIAutofill({ toast }) {
   const pct = job && job.total ? Math.round((job.done / job.total) * 100) : 0;
 
   // build preview rows (only real communities; optionally only AI-touched)
-  const all = (rows || []).filter((r) => r.name && (r.orgType === 'Community' || (r._ai && Object.keys(r._ai).length)));
+  const all = (rows || []).filter((r) => r.name && ((r.orgType || r.type) === 'Community' || (r._ai && Object.keys(r._ai).length)));
   const filtered = onlyAI ? all.filter((r) => r._ai && Object.keys(r._ai).length) : all;
   const aiCells = all.reduce((n, r) => n + (r._ai ? Object.keys(r._ai).filter((k) => k !== 'lon').length : 0), 0);
   const pages = Math.max(1, Math.ceil(filtered.length / PER));
