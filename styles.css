@@ -3777,9 +3777,21 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 }
 .agm-launch:hover { background: var(--south); }
 
+/* global "Present" launcher — bottom-right on every page */
+.present-fab {
+  position: fixed; right: 20px; bottom: 20px; z-index: 1500;
+  background: var(--ink, #15110d); color: var(--paper, #f5ede0);
+  border: 1px solid var(--ink, #15110d); border-radius: 999px;
+  padding: 11px 20px; font: 600 13px var(--sans, sans-serif); letter-spacing: 0.02em;
+  cursor: pointer; box-shadow: 0 6px 22px rgba(0,0,0,0.22);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.present-fab:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+@media (max-width: 760px) { .present-fab { right: 12px; bottom: 12px; padding: 9px 15px; font-size: 12px; } }
+
 .agm-overlay {
   position: fixed; inset: 0;
-  background: radial-gradient(125% 125% at 82% 4%, #d94f33 0%, #b8351e 48%, #120d09 120%);
+  background: radial-gradient(135% 135% at 82% 6%, #8f3320 0%, #5e2114 38%, #100b08 104%);
   z-index: 9999;
   display: flex; flex-direction: column;
   padding: 60px 80px 30px;
@@ -5547,6 +5559,14 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
   font: 600 10px/1.2 var(--mono, monospace); letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--ink-3, #5a4f40);
 }
+/* image shown inside a direction card (set from CMS → Story Map) */
+.story-card-img {
+  height: 148px; margin: -30px -32px 20px; border-radius: 13px 13px 0 0;
+  background-size: cover; background-position: center;
+  border-bottom: 3px solid var(--accent, #b8351e);
+}
+:root[data-text-size="XL"] .story-card-img { height: 180px; }
+
 .story-samples-wrap { margin-bottom: 18px; }
 .story-samples-head {
   font: 600 10px/1.2 var(--mono, monospace); letter-spacing: 0.08em;

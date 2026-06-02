@@ -391,58 +391,66 @@ function AtlasStoryView({ all, setView, onSelect }) {
   }
 
   // ---- react to scene change: fly + emphasise + animate ----
+  // Split into a CHEAP immediate part (marker emphasis only — no camera move,
+  // no animation loops) and a HEAVY debounced part (the camera fly + drop-in +
+  // route + pulse + labels). When the user scrolls fast through several scenes
+  // the heavy part is cancelled and only the scene they settle on animates —
+  // this is what stops the map hanging on scroll.
   useE_st(() => {
     const map = mapRef.current;
     if (!map) return;
-    const dur = reduceMotion ? 0 : 1.7;
     stopAnims();
+    clearLabels();
 
     const byDir = dirMarkersRef.current;
     const allM = Object.values(byDir).flat();
 
-    clearLabels();
+    // -- cheap, immediate: just re-style the markers --
     if (activeDir === 'intro' || activeDir === 'outro') {
       allM.forEach((m) => { m.__activeNow = false; m.__base = 5; m.setStyle({ fillOpacity: 0.4, opacity: 0.55, weight: 1.2 }); m.setRadius(5); });
-      try { if (allM.length) map.flyToBounds(L.featureGroup(allM).getBounds().pad(0.15), { duration: dur }); } catch (e) {}
-      return;
+    } else {
+      Object.entries(byDir).forEach(([dir, markers]) => {
+        const on = dir === activeDir;
+        markers.forEach((m) => {
+          m.__activeNow = on;
+          m.__base = on ? 8 : 3.5;
+          m.setStyle({ fillOpacity: on ? 0.95 : 0.12, opacity: on ? 1 : 0.2, weight: on ? 2 : 1 });
+          if (!on) m.setRadius(3.5);
+          if (on) m.bringToFront();
+        });
+      });
     }
 
-    // dim everything, then light + animate the active direction
-    Object.entries(byDir).forEach(([dir, markers]) => {
-      const on = dir === activeDir;
-      markers.forEach((m) => {
-        m.__activeNow = on;
-        m.__base = on ? 8 : 3.5;
-        m.setStyle({ fillOpacity: on ? 0.95 : 0.12, opacity: on ? 1 : 0.2, weight: on ? 2 : 1 });
-        if (!on) m.setRadius(3.5);
-        if (on) m.bringToFront();
-      });
-    });
-
-    const data = dirData[activeDir];
-    const color = DIR_COLOR[activeDir] || '#b8351e';
-    const activeMarkers = (byDir[activeDir] || []);
-
-    if (data && data.geo.length) {
-      try {
-        const grp = L.featureGroup(data.geo.map((c) => L.marker([c.lat, (c.lng != null ? c.lng : c.lon)])));
-        map.flyToBounds(grp.getBounds().pad(0.4), { duration: dur, maxZoom: 7 });
-      } catch (e) {
+    // -- heavy, debounced: camera move + animations once the user settles --
+    const dur = reduceMotion ? 0 : 1.3;
+    const settleDelay = reduceMotion ? 0 : 280;
+    const t = setTimeout(() => {
+      if (activeDir === 'intro' || activeDir === 'outro') {
+        try { if (allM.length) map.flyToBounds(L.featureGroup(allM).getBounds().pad(0.15), { duration: dur }); } catch (e) {}
+        return;
+      }
+      const data = dirData[activeDir];
+      const color = DIR_COLOR[activeDir] || '#b8351e';
+      const activeMarkers = (byDir[activeDir] || []);
+      if (data && data.geo.length) {
+        try {
+          const grp = L.featureGroup(data.geo.map((c) => L.marker([c.lat, (c.lng != null ? c.lng : c.lon)])));
+          map.flyToBounds(grp.getBounds().pad(0.4), { duration: dur, maxZoom: 7 });
+        } catch (e) {
+          const fb = DIR_FALLBACK[activeDir] || DIR_FALLBACK.Central; map.flyTo(fb.center, fb.zoom, { duration: dur });
+        }
+      } else {
         const fb = DIR_FALLBACK[activeDir] || DIR_FALLBACK.Central; map.flyTo(fb.center, fb.zoom, { duration: dur });
       }
-    } else {
-      const fb = DIR_FALLBACK[activeDir] || DIR_FALLBACK.Central; map.flyTo(fb.center, fb.zoom, { duration: dur });
-    }
-
-    // kick the animations slightly after the camera starts moving
-    const delay = reduceMotion ? 0 : 650;
-    const t = setTimeout(() => {
-      dropIn(activeMarkers);
-      const pts = drawRoute(activeMarkers, color);
-      startPulse(activeMarkers, color);
-      showLabels(activeMarkers);
-      if (pts) setTimeout(() => startSpark(pts, color), 900);  // after the line finishes drawing
-    }, delay);
+      // animations shortly after the camera starts moving
+      setTimeout(() => {
+        dropIn(activeMarkers);
+        const pts = drawRoute(activeMarkers, color);
+        startPulse(activeMarkers, color);
+        showLabels(activeMarkers);
+        if (pts) setTimeout(() => startSpark(pts, color), 900);
+      }, reduceMotion ? 0 : 300);
+    }, settleDelay);
     return () => clearTimeout(t);
   }, [activeDir, dirData, reduceMotion]);
 
@@ -555,11 +563,16 @@ function AtlasStoryView({ all, setView, onSelect }) {
         {STORY_DIRS.map((d) => {
           const data = dirData[d.key] || {};
           const isActive = activeDir === d.key;
-          const hasImg = !!storySetting(d.key + '.image', '');
+          const dirImg = storySetting(d.key + '.image', '');
+          const hasImg = !!dirImg;
           const accent = storySetting(d.key + '.accent', d.color);
           return (
             <div className="story-scene" data-story-scene={d.key} key={d.key}>
-              <div className={`story-card${isActive ? ' is-active' : ''}${hasImg ? ' on-image' : ''}`} style={{ '--accent': accent }}>
+              <div className={`story-card${isActive ? ' is-active' : ''}`} style={{ '--accent': accent }}>
+                {hasImg && (
+                  <div className="story-card-img" style={{ backgroundImage: `url("${dirImg}")` }} role="img"
+                       aria-label={storySetting(d.key + '.title', d.key) + ' image'} />
+                )}
                 <div className="story-card-dir" style={{ color: accent }}>{storySetting(d.key + '.title', d.key)}</div>
                 <div className="story-card-season">{storySetting(d.key + '.subtitle', d.season)}</div>
                 <p className="story-card-blurb">{storySetting(d.key + '.body', d.blurb)}</p>

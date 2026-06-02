@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="360" viewBox="0 0 880 360">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9785a"/>
+      <stop offset="0.55" stop-color="#c94a2e"/>
+      <stop offset="1" stop-color="#b8351e"/>
+    </linearGradient>
+  </defs>
+  <rect width="880" height="360" fill="url(#sky)"/>
+  <circle cx="440" cy="90" r="56" fill="#ffe6c2" opacity="0.95"/>
+  <g stroke="#ffe6c2" stroke-width="6" opacity="0.55" stroke-linecap="round">
+    <line x1="440" y1="6" x2="440" y2="26"/>
+    <line x1="528" y1="90" x2="548" y2="90"/>
+    <line x1="352" y1="90" x2="332" y2="90"/>
+    <line x1="503" y1="27" x2="517" y2="13"/>
+    <line x1="377" y1="27" x2="363" y2="13"/>
+  </g>
+  <path d="M0 290 Q220 245 440 285 T880 280 V360 H0 Z" fill="#8f2614" opacity="0.6"/>
+  <path d="M0 318 Q260 285 520 318 T880 314 V360 H0 Z" fill="#6e1d0f" opacity="0.7"/>
+  <text x="40" y="335" font-family="Georgia, serif" font-size="30" fill="#ffe0d2" opacity="0.9">South · Summer · Niibin</text>
+</svg>

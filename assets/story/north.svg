@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="360" viewBox="0 0 880 360">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dce9dc"/>
+      <stop offset="0.5" stop-color="#9cbb9c"/>
+      <stop offset="1" stop-color="#6b8d6b"/>
+    </linearGradient>
+  </defs>
+  <rect width="880" height="360" fill="url(#sky)"/>
+  <circle cx="660" cy="110" r="50" fill="#f3f8f3" opacity="0.85"/>
+  <g fill="#ffffff" opacity="0.85">
+    <circle cx="180" cy="90" r="3"/><circle cx="300" cy="140" r="2.4"/><circle cx="240" cy="200" r="2.6"/>
+    <circle cx="120" cy="170" r="2"/><circle cx="360" cy="80" r="2.2"/>
+  </g>
+  <path d="M0 285 Q220 245 440 282 T880 278 V360 H0 Z" fill="#4f7a52" opacity="0.6"/>
+  <path d="M0 315 Q260 285 520 316 T880 312 V360 H0 Z" fill="#365237" opacity="0.75"/>
+  <text x="40" y="335" font-family="Georgia, serif" font-size="30" fill="#1f3320" opacity="0.85">North · Winter · Biboon</text>
+</svg>

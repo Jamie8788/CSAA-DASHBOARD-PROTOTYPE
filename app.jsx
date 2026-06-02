@@ -47,6 +47,7 @@ function AppInner() {
   const all = useMemo(() => baseAll.map(c => cms.applyOverrides(c)), [baseAll, cms.cms]);
   const initial = readURLState();
   const [view, setView] = useState(initial.view);
+  const [agmOpen, setAgmOpen] = useState(false);
   const [search, setSearch] = useState(initial.search);
   const [regions, setRegions] = useState(initial.regions);
   const [orgTypes, setOrgTypes] = useState(initial.orgTypes);
@@ -245,6 +246,15 @@ function AppInner() {
       )}
 
       <window.CommunityDrawer community={selected} onClose={() => setSelectedId(null)} searchQuery={search.trim()} />
+
+      {/* Presentation mode — available on every page */}
+      {agmOpen && window.AGMPresentation && <window.AGMPresentation all={all} onClose={() => setAgmOpen(false)} />}
+      {!selected && !agmOpen && (
+        <button className="present-fab" onClick={() => setAgmOpen(true)}
+                title="Open fullscreen presentation — great for meetings & AGMs">
+          ▶ Present
+        </button>
+      )}
 
       {shareToast && (
         <div className="share-toast">

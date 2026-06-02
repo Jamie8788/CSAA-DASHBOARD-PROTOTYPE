@@ -5,6 +5,14 @@
 // live via the atlas:settings SSE event.
 const { useState: useS_se, useEffect: useE_se } = React;
 
+// Ready-made seasonal backgrounds bundled with the app — one click, no upload.
+const EXAMPLE_IMAGES = [
+  { url: '/assets/story/east.svg',  label: 'East · Spring' },
+  { url: '/assets/story/south.svg', label: 'South · Summer' },
+  { url: '/assets/story/west.svg',  label: 'West · Autumn' },
+  { url: '/assets/story/north.svg', label: 'North · Winter' },
+];
+
 const STORY_SCENES = [
   { key: 'intro', label: 'Intro', kind: 'hero',
     dTitle: 'Walk the four directions.', dSub: 'Mino Bimaadiziwin · A guided journey',
@@ -187,6 +195,16 @@ function StoryEditorView() {
                   style={{ marginBottom: 14 }}>
             {uploading ? 'Uploading…' : '⬆ Upload from my computer'}
           </button>
+
+          <div className="small muted" style={{ marginBottom: 6 }}>Or use a ready-made seasonal image:</div>
+          <div className="media-grid" style={{ marginBottom: 16 }}>
+            {EXAMPLE_IMAGES.map((ex) => (
+              <button key={ex.url} className="media-pick" onClick={() => chooseImage(picking, ex.url)}>
+                <div className="media-thumb"><img src={ex.url} alt={ex.label} loading="lazy" /></div>
+                <div className="small" style={{ padding: '6px 8px' }}>{ex.label}</div>
+              </button>
+            ))}
+          </div>
 
           {media.length === 0 ? (
             <p className="muted">No images uploaded yet — use the button above to add your first one.</p>

@@ -613,17 +613,18 @@ function AGMPresentation({ all, onClose }) {
     return () => clearTimeout(t);
   }, [playing, i, slides.length]);
 
+  // Muted, deeper tones — the bright versions were too loud for a presentation.
   const AGM_THEMES = {
-    east:  { a: '#e8b948', b: '#d4a017', glyph: '✺' },
-    south: { a: '#d94f33', b: '#b8351e', glyph: '☀' },
-    west:  { a: '#5b6f8c', b: '#2f3b4d', glyph: '☾' },
-    north: { a: '#8fb08f', b: '#4f7a52', glyph: '❄' },
+    east:  { a: '#9c7619', b: '#6b5011', glyph: '✺' },
+    south: { a: '#8f3320', b: '#5e2114', glyph: '☀' },
+    west:  { a: '#3a4658', b: '#232c39', glyph: '☾' },
+    north: { a: '#4f6b51', b: '#324a34', glyph: '❄' },
   };
   const th = AGM_THEMES[s.theme] || AGM_THEMES.south;
 
   return (
     <div className="agm-overlay" role="dialog" aria-label="AGM presentation mode"
-         style={{ background: `radial-gradient(125% 125% at 82% 4%, ${th.a} 0%, ${th.b} 48%, #120d09 120%)` }}>
+         style={{ background: `radial-gradient(135% 135% at 82% 6%, ${th.a} 0%, ${th.b} 38%, #100b08 104%)` }}>
       <div className="agm-glyph" aria-hidden="true">{th.glyph}</div>
       <div className="agm-slide" key={i}>
         <div className="agm-kicker">{s.kicker}</div>
