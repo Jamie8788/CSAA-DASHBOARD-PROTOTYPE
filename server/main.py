@@ -468,16 +468,27 @@ def export_xlsx(actor: dict = Depends(auth.require_admin)):
     for i in range(1, len(cols) + 1):
         ws.cell(1, i).font = _Font(bold=True, color="FFFFFF")
         ws.cell(1, i).fill = _Fill("solid", fgColor="1F2A37")
+    from openpyxl.comments import Comment as _Comment
     ai_fill = _Fill("solid", fgColor="C7B3F0")   # purple = AI-pulled
+    link_font = _Font(color="5B3A9E", underline="single")
     for r in records:
         lng = r.get("lng") if r.get("lng") is not None else r.get("lon")
         ws.append([r.get(k) if k != "lng" else lng for (_, k) in cols])
         ai = r.get("_ai") or {}
+        notes = r.get("_ai_note") or {}
         if ai:
             row_i = ws.max_row
             for col_i, (_, k) in enumerate(cols, 1):
                 if k in ai:
-                    ws.cell(row_i, col_i).fill = ai_fill
+                    cell = ws.cell(row_i, col_i)
+                    cell.fill = ai_fill
+                    val = str(cell.value or "")
+                    if val.startswith("http"):           # make AI links clickable
+                        cell.hyperlink = val
+                        cell.font = link_font
+                    expl = notes.get(k)                   # AI explanation as a comment
+                    if expl:
+                        cell.comment = _Comment(f"AI: {expl}", "AI")
     ws.freeze_panes = "A2"
     # legend note
     ws2 = wb.create_sheet("Legend")

@@ -405,6 +405,7 @@ def apply_enrichment(records, use_llm: bool = False, progress=None):
         for f in as_completed(futs):
             rec, sugs = f.result()
             ai = dict(rec.get("_ai") or {})
+            note = dict(rec.get("_ai_note") or {})   # key -> short "what is this" explanation
             for s in sugs:
                 field, val = s.get("field"), s.get("suggested")
                 if not val or str(val) in ("—", ""):
@@ -416,6 +417,7 @@ def apply_enrichment(records, use_llm: bool = False, progress=None):
                             la, lo = [float(x) for x in str(val).split(",")[:2]]
                             rec["lat"], rec["lng"], rec["lon"] = la, lo, lo
                             ai["lat"] = ai["lng"] = s.get("source") or ""
+                            note["lat"] = s.get("note") or "Map coordinates"
                         except Exception:
                             pass
                     continue
@@ -426,8 +428,11 @@ def apply_enrichment(records, use_llm: bool = False, progress=None):
                 if _is_blank(rec.get(key)) or s.get("replace"):
                     rec[key] = val
                     ai[key] = s.get("source") or ""
+                    note[key] = s.get("note") or ""
             if ai:
                 rec["_ai"] = ai
+            if note:
+                rec["_ai_note"] = note
             done += 1
             if progress:
                 progress(done, total)

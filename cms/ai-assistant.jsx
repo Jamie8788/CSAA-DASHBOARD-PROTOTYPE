@@ -47,6 +47,16 @@ function isEnrichTarget(name) {
   return !bad.some((b) => n.includes(b));
 }
 
+// shorten a URL for display: host + first path segment
+function shortUrl(u) {
+  try {
+    const x = new URL(u);
+    const path = x.pathname.replace(/\/$/, '');
+    const seg = path ? path.split('/').filter(Boolean)[0] : '';
+    return x.hostname.replace(/^www\./, '') + (seg ? '/' + seg : '') + (path.split('/').filter(Boolean).length > 1 ? '/…' : '');
+  } catch (e) { return String(u).slice(0, 40); }
+}
+
 // ---- auto-fill the whole sheet from the web (runs on upload, or on demand) ----
 const PREVIEW_COLS = [
   { key: 'population', label: 'Population' },
@@ -184,11 +194,17 @@ function AIAutofill({ toast }) {
                     {PREVIEW_COLS.map((c) => {
                       const v = cellVal(r, c.key);
                       const ai = isAI(r, c.key);
+                      const note = ai && r._ai_note ? r._ai_note[c.key === 'coords' ? 'lat' : c.key] : '';
+                      const isUrl = typeof v === 'string' && /^https?:\/\//i.test(v);
                       return (
-                        <td key={c.key} className={ai ? 'ai-cell' : (v ? '' : 'blank')}
-                            title={ai ? 'AI-filled — verify' : ''}>
+                        <td key={c.key} className={ai ? 'ai-cell' : (v ? '' : 'blank')}>
                           {ai && <span className="ai-mini">AI</span>}
-                          {v ? String(v).slice(0, 80) : <span className="muted">—</span>}
+                          {v
+                            ? (isUrl
+                                ? <a className="ai-link" href={v} target="_blank" rel="noopener noreferrer" title={v}>{shortUrl(v)}</a>
+                                : <span title={String(v)}>{String(v).slice(0, 70)}</span>)
+                            : <span className="muted">—</span>}
+                          {ai && note ? <div className="ai-explain">{note}</div> : null}
                         </td>
                       );
                     })}
