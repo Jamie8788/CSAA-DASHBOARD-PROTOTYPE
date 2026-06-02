@@ -473,3 +473,22 @@ tr.unread td { background: rgba(212,160,23,0.06); }
 }
 .ai-progress { height: 10px; background: var(--paper-2, #eee); border-radius: 999px; overflow: hidden; margin-bottom: 6px; }
 .ai-progress > div { height: 100%; background: #C7B3F0; transition: width 0.4s ease; }
+
+/* ===== AI auto-fill preview table ===== */
+.ai-prev-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 0 10px; flex-wrap: wrap; }
+.ai-prev-tools { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ai-prev-chip { display: inline-flex; align-items: center; gap: 6px; font: 600 12px var(--sans, sans-serif); color: var(--ink, #1a1a1a); }
+.ai-dot { width: 11px; height: 11px; border-radius: 3px; background: #C7B3F0; display: inline-block; }
+.ai-prev-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: auto; max-height: 62vh; }
+.ai-prev { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12.5px; }
+.ai-prev th, .ai-prev td { padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; white-space: nowrap; }
+.ai-prev thead th { position: sticky; top: 0; z-index: 2; background: #1F2A37; color: #fff; font: 600 11px var(--mono, monospace); letter-spacing: 0.05em; text-transform: uppercase; }
+.ai-prev td { max-width: 230px; overflow: hidden; text-overflow: ellipsis; }
+.ai-prev tbody tr:hover td { background: rgba(0,0,0,0.025); }
+.ai-prev .sticky-l { position: sticky; left: 0; z-index: 1; background: var(--paper, #fbf7ec); min-width: 180px; box-shadow: 1px 0 0 var(--border); }
+.ai-prev thead .sticky-l { z-index: 3; background: #15202b; }
+.ai-prev-dir { font: 10px var(--mono, monospace); color: var(--muted, #888); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+.ai-prev td.ai-cell { background: #ede5fb; box-shadow: inset 3px 0 0 #C7B3F0; }
+.ai-prev td.blank { color: #bbb; }
+.ai-mini { display: inline-block; background: #C7B3F0; color: #2a1f3d; font: 700 8px var(--mono, monospace); letter-spacing: 0.06em; padding: 1px 4px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+.ai-prev-pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 12px; }

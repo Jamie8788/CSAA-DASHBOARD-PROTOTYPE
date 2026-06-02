@@ -33,12 +33,29 @@ function AIAssistantView() {
 }
 
 // ---- auto-fill the whole sheet from the web (runs on upload, or on demand) ----
+const PREVIEW_COLS = [
+  { key: 'population', label: 'Population' },
+  { key: 'link', label: 'Link' },
+  { key: 'coords', label: 'Coordinates' },
+  { key: 'contact', label: 'Contact' },
+  { key: 'strategicPlan', label: 'Strategic Plan' },
+  { key: 'agm', label: 'AGM' },
+  { key: 'financials', label: 'Financials' },
+];
+
 function AIAutofill({ toast }) {
   const [job, setJob] = useS_ai(null);
-  const [groq, setGroq] = useS_ai('');
-  const [savingKey, setSavingKey] = useS_ai(false);
   const timer = useR_ai(null);
+  const [rows, setRows] = useS_ai(null);
+  const [page, setPage] = useS_ai(0);
+  const [onlyAI, setOnlyAI] = useS_ai(false);
+  const PER = 20;
 
+  function loadPreview() {
+    API.communities.list()
+      .then((d) => setRows((d && d.records) || []))
+      .catch(() => {});
+  }
   function poll() {
     API.ai.status().then((s) => {
       setJob(s);
@@ -46,48 +63,63 @@ function AIAutofill({ toast }) {
         timer.current = setInterval(() => {
           API.ai.status().then((s2) => {
             setJob(s2);
-            if (s2.status !== 'running') { clearInterval(timer.current); timer.current = null; }
+            if (s2.status !== 'running') {
+              clearInterval(timer.current); timer.current = null;
+              loadPreview();   // refresh once it finishes
+            }
           }).catch(() => {});
         }, 2000);
       }
     }).catch(() => {});
   }
-  useE_ai(() => { poll(); return () => { if (timer.current) clearInterval(timer.current); }; }, []);
+  useE_ai(() => { poll(); loadPreview(); return () => { if (timer.current) clearInterval(timer.current); }; }, []);
 
   async function run() {
     try { await API.ai.run(); toast.push('AI enrichment started.', 'success'); poll(); }
     catch (e) { toast.push(e.message, 'error'); }
   }
-  async function saveKey() {
-    setSavingKey(true);
-    try {
-      const r = await API.ai.setGroqKey(groq.trim());
-      toast.push(r.llm_available ? 'Groq key saved — AI contact extraction is on.' : 'Key cleared.', 'success');
-      setGroq(''); poll();
-    } catch (e) { toast.push(e.message, 'error'); }
-    finally { setSavingKey(false); }
-  }
 
   const running = job && job.status === 'running';
   const pct = job && job.total ? Math.round((job.done / job.total) * 100) : 0;
+
+  // build preview rows (only real communities; optionally only AI-touched)
+  const all = (rows || []).filter((r) => r.name && (r.orgType === 'Community' || (r._ai && Object.keys(r._ai).length)));
+  const filtered = onlyAI ? all.filter((r) => r._ai && Object.keys(r._ai).length) : all;
+  const aiCells = all.reduce((n, r) => n + (r._ai ? Object.keys(r._ai).filter((k) => k !== 'lon').length : 0), 0);
+  const pages = Math.max(1, Math.ceil(filtered.length / PER));
+  const pageRows = filtered.slice(page * PER, page * PER + PER);
+
+  function cellVal(r, key) {
+    if (key === 'coords') {
+      const lng = r.lng != null ? r.lng : r.lon;
+      return r.lat != null && lng != null ? `${r.lat}, ${lng}` : '';
+    }
+    return r[key];
+  }
+  function isAI(r, key) {
+    if (!r._ai) return false;
+    if (key === 'coords') return !!(r._ai.lat || r._ai.lng);
+    return !!r._ai[key];
+  }
 
   return (
     <div className="card">
       <h3 style={{ marginTop: 0 }}>Auto-fill blank cells from the web</h3>
       <p className="small muted">
-        This runs <strong>automatically every time you upload a sheet</strong>: for each
-        community it looks up free sources (Wikipedia, Wikidata, the community's own
-        website) and fills in blank Population, Link, Coordinates, Contacts and document
-        cells — then marks every AI-filled value <span className="ai-tag">AI</span>
-        (purple) so people know to verify. It never overwrites anything a human typed.
+        Runs <strong>automatically every time you upload a sheet</strong>: for each community
+        it looks up free sources (Wikipedia, Wikidata, the community's own website) and fills
+        blank Population, Link, Coordinates, Contacts and document cells — marking every
+        AI-filled value <span className="ai-tag">AI</span> (purple) so people know to verify.
+        It never overwrites anything a human typed.
       </p>
 
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', margin: '14px 0' }}>
         <button className="btn" onClick={run} disabled={running}>
           {running ? 'Running…' : '⚙ Run AI auto-fill now'}
         </button>
-        {job && job.llm_available && <span className="small" style={{ color: '#2e7d32' }}>● Groq AI connected</span>}
-        {job && !job.llm_available && <span className="small muted">Groq not set (using free sources only)</span>}
+        {job && job.llm_available
+          ? <span className="small" style={{ color: '#2e7d32' }}>● Groq AI connected (key set on the server)</span>
+          : <span className="small muted">Groq not set — using free sources only. Add a GROQ_API_KEY env var on Render to enable it.</span>}
       </div>
 
       {running && (
@@ -99,25 +131,69 @@ function AIAutofill({ toast }) {
       {job && job.status === 'done' && job.result && (
         <p className="small" style={{ color: '#2e7d32' }}>
           ✓ Done — filled {job.result.fields_filled} cells across {job.result.communities_filled} communities.
-          Check the dashboard, or export the sheet (purple = AI).
         </p>
       )}
       {job && job.status === 'error' && <p className="small" style={{ color: '#b8351e' }}>Error: {job.error}</p>}
 
-      <hr style={{ margin: '18px 0', border: 'none', borderTop: '1px solid var(--border)' }} />
-      <h4 style={{ margin: '0 0 6px' }}>Optional: connect your free Groq key</h4>
-      <p className="small muted" style={{ marginTop: 0 }}>
-        With a free <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">Groq API key</a>,
-        the assistant also reads each website and pulls out staff <em>names &amp; roles</em>
-        (not just raw emails). Facts still come from the page — it can't invent them.
-      </p>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <input type="password" value={groq} onChange={(e) => setGroq(e.target.value)}
-               placeholder="gsk_…  (paste your Groq key)" style={{ flex: 1, minWidth: 240 }} />
-        <button className="btn ghost" onClick={saveKey} disabled={savingKey || !groq.trim()}>
-          {savingKey ? 'Saving…' : 'Save key'}
-        </button>
+      {/* ---- live preview of the filled sheet ---- */}
+      <div className="ai-prev-head">
+        <h4 style={{ margin: 0 }}>Preview {rows ? `· ${filtered.length} communities` : ''}</h4>
+        <div className="ai-prev-tools">
+          <span className="ai-prev-chip"><span className="ai-dot" /> {aiCells} AI-filled cells</span>
+          <label className="small" style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+            <input type="checkbox" checked={onlyAI} onChange={(e) => { setOnlyAI(e.target.checked); setPage(0); }} />
+            Only AI-filled
+          </label>
+          <button className="btn ghost" onClick={() => API.ai.downloadXlsx().then(() => toast.push('Downloaded.', 'success')).catch((e) => toast.push(e.message, 'error'))}>
+            ⬇ Export
+          </button>
+        </div>
       </div>
+
+      {!rows && <p className="muted small">Loading preview…</p>}
+      {rows && (
+        <>
+          <div className="ai-prev-wrap">
+            <table className="ai-prev">
+              <thead>
+                <tr>
+                  <th className="sticky-l">Community</th>
+                  {PREVIEW_COLS.map((c) => <th key={c.key}>{c.label}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.map((r, i) => (
+                  <tr key={i}>
+                    <td className="sticky-l"><strong>{r.name}</strong><div className="ai-prev-dir">{r.direction || ''}</div></td>
+                    {PREVIEW_COLS.map((c) => {
+                      const v = cellVal(r, c.key);
+                      const ai = isAI(r, c.key);
+                      return (
+                        <td key={c.key} className={ai ? 'ai-cell' : (v ? '' : 'blank')}
+                            title={ai ? 'AI-filled — verify' : ''}>
+                          {ai && <span className="ai-mini">AI</span>}
+                          {v ? String(v).slice(0, 80) : <span className="muted">—</span>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {pages > 1 && (
+            <div className="ai-prev-pager">
+              <button className="btn ghost" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>← Prev</button>
+              <span className="small muted">Page {page + 1} of {pages}</span>
+              <button className="btn ghost" onClick={() => setPage((p) => Math.min(pages - 1, p + 1))} disabled={page >= pages - 1}>Next →</button>
+            </div>
+          )}
+          <p className="small muted" style={{ marginTop: 10 }}>
+            Purple cells with <span className="ai-tag">AI</span> were filled from the web and should be verified.
+            Plain cells are your own data. Export to get the colour-coded Excel.
+          </p>
+        </>
+      )}
     </div>
   );
 }

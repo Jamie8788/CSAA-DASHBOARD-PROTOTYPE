@@ -30,3 +30,16 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Secrets — never commit API keys / env files
+.env
+.env.*
+*.env
+secrets.*
+*.key
+*.pem
+**/groq_key*
+
+# Generated enrichment output (local only; may contain scraped data)
+*AI Suggestions.xlsx
+*AI Filled.xlsx
