@@ -32,6 +32,21 @@ function AIAssistantView() {
   );
 }
 
+// mirrors server/enrich.py looks_like_community() so the preview shows exactly
+// the rows the AI processes (not section headers / umbrella orgs).
+function isEnrichTarget(name) {
+  const n = (name || '').trim().toLowerCase();
+  if (!n || n === 'test1' || n === 'test') return false;
+  if (['east', 'south', 'west', 'north', 'central', 'pilot',
+       'indigenous health authorities', 'community', 'first nation',
+       'number', 'name'].includes(n)) return false;
+  const bad = ['umbrella', 'map of indigenous', 'association of', 'tribal council',
+    'grand council', 'board of health', 'open minds', 'ancfsao', 'first 10',
+    '(pilot)', 'next 75', 'additional links', 'second project',
+    'environmental scan', 'first project', 'list of', 'health authorities', 'section'];
+  return !bad.some((b) => n.includes(b));
+}
+
 // ---- auto-fill the whole sheet from the web (runs on upload, or on demand) ----
 const PREVIEW_COLS = [
   { key: 'population', label: 'Population' },
@@ -82,8 +97,9 @@ function AIAutofill({ toast }) {
   const running = job && job.status === 'running';
   const pct = job && job.total ? Math.round((job.done / job.total) * 100) : 0;
 
-  // build preview rows (only real communities; optionally only AI-touched)
-  const all = (rows || []).filter((r) => r.name && ((r.orgType || r.type) === 'Community' || (r._ai && Object.keys(r._ai).length)));
+  // build preview rows — SAME set the enrichment processes, so the preview
+  // count matches the "N / N communities" progress bar (no more 90 vs 111).
+  const all = (rows || []).filter((r) => isEnrichTarget(r.name) || (r._ai && Object.keys(r._ai).length));
   const filtered = onlyAI ? all.filter((r) => r._ai && Object.keys(r._ai).length) : all;
   const aiCells = all.reduce((n, r) => n + (r._ai ? Object.keys(r._ai).filter((k) => k !== 'lon').length : 0), 0);
   const pages = Math.max(1, Math.ceil(filtered.length / PER));

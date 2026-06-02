@@ -104,6 +104,19 @@ def _fetch(url):
     return None
 
 
+def link_ok(url) -> bool:
+    """True if the URL loads (2xx/3xx). Used to detect dead/old links in the
+    sheet so the AI can flag or replace them instead of trusting them."""
+    if not _HAS_REQUESTS or not url or not str(url).startswith("http"):
+        return False
+    try:
+        r = SESSION.get(url, timeout=10, allow_redirects=True, stream=True)
+        r.close()
+        return r.status_code < 400
+    except Exception:
+        return False
+
+
 def _links(base, text):
     out = []
     for m in re.finditer(r'<a\b[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', text, re.I | re.S):
@@ -122,7 +135,7 @@ def _visible_text(html_text):
 
 def scrape_site(start_url):
     found = {"emails": {}, "phones": {}, "docs": {}, "contact_pages": [],
-             "reached": False, "text": ""}
+             "reached": False, "text": "", "closest": None}
     home = _fetch(start_url)
     if not home:
         return found
@@ -144,6 +157,15 @@ def scrape_site(start_url):
 
     harvest(start_url, home)
     host = urlparse(start_url).netloc
+    # remember a "closest" page (governance/about/documents/reports) to offer
+    # when an exact Strategic-Plan/AGM/Financial document can't be found.
+    CLOSEST_HINTS = ["governance", "about", "document", "report", "council",
+                     "administration", "publication"]
+    for label, link in _links(start_url, home):
+        low = (label + " " + link).lower()
+        if urlparse(link).netloc == host and any(h in low for h in CLOSEST_HINTS):
+            found["closest"] = link
+            break
     seen = set()
     for label, link in _links(start_url, home):
         low = (label + " " + link).lower()
@@ -157,6 +179,8 @@ def scrape_site(start_url):
                 harvest(link, sub)
                 text_parts.append(_visible_text(sub)[:3000])
             time.sleep(0.05)
+    if not found["closest"]:
+        found["closest"] = (found["contact_pages"] or [start_url])[0]
     found["text"] = "  ".join(text_parts)[:8000]
     return found
 
@@ -262,14 +286,23 @@ def enrich_one(name: str, cur_link: str = "", cur_pop=None, scrape: bool = True,
     site = facts.get("website")
     def host(u):
         m = re.search(r"https?://([^/]+)", u or ""); return (m.group(1).lower().replace("www.", "") if m else "")
+    cur = clean(cur_link)
+    # check whether the EXISTING link still works, so dead/old links get fixed
+    cur_dead = bool(cur) and cur.startswith("http") and not link_ok(cur)
     if site:
-        cur = clean(cur_link)
         if not cur:
             out.append({"field": "Community Link", "current": "", "suggested": site, "source": wd_url,
                         "confidence": "High", "note": "Sheet had no link. Official site from Wikidata."})
+        elif cur_dead:
+            out.append({"field": "Community Link", "current": cur, "suggested": site, "source": wd_url,
+                        "confidence": "High", "replace": True,
+                        "note": "The link in the sheet did not load (broken/old). Replaced with the working official site."})
         elif host(cur) != host(site):
             out.append({"field": "Community Link", "current": cur, "suggested": site, "source": wd_url,
                         "confidence": "Medium", "note": "Different domain than the sheet — confirm which is current."})
+    elif cur_dead:
+        out.append({"field": "Community Link", "current": cur, "suggested": "", "source": "",
+                    "confidence": "Low", "note": "The link in the sheet did not load — appears broken. No replacement found."})
 
     coords = facts.get("coords") or w.get("coords")
     if coords:
@@ -303,6 +336,15 @@ def enrich_one(name: str, cur_link: str = "", cur_pop=None, scrape: bool = True,
             for kind, (link, label) in sc["docs"].items():
                 out.append({"field": kind, "current": "", "suggested": link, "source": site_url,
                             "confidence": "Medium", "note": f'Found a "{label[:40]}" link on the official site.'})
+            # for any document we did NOT find an exact link for, offer the
+            # closest relevant page rather than leaving it blank.
+            closest = sc.get("closest")
+            if closest:
+                for kind in DOC_KINDS:
+                    if kind not in sc["docs"]:
+                        out.append({"field": kind, "current": "", "suggested": closest, "source": site_url,
+                                    "confidence": "Low",
+                                    "note": "Closest page on the official site — exact document not found, please check."})
 
     if not out:
         out.append({"field": "(no objective data)", "current": "", "suggested": "—", "source": w["url"],
@@ -378,7 +420,10 @@ def apply_enrichment(records, use_llm: bool = False, progress=None):
                             pass
                     continue
                 key = _FIELD_TO_KEY.get(field)
-                if key and _is_blank(rec.get(key)):   # never overwrite human data
+                if not key:
+                    continue
+                # fill blanks, OR replace a link the source confirmed is broken
+                if _is_blank(rec.get(key)) or s.get("replace"):
                     rec[key] = val
                     ai[key] = s.get("source") or ""
             if ai:
