@@ -821,7 +821,12 @@ const A11Y_KEY = 'mino-a11y-v1';
 const DEFAULT_A11Y = { text: 'M', contrast: false, motion: true, theme: 'paper' };
 
 function loadA11y() {
-  try { return { ...DEFAULT_A11Y, ...JSON.parse(localStorage.getItem(A11Y_KEY) || '{}') }; }
+  try {
+    const p = { ...DEFAULT_A11Y, ...JSON.parse(localStorage.getItem(A11Y_KEY) || '{}') };
+    // the old dark "midnight" theme was removed (it hid text on light cards)
+    if (p.theme === 'midnight') p.theme = 'paper';
+    return p;
+  }
   catch { return DEFAULT_A11Y; }
 }
 
@@ -875,7 +880,7 @@ function AccessibilityPanel() {
                 { id:'paper',     name:'Paper',     swatches:['#f5ede0','#1a1612','#b8351e'] },
                 { id:'dawn',      name:'Dawn',      swatches:['#fff4e6','#3a1d12','#d4a017'] },
                 { id:'forest',    name:'Forest',    swatches:['#f0ecd9','#1d2e1d','#6b8d6b'] },
-                { id:'midnight',  name:'Midnight',  swatches:['#171411','#f5ede0','#d4a017'] },
+                { id:'mist',      name:'Mist',      swatches:['#eaeef2','#13181d','#2f6f8f'] },
               ].map(t => (
                 <button
                   key={t.id}

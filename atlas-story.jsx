@@ -104,6 +104,7 @@ function AtlasStoryView({ all, setView, onSelect }) {
   const sparkRafRef = useR_st(null);
   const sparkRef = useR_st(null);
   const svgRendererRef = useR_st(null);
+  const scrollingRef = useR_st(false);   // true while the user is actively scrolling
   const [activeDir, setActiveDir] = useS_st('intro');
   const [touring, setTouring] = useS_st(false);   // elder-friendly auto-advance
   const [bigText, setBigText] = useS_st(() => {
@@ -251,25 +252,33 @@ function AtlasStoryView({ all, setView, onSelect }) {
     } catch (e) {}
   }
 
-  // ---- pulsing radar halos (two concentric rings, offset phase) ----
+  // ---- pulsing radar halos ----
+  // Capped to a handful of rings and throttled to ~30fps; paused entirely
+  // while the user is actively scrolling so the page never janks.
   function startPulse(geoMarkers, color) {
     if (reduceMotion || !geoMarkers.length) return;
-    const rings = [];
-    geoMarkers.forEach((m) => {
+    // cap the number of animated rings — redrawing dozens of canvas circles
+    // every frame is what made scrolling stutter on big directions.
+    const PULSE_CAP = 8;
+    const chosen = geoMarkers.length > PULSE_CAP
+      ? geoMarkers.filter((_, i) => i % Math.ceil(geoMarkers.length / PULSE_CAP) === 0).slice(0, PULSE_CAP)
+      : geoMarkers;
+    const rings = chosen.map((m) => {
       const ll = m.getLatLng();
-      rings.push({ ring: L.circleMarker(ll, { radius: 8, color, weight: 2, fillColor: color, fillOpacity: 0, opacity: 0.65 }).addTo(haloLayerRef.current), off: 0 });
+      return { ring: L.circleMarker(ll, { radius: 8, color, weight: 2, fillColor: color, fillOpacity: 0, opacity: 0.65 }).addTo(haloLayerRef.current) };
     });
-    let t0 = null;
+    let t0 = null, last = 0;
     function loop(t) {
-      if (t0 == null) t0 = t;
-      const base = ((t - t0) % 2000) / 2000;
-      rings.forEach(({ ring, off }) => {
-        const phase = (base + off) % 1;
-        const r = 8 + phase * 32;
-        const op = 0.6 * (1 - phase);
-        try { ring.setRadius(r); ring.setStyle({ opacity: op, weight: 2 * (1 - phase) }); } catch (e) {}
-      });
       pulseRafRef.current = requestAnimationFrame(loop);
+      if (t0 == null) t0 = t;
+      if (scrollingRef.current) return;          // don't repaint mid-scroll
+      if (t - last < 33) return;                 // ~30fps cap
+      last = t;
+      const phase = ((t - t0) % 2000) / 2000;
+      const r = 8 + phase * 32;
+      const op = 0.6 * (1 - phase);
+      const w = 2 * (1 - phase);
+      rings.forEach(({ ring }) => { try { ring.setRadius(r); ring.setStyle({ opacity: op, weight: w }); } catch (e) {} });
     }
     pulseRafRef.current = requestAnimationFrame(loop);
   }
@@ -290,9 +299,13 @@ function AtlasStoryView({ all, setView, onSelect }) {
         .addTo(routeLayerRef.current);
       sparkRef.current = spark;
       const period = 3400;
-      let t0 = null;
+      let t0 = null, last = 0;
       function loop(t) {
+        sparkRafRef.current = requestAnimationFrame(loop);
         if (t0 == null) t0 = t;
+        if (scrollingRef.current) return;        // pause while scrolling
+        if (t - last < 33) return;               // ~30fps cap
+        last = t;
         const prog = ((t - t0) % period) / period;     // 0..1 along route
         let dist = prog * total, i = 0;
         while (i < seg.length && dist > seg[i]) { dist -= seg[i]; i++; }
@@ -301,7 +314,6 @@ function AtlasStoryView({ all, setView, onSelect }) {
         const a = pts[i], b = pts[i+1] || pts[i];
         const lat = a[0] + (b[0]-a[0]) * f, lng = a[1] + (b[1]-a[1]) * f;
         try { spark.setLatLng([lat, lng]); } catch (e) {}
-        sparkRafRef.current = requestAnimationFrame(loop);
       }
       sparkRafRef.current = requestAnimationFrame(loop);
     } catch (e) {}
@@ -407,6 +419,18 @@ function AtlasStoryView({ all, setView, onSelect }) {
     }, delay);
     return () => clearTimeout(t);
   }, [activeDir, dirData, reduceMotion]);
+
+  // ---- pause heavy canvas animation while the user is scrolling ----
+  useE_st(() => {
+    let idle = null;
+    function onScroll() {
+      scrollingRef.current = true;
+      if (idle) clearTimeout(idle);
+      idle = setTimeout(() => { scrollingRef.current = false; }, 140);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { window.removeEventListener('scroll', onScroll); if (idle) clearTimeout(idle); };
+  }, []);
 
   // ---- scene scroll spy ----
   useE_st(() => {
@@ -561,6 +585,8 @@ function AtlasStoryView({ all, setView, onSelect }) {
         </div>
       </div>
 
+      <StoryCompass activeDir={activeDir} onPick={jumpToScene} />
+
       <div className="story-progress-dots">
         {['intro', ...STORY_DIRS.map((d) => d.key), 'outro'].map((k) => (
           <span key={k} className={k === activeDir ? 'on' : ''} title={k}
@@ -570,6 +596,57 @@ function AtlasStoryView({ all, setView, onSelect }) {
         ))}
       </div>
     </section>
+  );
+}
+
+// Medicine-wheel compass overlay. Pure SVG (off the map canvas, so it never
+// adds lag) — shows the four directions, highlights the active one, and the
+// quadrants are clickable to jump straight to that scene. Elder-friendly: big
+// labels, the active season + medicine spelled out beneath.
+function StoryCompass({ activeDir, onPick }) {
+  // clockwise from top: East, South, West, North (medicine-wheel order)
+  const quads = [
+    { key: 'East',  a0: -45, a1: 45,   color: '#d4a017' },
+    { key: 'South', a0: 45,  a1: 135,  color: '#b8351e' },
+    { key: 'West',  a0: 135, a1: 225,  color: '#1a1612' },
+    { key: 'North', a0: 225, a1: 315,  color: '#6b8d6b' },
+  ];
+  const cx = 60, cy = 60, r = 50;
+  const pol = (ang, rad) => [cx + rad * Math.cos((ang - 90) * Math.PI / 180),
+                             cy + rad * Math.sin((ang - 90) * Math.PI / 180)];
+  const wedge = (a0, a1) => {
+    const [x0, y0] = pol(a0, r), [x1, y1] = pol(a1, r);
+    return `M ${cx} ${cy} L ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z`;
+  };
+  const labelPos = (a0, a1) => pol((a0 + a1) / 2, r * 0.6);
+  const active = STORY_DIRS.find((d) => d.key === activeDir);
+
+  return (
+    <div className="story-compass" aria-label="Four directions compass">
+      <svg viewBox="0 0 120 120" width="120" height="120">
+        {quads.map((q) => {
+          const on = q.key === activeDir;
+          const [lx, ly] = labelPos(q.a0, q.a1);
+          return (
+            <g key={q.key} className={`sc-quad${on ? ' on' : ''}`} onClick={() => onPick(q.key)} style={{ cursor: 'pointer' }}>
+              <path d={wedge(q.a0, q.a1)} fill={q.color} opacity={on ? 0.95 : 0.28} />
+              <text x={lx} y={ly} textAnchor="middle" dominantBaseline="central"
+                    fill={q.key === 'West' ? '#fff' : (on ? '#fff' : 'rgba(255,255,255,0.85)')}
+                    fontSize={on ? 12 : 10} fontWeight={on ? 700 : 500}>{q.key[0]}</text>
+            </g>
+          );
+        })}
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+        <circle cx={cx} cy={cy} r="6" fill="#fff" />
+      </svg>
+      {active && (
+        <div className="story-compass-cap">
+          <strong>{active.key}</strong>
+          <span>{active.season}</span>
+          <span>{active.medicine}</span>
+        </div>
+      )}
+    </div>
   );
 }
 window.AtlasStoryView = AtlasStoryView;

@@ -2483,43 +2483,39 @@ body.elder-mode .elder-toggle { background: var(--ink); color: var(--paper); }
   --south: #a04030; --south-deep: #6a2418; --south-soft: #d68470;
   --east: #c79622;  --east-deep: #7e5e14;  --east-soft: #e8c870;
 }
-:root[data-theme="midnight"] {
-  --paper: #171411;
-  --paper-2: #211c17;
-  --paper-3: #2c241d;
-  --paper-card: #1c1813;
-  --ink: #f5ede0;
-  --ink-2: #d8cdb6;
-  --ink-3: #a89978;
-  --ink-4: #756753;
-  --line: #3a312a;
-  --line-soft: #2a241e;
-  --south: #d6553a; --south-deep: #a83a22; --south-soft: #e98a72;
-  --east: #e8b227;  --east-deep: #b88a14;  --east-soft: #f5d878;
-}
-:root[data-theme="midnight"] body {
-  background:
-    radial-gradient(circle at 18% 12%, rgba(214,85,58,0.06), transparent 50%),
-    radial-gradient(circle at 82% 88%, rgba(232,178,39,0.06), transparent 50%),
-    var(--paper);
+/* Mist — a soft, cool light theme (replaced the old dark "Midnight", which
+   made text vanish on the many light-background cards). */
+:root[data-theme="mist"] {
+  --paper: #eaeef2;
+  --paper-2: #dde4ea;
+  --paper-3: #c6d0da;
+  --paper-card: #f7fafc;
+  --ink: #13181d;
+  --ink-2: #222a32;
+  --ink-3: #475360;
+  --ink-4: #76828f;
+  --line: #b4bfca;
+  --line-soft: #d2dae2;
+  --south: #b8351e; --south-deep: #7a1f10; --south-soft: #e08470;
+  --east: #c2890f;  --east-deep: #8c6614;  --east-soft: #f1d97a;
 }
 
 /* ====================================================================
    TEXT SIZE — data-text-size on <html>
+   The whole UI is built in fixed px, so a root font-size never cascades.
+   `zoom` scales every element (text, spacing, controls) reliably and is the
+   one option that actually helps elders / low-vision readers here.
    ==================================================================== */
-:root[data-text-size="S"]  { font-size: 13px; }
-:root[data-text-size="M"]  { font-size: 14px; }
-:root[data-text-size="L"]  { font-size: 16px; }
-:root[data-text-size="XL"] { font-size: 18px; }
-
-:root[data-text-size="L"] .hero-title  { font-size: clamp(52px, 7vw, 86px); }
-:root[data-text-size="XL"] .hero-title { font-size: clamp(60px, 8vw, 100px); }
-:root[data-text-size="L"] .card-name   { font-size: 20px; }
-:root[data-text-size="XL"] .card-name  { font-size: 22px; }
-:root[data-text-size="L"] .section-title  { font-size: 28px; }
-:root[data-text-size="XL"] .section-title { font-size: 32px; }
-:root[data-text-size="L"] .marker-pin { transform: scale(1.18); }
-:root[data-text-size="XL"] .marker-pin { transform: scale(1.32); }
+:root[data-text-size="S"]  { zoom: 0.9; }
+:root[data-text-size="M"]  { zoom: 1; }
+:root[data-text-size="L"]  { zoom: 1.18; }
+:root[data-text-size="XL"] { zoom: 1.38; }
+/* Firefox < 126 ignores zoom — fall back to a transform-free font bump so at
+   least the body copy grows there too. */
+@supports not (zoom: 1) {
+  :root[data-text-size="L"]  { font-size: 118%; }
+  :root[data-text-size="XL"] { font-size: 138%; }
+}
 
 /* High contrast */
 html.high-contrast {
@@ -3423,8 +3419,8 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
   -webkit-text-fill-color: transparent;
   font-style: italic;
 }
-:root[data-theme="midnight"] .hero-title .em {
-  background: linear-gradient(135deg, var(--south-soft) 0%, var(--east) 100%);
+:root[data-theme="mist"] .hero-title .em {
+  background: linear-gradient(135deg, var(--south) 0%, var(--east-deep) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -5628,6 +5624,32 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 @media (max-width: 760px) {
   .story-controls { top: 10px; gap: 6px; }
   .story-ctrl { padding: 8px 12px; font-size: 12px; }
+}
+
+/* medicine-wheel compass overlay (bottom-left of the Story Map) */
+.story-compass {
+  position: fixed; left: 22px; bottom: 22px; z-index: 6;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  pointer-events: auto;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.28));
+}
+.story-compass svg { display: block; }
+.sc-quad path { transition: opacity 0.4s ease; }
+.sc-quad:hover path { opacity: 0.7; }
+.story-compass-cap {
+  background: rgba(245,237,224,0.94); border-radius: 10px;
+  padding: 7px 12px; text-align: center; min-width: 120px;
+  backdrop-filter: blur(6px); border: 1px solid var(--line-soft, #c5b699);
+}
+.story-compass-cap strong {
+  display: block; font: 600 14px var(--sans, sans-serif); color: var(--ink, #15110d);
+}
+.story-compass-cap span {
+  display: block; font: 11px/1.4 var(--mono, monospace); color: var(--ink-3, #5a4f40);
+  letter-spacing: 0.03em;
+}
+@media (max-width: 760px) {
+  .story-compass { left: 12px; bottom: 12px; transform: scale(0.82); transform-origin: bottom left; }
 }
 
 /* mobile: cards full-width, map stays behind, veil from bottom */
