@@ -118,12 +118,46 @@ def main():
             n_sug += 1
     sug.freeze_panes = "A3"
 
-    out_path = path.with_name(path.stem + " — AI Suggestions.xlsx")
+    # ---- ALSO fill the Master Sheet IN PLACE (blanks only) + colour purple ----
+    # Master Sheet columns we can auto-fill, mapped from enrich_one's field names.
+    MS_COL = {
+        "Community Link": 2,                      # B
+        "Contact Information for Departments": 3,  # C
+        "Community Population": 11,               # K
+        "Strategic Plan": 14,                    # N
+        "Annual General Meeting (AGM)": 15,      # O
+        "Financial Statements": 16,              # P
+    }
+    ms = out_wb["Master Sheet"]
+    fill_fill = PatternFill("solid", fgColor=AI_COLOUR)
+
+    # community rows are often merged across 2 rows → writes must target the
+    # top-left anchor of the merged range, not the read-only MergedCell.
+    def anchor(row_i, col):
+        for rng in ms.merged_cells.ranges:
+            if rng.min_row <= row_i <= rng.max_row and rng.min_col <= col <= rng.max_col:
+                return ms.cell(rng.min_row, rng.min_col)
+        return ms.cell(row_i, col)
+
+    n_cells = 0
+    for (row_i, name, _l, _p) in rows:
+        for s in results.get(name, []):
+            col = MS_COL.get(s["field"])
+            val = s.get("suggested")
+            if not col or not val or val in ("—", "") or s["confidence"] == "Low":
+                continue
+            cell = anchor(row_i, col)
+            if clean(cell.value) in ("", "missing information", "needs review", "n/a", "-", "—"):
+                cell.value = val                  # fill only when blank
+                cell.fill = fill_fill             # mark it AI (purple)
+                n_cells += 1
+
+    out_path = path.with_name(path.stem + " — AI Filled.xlsx")
     out_wb.save(out_path)
-    print(f"\nDone. {n_sug} suggestions for {len(rows)} communities.")
+    print(f"\nDone. Filled {n_cells} blank Master Sheet cells (purple = AI) and logged "
+          f"{n_sug} suggestions for {len(rows)} communities.")
     print(f"Wrote: {out_path}")
-    print("Purple = AI-pulled · blue = high confidence · yellow = please review · red = needs a human.")
-    print("Nothing in your Master Sheet was changed.")
+    print("Only blank cells were filled — your existing entries and the other tabs are untouched.")
 
 
 if __name__ == "__main__":

@@ -21,11 +21,19 @@ import html
 import difflib
 from urllib.parse import urljoin, urlparse
 
-import requests
+# `requests` is an optional dependency for enrichment. Guard the import so a
+# missing package can never crash the whole API (it once did on deploy).
+try:
+    import requests
+    _HAS_REQUESTS = True
+except Exception:  # pragma: no cover
+    requests = None
+    _HAS_REQUESTS = False
 
 UA = "MinoBimaadiziwinAtlas/1.0 (community services atlas; contact: mujamil@algomau.ca)"
-SESSION = requests.Session()
-SESSION.headers.update({"User-Agent": UA})
+SESSION = requests.Session() if _HAS_REQUESTS else None
+if SESSION is not None:
+    SESSION.headers.update({"User-Agent": UA})
 TIMEOUT = 18
 
 EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
@@ -56,12 +64,19 @@ def _similar(a: str, b: str) -> float:
 
 
 def looks_like_community(name: str) -> bool:
-    n = (name or "").lower()
+    n = (name or "").strip().lower()
     if not n or n in {"test1", "test"}:
+        return False
+    # exact section-header / region-divider labels that sit between communities
+    if n in {"east", "south", "west", "north", "central", "pilot",
+             "indigenous health authorities", "community", "first nation",
+             "number", "name"}:
         return False
     bad = ["umbrella", "map of indigenous", "association of", "tribal council",
            "grand council", "board of health", "open minds", "ancfsao",
-           "first 10", "(pilot)", "next 75", "additional links"]
+           "first 10", "(pilot)", "next 75", "additional links",
+           "second project", "environmental scan", "first project",
+           "list of", "health authorities", "section"]
     return not any(b in n for b in bad)
 
 
@@ -210,6 +225,9 @@ def wikidata_facts(qid: str):
 
 def enrich_one(name: str, cur_link: str = "", cur_pop=None, scrape: bool = True, use_llm: bool = False):
     """Return a list of suggestion dicts for one community."""
+    if not _HAS_REQUESTS:
+        return [{"field": "(unavailable)", "current": "", "suggested": "", "source": "",
+                 "confidence": "Low", "note": "The 'requests' library is not installed on the server."}]
     out = []
     try:
         w = wiki_search(name)

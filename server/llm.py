@@ -13,7 +13,10 @@ from __future__ import annotations
 
 import os
 import json
-import requests
+try:
+    import requests
+except Exception:  # pragma: no cover
+    requests = None
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
@@ -29,7 +32,7 @@ def _key() -> str | None:
 
 
 def available() -> bool:
-    return bool(_key())
+    return bool(_key()) and requests is not None
 
 
 def chat(system: str, user: str, max_tokens: int = 700, temperature: float = 0.0) -> str | None:
