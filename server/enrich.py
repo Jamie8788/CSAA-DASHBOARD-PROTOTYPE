@@ -65,6 +65,19 @@ def looks_like_community(name: str) -> bool:
     return not any(b in n for b in bad)
 
 
+# tracking / placeholder / asset emails that scraping picks up but aren't real contacts
+_JUNK_EMAIL = re.compile(
+    r"(sentry|wixpress|yourdomain|placeholder|@2x|sentry\.io|@example|@domain\.|"
+    r"\.(png|jpg|jpeg|gif|webp|svg)$|no-?reply|donotreply|u003e|u003c)", re.I)
+_JUNK_LOCAL = re.compile(r"^(example|test|name|email|user|your|firstname|lastname|info)@(example|domain|test|email|site)\.", re.I)
+
+
+def _junk_email(e: str) -> bool:
+    return (bool(_JUNK_EMAIL.search(e)) or bool(_JUNK_LOCAL.match(e))
+            or e.lower().startswith(("example@", "test@", "you@", "your@", "name@"))
+            or len(e) > 60 or e.count("@") != 1)
+
+
 # ---------------- website scraping ---------------- #
 def _fetch(url):
     try:
@@ -95,8 +108,9 @@ def scrape_site(start_url):
 
     def harvest(url, text):
         for e in set(EMAIL_RE.findall(text)):
-            if not e.lower().endswith((".png", ".jpg", ".gif", ".webp")):
-                found["emails"].setdefault(e, url)
+            if _junk_email(e):
+                continue
+            found["emails"].setdefault(e, url)
         for p in set(PHONE_RE.findall(text)):
             found["phones"].setdefault(clean(p), url)
         for label, link in _links(url, text):
