@@ -901,6 +901,16 @@ function CompareTwo({ all, value, onChange }) {
   );
 }
 
+// Each slide carries a "theme" — a Sacred-Direction colour pair used to paint
+// a full-bleed gradient behind the card, so the deck feels alive and cultural.
+const PRES_THEMES = {
+  east:  { a: '#e8b948', b: '#d4a017', ink: '#3a2c08', glyph: '✺' },
+  south: { a: '#d94f33', b: '#b8351e', ink: '#fff', glyph: '☀' },
+  west:  { a: '#3a342c', b: '#1a1612', ink: '#fff', glyph: '☾' },
+  north: { a: '#8fb08f', b: '#6b8d6b', ink: '#15240f', glyph: '❄' },
+};
+const PRES_CYCLE = ['south', 'east', 'north', 'west'];
+
 function PresentationMode({ overview, facts, comparison, duplicates, report, onClose }) {
   const slides = useMemoAP(() => {
     const out = [];
@@ -908,7 +918,7 @@ function PresentationMode({ overview, facts, comparison, duplicates, report, onC
       title: 'Mino Bimaadiziwin Atlas',
       sub: 'Live data from the master sheet',
       big: overview.total || 0, bigLabel: 'communities documented',
-      colour: 'south',
+      theme: 'south',
     });
     out.push({
       title: 'Service pillar coverage',
@@ -916,15 +926,18 @@ function PresentationMode({ overview, facts, comparison, duplicates, report, onC
       grid: ['physical', 'mental', 'spiritual', 'emotional'].map((p) => ({
         label: p, value: (overview.pillarsCovered && overview.pillarsCovered[p]) || 0,
       })),
+      theme: 'east',
     });
     if (facts) {
-      facts.forEach((f) => out.push({ title: f.kicker, sub: '', big: f.fact, bigLabel: '' }));
+      facts.forEach((f, n) => out.push({ title: f.kicker, sub: '', big: f.fact, bigLabel: '',
+        theme: PRES_CYCLE[n % PRES_CYCLE.length] }));
     }
     if (comparison && comparison.metrics) {
       out.push({
         title: 'By direction',
         sub: 'Communities documented in each Sacred Direction',
         grid: comparison.metrics.map((m) => ({ label: m.direction, value: m.communities })),
+        theme: 'north',
       });
     }
     if (duplicates && duplicates.summary) {
@@ -933,12 +946,21 @@ function PresentationMode({ overview, facts, comparison, duplicates, report, onC
         sub: 'High-similarity wording across communities',
         big: duplicates.summary.totalPairs || 0,
         bigLabel: 'similar service descriptions on file',
+        theme: 'west',
       });
     }
-    return out;
+    out.push({
+      title: 'Miigwech',
+      sub: 'One living atlas — every direction, every season.',
+      theme: 'east', closing: true,
+    });
+    // give any slide without an explicit theme one from the cycle
+    return out.map((sl, n) => ({ ...sl, theme: sl.theme || PRES_CYCLE[n % PRES_CYCLE.length] }));
   }, [overview, facts, comparison, duplicates]);
 
   const [i, setI] = useStateAP(0);
+  const [playing, setPlaying] = useStateAP(false);
+
   useEffectAP(() => {
     function k(e) {
       if (e.key === 'Escape') onClose();
@@ -949,18 +971,31 @@ function PresentationMode({ overview, facts, comparison, duplicates, report, onC
     return () => window.removeEventListener('keydown', k);
   }, [slides.length, onClose]);
 
+  // auto-advance when playing; stop at the last slide
+  useEffectAP(() => {
+    if (!playing) return;
+    const t = setTimeout(() => {
+      setI((x) => { if (x >= slides.length - 1) { setPlaying(false); return x; } return x + 1; });
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [playing, i, slides.length]);
+
   if (!slides.length) return null;
   const s = slides[i];
+  const th = PRES_THEMES[s.theme] || PRES_THEMES.south;
+  const bg = `radial-gradient(120% 120% at 80% 0%, ${th.a} 0%, ${th.b} 55%, #0d0a07 130%)`;
 
   return (
-    <div className="ap-presentation" onClick={(e) => { if (e.target.classList.contains('ap-presentation')) onClose(); }}>
-      <div className="ap-pres-card" key={i}>
-        <p className="ap-pres-eyebrow">slide {i + 1} of {slides.length}</p>
-        <h3 className={`ap-pres-title${s.colour ? ' colour-' + s.colour : ''}`}>{s.title}</h3>
+    <div className="ap-presentation" style={{ background: bg }}
+         onClick={(e) => { if (e.target.classList.contains('ap-presentation')) onClose(); }}>
+      <div className="ap-pres-glyph" aria-hidden="true">{th.glyph}</div>
+      <div className="ap-pres-card" key={i} style={{ borderTop: `5px solid ${th.b}` }}>
+        <p className="ap-pres-eyebrow">slide {i + 1} of {slides.length} · {s.theme}</p>
+        <h3 className="ap-pres-title" style={{ color: th.b }}>{s.title}</h3>
         {s.sub && <p className="ap-pres-sub">{s.sub}</p>}
         {s.big != null && (
           <div className="ap-pres-big">
-            <span className="ap-pres-big-num">{typeof s.big === 'number' ? s.big.toLocaleString() : s.big}</span>
+            <span className="ap-pres-big-num" style={{ color: th.b }}>{typeof s.big === 'number' ? s.big.toLocaleString() : s.big}</span>
             {s.bigLabel && <span className="ap-pres-big-label">{s.bigLabel}</span>}
           </div>
         )}
@@ -968,7 +1003,7 @@ function PresentationMode({ overview, facts, comparison, duplicates, report, onC
           <div className="ap-pres-grid">
             {s.grid.map((g) => (
               <div key={g.label} className="ap-pres-cell">
-                <span className="ap-pres-cell-num">{Number(g.value).toLocaleString()}</span>
+                <span className="ap-pres-cell-num" style={{ color: th.b }}>{Number(g.value).toLocaleString()}</span>
                 <span className="ap-pres-cell-lbl">{g.label}</span>
               </div>
             ))}
@@ -976,8 +1011,12 @@ function PresentationMode({ overview, facts, comparison, duplicates, report, onC
         )}
         <div className="ap-pres-controls">
           <button onClick={() => setI((x) => Math.max(0, x - 1))} disabled={i === 0}>◀</button>
+          <button className="ap-pres-play" onClick={() => setPlaying((p) => !p)}
+                  title={playing ? 'Pause auto-play' : 'Auto-play the deck'}>
+            {playing ? '⏸' : '▶'}
+          </button>
           <span className="ap-pres-progress">
-            {slides.map((_, j) => <span key={j} className={j === i ? 'on' : ''} />)}
+            {slides.map((_, j) => <span key={j} className={j === i ? 'on' : ''} onClick={() => setI(j)} />)}
           </span>
           <button onClick={() => setI((x) => Math.min(slides.length - 1, x + 1))} disabled={i === slides.length - 1}>▶</button>
           <button onClick={onClose} className="ap-pres-close">✕ close</button>

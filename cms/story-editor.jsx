@@ -32,6 +32,8 @@ function StoryEditorView() {
   const [media, setMedia] = useS_se([]);
   const [loading, setLoading] = useS_se(true);
   const [picking, setPicking] = useS_se(null);   // scene key whose image we're choosing
+  const [uploading, setUploading] = useS_se(false);
+  const fileInputRef = React.useRef(null);
 
   async function load() {
     setLoading(true);
@@ -69,6 +71,24 @@ function StoryEditorView() {
     setPicking(null);
   }
 
+  async function uploadAndPick(file) {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { toast.push('Please choose an image file.', 'error'); return; }
+    setUploading(true);
+    try {
+      const row = await API.media.upload(file, file.name);
+      const url = API.media.url(row.id);
+      // refresh library list so the new image also appears in the grid
+      setMedia((m) => [{ id: row.id, filename: row.filename || file.name, alt_text: row.alt_text || file.name }, ...m]);
+      chooseImage(picking, url);
+      toast.push('Image uploaded & set.', 'success');
+    } catch (e) {
+      toast.push('Upload failed: ' + e.message, 'error');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   if (loading) return <div><h1>Story Map</h1><p className="muted">Loading…</p></div>;
 
   return (
@@ -77,8 +97,8 @@ function StoryEditorView() {
       <p className="subhead">
         Edit the scrollytelling Story Map — the guided journey through the four
         Sacred Directions. Set each scene's text and a full-bleed background
-        image (upload images in <strong>Media library</strong> first). Leave an
-        image empty to let the live map show through instead.
+        image — you can upload one straight from your computer. Leave the
+        image empty to let the live animated map show through instead.
         <a href="/#v=story" target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>Open Story Map ↗</a>
       </p>
 
@@ -154,14 +174,25 @@ function StoryEditorView() {
       {picking && (
         <div className="edit-panel" style={{ width: 'min(640px, 100%)' }}>
           <button className="close" onClick={() => setPicking(null)}>×</button>
-          <h2 style={{ marginTop: 0 }}>Choose an image</h2>
+          <h2 style={{ marginTop: 0 }}>Choose a background image</h2>
           <p className="small muted">
-            Pick from the Media library. Upload new images under
-            <strong> Content → Media library</strong>.
+            Upload straight from your computer, or pick one you've used before.
           </p>
+
+          <input ref={fileInputRef} type="file" accept="image/*"
+                 style={{ display: 'none' }}
+                 onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; uploadAndPick(f); }} />
+          <button className="btn" disabled={uploading}
+                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                  style={{ marginBottom: 14 }}>
+            {uploading ? 'Uploading…' : '⬆ Upload from my computer'}
+          </button>
+
           {media.length === 0 ? (
-            <p className="muted">No media yet. Upload some first.</p>
+            <p className="muted">No images uploaded yet — use the button above to add your first one.</p>
           ) : (
+            <>
+            <div className="small muted" style={{ marginBottom: 6 }}>Or pick a previously uploaded image:</div>
             <div className="media-grid">
               {media.map((m) => (
                 <button key={m.id} className="media-pick"
@@ -171,6 +202,7 @@ function StoryEditorView() {
                 </button>
               ))}
             </div>
+            </>
           )}
           <div style={{ marginTop: 14 }}>
             <button className="btn ghost" onClick={() => setPicking(null)}>Cancel</button>

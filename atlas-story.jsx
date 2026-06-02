@@ -103,9 +103,46 @@ function AtlasStoryView({ all, setView, onSelect }) {
   const dropRafRef = useR_st(null);
   const sparkRafRef = useR_st(null);
   const sparkRef = useR_st(null);
+  const svgRendererRef = useR_st(null);
   const [activeDir, setActiveDir] = useS_st('intro');
+  const [touring, setTouring] = useS_st(false);   // elder-friendly auto-advance
+  const [bigText, setBigText] = useS_st(() => {
+    try { return localStorage.getItem('story-big-text') === '1'; } catch (e) { return false; }
+  });
+  const tourTimerRef = useR_st(null);
   const reduceMotion = window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Auto-tour: gently scroll through each scene on a timer so elders can
+  // watch the whole journey hands-free. Any manual scroll/click stops it.
+  const SCENE_ORDER = ['intro', ...STORY_DIRS.map((d) => d.key), 'outro'];
+  useE_st(() => {
+    if (!touring) { if (tourTimerRef.current) { clearTimeout(tourTimerRef.current); tourTimerRef.current = null; } return; }
+    function step() {
+      setActiveDir((cur) => {
+        const i = SCENE_ORDER.indexOf(cur);
+        const next = SCENE_ORDER[i + 1];
+        if (!next) { setTouring(false); return cur; }
+        const el = document.querySelector('[data-story-scene="' + next + '"]');
+        if (el) el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+        return cur;   // scroll-spy will set the real activeDir
+      });
+      tourTimerRef.current = setTimeout(step, 6500);
+    }
+    tourTimerRef.current = setTimeout(step, 4500);
+    return () => { if (tourTimerRef.current) clearTimeout(tourTimerRef.current); };
+  }, [touring]);
+
+  // Stop the tour the moment the visitor takes the wheel themselves.
+  useE_st(() => {
+    if (!touring) return;
+    function stop() { setTouring(false); }
+    window.addEventListener('wheel', stop, { passive: true });
+    window.addEventListener('touchmove', stop, { passive: true });
+    return () => { window.removeEventListener('wheel', stop); window.removeEventListener('touchmove', stop); };
+  }, [touring]);
+
+  useE_st(() => { try { localStorage.setItem('story-big-text', bigText ? '1' : '0'); } catch (e) {} }, [bigText]);
 
   const dirData = useM_st(() => {
     const out = {};
@@ -122,7 +159,7 @@ function AtlasStoryView({ all, setView, onSelect }) {
       out[d.key] = {
         count: comms.length, geo, totalPop,
         topPillar: top && top[1] > 0 ? top[0] : null,
-        samples: comms.slice(0, 5).map((c) => c.name),
+        samples: comms.map((c) => c.name),
       };
     }
     return out;
@@ -136,10 +173,13 @@ function AtlasStoryView({ all, setView, onSelect }) {
       zoomControl: false, attributionControl: true,
       scrollWheelZoom: false, dragging: false, doubleClickZoom: false,
       boxZoom: false, keyboard: false, touchZoom: false, zoomSnap: 0.25,
+      preferCanvas: true,          // canvas-render markers/halos → smooth animation
     });
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abc', maxZoom: 18,
     }).addTo(map);
+    // keep an SVG renderer just for the route line so it can draw itself in
+    svgRendererRef.current = L.svg().addTo(map);
     haloLayerRef.current = L.layerGroup().addTo(map);
     routeLayerRef.current = L.layerGroup().addTo(map);
     markerLayerRef.current = L.layerGroup().addTo(map);
@@ -218,7 +258,6 @@ function AtlasStoryView({ all, setView, onSelect }) {
     geoMarkers.forEach((m) => {
       const ll = m.getLatLng();
       rings.push({ ring: L.circleMarker(ll, { radius: 8, color, weight: 2, fillColor: color, fillOpacity: 0, opacity: 0.65 }).addTo(haloLayerRef.current), off: 0 });
-      rings.push({ ring: L.circleMarker(ll, { radius: 8, color, weight: 1.5, fillColor: color, fillOpacity: 0, opacity: 0.5 }).addTo(haloLayerRef.current), off: 0.5 });
     });
     let t0 = null;
     function loop(t) {
@@ -299,6 +338,7 @@ function AtlasStoryView({ all, setView, onSelect }) {
       const line = L.polyline(pts, {
         color, weight: 2.5, opacity: 0.7, dashArray: null,
         lineCap: 'round', lineJoin: 'round',
+        renderer: svgRendererRef.current,   // SVG so it can self-draw
       }).addTo(routeLayerRef.current);
       const path = line._path;
       if (path && path.getTotalLength) {
@@ -421,7 +461,20 @@ function AtlasStoryView({ all, setView, onSelect }) {
   const onImage = !!activeImage;
 
   return (
-    <section className="story-shell">
+    <section className={`story-shell${bigText ? ' big-text' : ''}`}>
+      <div className="story-controls" role="group" aria-label="Story controls">
+        <button className={`story-ctrl${touring ? ' on' : ''}`}
+                onClick={() => { if (!touring) { jumpToScene('intro'); } setTouring((t) => !t); }}
+                title={touring ? 'Stop the guided tour' : 'Play a hands-free guided tour'}>
+          {touring ? '⏸ Pause tour' : '▶ Play guided tour'}
+        </button>
+        <button className={`story-ctrl${bigText ? ' on' : ''}`}
+                onClick={() => setBigText((b) => !b)}
+                title="Make the text bigger and easier to read">
+          🅰 {bigText ? 'Normal text' : 'Bigger text'}
+        </button>
+      </div>
+
       <div className="story-map-bg">
         <div ref={mapElRef} className="story-map" />
         <div className="story-map-tint"
@@ -457,7 +510,7 @@ function AtlasStoryView({ all, setView, onSelect }) {
           return (
             <div className="story-scene" data-story-scene={d.key} key={d.key}>
               <div className={`story-card${isActive ? ' is-active' : ''}${hasImg ? ' on-image' : ''}`} style={{ '--accent': accent }}>
-                <div className="story-card-dir" style={{ color: accent }}>{d.key}</div>
+                <div className="story-card-dir" style={{ color: accent }}>{storySetting(d.key + '.title', d.key)}</div>
                 <div className="story-card-season">{storySetting(d.key + '.subtitle', d.season)}</div>
                 <p className="story-card-blurb">{storySetting(d.key + '.body', d.blurb)}</p>
                 <div className="story-stats">
@@ -475,12 +528,17 @@ function AtlasStoryView({ all, setView, onSelect }) {
                   </div>
                 </div>
                 {data.samples && data.samples.length > 0 && (
-                  <div className="story-samples">
-                    {data.samples.map((n) => (
-                      <button key={n} className="story-sample" onClick={() => flyToCommunity(n)} title="Fly here & open record">
-                        {n}
-                      </button>
-                    ))}
+                  <div className="story-samples-wrap">
+                    <div className="story-samples-head">
+                      {data.samples.length} {data.samples.length === 1 ? 'community' : 'communities'} · tap any to fly there
+                    </div>
+                    <div className="story-samples">
+                      {data.samples.map((n) => (
+                        <button key={n} className="story-sample" onClick={() => flyToCommunity(n)} title="Fly here & open record">
+                          {n}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
                 <div className="story-medicine">Medicine · {d.medicine} &nbsp;·&nbsp; {d.stage}</div>
