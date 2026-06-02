@@ -99,12 +99,20 @@ def _links(base, text):
     return out
 
 
+def _visible_text(html_text):
+    t = re.sub(r"(?is)<(script|style|noscript).*?</\1>", " ", html_text)
+    t = re.sub(r"(?s)<[^>]+>", " ", t)
+    return re.sub(r"\s+", " ", html.unescape(t)).strip()
+
+
 def scrape_site(start_url):
-    found = {"emails": {}, "phones": {}, "docs": {}, "contact_pages": [], "reached": False}
+    found = {"emails": {}, "phones": {}, "docs": {}, "contact_pages": [],
+             "reached": False, "text": ""}
     home = _fetch(start_url)
     if not home:
         return found
     found["reached"] = True
+    text_parts = [_visible_text(home)[:4000]]
 
     def harvest(url, text):
         for e in set(EMAIL_RE.findall(text)):
@@ -132,7 +140,9 @@ def scrape_site(start_url):
             if sub:
                 found["contact_pages"].append(link)
                 harvest(link, sub)
+                text_parts.append(_visible_text(sub)[:3000])
             time.sleep(0.05)
+    found["text"] = "  ".join(text_parts)[:8000]
     return found
 
 
@@ -198,7 +208,7 @@ def wikidata_facts(qid: str):
     return out
 
 
-def enrich_one(name: str, cur_link: str = "", cur_pop=None, scrape: bool = True):
+def enrich_one(name: str, cur_link: str = "", cur_pop=None, scrape: bool = True, use_llm: bool = False):
     """Return a list of suggestion dicts for one community."""
     out = []
     try:
@@ -255,7 +265,18 @@ def enrich_one(name: str, cur_link: str = "", cur_pop=None, scrape: bool = True)
         if sc["reached"]:
             emails = list(sc["emails"].items())[:8]
             phones = list(sc["phones"].items())[:6]
-            if emails or phones:
+            llm_block = None
+            if use_llm:
+                try:
+                    from . import llm
+                    llm_block = llm.extract_contacts(sc.get("text", ""))
+                except Exception:
+                    llm_block = None
+            if llm_block:
+                out.append({"field": "Contact Information for Departments", "current": "",
+                            "suggested": llm_block, "source": (sc["contact_pages"] or [site_url])[0],
+                            "confidence": "Medium", "note": "Structured by AI from the official site. Verify."})
+            elif emails or phones:
                 lines = [e for e, _ in emails] + [p for p, _ in phones]
                 src = (emails or phones)[0][1]
                 out.append({"field": "Contact Information for Departments", "current": "",
@@ -269,3 +290,86 @@ def enrich_one(name: str, cur_link: str = "", cur_pop=None, scrape: bool = True)
         out.append({"field": "(no objective data)", "current": "", "suggested": "—", "source": w["url"],
                     "confidence": "Low", "note": "Found the article but no population/website/coords to suggest."})
     return out
+
+
+# --------------------------------------------------------------------------- #
+#  auto-fill engine — fills blank objective fields on the dataset, tagging
+#  each filled field as AI-sourced so the UI/Excel can colour-code it.
+# --------------------------------------------------------------------------- #
+_PLACEHOLDER = {"", "missing information", "needs review", "n/a", "na",
+                "no definite value", "duplicate record", "tbd", "-", "—"}
+
+
+def _is_blank(v) -> bool:
+    return clean(v).lower() in _PLACEHOLDER
+
+
+# maps an enrich_one suggestion "field" → the record key it fills
+_FIELD_TO_KEY = {
+    "Community Population": "population",
+    "Community Link": "link",
+    "Contact Information for Departments": "contact",
+    "Strategic Plan": "strategicPlan",
+    "Annual General Meeting (AGM)": "agm",
+    "Financial Statements": "financials",
+}
+
+
+def apply_enrichment(records, use_llm: bool = False, progress=None):
+    """Fill blank objective fields in `records` (in place) from free sources.
+
+    Only fills cells that are blank — never overwrites human-entered values.
+    Every field it fills is recorded in rec['_ai'] = {key: source_url} so the
+    UI and the Excel export can mark it as AI-pulled (purple). Returns a summary
+    dict. `progress(done, total)` is called as it works.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    targets = [r for r in records if looks_like_community(r.get("name", ""))]
+    total = len(targets)
+    filled_fields = 0
+    filled_comms = 0
+
+    def work(rec):
+        name = rec.get("name", "")
+        cur_link = rec.get("link") or rec.get("website") or ""
+        cur_pop = rec.get("population")
+        try:
+            sugs = enrich_one(name, cur_link, cur_pop, scrape=True, use_llm=use_llm)
+        except Exception:
+            sugs = []
+        return rec, sugs
+
+    done = 0
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        futs = [ex.submit(work, r) for r in targets]
+        for f in as_completed(futs):
+            rec, sugs = f.result()
+            ai = dict(rec.get("_ai") or {})
+            for s in sugs:
+                field, val = s.get("field"), s.get("suggested")
+                if not val or str(val) in ("—", ""):
+                    continue
+                # coordinates fill two keys at once, only when both are blank
+                if field == "Coordinates (lat, lng)" and "," in str(val):
+                    if rec.get("lat") is None or (rec.get("lng") is None and rec.get("lon") is None):
+                        try:
+                            la, lo = [float(x) for x in str(val).split(",")[:2]]
+                            rec["lat"], rec["lng"], rec["lon"] = la, lo, lo
+                            ai["lat"] = ai["lng"] = s.get("source") or ""
+                        except Exception:
+                            pass
+                    continue
+                key = _FIELD_TO_KEY.get(field)
+                if key and _is_blank(rec.get(key)):   # never overwrite human data
+                    rec[key] = val
+                    ai[key] = s.get("source") or ""
+            if ai:
+                rec["_ai"] = ai
+            done += 1
+            if progress:
+                progress(done, total)
+
+    filled_comms = sum(1 for r in targets if r.get("_ai"))
+    filled_fields = sum(len(r["_ai"]) for r in targets if r.get("_ai"))
+    return {"communities": total, "communities_filled": filled_comms,
+            "fields_filled": filled_fields}

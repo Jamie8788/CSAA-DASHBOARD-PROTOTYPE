@@ -19,13 +19,105 @@ function AIAssistantView() {
         a person can verify before trusting them.
       </p>
       <div className="ai-tabs">
+        <button className={tab === 'autofill' ? 'on' : ''} onClick={() => setTab('autofill')}>⚙ Auto-fill sheet</button>
         <button className={tab === 'chat' ? 'on' : ''} onClick={() => setTab('chat')}>💬 Ask the atlas</button>
         <button className={tab === 'check' ? 'on' : ''} onClick={() => setTab('check')}>🔎 AI data check</button>
         <button className={tab === 'export' ? 'on' : ''} onClick={() => setTab('export')}>⬇ Export sheet</button>
       </div>
+      {tab === 'autofill' && <AIAutofill toast={toast} />}
       {tab === 'chat' && <AIChat toast={toast} />}
       {tab === 'check' && <AIDataCheck toast={toast} />}
       {tab === 'export' && <AIExport toast={toast} />}
+    </div>
+  );
+}
+
+// ---- auto-fill the whole sheet from the web (runs on upload, or on demand) ----
+function AIAutofill({ toast }) {
+  const [job, setJob] = useS_ai(null);
+  const [groq, setGroq] = useS_ai('');
+  const [savingKey, setSavingKey] = useS_ai(false);
+  const timer = useR_ai(null);
+
+  function poll() {
+    API.ai.status().then((s) => {
+      setJob(s);
+      if (s.status === 'running' && !timer.current) {
+        timer.current = setInterval(() => {
+          API.ai.status().then((s2) => {
+            setJob(s2);
+            if (s2.status !== 'running') { clearInterval(timer.current); timer.current = null; }
+          }).catch(() => {});
+        }, 2000);
+      }
+    }).catch(() => {});
+  }
+  useE_ai(() => { poll(); return () => { if (timer.current) clearInterval(timer.current); }; }, []);
+
+  async function run() {
+    try { await API.ai.run(); toast.push('AI enrichment started.', 'success'); poll(); }
+    catch (e) { toast.push(e.message, 'error'); }
+  }
+  async function saveKey() {
+    setSavingKey(true);
+    try {
+      const r = await API.ai.setGroqKey(groq.trim());
+      toast.push(r.llm_available ? 'Groq key saved — AI contact extraction is on.' : 'Key cleared.', 'success');
+      setGroq(''); poll();
+    } catch (e) { toast.push(e.message, 'error'); }
+    finally { setSavingKey(false); }
+  }
+
+  const running = job && job.status === 'running';
+  const pct = job && job.total ? Math.round((job.done / job.total) * 100) : 0;
+
+  return (
+    <div className="card">
+      <h3 style={{ marginTop: 0 }}>Auto-fill blank cells from the web</h3>
+      <p className="small muted">
+        This runs <strong>automatically every time you upload a sheet</strong>: for each
+        community it looks up free sources (Wikipedia, Wikidata, the community's own
+        website) and fills in blank Population, Link, Coordinates, Contacts and document
+        cells — then marks every AI-filled value <span className="ai-tag">AI</span>
+        (purple) so people know to verify. It never overwrites anything a human typed.
+      </p>
+
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', margin: '14px 0' }}>
+        <button className="btn" onClick={run} disabled={running}>
+          {running ? 'Running…' : '⚙ Run AI auto-fill now'}
+        </button>
+        {job && job.llm_available && <span className="small" style={{ color: '#2e7d32' }}>● Groq AI connected</span>}
+        {job && !job.llm_available && <span className="small muted">Groq not set (using free sources only)</span>}
+      </div>
+
+      {running && (
+        <div style={{ margin: '10px 0' }}>
+          <div className="ai-progress"><div style={{ width: pct + '%' }} /></div>
+          <div className="small muted">{job.done} / {job.total} communities… {pct}%</div>
+        </div>
+      )}
+      {job && job.status === 'done' && job.result && (
+        <p className="small" style={{ color: '#2e7d32' }}>
+          ✓ Done — filled {job.result.fields_filled} cells across {job.result.communities_filled} communities.
+          Check the dashboard, or export the sheet (purple = AI).
+        </p>
+      )}
+      {job && job.status === 'error' && <p className="small" style={{ color: '#b8351e' }}>Error: {job.error}</p>}
+
+      <hr style={{ margin: '18px 0', border: 'none', borderTop: '1px solid var(--border)' }} />
+      <h4 style={{ margin: '0 0 6px' }}>Optional: connect your free Groq key</h4>
+      <p className="small muted" style={{ marginTop: 0 }}>
+        With a free <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">Groq API key</a>,
+        the assistant also reads each website and pulls out staff <em>names &amp; roles</em>
+        (not just raw emails). Facts still come from the page — it can't invent them.
+      </p>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <input type="password" value={groq} onChange={(e) => setGroq(e.target.value)}
+               placeholder="gsk_…  (paste your Groq key)" style={{ flex: 1, minWidth: 240 }} />
+        <button className="btn ghost" onClick={saveKey} disabled={savingKey || !groq.trim()}>
+          {savingKey ? 'Saving…' : 'Save key'}
+        </button>
+      </div>
     </div>
   );
 }

@@ -101,6 +101,9 @@
     ai: {
       ask: (q) => request('GET', `/api/analytics/search?q=${encodeURIComponent(q)}&limit=6`),
       enrich: (name) => request('GET', `/api/enrich/community?name=${encodeURIComponent(name)}`),
+      run: () => request('POST', '/api/enrich/run'),
+      status: () => request('GET', '/api/enrich/status'),
+      setGroqKey: (key) => request('POST', '/api/enrich/groq-key', { key }),
       // download the corrected dataset as Excel (carries the auth token)
       downloadXlsx: async () => {
         const res = await fetch(BASE + '/api/export/xlsx', {

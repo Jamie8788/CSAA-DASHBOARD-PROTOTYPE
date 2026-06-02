@@ -89,6 +89,12 @@ async def _no_cache_source(request, call_next):
 @app.on_event("startup")
 def _startup() -> None:
     db.init_db()
+    # load the saved Groq API key (if any) so the AI layer is ready
+    try:
+        from . import llm as _llm0
+        _llm0.set_key(db.get_settings().get("ai.groq_key", ""))
+    except Exception:
+        pass
     # Seed dataset from communities-data.js if DB has none yet.
     if db.current_dataset() is None:
         records = processor.load_initial_records()
@@ -358,6 +364,71 @@ def communities_all() -> dict:
     }
 
 
+# ----- background AI enrichment job (auto-fills blanks from the web) -------- #
+import threading as _threading
+from . import llm as _llm
+
+ENRICH_JOB = {"status": "idle", "done": 0, "total": 0, "started": None,
+              "finished": None, "result": None, "error": None}
+
+
+def _run_enrichment(use_llm: bool):
+    ds = db.current_dataset()
+    if not ds:
+        ENRICH_JOB.update(status="error", error="No dataset uploaded yet.")
+        return
+    records = ds["records"]
+    ENRICH_JOB.update(status="running", done=0, total=0, started=time.time(),
+                      finished=None, result=None, error=None)
+
+    def progress(done, total):
+        ENRICH_JOB["done"], ENRICH_JOB["total"] = done, total
+
+    try:
+        summary = enrich.apply_enrichment(records, use_llm=use_llm, progress=progress)
+        coords.fill_missing_coords(records)   # backfill any coords still missing
+        db.replace_current_records(records)
+        events.publish("dataset.enriched", summary)
+        ENRICH_JOB.update(status="done", result=summary, finished=time.time())
+    except Exception as e:  # pragma: no cover
+        ENRICH_JOB.update(status="error", error=str(e), finished=time.time())
+
+
+def _start_enrichment(use_llm: bool) -> bool:
+    if ENRICH_JOB["status"] == "running":
+        return False
+    _threading.Thread(target=_run_enrichment, args=(use_llm,), daemon=True).start()
+    return True
+
+
+@app.post("/api/enrich/run")
+def enrich_run(actor: dict = Depends(auth.require_admin)) -> dict:
+    """Manually run the AI enrichment over the whole current dataset."""
+    started = _start_enrichment(use_llm=_llm.available())
+    if not started:
+        raise HTTPException(409, "Enrichment is already running.")
+    return {"ok": True, "using_llm": _llm.available()}
+
+
+@app.get("/api/enrich/status")
+def enrich_status(actor: dict = Depends(auth.require_admin)) -> dict:
+    return {**ENRICH_JOB, "llm_available": _llm.available()}
+
+
+class GroqKeyIn(BaseModel):
+    key: str = ""
+
+
+@app.post("/api/enrich/groq-key")
+def enrich_groq_key(body: GroqKeyIn, actor: dict = Depends(auth.require_admin)) -> dict:
+    """Save the team's free Groq API key (stored in settings, used to structure
+    scraped contact info). Pass an empty string to clear it."""
+    db.set_setting("ai.groq_key", (body.key or "").strip(), actor["username"])
+    _llm.set_key((body.key or "").strip())
+    db.log_audit(actor["username"], "ai.groq_key", None, "set" if body.key else "cleared")
+    return {"ok": True, "llm_available": _llm.available()}
+
+
 @app.get("/api/enrich/community")
 def enrich_community(name: str, actor: dict = Depends(auth.require_admin)) -> dict:
     """Run the free AI/data check for ONE community (fast). Returns proposed
@@ -369,7 +440,7 @@ def enrich_community(name: str, actor: dict = Depends(auth.require_admin)) -> di
     cur_link = (rec or {}).get("link") or (rec or {}).get("website") or ""
     cur_pop = (rec or {}).get("population")
     try:
-        suggestions = enrich.enrich_one(name, cur_link, cur_pop, scrape=True)
+        suggestions = enrich.enrich_one(name, cur_link, cur_pop, scrape=True, use_llm=_llm.available())
     except Exception as e:
         raise HTTPException(502, f"Lookup failed: {e}")
     return {"community": name, "suggestions": suggestions}
@@ -396,10 +467,23 @@ def export_xlsx(actor: dict = Depends(auth.require_admin)):
     for i in range(1, len(cols) + 1):
         ws.cell(1, i).font = _Font(bold=True, color="FFFFFF")
         ws.cell(1, i).fill = _Fill("solid", fgColor="1F2A37")
+    ai_fill = _Fill("solid", fgColor="C7B3F0")   # purple = AI-pulled
     for r in records:
         lng = r.get("lng") if r.get("lng") is not None else r.get("lon")
         ws.append([r.get(k) if k != "lng" else lng for (_, k) in cols])
+        ai = r.get("_ai") or {}
+        if ai:
+            row_i = ws.max_row
+            for col_i, (_, k) in enumerate(cols, 1):
+                if k in ai:
+                    ws.cell(row_i, col_i).fill = ai_fill
     ws.freeze_panes = "A2"
+    # legend note
+    ws2 = wb.create_sheet("Legend")
+    ws2["A1"] = "Cell colour"; ws2["B1"] = "Meaning"
+    ws2["A1"].font = ws2["B1"].font = _Font(bold=True)
+    ws2["A2"].fill = ai_fill
+    ws2["B2"] = "AI Suggested (verify) — auto-filled from a free web source"
     buf = io.BytesIO()
     wb.save(buf)
     buf.seek(0)
@@ -491,7 +575,12 @@ async def communities_upload(
         "source": file.filename,
         "annotations": (snapshot or {}).get("annotations", {}).get("totals", {}),
     })
-    out = {"ok": True, "version": version, "records": len(records)}
+    # Kick off AI enrichment automatically in the background — fills blank
+    # objective cells from the web and colour-codes them as AI. The upload
+    # response returns immediately; the CMS polls /api/enrich/status.
+    _start_enrichment(use_llm=_llm.available())
+
+    out = {"ok": True, "version": version, "records": len(records), "enriching": True}
     if snapshot:
         out["meta"] = snapshot["meta"]
         out["annotations"] = snapshot["annotations"]["totals"]

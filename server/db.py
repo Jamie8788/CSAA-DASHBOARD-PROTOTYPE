@@ -751,6 +751,17 @@ def current_dataset() -> dict | None:
         return r
 
 
+def replace_current_records(records: list[dict]) -> None:
+    """Overwrite the current dataset's payload in place (no new version) — used
+    by the AI enrichment job to save filled-in fields back to the live data."""
+    payload = json.dumps(records, ensure_ascii=False)
+    with get_conn() as conn:
+        conn.execute(
+            text("UPDATE datasets SET payload = :p, record_count = :c WHERE is_current = 1"),
+            {"p": payload, "c": len(records)},
+        )
+
+
 def current_snapshot() -> dict | None:
     with get_conn() as conn:
         r = _row(conn.execute(text(
