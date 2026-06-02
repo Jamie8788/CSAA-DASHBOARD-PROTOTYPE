@@ -546,6 +546,7 @@ function AGMPresentation({ all, onClose }) {
     }));
     return [
       {
+        theme: 'south',
         kicker: 'Mino Bimaadiziwin · Community Services Atlas',
         title: 'A snapshot, for this gathering.',
         sub: 'Every figure below is pulled live from the master sheet — nothing is estimated.',
@@ -557,6 +558,7 @@ function AGMPresentation({ all, onClose }) {
         ],
       },
       {
+        theme: 'east',
         kicker: 'Whole-person care',
         title: 'All four pillars in place.',
         sub: `Communities that document physical, mental, spiritual, AND emotional programming.`,
@@ -569,6 +571,7 @@ function AGMPresentation({ all, onClose }) {
         ],
       },
       {
+        theme: 'north',
         kicker: 'By the four directions',
         title: 'How the work is distributed.',
         sub: 'Each direction holds a season, a medicine, and a stage of life.',
@@ -577,15 +580,52 @@ function AGMPresentation({ all, onClose }) {
           num: d.pop ? d.pop.toLocaleString() + ' ppl' : '—',
         })),
       },
+      {
+        theme: 'west',
+        kicker: 'Miigwech',
+        title: 'One living atlas.',
+        sub: 'Every direction, every season, held together — and updated the moment the master sheet changes.',
+      },
     ];
   }, [all]);
 
   const [i, setI] = useState(0);
+  const [playing, setPlaying] = useState(false);
   const s = slides[i];
 
+  // keyboard nav
+  useEffect(() => {
+    function k(e) {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowRight' || e.key === ' ') setI(x => Math.min(slides.length - 1, x + 1));
+      if (e.key === 'ArrowLeft') setI(x => Math.max(0, x - 1));
+    }
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  }, [slides.length, onClose]);
+
+  // auto-play through the deck, stop at the end
+  useEffect(() => {
+    if (!playing) return;
+    const t = setTimeout(() => {
+      setI(x => { if (x >= slides.length - 1) { setPlaying(false); return x; } return x + 1; });
+    }, 6000);
+    return () => clearTimeout(t);
+  }, [playing, i, slides.length]);
+
+  const AGM_THEMES = {
+    east:  { a: '#e8b948', b: '#d4a017', glyph: '✺' },
+    south: { a: '#d94f33', b: '#b8351e', glyph: '☀' },
+    west:  { a: '#5b6f8c', b: '#2f3b4d', glyph: '☾' },
+    north: { a: '#8fb08f', b: '#4f7a52', glyph: '❄' },
+  };
+  const th = AGM_THEMES[s.theme] || AGM_THEMES.south;
+
   return (
-    <div className="agm-overlay" role="dialog" aria-label="AGM presentation mode">
-      <div className="agm-slide">
+    <div className="agm-overlay" role="dialog" aria-label="AGM presentation mode"
+         style={{ background: `radial-gradient(125% 125% at 82% 4%, ${th.a} 0%, ${th.b} 48%, #120d09 120%)` }}>
+      <div className="agm-glyph" aria-hidden="true">{th.glyph}</div>
+      <div className="agm-slide" key={i}>
         <div className="agm-kicker">{s.kicker}</div>
         <h1 className="agm-title">{s.title}</h1>
         <p className="agm-sub">{s.sub}</p>
@@ -608,6 +648,10 @@ function AGMPresentation({ all, onClose }) {
       </div>
       <div className="agm-foot">
         <button className="agm-btn" onClick={() => setI(i => Math.max(0, i-1))} disabled={i===0}>← Previous</button>
+        <button className="agm-btn agm-play" onClick={() => setPlaying(p => !p)}
+                title={playing ? 'Pause auto-play' : 'Play hands-free'}>
+          {playing ? '⏸ Pause' : '▶ Auto-play'}
+        </button>
         <div className="agm-dots">
           {slides.map((_, ii) => (
             <button key={ii} className={`agm-dot ${ii===i?'on':''}`} onClick={()=>setI(ii)} aria-label={`Slide ${ii+1}`}></button>

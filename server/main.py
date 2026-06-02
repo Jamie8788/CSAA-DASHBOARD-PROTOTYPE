@@ -68,6 +68,22 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def _no_cache_source(request, call_next):
+    """Force browsers to revalidate source assets (HTML/JSX/JS/CSS) on every
+    load. These files change on every deploy but the CMS/dashboard reference
+    several of them without cache-busting query strings, so without this the
+    browser serves stale copies and edits appear to "do nothing". Binary/media
+    responses (which set their own Cache-Control) are left untouched."""
+    response = await call_next(request)
+    path = request.url.path.lower()
+    if path.endswith((".html", ".jsx", ".js", ".css")) or path == "/" or path.endswith("/"):
+        # don't clobber an explicit cache policy a route already set
+        if "cache-control" not in (k.lower() for k in response.headers.keys()):
+            response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
+
+
 # ----------------------------- bootstrap ---------------------------------- #
 
 @app.on_event("startup")
@@ -852,7 +868,13 @@ CMS_ROOT = config.ROOT / "cms"
 
 @app.get("/")
 def root_page() -> FileResponse:
-    return FileResponse(DASHBOARD_ROOT / "Community Atlas.html")
+    # no-cache forces the browser to revalidate the HTML on every load, so new
+    # ?v= asset references (the cache-busted jsx/css) are always picked up.
+    # Without this the browser keeps stale HTML and "nothing changes" on deploy.
+    return FileResponse(
+        DASHBOARD_ROOT / "Community Atlas.html",
+        headers={"Cache-Control": "no-cache, must-revalidate"},
+    )
 
 
 @app.get("/favicon.ico")
