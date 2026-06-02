@@ -50,7 +50,7 @@ from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, Res
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import analytics, auth, config, coords, db, events, mailer, processor, workbook
+from . import analytics, auth, config, coords, db, enrich, events, mailer, processor, workbook
 
 
 app = FastAPI(
@@ -356,6 +356,60 @@ def communities_all() -> dict:
         "datasetUploadedAt": ds["uploaded_at"] if ds else None,
         "datasetSource": ds["source_filename"] if ds else None,
     }
+
+
+@app.get("/api/enrich/community")
+def enrich_community(name: str, actor: dict = Depends(auth.require_admin)) -> dict:
+    """Run the free AI/data check for ONE community (fast). Returns proposed
+    corrections — population, official website, coordinates, scraped contacts
+    and document links — each with a source URL and confidence. Never writes
+    anything; the CMS shows them for a human to accept."""
+    records = _build_records()
+    rec = next((r for r in records if (r.get("name") or "").strip().lower() == name.strip().lower()), None)
+    cur_link = (rec or {}).get("link") or (rec or {}).get("website") or ""
+    cur_pop = (rec or {}).get("population")
+    try:
+        suggestions = enrich.enrich_one(name, cur_link, cur_pop, scrape=True)
+    except Exception as e:
+        raise HTTPException(502, f"Lookup failed: {e}")
+    return {"community": name, "suggestions": suggestions}
+
+
+@app.get("/api/export/xlsx")
+def export_xlsx(actor: dict = Depends(auth.require_admin)):
+    """Download the current (CMS-corrected) dataset as an Excel workbook."""
+    import io
+    import openpyxl
+    from openpyxl.styles import Font as _Font, PatternFill as _Fill
+    records = coords.fill_missing_coords(_build_records())
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Communities"
+    cols = [("Community", "name"), ("Direction", "direction"), ("Type", "orgType"),
+            ("Population", "population"), ("Latitude", "lat"), ("Longitude", "lng"),
+            ("Link", "link"), ("Contact", "contact"),
+            ("Physical", "physical"), ("Mental", "mental"),
+            ("Spiritual", "spiritual"), ("Emotional", "emotional"),
+            ("Survivors", "survivors"), ("Youth", "youth"),
+            ("Strategic Plan", "strategicPlan"), ("AGM", "agm"), ("Financials", "financials")]
+    ws.append([c[0] for c in cols])
+    for i in range(1, len(cols) + 1):
+        ws.cell(1, i).font = _Font(bold=True, color="FFFFFF")
+        ws.cell(1, i).fill = _Fill("solid", fgColor="1F2A37")
+    for r in records:
+        lng = r.get("lng") if r.get("lng") is not None else r.get("lon")
+        ws.append([r.get(k) if k != "lng" else lng for (_, k) in cols])
+    ws.freeze_panes = "A2"
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    fn = "mino-bimaadiziwin-atlas.xlsx"
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{fn}"',
+                 "Cache-Control": "no-store"},
+    )
 
 
 @app.get("/api/communities/edits")

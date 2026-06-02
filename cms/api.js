@@ -98,6 +98,23 @@
       quality: () => request('GET', '/api/analytics/quality'),
     },
     audit: (limit = 100) => request('GET', `/api/audit?limit=${limit}`),
+    ai: {
+      ask: (q) => request('GET', `/api/analytics/search?q=${encodeURIComponent(q)}&limit=6`),
+      enrich: (name) => request('GET', `/api/enrich/community?name=${encodeURIComponent(name)}`),
+      // download the corrected dataset as Excel (carries the auth token)
+      downloadXlsx: async () => {
+        const res = await fetch(BASE + '/api/export/xlsx', {
+          headers: { Authorization: 'Bearer ' + getToken() }, credentials: 'include',
+        });
+        if (!res.ok) throw new Error('Export failed (' + res.status + ')');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'mino-bimaadiziwin-atlas.xlsx';
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      },
+    },
     media: {
       list: () => request('GET', '/api/media'),
       upload: (file, alt) => {

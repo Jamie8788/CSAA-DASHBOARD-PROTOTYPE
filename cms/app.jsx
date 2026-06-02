@@ -15,6 +15,7 @@ const NAV_GROUPS = [
     title: 'Insights',
     items: [
       { key: 'analytics',   label: 'Analytics',         ico: '◐' },
+      { key: 'ai',          label: 'AI Assistant',      ico: '✦' },
     ],
   },
   {
@@ -160,6 +161,7 @@ function CMSAppInner() {
       </aside>
       <main className="cms-main">
         {view === 'analytics' && <window.AnalyticsView />}
+        {view === 'ai' && <window.AIAssistantView />}
         {view === 'upload' && <window.UploadView />}
         {view === 'builder' && <window.BuilderView setView={setView} />}
         {view === 'communities' && <window.CommunitiesView />}
