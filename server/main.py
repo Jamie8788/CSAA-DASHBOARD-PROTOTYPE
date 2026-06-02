@@ -50,7 +50,7 @@ from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, Res
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import analytics, auth, config, db, events, mailer, processor, workbook
+from . import analytics, auth, config, coords, db, events, mailer, processor, workbook
 
 
 app = FastAPI(
@@ -347,7 +347,7 @@ def _build_records() -> list[dict]:
 
 @app.get("/api/communities")
 def communities_all() -> dict:
-    records = _build_records()
+    records = coords.fill_missing_coords(_build_records())
     ds = db.current_dataset()
     return {
         "records": records,
@@ -418,6 +418,9 @@ async def communities_upload(
 
     if not records:
         raise HTTPException(400, "No records parsed from file")
+
+    # fill in coordinates the sheet omits (real communities + org HQs)
+    coords.fill_missing_coords(records)
 
     version = db.save_dataset(
         records,

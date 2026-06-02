@@ -105,6 +105,7 @@ function AtlasStoryView({ all, setView, onSelect }) {
   const sparkRef = useR_st(null);
   const svgRendererRef = useR_st(null);
   const scrollingRef = useR_st(false);   // true while the user is actively scrolling
+  const permLabelsRef = useR_st([]);     // permanent name labels on the active direction
   const [activeDir, setActiveDir] = useS_st('intro');
   const [touring, setTouring] = useS_st(false);   // elder-friendly auto-advance
   const [bigText, setBigText] = useS_st(() => {
@@ -204,8 +205,8 @@ function AtlasStoryView({ all, setView, onSelect }) {
       m.on('mouseout', () => {
         try { m.setRadius(m.__base || 5); m.setStyle({ weight: m.__activeNow ? 2 : 1 }); } catch (e) {}
       });
-      // click: fly + ping + open record
-      m.on('click', () => { pingAt(lat, lng, m.__color); if (onSelect && c.id) setTimeout(() => onSelect(c.id), reduceMotion ? 0 : 450); });
+      // click: fly to it (offset for the drawer) + ping + open record
+      m.on('click', () => { flyToCommunity(c.name); });
       m.bindTooltip(c.name, { direction: 'top', opacity: 0.95, className: 'story-mtt' });
       m.addTo(markerLayerRef.current);
       (byDir[dir] = byDir[dir] || []).push(m);
@@ -340,6 +341,29 @@ function AtlasStoryView({ all, setView, onSelect }) {
     dropRafRef.current = requestAnimationFrame(tick);
   }
 
+  // ---- permanent name labels on the active direction (elder-friendly: no
+  //      hovering needed). Capped so big directions don't turn into clutter. ----
+  function clearLabels() {
+    const map = mapRef.current;
+    permLabelsRef.current.forEach((tt) => { try { map && map.removeLayer(tt); } catch (e) {} });
+    permLabelsRef.current = [];
+  }
+  function showLabels(geoMarkers) {
+    clearLabels();
+    const map = mapRef.current;
+    if (!map || !geoMarkers || geoMarkers.length === 0 || geoMarkers.length > 9) return;
+    geoMarkers.forEach((m) => {
+      try {
+        const tt = L.tooltip({ permanent: true, direction: 'top', opacity: 0.96,
+          className: 'story-mtt story-mtt-perm' })
+          .setLatLng(m.getLatLng())
+          .setContent(m.__c ? m.__c.name : '');
+        tt.addTo(map);
+        permLabelsRef.current.push(tt);
+      } catch (e) {}
+    });
+  }
+
   // ---- self-drawing route polyline; returns the ordered points ----
   function drawRoute(geoMarkers, color) {
     if (reduceMotion || geoMarkers.length < 2) return null;
@@ -376,6 +400,7 @@ function AtlasStoryView({ all, setView, onSelect }) {
     const byDir = dirMarkersRef.current;
     const allM = Object.values(byDir).flat();
 
+    clearLabels();
     if (activeDir === 'intro' || activeDir === 'outro') {
       allM.forEach((m) => { m.__activeNow = false; m.__base = 5; m.setStyle({ fillOpacity: 0.4, opacity: 0.55, weight: 1.2 }); m.setRadius(5); });
       try { if (allM.length) map.flyToBounds(L.featureGroup(allM).getBounds().pad(0.15), { duration: dur }); } catch (e) {}
@@ -415,6 +440,7 @@ function AtlasStoryView({ all, setView, onSelect }) {
       dropIn(activeMarkers);
       const pts = drawRoute(activeMarkers, color);
       startPulse(activeMarkers, color);
+      showLabels(activeMarkers);
       if (pts) setTimeout(() => startSpark(pts, color), 900);  // after the line finishes drawing
     }, delay);
     return () => clearTimeout(t);
@@ -454,20 +480,20 @@ function AtlasStoryView({ all, setView, onSelect }) {
     const lat = c.lat, lng = (c.lng != null ? c.lng : c.lon);
     if (map && lat != null && lng != null) {
       try {
-        map.flyTo([lat, lng], 8, { duration: reduceMotion ? 0 : 1.3 });
-        // quick ping halo
-        if (!reduceMotion && haloLayerRef.current) {
-          const ping = L.circleMarker([lat, lng], { radius: 8, color: '#b8351e', weight: 2, fillOpacity: 0, opacity: 1 })
-            .addTo(haloLayerRef.current);
-          let s = null;
-          function pl(t) { if (s == null) s = t; const p = Math.min(1, (t - s) / 900);
-            try { ping.setRadius(8 + p * 30); ping.setStyle({ opacity: 1 - p }); } catch (e) {}
-            if (p < 1) requestAnimationFrame(pl); else { try { haloLayerRef.current.removeLayer(ping); } catch (e) {} } }
-          requestAnimationFrame(pl);
-        }
+        const zoom = 8;
+        // The record drawer opens on the right, so center the point in the
+        // LEFT part of the map — otherwise the zoom lands behind the drawer
+        // and it looks like "nothing happened".
+        const size = map.getSize();
+        const pt = map.project([lat, lng], zoom).add([size.x * 0.26, 0]);
+        const center = map.unproject(pt, zoom);
+        map.flyTo(center, zoom, { duration: reduceMotion ? 0 : 1.4 });
+        pingAt(lat, lng, DIR_COLOR[c.direction] || '#b8351e');
       } catch (e) {}
     }
-    if (onSelect && c.id) setTimeout(() => onSelect(c.id), reduceMotion ? 0 : 700);
+    // always open the record, even when the point has no coordinates, so a
+    // click always does something visible.
+    if (onSelect && c.id) setTimeout(() => onSelect(c.id), reduceMotion ? 0 : 850);
   }
 
   function jumpToScene(key) {

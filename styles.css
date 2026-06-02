@@ -5764,6 +5764,16 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
   padding: 5px 10px; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.3);
 }
 .leaflet-tooltip.story-mtt::before { border-top-color: rgba(20,16,12,0.92); }
+/* permanent labels shown on the active direction's communities */
+.leaflet-tooltip.story-mtt-perm {
+  background: rgba(251,247,236,0.95); color: #15110d;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.22);
+  animation: mtt-fade-in 360ms ease both;
+}
+.leaflet-tooltip.story-mtt-perm::before { border-top-color: rgba(251,247,236,0.95); }
+@keyframes mtt-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 0.96; transform: none; } }
+:root[data-text-size="L"]  .leaflet-tooltip.story-mtt-perm { font-size: 13px; }
+:root[data-text-size="XL"] .leaflet-tooltip.story-mtt-perm { font-size: 14px; }
 
 /* progress dots: label on hover */
 .story-progress-dots span { position: relative; }

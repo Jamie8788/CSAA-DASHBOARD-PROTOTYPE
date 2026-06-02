@@ -1870,8 +1870,10 @@ window.COMMUNITIES = [
     "missingCount": 1,
     "reviewCount": 0,
     "correctionCount": 22,
-    "lat": null,
-    "lon": null
+    "lat": 46.62,
+    "lon": -84.3,
+    "lng": -84.3,
+    "_coordSource": "gazetteer"
   },
   {
     "name": "Serpent River",
@@ -4836,8 +4838,10 @@ window.COMMUNITIES = [
     "missingCount": 0,
     "reviewCount": 0,
     "correctionCount": 0,
-    "lat": null,
-    "lon": null
+    "lat": 44.9,
+    "lon": -80.97,
+    "lng": -80.97,
+    "_coordSource": "gazetteer"
   },
   {
     "name": "Chippewa of the Thames/Chippewas/Thames River",
@@ -4870,8 +4874,10 @@ window.COMMUNITIES = [
     "missingCount": 0,
     "reviewCount": 0,
     "correctionCount": 0,
-    "lat": null,
-    "lon": null
+    "lat": 42.85,
+    "lon": -81.48,
+    "lng": -81.48,
+    "_coordSource": "gazetteer"
   },
   {
     "name": "Curve Lake First Nation",
@@ -8297,8 +8303,10 @@ window.COMMUNITIES = [
     "missingCount": 0,
     "reviewCount": 0,
     "correctionCount": 0,
-    "lat": null,
-    "lon": null
+    "lat": 46.66,
+    "lon": -82.18,
+    "lng": -82.18,
+    "_coordSource": "gazetteer"
   },
   {
     "name": "ANCFSAO - ASSOCIATION OF NATIVE CHILD AND FAMILY SERVICE AGENCIES OF ONTARIO",
@@ -8330,8 +8338,10 @@ window.COMMUNITIES = [
     "missingCount": 0,
     "reviewCount": 0,
     "correctionCount": 0,
-    "lat": null,
-    "lon": null
+    "lat": 43.66,
+    "lon": -79.38,
+    "lng": -79.38,
+    "_coordSource": "gazetteer"
   },
   {
     "name": "Indigenous Friendship Center",
@@ -9335,8 +9345,10 @@ window.COMMUNITIES = [
     "missingCount": 1,
     "reviewCount": 0,
     "correctionCount": 0,
-    "lat": null,
-    "lon": null
+    "lat": 51.69,
+    "lon": -76.24,
+    "lng": -76.24,
+    "_coordSource": "gazetteer"
   },
   {
     "name": "Cree Board of Health and \nSocial Services of James Bay",
@@ -9385,8 +9397,10 @@ window.COMMUNITIES = [
     "missingCount": 0,
     "reviewCount": 0,
     "correctionCount": 0,
-    "lat": null,
-    "lon": null
+    "lat": 53.79,
+    "lon": -78.9,
+    "lng": -78.9,
+    "_coordSource": "gazetteer"
   },
   {
     "name": "Mushkegowuk Council",
@@ -9498,8 +9512,10 @@ window.COMMUNITIES = [
     "missingCount": 3,
     "reviewCount": 0,
     "correctionCount": 0,
-    "lat": null,
-    "lon": null
+    "lat": 51.26,
+    "lon": -80.6,
+    "lng": -80.6,
+    "_coordSource": "gazetteer"
   },
   {
     "name": "ACCESS Open Minds\n(Esprits Ouverts)",
@@ -9645,8 +9661,10 @@ window.COMMUNITIES = [
     "missingCount": 8,
     "reviewCount": 0,
     "correctionCount": 0,
-    "lat": null,
-    "lon": null
+    "lat": 45.5,
+    "lon": -73.58,
+    "lng": -73.58,
+    "_coordSource": "gazetteer"
   },
   {
     "name": "Map of Indigenous Communities in Ontario",
@@ -10180,8 +10198,10 @@ window.COMMUNITIES = [
     "missingCount": 0,
     "reviewCount": 0,
     "correctionCount": 0,
-    "lat": null,
-    "lon": null
+    "lat": 46.66,
+    "lon": -82.18,
+    "lng": -82.18,
+    "_coordSource": "gazetteer"
   },
   {
     "name": "test1",
