@@ -248,11 +248,11 @@ function AppInner() {
       <window.CommunityDrawer community={selected} onClose={() => setSelectedId(null)} searchQuery={search.trim()} />
 
       {/* Presentation mode — available on every page */}
-      {agmOpen && window.AGMPresentation && <window.AGMPresentation all={all} onClose={() => setAgmOpen(false)} />}
+      {agmOpen && window.AGMPresentation && <window.AGMPresentation all={all} view={view} onClose={() => setAgmOpen(false)} />}
       {!selected && !agmOpen && (
         <button className="present-fab" onClick={() => setAgmOpen(true)}
-                title="Open fullscreen presentation — great for meetings & AGMs">
-          ▶ Present
+                title="Present this page fullscreen — slides built from what you're viewing">
+          ▶ Present this page
         </button>
       )}
 

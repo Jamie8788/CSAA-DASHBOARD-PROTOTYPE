@@ -82,7 +82,7 @@ function StatsView({ all, onSelect, setView, setRegions, setOrgTypes, setPillars
 
   return (
     <div style={{ background: 'var(--paper)' }}>
-      {agmOpen && <window.AGMPresentation all={all} onClose={() => setAgmOpen(false)} />}
+      {agmOpen && <window.AGMPresentation all={all} view="stats" onClose={() => setAgmOpen(false)} />}
       <div className="stats-grid">
         <div className="stat-card span-12" style={{padding:0, background:'var(--paper-2)', position:'relative'}}>
           <button className="agm-launch"

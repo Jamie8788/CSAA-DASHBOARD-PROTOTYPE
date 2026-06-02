@@ -531,67 +531,93 @@ function StaffHistogram({ all }) {
 // ----------------------------------------------------------------------------
 // 9. AGM presentation mode (unchanged from v1)
 // ----------------------------------------------------------------------------
-function AGMPresentation({ all, onClose }) {
-  const slides = useMemo(() => {
-    const comms = all.filter(c => c.orgType === 'Community');
-    const orgs = all.length - comms.length;
-    const pop = all.reduce((s,c) => s + (c.population||0), 0);
-    const allFour = comms.filter(c => c.hasPhysical && c.hasMental && c.hasSpiritual && c.hasEmotional).length;
-    const youth = comms.filter(c => c.hasYouth).length;
-    const survivor = comms.filter(c => c.hasSurvivors).length;
-    const staff = all.reduce((s,c) => s + (c.staff?.length || 0), 0);
-    const dirs = ['East','South','West','North'].map(d => ({
-      dir: d, count: comms.filter(c => c.direction === d).length,
-      pop: comms.filter(c => c.direction === d).reduce((s,c)=>s+(c.population||0),0),
-    }));
+// Muted, deeper tones — and not limited to the four directions. Each slide
+// names a palette key, so a deck can use as many colours as it likes.
+const AGM_PAL = {
+  clay:   { a: '#8f3320', b: '#5e2114', glyph: '☀' },
+  gold:   { a: '#9c7619', b: '#6b5011', glyph: '✺' },
+  forest: { a: '#4f6b51', b: '#324a34', glyph: '❄' },
+  slate:  { a: '#3a4658', b: '#232c39', glyph: '☾' },
+  plum:   { a: '#5b3a55', b: '#352031', glyph: '❂' },
+  teal:   { a: '#2f6f6b', b: '#1b4341', glyph: '≋' },
+};
+
+// Build a page-specific deck. Each page (view) gets its own slides.
+function buildAGMDeck(view, all) {
+  const comms = all.filter(c => c.orgType === 'Community');
+  const orgs = all.length - comms.length;
+  const pop = all.reduce((s,c) => s + (c.population||0), 0);
+  const staff = all.reduce((s,c) => s + (c.staff?.length || 0), 0);
+  const has = (k) => comms.filter(c => c['has'+k]).length;
+  const allFour = comms.filter(c => c.hasPhysical && c.hasMental && c.hasSpiritual && c.hasEmotional).length;
+  const both = comms.filter(c => c.hasYouth && c.hasSurvivors).length;
+  const dirSeason = { East: 'Spring · Ziigwan', South: 'Summer · Niibin', West: 'Autumn · Dagwaagin', North: 'Winter · Biboon' };
+  const dirPal = { East: 'gold', South: 'clay', West: 'slate', North: 'forest' };
+  const dirs = ['East','South','West','North'].map(d => ({
+    dir: d, count: comms.filter(c => c.direction === d).length,
+    pop: comms.filter(c => c.direction === d).reduce((s,c)=>s+(c.population||0),0),
+  }));
+
+  const intro = { pal: 'clay', kicker: 'Mino Bimaadiziwin · Community Services Atlas',
+    title: 'A snapshot, for this gathering.',
+    sub: 'Every figure is pulled live from the master sheet — nothing is estimated.',
+    rows: [
+      { lab: 'Communities documented', num: comms.length },
+      { lab: 'Partner organizations', num: orgs },
+      { lab: 'People served (estimated)', num: pop.toLocaleString() },
+      { lab: 'Direct contacts on file', num: staff },
+    ] };
+  const outro = { pal: 'slate', kicker: 'Miigwech', title: 'One living atlas.',
+    sub: 'Every direction, every season, held together — updated the moment the master sheet changes.' };
+  const pillarsSlide = { pal: 'teal', kicker: 'Pillar coverage', title: 'Where the care lands.',
+    sub: 'How many communities document each pillar of whole-person care.',
+    rows: [
+      { lab: 'Physical health', num: has('Physical') },
+      { lab: 'Mental health', num: has('Mental') },
+      { lab: 'Spiritual / cultural', num: has('Spiritual') },
+      { lab: 'Emotional wellness', num: has('Emotional') },
+    ] };
+  const fourPillars = { pal: 'gold', kicker: 'Whole-person care', title: 'All four pillars in place.',
+    sub: 'Communities documenting physical, mental, spiritual AND emotional programming.',
+    big: `${allFour}`, bigSub: `of ${comms.length} communities · ${comms.length ? Math.round(allFour/comms.length*100) : 0}%` };
+  const generations = { pal: 'plum', kicker: 'Across the generations', title: 'Youth and survivors.',
+    rows: [
+      { lab: 'Communities with youth programming', num: has('Youth') },
+      { lab: 'Communities with survivor support', num: has('Survivors') },
+      { lab: 'Both youth + survivor support', num: both },
+    ] };
+  const directionsSlide = { pal: 'forest', kicker: 'By the four directions', title: 'How the work is distributed.',
+    sub: 'Each direction holds a season, a medicine, and a stage of life.',
+    rows: dirs.map(d => ({ lab: `${d.dir} · ${d.count} communities`, num: d.pop ? d.pop.toLocaleString() + ' ppl' : '—' })) };
+
+  if (view === 'story') {
     return [
-      {
-        theme: 'south',
-        kicker: 'Mino Bimaadiziwin · Community Services Atlas',
-        title: 'A snapshot, for this gathering.',
-        sub: 'Every figure below is pulled live from the master sheet — nothing is estimated.',
-        rows: [
-          { lab: 'Communities documented', num: comms.length },
-          { lab: 'Partner organizations', num: orgs },
-          { lab: 'People served (estimated)', num: pop.toLocaleString() },
-          { lab: 'Direct contacts on file', num: staff },
-        ],
-      },
-      {
-        theme: 'east',
-        kicker: 'Whole-person care',
-        title: 'All four pillars in place.',
-        sub: `Communities that document physical, mental, spiritual, AND emotional programming.`,
-        big: `${allFour}`,
-        bigSub: `of ${comms.length} communities · ${Math.round(allFour/comms.length*100)}%`,
-        rows: [
-          { lab: 'Communities with youth programming', num: youth },
-          { lab: 'Communities with survivor support', num: survivor },
-          { lab: 'Programming both youth + survivors', num: comms.filter(c => c.hasYouth && c.hasSurvivors).length },
-        ],
-      },
-      {
-        theme: 'north',
-        kicker: 'By the four directions',
-        title: 'How the work is distributed.',
-        sub: 'Each direction holds a season, a medicine, and a stage of life.',
-        rows: dirs.map(d => ({
-          lab: `${d.dir} · ${d.count} communities`,
-          num: d.pop ? d.pop.toLocaleString() + ' ppl' : '—',
-        })),
-      },
-      {
-        theme: 'west',
-        kicker: 'Miigwech',
-        title: 'One living atlas.',
-        sub: 'Every direction, every season, held together — and updated the moment the master sheet changes.',
-      },
+      { pal: 'clay', kicker: 'A guided journey', title: 'Walk the four directions.',
+        sub: 'A living map of community care across Turtle Island.',
+        rows: [ { lab: 'Communities', num: comms.length }, { lab: 'People served', num: pop.toLocaleString() } ] },
+      ...dirs.map((d) => ({ pal: dirPal[d.dir], kicker: dirSeason[d.dir], title: d.dir,
+        sub: `${d.count} communities · ${d.pop.toLocaleString()} people`,
+        big: `${d.count}`, bigSub: `communities in the ${d.dir.toLowerCase()}` })),
+      outro,
     ];
-  }, [all]);
+  }
+  if (view === 'analytics') {
+    return [ fourPillars, pillarsSlide, generations, outro ];
+  }
+  if (view === 'coverage') {
+    return [ directionsSlide, fourPillars, pillarsSlide, outro ];
+  }
+  // default deck (stats / map / list / stories)
+  return [ intro, fourPillars, directionsSlide, outro ];
+}
+
+function AGMPresentation({ all, onClose, view }) {
+  const slides = useMemo(() => buildAGMDeck(view, all), [all, view]);
 
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const s = slides[i];
+  const idx = Math.min(i, slides.length - 1);
+  const s = slides[idx] || slides[0];
 
   // keyboard nav
   useEffect(() => {
@@ -613,52 +639,51 @@ function AGMPresentation({ all, onClose }) {
     return () => clearTimeout(t);
   }, [playing, i, slides.length]);
 
-  // Muted, deeper tones — the bright versions were too loud for a presentation.
-  const AGM_THEMES = {
-    east:  { a: '#9c7619', b: '#6b5011', glyph: '✺' },
-    south: { a: '#8f3320', b: '#5e2114', glyph: '☀' },
-    west:  { a: '#3a4658', b: '#232c39', glyph: '☾' },
-    north: { a: '#4f6b51', b: '#324a34', glyph: '❄' },
-  };
-  const th = AGM_THEMES[s.theme] || AGM_THEMES.south;
+  const th = AGM_PAL[s.pal] || AGM_PAL.clay;
+  // Inline colours so no stale/cached or CMS stylesheet can override them —
+  // every slide stays high-contrast white-on-deep-gradient and readable.
+  const INK = '#ffffff';
+  const SOFT = 'rgba(255,255,255,0.9)';
+  const FAINT = 'rgba(255,255,255,0.78)';
+  const shadow = '0 2px 18px rgba(0,0,0,0.35)';
 
   return (
     <div className="agm-overlay" role="dialog" aria-label="AGM presentation mode"
          style={{ background: `radial-gradient(135% 135% at 82% 6%, ${th.a} 0%, ${th.b} 38%, #100b08 104%)` }}>
       <div className="agm-glyph" aria-hidden="true">{th.glyph}</div>
-      <div className="agm-slide" key={i}>
-        <div className="agm-kicker">{s.kicker}</div>
-        <h1 className="agm-title">{s.title}</h1>
-        <p className="agm-sub">{s.sub}</p>
+      <div className="agm-slide" key={idx}>
+        <div className="agm-kicker" style={{ color: FAINT }}>{s.kicker}</div>
+        <h1 className="agm-title" style={{ color: INK, textShadow: shadow }}>{s.title}</h1>
+        <p className="agm-sub" style={{ color: SOFT }}>{s.sub}</p>
         {s.big && (
           <div className="agm-big">
-            <div className="agm-big-num">{s.big}</div>
-            {s.bigSub && <div className="agm-big-sub">{s.bigSub}</div>}
+            <div className="agm-big-num" style={{ color: INK, textShadow: shadow }}>{s.big}</div>
+            {s.bigSub && <div className="agm-big-sub" style={{ color: FAINT }}>{s.bigSub}</div>}
           </div>
         )}
         {s.rows && (
           <div className="agm-rows">
             {s.rows.map((r, ii) => (
               <div key={ii} className="agm-row">
-                <span className="agm-row-lab">{r.lab}</span>
-                <span className="agm-row-num">{typeof r.num === 'number' ? r.num.toLocaleString() : r.num}</span>
+                <span className="agm-row-lab" style={{ color: SOFT }}>{r.lab}</span>
+                <span className="agm-row-num" style={{ color: INK, textShadow: shadow }}>{typeof r.num === 'number' ? r.num.toLocaleString() : r.num}</span>
               </div>
             ))}
           </div>
         )}
       </div>
       <div className="agm-foot">
-        <button className="agm-btn" onClick={() => setI(i => Math.max(0, i-1))} disabled={i===0}>← Previous</button>
+        <button className="agm-btn" onClick={() => setI(x => Math.max(0, x-1))} disabled={idx===0}>← Previous</button>
         <button className="agm-btn agm-play" onClick={() => setPlaying(p => !p)}
                 title={playing ? 'Pause auto-play' : 'Play hands-free'}>
           {playing ? '⏸ Pause' : '▶ Auto-play'}
         </button>
         <div className="agm-dots">
           {slides.map((_, ii) => (
-            <button key={ii} className={`agm-dot ${ii===i?'on':''}`} onClick={()=>setI(ii)} aria-label={`Slide ${ii+1}`}></button>
+            <button key={ii} className={`agm-dot ${ii===idx?'on':''}`} onClick={()=>setI(ii)} aria-label={`Slide ${ii+1}`}></button>
           ))}
         </div>
-        <button className="agm-btn" onClick={() => setI(i => Math.min(slides.length-1, i+1))} disabled={i===slides.length-1}>Next →</button>
+        <button className="agm-btn" onClick={() => setI(x => Math.min(slides.length-1, x+1))} disabled={idx===slides.length-1}>Next →</button>
         <button className="agm-x" onClick={onClose} title="Exit (Esc)">✕ Exit</button>
       </div>
     </div>
