@@ -97,6 +97,17 @@ def _startup() -> None:
     except Exception:
         pass
     # Seed dataset from communities-data.js if DB has none yet.
+    # ALSO: when a deploy ships a NEWER bundled dataset (the repo's
+    # communities-data.js changed), re-seed it as a new dataset version so the
+    # live site reflects the latest sheet without a manual upload. Previous
+    # versions (including manual uploads) stay in history and can be
+    # re-activated from the CMS at any time.
+    import hashlib
+    try:
+        _bundle_fp = hashlib.sha256(
+            config.COMMUNITIES_JS.read_bytes()).hexdigest() if config.COMMUNITIES_JS.exists() else ""
+    except Exception:
+        _bundle_fp = ""
     if db.current_dataset() is None:
         records = processor.load_initial_records()
         if records:
@@ -104,6 +115,19 @@ def _startup() -> None:
                             uploaded_by="system")
             db.log_audit("system", "seed", "dataset",
                          f"Seeded {len(records)} records from communities-data.js")
+            if _bundle_fp:
+                db.set_setting("seed.fingerprint", _bundle_fp, "system")
+    elif _bundle_fp and db.get_settings().get("seed.fingerprint") != _bundle_fp:
+        try:
+            records = processor.load_initial_records()
+            if records:
+                db.save_dataset(records, source_filename="communities-data.js (auto-reseed)",
+                                uploaded_by="system")
+                db.log_audit("system", "seed", "dataset",
+                             f"Re-seeded {len(records)} records — bundled dataset changed on deploy")
+            db.set_setting("seed.fingerprint", _bundle_fp, "system")
+        except Exception:
+            pass
 
 
 # ----------------------------- schemas ------------------------------------ #

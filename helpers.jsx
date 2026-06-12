@@ -275,7 +275,8 @@ function buildAll() {
   // CMS may have replaced the dataset via Excel upload
   let raw = window.COMMUNITIES || [];
   try {
-    const replaced = JSON.parse(localStorage.getItem('mino-atlas-dataset-v3') || 'null');
+    try { localStorage.removeItem('mino-atlas-dataset-v3'); } catch {}
+    const replaced = JSON.parse(localStorage.getItem('mino-atlas-dataset-v4') || 'null');
     if (Array.isArray(replaced) && replaced.length) raw = replaced;
   } catch {}
   return raw.map((r, i) => enrichRaw(r, i));
@@ -574,13 +575,13 @@ function CMSProvider({ children }) {
   }
   function resetAll() {
     setCMS({ fields:{}, staff:{}, depts:{}, added:[], deleted:[] });
-    try { localStorage.removeItem('mino-atlas-dataset-v3'); } catch {}
+    try { localStorage.removeItem('mino-atlas-dataset-v4'); localStorage.removeItem('mino-atlas-dataset-v3'); } catch {}
     setTimeout(()=>window.location.reload(), 100);
   }
 
   // Replace the entire dataset (from Excel upload). Bumps a counter so buildAll re-runs.
   function replaceDataset(records) {
-    try { localStorage.setItem('mino-atlas-dataset-v3', JSON.stringify(records)); } catch (e) { console.error(e); }
+    try { localStorage.setItem('mino-atlas-dataset-v4', JSON.stringify(records)); } catch (e) { console.error(e); }
     setCMS(prev => ({ ...prev, fields:{}, staff:{}, depts:{}, dataSource: Date.now() }));
     setTimeout(()=>window.location.reload(), 200);
   }
