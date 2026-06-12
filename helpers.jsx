@@ -122,6 +122,72 @@ function highlight(text, q) {
 window.highlight = highlight;
 window.NA = NA;
 
+// ============================================================================
+// Field status — distinguishes WHY a field has no content, so the UI can say
+// the right thing instead of leaking raw "Missing Information" placeholders.
+//   'ok'      → real content
+//   'missing' → the scan could not find it publicly — will be updated soon
+//   'review'  → found, but the team is verifying it — update coming
+//   'empty'   → nothing recorded at all
+// ============================================================================
+const FIELD_ITEM_RX = {
+  physical:      /physical/i,
+  mental:        /mental/i,
+  spiritual:     /spiritual/i,
+  emotional:     /emotional/i,
+  survivors:     /survivor/i,
+  youth:         /youth(?!.*survivor)/i,
+  connect:       /connect/i,
+  contacts:      /contact/i,
+  contact:       /contact/i,
+  strategicPlan: /strategic|plan/i,
+  agm:           /agm|annual general/i,
+  financials:    /financial/i,
+  population:    /population/i,
+  popInfo:       /population/i,
+  links:         /link/i,
+};
+
+function fieldAnnotations(c, key) {
+  const rx = FIELD_ITEM_RX[key];
+  const anns = (c && (c.annotations || (c.raw && c.raw.annotations))) || [];
+  if (!rx || !anns.length) return [];
+  return anns.filter(a => rx.test(a.item || ''));
+}
+window.fieldAnnotations = fieldAnnotations;
+
+function fieldStatus(c, key, value) {
+  const v = value !== undefined ? value : (c ? c[key] : null);
+  const s = String(v == null ? '' : v).trim().toLowerCase();
+  if (s === 'missing information') return 'missing';
+  if (s === 'needs review') return 'review';
+  if (!NA(v)) return 'ok';
+  // Empty cell — check the workbook's Missing Information / Needs Review tabs
+  const anns = fieldAnnotations(c, key);
+  if (anns.some(a => a.kind === 'review')) return 'review';
+  if (anns.some(a => a.kind === 'missing')) return 'missing';
+  return 'empty';
+}
+window.fieldStatus = fieldStatus;
+
+window.PENDING_COPY = {
+  missing: {
+    badge: 'Coming soon',
+    title: 'This information is being gathered.',
+    body: 'It was not publicly available during the last scan. The team is reaching out and this field will be updated soon.',
+  },
+  review: {
+    badge: 'Under review',
+    title: 'This information is being verified.',
+    body: 'Something was found, but the team is double-checking it before publishing. An update is coming soon.',
+  },
+  empty: {
+    badge: 'Not yet documented',
+    title: 'Nothing on file yet.',
+    body: 'Community contributions are welcome — editors can add this directly.',
+  },
+};
+
 // id from name (stable)
 function slugify(s) {
   return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60);
@@ -194,6 +260,12 @@ function enrichRaw(raw, idx) {
     mark: ORG_MARK_LETTERS(raw.name),
     motif: idx % 5,
     sourceRow: raw.sourceRow,
+    annotations: Array.isArray(raw.annotations) ? raw.annotations : [],
+    missingCount: raw.missingCount || 0,
+    reviewCount: raw.reviewCount || 0,
+    correctionCount: raw.correctionCount || 0,
+    in85List: !!raw.in85List,
+    officialNumber: raw.officialNumber != null ? raw.officialNumber : null,
   };
 }
 window.enrichRaw = enrichRaw;

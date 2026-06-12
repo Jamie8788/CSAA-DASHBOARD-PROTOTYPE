@@ -43,3 +43,8 @@ secrets.*
 # Generated enrichment output (local only; may contain scraped data)
 *AI Suggestions.xlsx
 *AI Filled.xlsx
+
+# Node (local tooling only)
+node_modules/
+package-lock.json
+package.json

@@ -59,6 +59,7 @@ function CanadaMap({ communities, allCommunities, selectedId, onSelect, onHover,
   const [ready, setReady] = useState(false);
   const [hoverPanel, setHoverPanel] = useState(null);   // persistent info panel
   const [rulerMode, setRulerMode] = useState(false);    // measure-distance tool
+  const [show3D, setShow3D] = useState(false);          // 3D globe overlay
   const [rulerPoints, setRulerPoints] = useState([]);   // [[lat,lng], [lat,lng]]
   const rulerLineRef = useRef(null);
   const rulerMarkersRef = useRef([]);
@@ -447,6 +448,13 @@ function CanadaMap({ communities, allCommunities, selectedId, onSelect, onHover,
       }} value={search} setValue={setSearch} />
 
       <button className="map-fit-all" onClick={fitAll} title="Fit all communities">⤢ Fit all</button>
+      <button className="map-3d-btn" onClick={() => setShow3D(true)}
+              title="Open the 3D satellite + terrain view of the territory">
+        ◈ 3D View
+      </button>
+      {show3D && window.Map3D && (
+        <window.Map3D all={allCommunities} onSelect={onSelect} onClose={() => setShow3D(false)} />
+      )}
       <button className={`map-tour-btn ${tourActive?'on':''}`} onClick={() => tourActive ? stopTour() : startTour()} title="Sky tour: auto-fly between visible communities">
         {tourActive ? '■ Stop tour' : '✦ Sky tour'}
       </button>

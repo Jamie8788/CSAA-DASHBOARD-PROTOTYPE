@@ -220,54 +220,133 @@ def classify(rec: dict) -> dict:
 # ---------------------------------------------------------------------------
 # Contact parsing (unchanged)
 # ---------------------------------------------------------------------------
-NAME_RX = re.compile(r"^([A-Z][a-z]+(?:[\s\-'][A-Z][a-z]+){1,3})")
 ROLE_KEYWORDS = re.compile(
     r'coordinator|director|manager|admin|chief|councillor|councilor|nurse|'
     r'worker|assistant|officer|specialist|supervisor|lead|head|advisor|liaison|'
-    r'representative|practitioner|therapist|youth|elder|wellness|health|reception',
+    r'representative|practitioner|therapist|youth|elder|wellness|health|reception|'
+    r'mailbox|office|clerk|secretary|navigator|counsell?or|executive|president',
+    re.I,
+)
+# "Carl Big George Jr. - Chief" / "Marci - General Mailbox / Main Reception"
+# Person-like left side (1-5 capitalised words, allows Jr./Sr./accents/apostrophes)
+NAME_ROLE_RX = re.compile(
+    r"^([A-Z][\w'’.À-ſ]*(?:[\s\-][A-Z][\w'’.À-ſ]*){0,4})"
+    r"\s*[-–—:]\s*(.{2,140})$"
+)
+# Generic office/department headers that should still become a contact card
+OFFICE_RX = re.compile(
+    r'^(band office|nursing station|health (centre|center)|main (office|reception)|'
+    r'reception|administration( office)?|general (mailbox|inquiries)|toll[- ]?free)\b',
     re.I,
 )
 PHONE_RX = re.compile(
-    r'(?:\(?\d{3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{4})|'
-    r'1[-\s]?\d{3}[-\s]?\d{3}[-\s]?\d{4}'
+    r'(?:\+?1[\s\-\.]?)?\(?\d{3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{4}'
 )
 EMAIL_RX = re.compile(r'[\w.+-]+@[\w-]+\.[\w.-]+')
-EXT_RX = re.compile(r'\bext\.?\s*:?\s*(\d+)', re.I)
+EXT_RX = re.compile(r'\b(?:ext|extension|x)\.?\s*:?\s*(\d{1,6})\b', re.I)
+URL_RX = re.compile(r'https?://[^\s<>()\]]+', re.I)
+FAX_RX = re.compile(r'\bfax\b', re.I)
+# Label words that must never be mistaken for a person's name
+LABEL_RX = re.compile(
+    r'^(e-?mail|phone|tel(ephone)?|fax|cell|mobile|reception|toll[- ]?free|'
+    r'website|web|directory|address|contact|general inquiries|office|hours|'
+    r'ext(ension)?)\s*$', re.I,
+)
 
 
 def parse_contacts(text: str) -> list[dict]:
+    """Turn a messy contact cell into structured staff entries.
+
+    Handles the real shapes found in the master sheet:
+      "Carl Big George Jr. - Chief\\nEmail: cbiggeorge@naongashiing.ca"
+      "Band Office\\nPhone: 807-537-2263\\n\\nNursing Station\\nReception: (807) 537-2262"
+      "Marci - General Mailbox / Main Reception\\nmarci@..."
+      bare directory links ("Staff directory  https://…")
+    """
     if not text:
         return []
-    t = text.replace('\r', '')
-    blocks = re.split(r'\n{2,}', t)
-    staff = []
-    for block in blocks:
-        block = block.strip()
-        if not block:
+    t = str(text).replace('\r', '')
+    lines = [l.strip() for l in t.split('\n')]
+
+    staff: list[dict] = []
+    cur: dict | None = None
+
+    def push():
+        nonlocal cur
+        if cur and (cur['name'] or cur['phone'] or cur['email'] or cur['fax'] or cur['link']):
+            cur['raw'] = cur['raw'].strip()[:400]
+            staff.append(cur)
+        cur = None
+
+    def fresh(name='', role=''):
+        return {'name': name.strip(), 'role': role.strip()[:140],
+                'phone': '', 'ext': '', 'email': '', 'fax': '', 'link': '', 'raw': ''}
+
+    for line in lines:
+        if not line:
+            # blank line = block boundary
+            push()
             continue
-        lines = [l.strip() for l in block.split('\n') if l.strip()]
-        name = role = phone = email = ext = ''
-        for line in lines:
-            m = NAME_RX.match(line)
-            if m and not name and '@' not in line:
-                name = m.group(1)
-            if not role and ROLE_KEYWORDS.search(line) \
-               and '@' not in line and not PHONE_RX.search(line) \
-               and line != name:
-                role = line[:120]
-            p = PHONE_RX.search(line)
-            if p and not phone:
-                phone = p.group(0)
-            e = EMAIL_RX.search(line)
-            if e and not email:
-                email = e.group(0)
-            x = EXT_RX.search(line)
-            if x:
-                ext = x.group(1)
-        if name or phone or email:
-            staff.append({'name': name, 'role': role,
-                          'phone': phone, 'ext': ext, 'email': email,
-                          'raw': block[:400]})
+
+        m = NAME_ROLE_RX.match(line)
+        is_new_person = bool(
+            m
+            and not LABEL_RX.match(m.group(1).strip().rstrip(':').strip())
+            and '@' not in line
+            and not PHONE_RX.search(line)
+            and not URL_RX.search(line)
+        )
+        is_office = bool(OFFICE_RX.match(line)) and '@' not in line and not PHONE_RX.search(line)
+
+        if is_new_person:
+            push()
+            cur = fresh(m.group(1), m.group(2))
+        elif is_office:
+            push()
+            cur = fresh(line, 'Office')
+        elif cur is None:
+            cur = fresh()
+            # A lone capitalised line with no contact data yet may be a name
+            if ('@' not in line and not PHONE_RX.search(line) and not URL_RX.search(line)
+                    and re.match(r"^[A-Z][\w'’.À-ſ]*(?:[\s\-][A-Z][\w'’.À-ſ]*){1,4}$", line)):
+                cur['name'] = line
+            elif not cur['role'] and ROLE_KEYWORDS.search(line) and '@' not in line \
+                    and not PHONE_RX.search(line):
+                cur['role'] = line[:140]
+
+        if cur is None:
+            cur = fresh()
+        cur['raw'] += line + '\n'
+
+        # harvest details from every line
+        u = URL_RX.search(line)
+        if u and not cur['link']:
+            cur['link'] = u.group(0)
+            if not cur['name']:
+                label = line.replace(u.group(0), '').strip(' -–—:|')
+                if label and len(label) <= 60:
+                    cur['name'] = label
+                    cur['role'] = cur['role'] or 'Link'
+        e = EMAIL_RX.search(line)
+        if e and not cur['email']:
+            cur['email'] = e.group(0)
+        p = PHONE_RX.search(line)
+        if p:
+            if FAX_RX.search(line):
+                if not cur['fax']:
+                    cur['fax'] = p.group(0)
+            elif not cur['phone']:
+                cur['phone'] = p.group(0)
+        x = EXT_RX.search(line)
+        if x and not cur['ext']:
+            cur['ext'] = x.group(1)
+        # role on its own line right after a bare name
+        if (cur['name'] and not cur['role'] and line != cur['name'].strip()
+                and ROLE_KEYWORDS.search(line) and '@' not in line
+                and not PHONE_RX.search(line) and not URL_RX.search(line)):
+            cur['role'] = line[:140]
+
+    push()
     return staff
 
 
