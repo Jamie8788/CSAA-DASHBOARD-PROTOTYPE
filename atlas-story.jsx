@@ -539,6 +539,7 @@ function AtlasStoryView({ all, setView, onSelect }) {
              style={{ '--tint': DIR_COLOR[activeDir] || '#6b8d6b',
                       opacity: (activeDir === 'intro' || activeDir === 'outro') ? 0.35 : 1 }} />
         <div className="story-map-vignette" />
+        <div className="story-map-grain" aria-hidden="true" />
         <div className={`story-image-layer${onImage ? ' show' : ''}`}
              style={onImage ? { backgroundImage: `url("${activeImage}")` } : null} />
         <div className={`story-image-scrim${onImage ? ' show' : ''}`} />

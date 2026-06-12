@@ -1333,43 +1333,29 @@ input:focus-visible,
 }
 
 /* ============================================================================
-   AMBIENT BACKDROP — soft northern-lights drift behind the whole atlas.
-   Pure CSS (no GIFs), very low contrast so content stays readable,
-   and fully disabled when the user turns off motion.
+   BACKDROP — static soft colour wash (no animation: flicker-free).
+   The motion happens once, on page load: a calm staggered entrance.
    ========================================================================== */
 body::before {
-  content: '';
-  position: fixed; inset: -20vh -20vw; z-index: -2;
-  pointer-events: none;
-  background:
-    radial-gradient(45% 38% at 18% 12%, rgba(212,160,23,0.10), transparent 70%),
-    radial-gradient(40% 34% at 84% 20%, rgba(184,53,30,0.07), transparent 70%),
-    radial-gradient(50% 42% at 70% 86%, rgba(107,141,107,0.09), transparent 70%),
-    radial-gradient(36% 30% at 12% 80%, rgba(58,93,140,0.07), transparent 70%);
-  filter: blur(40px);
-  animation: auroraDrift 36s ease-in-out infinite alternate;
-}
-body::after {
   content: '';
   position: fixed; inset: 0; z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(1.4px 1.4px at 12% 22%, rgba(26,22,18,0.10), transparent),
-    radial-gradient(1px 1px at 38% 64%, rgba(26,22,18,0.08), transparent),
-    radial-gradient(1.4px 1.4px at 64% 30%, rgba(26,22,18,0.09), transparent),
-    radial-gradient(1px 1px at 82% 74%, rgba(26,22,18,0.08), transparent),
-    radial-gradient(1.2px 1.2px at 28% 88%, rgba(26,22,18,0.07), transparent);
-  animation: dustFloat 60s linear infinite;
-  opacity: .8;
+    radial-gradient(45% 38% at 18% 12%, rgba(212,160,23,0.07), transparent 70%),
+    radial-gradient(40% 34% at 84% 20%, rgba(184,53,30,0.05), transparent 70%),
+    radial-gradient(50% 42% at 70% 86%, rgba(107,141,107,0.06), transparent 70%);
 }
-@keyframes auroraDrift {
-  0%   { transform: translate(0, 0) scale(1); }
-  50%  { transform: translate(3vw, -2vh) scale(1.06); }
-  100% { transform: translate(-3vw, 2vh) scale(1.02); }
+
+/* One-time page entrance — the whole app rises in softly, then stays still. */
+.app { animation: pageEnter .85s cubic-bezier(.16,.84,.3,1) both; }
+.app .hero { animation: pageEnter .9s .08s cubic-bezier(.16,.84,.3,1) both; }
+.app .nav-strip { animation: pageEnter .9s .18s cubic-bezier(.16,.84,.3,1) both; }
+.app .main-grid, .app .stories-view, .app .ap-shell { animation: pageEnter 1s .26s cubic-bezier(.16,.84,.3,1) both; }
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: none; }
 }
-@keyframes dustFloat {
-  from { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
-  to   { background-position: 60px 120px, -40px 80px, 50px -100px, -60px 60px, 30px -80px; }
+.reduce-motion .app, .reduce-motion .app .hero, .reduce-motion .app .nav-strip,
+.reduce-motion .app .main-grid, .reduce-motion .app .stories-view, .reduce-motion .app .ap-shell {
+  animation: none;
 }
-.reduce-motion body::before, .reduce-motion body::after,
-html.reduce-motion body::before, html.reduce-motion body::after { animation: none; }
