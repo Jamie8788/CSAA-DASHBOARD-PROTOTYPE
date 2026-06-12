@@ -163,8 +163,8 @@ function AnalyticsProView({ all, onSelect, setView }) {
       {facts && facts.facts && <StoryCarousel facts={facts.facts} />}
 
       {/* ────────── Honest data-quality panel ────────── */}
-      <Panel title="What we don't know yet — on purpose"
-             sub="The atlas never hides a gap. Every field the scan could not confirm is tracked on the workbook's own 'Missing Information' and 'Needs Review' tabs, matched to its community, and shown here. These fields will be updated as the team confirms them.">
+      <Panel title="Gap tracker — the tracking tabs, as live analytics"
+             sub="Every row on the workbook's 'Missing Information', 'Needs Review', and 'Correction sheet' tabs becomes data here: which fields are open, where on the territory, how the work is trending month by month, and which communities to reach out to next. Open fields show as 'will be updated soon' across the atlas.">
         <DataQualityPanel all={all} onPick={(id) => onSelect && onSelect(id)} />
       </Panel>
 
@@ -262,65 +262,290 @@ window.AnalyticsProView = AnalyticsProView;
 
 // ============== components =============================================
 
-// ---- Data quality: pending fields, honestly counted --------------------
+// ---- GAP TRACKER — full analytics over the workbook's own tracking tabs ----
+// Missing Information / Needs Review / Correction sheet rows, matched to
+// their communities, become first-class analytics: by field, by direction,
+// over time, by status, and per community.
+
+function gapItemLabel(item) {
+  const s = String(item || '').toLowerCase();
+  if (/agm|annual general/.test(s)) return 'AGM / Annual report';
+  if (/strategic/.test(s)) return 'Strategic plan';
+  if (/financ/.test(s)) return 'Financial statements';
+  if (/physical/.test(s)) return 'Physical health';
+  if (/mental/.test(s)) return 'Mental health';
+  if (/spiritual/.test(s)) return 'Spiritual support';
+  if (/emotional/.test(s)) return 'Emotional support';
+  if (/connect/.test(s)) return 'Connect survivors ↔ youth';
+  if (/survivor/.test(s)) return 'Survivor support';
+  if (/youth/.test(s)) return 'Youth support';
+  if (/population/.test(s)) return 'Population';
+  if (/contact/.test(s)) return 'Contact information';
+  if (/additional link/.test(s)) return 'Additional links';
+  if (/link|website/.test(s)) return 'Website link';
+  return 'Other fields';
+}
+
+function gapStatusLabel(status) {
+  const s = String(status || '').toLowerCase().trim();
+  if (!s) return null;
+  if (/not found/.test(s)) return 'Not found yet';
+  if (/partial/.test(s)) return 'Partially found';
+  if (/old/.test(s)) return 'Outdated version found';
+  return 'Other';
+}
+
+const GAP_KIND_META = {
+  missing:    { label: 'Being gathered',     color: '#a87f12', soft: 'rgba(212,160,23,.16)' },
+  review:     { label: 'Under review',       color: '#3a5d8c', soft: 'rgba(58,93,140,.14)' },
+  correction: { label: 'Corrections applied', color: '#3d6b40', soft: 'rgba(107,141,107,.16)' },
+};
+
+function useGapData(all) {
+  return useMemoAP(() => {
+    const comms = (all || []).filter((c) => c.orgType === 'Community');
+    const rows = [];
+    comms.forEach((c) => (c.annotations || []).forEach((a) => rows.push({ ...a, c })));
+
+    // by canonical field, per kind
+    const byField = {};
+    rows.forEach((r) => {
+      const f = gapItemLabel(r.item);
+      byField[f] = byField[f] || { field: f, missing: 0, review: 0, correction: 0 };
+      byField[f][r.kind] = (byField[f][r.kind] || 0) + 1;
+    });
+    const fields = Object.values(byField);
+    const fieldsOpen = [...fields].sort((a, b) => (b.missing + b.review) - (a.missing + a.review))
+      .filter((f) => f.missing + f.review > 0);
+    const fieldsFixed = [...fields].sort((a, b) => b.correction - a.correction)
+      .filter((f) => f.correction > 0).slice(0, 8);
+
+    // by direction
+    const byDir = {};
+    ['East', 'South', 'West', 'North'].forEach((d) => { byDir[d] = { dir: d, missing: 0, review: 0, correction: 0, comms: 0 }; });
+    comms.forEach((c) => {
+      const d = byDir[c.direction]; if (!d) return;
+      d.comms += 1;
+      d.missing += c.missingCount || 0;
+      d.review += c.reviewCount || 0;
+      d.correction += c.correctionCount || 0;
+    });
+
+    // by month, per kind
+    const byMonth = {};
+    rows.forEach((r) => {
+      const m = String(r.date || '').slice(0, 7);
+      if (!/^\d{4}-\d{2}$/.test(m)) return;
+      byMonth[m] = byMonth[m] || { month: m, missing: 0, review: 0, correction: 0 };
+      byMonth[m][r.kind] += 1;
+    });
+    const months = Object.values(byMonth).sort((a, b) => a.month.localeCompare(b.month)).slice(-8);
+
+    // status mix for open items
+    const statuses = {};
+    rows.filter((r) => r.kind !== 'correction').forEach((r) => {
+      const s = gapStatusLabel(r.status); if (!s) return;
+      statuses[s] = (statuses[s] || 0) + 1;
+    });
+
+    // per community
+    const perCommunity = comms
+      .map((c) => ({ c, missing: c.missingCount || 0, review: c.reviewCount || 0,
+                     correction: c.correctionCount || 0, open: (c.missingCount || 0) + (c.reviewCount || 0) }))
+      .sort((a, b) => b.open - a.open || b.correction - a.correction);
+
+    const totals = {
+      missing: comms.reduce((s, c) => s + (c.missingCount || 0), 0),
+      review: comms.reduce((s, c) => s + (c.reviewCount || 0), 0),
+      correction: comms.reduce((s, c) => s + (c.correctionCount || 0), 0),
+      clean: comms.filter((c) => !(c.missingCount || 0) && !(c.reviewCount || 0)).length,
+      comms: comms.length,
+    };
+    return { fieldsOpen, fieldsFixed, byDir, months, statuses, perCommunity, totals };
+  }, [all]);
+}
+
 function DataQualityPanel({ all, onPick }) {
-  const comms = (all || []).filter((c) => c.orgType === 'Community');
-  const missing = comms.reduce((s, c) => s + (c.missingCount || 0), 0);
-  const review = comms.reduce((s, c) => s + (c.reviewCount || 0), 0);
-  const corrected = comms.reduce((s, c) => s + (c.correctionCount || 0), 0);
-  const clean = comms.filter((c) => !(c.missingCount || 0) && !(c.reviewCount || 0)).length;
-  const top = [...comms]
-    .map((c) => ({ c, n: (c.missingCount || 0) + (c.reviewCount || 0) }))
-    .filter((x) => x.n > 0)
-    .sort((a, b) => b.n - a.n)
-    .slice(0, 8);
+  const g = useGapData(all);
+  const [tableQ, setTableQ] = useStateAP('');
+  const [showAll, setShowAll] = useStateAP(false);
+  const t = g.totals;
+  const resolved = t.correction + t.missing + t.review > 0
+    ? Math.round(t.correction / (t.correction + t.missing + t.review) * 100) : 0;
+
+  const tableRows = g.perCommunity.filter(({ c }) =>
+    !tableQ || c.name.toLowerCase().includes(tableQ.toLowerCase()));
+  const visibleRows = showAll ? tableRows : tableRows.slice(0, 12);
 
   return (
     <div className="dq-wrap">
+      {/* KPI strip */}
       <div className="dq-stats">
         <div className="dq-stat">
-          <div className="dq-num" style={{ color: '#a87f12' }}>{missing}</div>
+          <div className="dq-num" style={{ color: '#a87f12' }}>{t.missing}</div>
           <div className="dq-lab">fields being gathered</div>
           <div className="dq-sub">not publicly available yet — will be updated soon</div>
         </div>
         <div className="dq-stat">
-          <div className="dq-num" style={{ color: '#3a5d8c' }}>{review}</div>
+          <div className="dq-num" style={{ color: '#3a5d8c' }}>{t.review}</div>
           <div className="dq-lab">fields under review</div>
           <div className="dq-sub">found, but being verified before publishing</div>
         </div>
         <div className="dq-stat">
-          <div className="dq-num" style={{ color: '#3d6b40' }}>{corrected}</div>
+          <div className="dq-num" style={{ color: '#3d6b40' }}>{t.correction}</div>
           <div className="dq-lab">corrections applied</div>
           <div className="dq-sub">fields already improved by the team's review</div>
         </div>
         <div className="dq-stat">
-          <div className="dq-num">{clean}</div>
-          <div className="dq-lab">records with no open flags</div>
-          <div className="dq-sub">of {comms.length} communities</div>
+          <div className="dq-num">{resolved}<span style={{ fontSize: 20 }}>%</span></div>
+          <div className="dq-lab">of all tracked items resolved</div>
+          <div className="dq-sub">{t.clean} of {t.comms} communities have no open flags</div>
         </div>
       </div>
-      {top.length > 0 && (
-        <div className="dq-top">
-          <div className="dq-top-lab">Most open items — good outreach targets</div>
-          <div className="dq-chips">
-            {top.map(({ c, n }) => (
-              <button key={c.id} className="dq-chip" onClick={() => onPick(c.id)}
-                      title={`${c.missingCount || 0} being gathered · ${c.reviewCount || 0} under review`}>
-                {c.name.trim().split('(')[0].trim()}
-                <span className="dq-chip-n">{n}</span>
-              </button>
-            ))}
+
+      {/* WHICH FIELDS are open */}
+      <div className="gap-block">
+        <div className="gap-block-title">Which fields are still open — by type</div>
+        <div className="gap-block-sub">Amber = information being gathered · blue = found but under review. Straight from the workbook's tracking tabs.</div>
+        <div className="gap-bars">
+          {g.fieldsOpen.map((f) => {
+            const max = Math.max(1, ...g.fieldsOpen.map((x) => x.missing + x.review));
+            return (
+              <div key={f.field} className="gap-bar-row">
+                <span className="gap-bar-lab">{f.field}</span>
+                <div className="gap-bar-track">
+                  {f.missing > 0 && <div className="gap-bar-seg" style={{ width: `${f.missing / max * 100}%`, background: GAP_KIND_META.missing.color }} title={`${f.missing} being gathered`}></div>}
+                  {f.review > 0 && <div className="gap-bar-seg" style={{ width: `${f.review / max * 100}%`, background: GAP_KIND_META.review.color }} title={`${f.review} under review`}></div>}
+                </div>
+                <span className="gap-bar-num">{f.missing + f.review}</span>
+              </div>
+            );
+          })}
+          {!g.fieldsOpen.length && <p className="ap-empty">No open items — the sheet is fully confirmed. 🎉</p>}
+        </div>
+      </div>
+
+      <div className="gap-two">
+        {/* WORK DONE: corrections by field */}
+        <div className="gap-block">
+          <div className="gap-block-title">Where the team has already fixed the most</div>
+          <div className="gap-block-sub">Corrections applied per field — proof the sheet is alive.</div>
+          <div className="gap-bars">
+            {g.fieldsFixed.map((f) => {
+              const max = Math.max(1, ...g.fieldsFixed.map((x) => x.correction));
+              return (
+                <div key={f.field} className="gap-bar-row">
+                  <span className="gap-bar-lab">{f.field}</span>
+                  <div className="gap-bar-track">
+                    <div className="gap-bar-seg" style={{ width: `${f.correction / max * 100}%`, background: GAP_KIND_META.correction.color }}></div>
+                  </div>
+                  <span className="gap-bar-num">{f.correction}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* BY DIRECTION */}
+        <div className="gap-block">
+          <div className="gap-block-title">Open items by direction</div>
+          <div className="gap-block-sub">Where outreach effort is most needed on the territory.</div>
+          <div className="gap-dirs">
+            {Object.values(g.byDir).map((d) => {
+              const open = d.missing + d.review;
+              const max = Math.max(1, ...Object.values(g.byDir).map((x) => x.missing + x.review));
+              const dirColor = { East: '#d4a017', South: '#b8351e', West: '#3a4658', North: '#8a7c66' }[d.dir];
+              return (
+                <div key={d.dir} className="gap-dir">
+                  <div className="gap-dir-track">
+                    <div className="gap-dir-fill" style={{ height: `${open / max * 100}%`, background: dirColor }}></div>
+                  </div>
+                  <div className="gap-dir-num">{open}</div>
+                  <div className="gap-dir-lab">{d.dir}</div>
+                  <div className="gap-dir-sub">{d.comms} comm.</div>
+                </div>
+              );
+            })}
+          </div>
+          {Object.keys(g.statuses).length > 0 && (
+            <div className="gap-status-mix">
+              {Object.entries(g.statuses).sort((a, b) => b[1] - a[1]).map(([s, n]) => (
+                <span key={s} className="gap-status-chip">{s} <strong>{n}</strong></span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ACTIVITY OVER TIME */}
+      {g.months.length > 1 && (
+        <div className="gap-block">
+          <div className="gap-block-title">Tracking activity over time</div>
+          <div className="gap-block-sub">Each row has its own scale — what matters is the shape: gathering and review items logged, and corrections flowing in.</div>
+          <div className="gap-timeline">
+            {['missing', 'review', 'correction'].map((kind) => {
+              const meta = GAP_KIND_META[kind];
+              const max = Math.max(1, ...g.months.map((m) => m[kind]));
+              return (
+                <div key={kind} className="gap-tl-row">
+                  <span className="gap-tl-lab" style={{ color: meta.color }}>{meta.label}</span>
+                  <div className="gap-tl-cells">
+                    {g.months.map((m) => (
+                      <div key={m.month} className="gap-tl-cell" title={`${m.month}: ${m[kind]}`}>
+                        <div className="gap-tl-bar" style={{ height: `${Math.max(4, m[kind] / max * 100)}%`, background: meta.color, opacity: m[kind] ? 1 : .15 }}></div>
+                        <span className="gap-tl-n">{m[kind] || ''}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            <div className="gap-tl-months">
+              <span className="gap-tl-lab"></span>
+              <div className="gap-tl-cells">
+                {g.months.map((m) => <span key={m.month} className="gap-tl-month">{m.month.slice(2).replace('-', '/')}</span>)}
+              </div>
+            </div>
           </div>
         </div>
       )}
+
+      {/* PER-COMMUNITY TABLE */}
+      <div className="gap-block">
+        <div className="gap-block-title">Every community, every open item</div>
+        <div className="gap-block-sub">Sorted by open items — the top of this list is the outreach to-do list. Click a row to open the record.</div>
+        <input className="gap-table-search" type="text" placeholder="Find a community…"
+               value={tableQ} onChange={(e) => setTableQ(e.target.value)} />
+        <div className="gap-table">
+          <div className="gap-tr gap-th">
+            <span>Community</span><span>Gathering</span><span>Review</span><span>Fixed</span><span>Documented</span>
+          </div>
+          {visibleRows.map(({ c, missing, review, correction }) => (
+            <button key={c.id} className="gap-tr" onClick={() => onPick(c.id)}>
+              <span className="gap-td-name">{c.name.trim().split('(')[0].trim()}</span>
+              <span className="gap-td-n" style={missing ? { color: '#a87f12', fontWeight: 700 } : { opacity: .35 }}>{missing}</span>
+              <span className="gap-td-n" style={review ? { color: '#3a5d8c', fontWeight: 700 } : { opacity: .35 }}>{review}</span>
+              <span className="gap-td-n" style={correction ? { color: '#3d6b40' } : { opacity: .35 }}>{correction}</span>
+              <span className="gap-td-bar"><span style={{ width: `${Math.round((c.completeness || 0) * 100)}%` }}></span></span>
+            </button>
+          ))}
+        </div>
+        {tableRows.length > 12 && (
+          <button className="gap-table-more" onClick={() => setShowAll((s) => !s)}>
+            {showAll ? '— Show fewer' : `+ Show all ${tableRows.length} communities`}
+          </button>
+        )}
+      </div>
+
       <p className="dq-note">
-        How this is computed: each row on the workbook's “Missing Information” and “Needs Review”
-        tabs is matched to its community by name. A pillar only counts as documented when real
-        program text exists — placeholders never inflate the numbers above.
+        How this is computed: every row on the workbook's “Missing Information”, “Needs Review”,
+        and “Correction sheet” tabs is matched to its community by name, classified by field type
+        and date, and counted live. Nothing here is estimated.
       </p>
     </div>
   );
 }
+
 
 function KPI({ value, suffix, label, sub, accent, big }) {
   const animated = useCountTo(Number.isFinite(value) ? value : 0);
