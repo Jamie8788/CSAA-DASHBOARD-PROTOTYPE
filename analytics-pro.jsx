@@ -162,6 +162,12 @@ function AnalyticsProView({ all, onSelect, setView }) {
       {/* ────────── Storytelling carousel ────────── */}
       {facts && facts.facts && <StoryCarousel facts={facts.facts} />}
 
+      {/* ────────── Honest data-quality panel ────────── */}
+      <Panel title="What we don't know yet — on purpose"
+             sub="The atlas never hides a gap. Every field the scan could not confirm is tracked on the workbook's own 'Missing Information' and 'Needs Review' tabs, matched to its community, and shown here. These fields will be updated as the team confirms them.">
+        <DataQualityPanel all={all} onPick={(id) => onSelect && onSelect(id)} />
+      </Panel>
+
       {/* ────────── Spotlight + Gap Analyzer ────────── */}
       <div className="ap-row two-col">
         <Panel title="Community spotlight"
@@ -187,8 +193,8 @@ function AnalyticsProView({ all, onSelect, setView }) {
           <DirectionClock byDirection={ov.byDirection || {}} />
         </Panel>
         <Panel title="Pillar coverage at a glance"
-               sub="A ring for each of the four service pillars. Filled = communities that document that pillar.">
-          <PillarRings overview={ov} />
+               sub="A ring for each of the four service pillars, counting First Nations communities only (partner organizations are excluded so the numbers stay honest). A pillar counts only when real program text is on file.">
+          <PillarRings overview={ov} all={filteredAll} />
         </Panel>
       </div>
 
@@ -245,12 +251,8 @@ function AnalyticsProView({ all, onSelect, setView }) {
         When the team uploads a new version through the CMS, this page refreshes automatically.
       </p>
 
-      {presentMode && (
-        <PresentationMode
-          overview={ov} facts={facts && facts.facts} comparison={comparison}
-          duplicates={duplicates} report={report}
-          onClose={() => setPresent(false)}
-        />
+      {presentMode && window.AGMPresentation && (
+        <window.AGMPresentation all={all} view="analytics" onClose={() => setPresent(false)} />
       )}
     </section>
   );
@@ -259,6 +261,66 @@ window.AnalyticsProView = AnalyticsProView;
 
 
 // ============== components =============================================
+
+// ---- Data quality: pending fields, honestly counted --------------------
+function DataQualityPanel({ all, onPick }) {
+  const comms = (all || []).filter((c) => c.orgType === 'Community');
+  const missing = comms.reduce((s, c) => s + (c.missingCount || 0), 0);
+  const review = comms.reduce((s, c) => s + (c.reviewCount || 0), 0);
+  const corrected = comms.reduce((s, c) => s + (c.correctionCount || 0), 0);
+  const clean = comms.filter((c) => !(c.missingCount || 0) && !(c.reviewCount || 0)).length;
+  const top = [...comms]
+    .map((c) => ({ c, n: (c.missingCount || 0) + (c.reviewCount || 0) }))
+    .filter((x) => x.n > 0)
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 8);
+
+  return (
+    <div className="dq-wrap">
+      <div className="dq-stats">
+        <div className="dq-stat">
+          <div className="dq-num" style={{ color: '#a87f12' }}>{missing}</div>
+          <div className="dq-lab">fields being gathered</div>
+          <div className="dq-sub">not publicly available yet — will be updated soon</div>
+        </div>
+        <div className="dq-stat">
+          <div className="dq-num" style={{ color: '#3a5d8c' }}>{review}</div>
+          <div className="dq-lab">fields under review</div>
+          <div className="dq-sub">found, but being verified before publishing</div>
+        </div>
+        <div className="dq-stat">
+          <div className="dq-num" style={{ color: '#3d6b40' }}>{corrected}</div>
+          <div className="dq-lab">corrections applied</div>
+          <div className="dq-sub">fields already improved by the team's review</div>
+        </div>
+        <div className="dq-stat">
+          <div className="dq-num">{clean}</div>
+          <div className="dq-lab">records with no open flags</div>
+          <div className="dq-sub">of {comms.length} communities</div>
+        </div>
+      </div>
+      {top.length > 0 && (
+        <div className="dq-top">
+          <div className="dq-top-lab">Most open items — good outreach targets</div>
+          <div className="dq-chips">
+            {top.map(({ c, n }) => (
+              <button key={c.id} className="dq-chip" onClick={() => onPick(c.id)}
+                      title={`${c.missingCount || 0} being gathered · ${c.reviewCount || 0} under review`}>
+                {c.name.trim().split('(')[0].trim()}
+                <span className="dq-chip-n">{n}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <p className="dq-note">
+        How this is computed: each row on the workbook's “Missing Information” and “Needs Review”
+        tabs is matched to its community by name. A pillar only counts as documented when real
+        program text exists — placeholders never inflate the numbers above.
+      </p>
+    </div>
+  );
+}
 
 function KPI({ value, suffix, label, sub, accent, big }) {
   const animated = useCountTo(Number.isFinite(value) ? value : 0);
@@ -356,18 +418,23 @@ function DirectionClock({ byDirection }) {
   );
 }
 
-function PillarRings({ overview }) {
+function PillarRings({ overview, all }) {
   const pillars = [
     { k: 'physical',  label: 'Physical',  color: '#b8351e' },
     { k: 'mental',    label: 'Mental',    color: '#1a1612' },
     { k: 'spiritual', label: 'Spiritual', color: '#d4a017' },
     { k: 'emotional', label: 'Emotional', color: '#6b8d6b' },
   ];
-  const total = overview.total || 1;
+  // Count COMMUNITIES only — partner organizations would inflate these rings.
+  const comms = Array.isArray(all) ? all.filter((c) => c.orgType === 'Community') : [];
+  const useLocal = comms.length > 0;
+  const total = useLocal ? comms.length : (overview.total || 1);
   return (
     <div className="ap-rings">
       {pillars.map((p) => {
-        const n = (overview.pillarsCovered && overview.pillarsCovered[p.k]) || 0;
+        const n = useLocal
+          ? comms.filter((c) => c['has' + p.k[0].toUpperCase() + p.k.slice(1)]).length
+          : ((overview.pillarsCovered && overview.pillarsCovered[p.k]) || 0);
         const pct = n / total;
         return <Ring key={p.k} pct={pct} count={n} of={total} label={p.label} color={p.color} />;
       })}

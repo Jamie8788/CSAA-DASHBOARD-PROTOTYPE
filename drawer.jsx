@@ -95,8 +95,35 @@ function CommunityDrawer({ community, onClose, searchQuery }) {
   );
 }
 
-function Section({ title, swatch, children, value, eyebrow, searchQuery, communityId, fieldKey, anchor }) {
-  const empty = window.NA(value) && !children;
+// PendingNotice — friendly card shown instead of raw "Missing Information" /
+// "Needs Review" placeholder text. Pulls the matching note from the workbook's
+// Missing Information / Needs Review tabs when available.
+function PendingNotice({ status, c, fieldKey }) {
+  const copy = window.PENDING_COPY[status] || window.PENDING_COPY.empty;
+  const anns = (c && fieldKey) ? window.fieldAnnotations(c, fieldKey) : [];
+  const note = anns.find(a => a.kind === (status === 'review' ? 'review' : 'missing'));
+  const when = note && note.date ? String(note.date).slice(0, 10) : null;
+  return (
+    <div className={`pending-notice pn-${status}`}>
+      <div className="pn-top">
+        <span className="pn-badge">{copy.badge}</span>
+        {when && <span className="pn-date">checked {when}</span>}
+      </div>
+      <div className="pn-title">{copy.title}</div>
+      <div className="pn-body">{copy.body}</div>
+      {note && note.description && (
+        <div className="pn-note">
+          <span className="pn-note-lab">Team note</span>
+          {window.autoLink(String(note.description).slice(0, 400))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Section({ title, swatch, children, value, eyebrow, searchQuery, communityId, fieldKey, anchor, community }) {
+  const status = window.fieldStatus(community, fieldKey, value);
+  const empty = status !== 'ok' && !children;
   return (
     <div className="section" data-section={anchor || undefined}>
       {(swatch || eyebrow) && (
@@ -107,8 +134,8 @@ function Section({ title, swatch, children, value, eyebrow, searchQuery, communi
       )}
       <h3 className="section-title">{title}</h3>
       {empty
-        ? <div className="empty-section">Not yet documented — community contributions welcome</div>
-        : value && <div className="section-body">{searchQuery ? window.highlight(value, searchQuery) : window.autoLink(value)}</div>}
+        ? <PendingNotice status={status} c={community} fieldKey={fieldKey} />
+        : status === 'ok' && value && <div className="section-body">{searchQuery ? window.highlight(value, searchQuery) : window.autoLink(value)}</div>}
       {children}
       {communityId && fieldKey && <window.EditableField communityId={communityId} fieldKey={fieldKey} value={value} label={title} />}
     </div>
@@ -281,22 +308,22 @@ function OverviewTab({ c, dirInfo, setTab }) {
             </div>
           </div>
         )}
-        <window.EditableField communityId={c.id} fieldKey="popInfo" value={c.popInfo} label="Population notes" />
+        <window.EditableField community={c} communityId={c.id} fieldKey="popInfo" value={c.popInfo} label="Population notes" />
       </div>
 
       {/* Existing detail sections — kept for content fidelity */}
-      <Section eyebrow="Bridge" title="Connecting survivors and youth" value={c.connect} communityId={c.id} fieldKey="connect" anchor="sec-connect" />
-      <Section eyebrow="Strategy" title="Strategic plan" value={c.strategicPlan} communityId={c.id} fieldKey="strategicPlan" anchor="sec-strategicPlan" />
-      <Section eyebrow="Governance" title="Annual General Meeting" value={c.agm} communityId={c.id} fieldKey="agm" anchor="sec-agm" />
-      <Section eyebrow="Governance" title="Financial statements" value={c.financials} communityId={c.id} fieldKey="financials" anchor="sec-financials" />
-      <Section eyebrow="Resources" title="Additional links" value={c.links} communityId={c.id} fieldKey="links" anchor="sec-links" />
+      <Section eyebrow="Bridge" title="Connecting survivors and youth" value={c.connect} community={c} communityId={c.id} fieldKey="connect" anchor="sec-connect" />
+      <Section eyebrow="Strategy" title="Strategic plan" value={c.strategicPlan} community={c} communityId={c.id} fieldKey="strategicPlan" anchor="sec-strategicPlan" />
+      <Section eyebrow="Governance" title="Annual General Meeting" value={c.agm} community={c} communityId={c.id} fieldKey="agm" anchor="sec-agm" />
+      <Section eyebrow="Governance" title="Financial statements" value={c.financials} community={c} communityId={c.id} fieldKey="financials" anchor="sec-financials" />
+      <Section eyebrow="Resources" title="Additional links" value={c.links} community={c} communityId={c.id} fieldKey="links" anchor="sec-links" />
 
       {!window.NA(c.notes) && (
         <div className="section">
           <div className="section-eyebrow"><span>Notes</span></div>
           <h3 className="section-title">Project notes</h3>
           <div className="section-body" style={{fontSize:12.5, fontStyle:'italic', color:'var(--ink-3)'}}>{c.notes}</div>
-          <window.EditableField communityId={c.id} fieldKey="notes" value={c.notes} label="Project notes" />
+          <window.EditableField community={c} communityId={c.id} fieldKey="notes" value={c.notes} label="Project notes" />
         </div>
       )}
     </>
@@ -430,14 +457,18 @@ function PillarServiceCard({ pillar, value, on, c, searchQuery }) {
             <div className="pc-icon" style={{borderColor: pillar.hex, color: pillar.hex}}>{pillar.icon}</div>
             <div className="pc-titles">
               <h3 className="pc-title">{pillar.label}</h3>
-              <div className="pc-meta">No programming on file</div>
+              <div className="pc-meta">{
+                window.fieldStatus(c, pillar.key, value) === 'missing' ? 'Being gathered — update coming soon'
+                : window.fieldStatus(c, pillar.key, value) === 'review' ? 'Being verified by the team'
+                : 'No programming on file yet'
+              }</div>
             </div>
-            <span className="pc-status off">Missing</span>
+            <span className={`pc-status off pcs-${window.fieldStatus(c, pillar.key, value)}`}>
+              {(window.PENDING_COPY[window.fieldStatus(c, pillar.key, value)] || window.PENDING_COPY.empty).badge}
+            </span>
           </div>
-          <div className="pc-empty">
-            <span>↗</span> Help us complete this record — add what's known and the community's full picture becomes visible.
-          </div>
-          <window.EditableField communityId={c.id} fieldKey={pillar.key} value={value} label={pillar.label} />
+          <PendingNotice status={window.fieldStatus(c, pillar.key, value)} c={c} fieldKey={pillar.key} />
+          <window.EditableField community={c} communityId={c.id} fieldKey={pillar.key} value={value} label={pillar.label} />
         </div>
       </div>
     );
@@ -514,7 +545,7 @@ function PillarServiceCard({ pillar, value, on, c, searchQuery }) {
           </>
         )}
 
-        <window.EditableField communityId={c.id} fieldKey={pillar.key} value={value} label={pillar.label} />
+        <window.EditableField community={c} communityId={c.id} fieldKey={pillar.key} value={value} label={pillar.label} />
       </div>
     </div>
   );
@@ -523,9 +554,9 @@ function PillarServiceCard({ pillar, value, on, c, searchQuery }) {
 function PeopleTab({ c, searchQuery }) {
   return (
     <>
-      <Section eyebrow="Survivors" title="How are survivors supported?" value={c.survivors} searchQuery={searchQuery} communityId={c.id} fieldKey="survivors" />
-      <Section eyebrow="Youth" title="How are youth supported?" value={c.youth} searchQuery={searchQuery} communityId={c.id} fieldKey="youth" />
-      <Section eyebrow="Bridge" title="Connecting survivors and youth" value={c.connect} searchQuery={searchQuery} communityId={c.id} fieldKey="connect" />
+      <Section eyebrow="Survivors" title="How are survivors supported?" value={c.survivors} searchQuery={searchQuery} community={c} communityId={c.id} fieldKey="survivors" />
+      <Section eyebrow="Youth" title="How are youth supported?" value={c.youth} searchQuery={searchQuery} community={c} communityId={c.id} fieldKey="youth" />
+      <Section eyebrow="Bridge" title="Connecting survivors and youth" value={c.connect} searchQuery={searchQuery} community={c} communityId={c.id} fieldKey="connect" />
     </>
   );
 }
@@ -585,7 +616,7 @@ function ContactTab({ c }) {
           />
         )}
         {staff.length === 0 && !addingStaff
-          ? <div className="empty-section">No parsed staff records yet. {cms.isAdmin ? 'Add one above.' : 'Sign in as editor to add contacts.'}</div>
+          ? <PendingNotice status={window.fieldStatus(c, 'contacts')} c={c} fieldKey="contacts" />
           : (
             <div className="staff-grid">
               {staff.map(s => (
@@ -604,7 +635,7 @@ function ContactTab({ c }) {
           <div style={{whiteSpace:'pre-wrap', fontSize:12.5, lineHeight:1.7, fontFamily:'var(--mono)', background:'var(--paper-2)', padding:'14px 16px', borderLeft:`2px solid ${window.dirHex(c)}`, color:'var(--ink-2)'}}>
             {window.autoLink(c.contacts)}
           </div>
-          <window.EditableField communityId={c.id} fieldKey="contacts" value={c.contacts} label="Original contact block" />
+          <window.EditableField community={c} communityId={c.id} fieldKey="contacts" value={c.contacts} label="Original contact block" />
         </div>
       )}
 
@@ -613,7 +644,7 @@ function ContactTab({ c }) {
           <div className="section-eyebrow"><span>Website</span></div>
           <h3 className="section-title">Official website</h3>
           <div className="section-body"><a href={c.website} target="_blank" rel="noopener noreferrer">{c.website} ↗</a></div>
-          <window.EditableField communityId={c.id} fieldKey="website" value={c.website} label="Website" multiline={false} />
+          <window.EditableField community={c} communityId={c.id} fieldKey="website" value={c.website} label="Website" multiline={false} />
         </div>
       )}
     </>
@@ -657,6 +688,25 @@ function StaffCard({ s, community, hex }) {
             <path d="M22 6l-10 7L2 6"/>
           </svg>
           <a href={`mailto:${s.email}`}>{s.email}</a>
+        </div>
+      )}
+      {s.fax && (
+        <div className="contact-line">
+          <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/>
+          </svg>
+          <span>Fax {s.fax}</span>
+        </div>
+      )}
+      {s.link && (
+        <div className="contact-line">
+          <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          <a href={s.link} target="_blank" rel="noopener noreferrer">
+            {(() => { try { return new URL(s.link).hostname.replace(/^www\./,''); } catch { return s.link; } })()} ↗
+          </a>
         </div>
       )}
       {cms.isAdmin && (

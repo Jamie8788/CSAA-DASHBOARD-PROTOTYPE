@@ -531,160 +531,306 @@ function StaffHistogram({ all }) {
 // ----------------------------------------------------------------------------
 // 9. AGM presentation mode (unchanged from v1)
 // ----------------------------------------------------------------------------
-// Muted, deeper tones — and not limited to the four directions. Each slide
-// names a palette key, so a deck can use as many colours as it likes.
-const AGM_PAL = {
-  clay:   { a: '#8f3320', b: '#5e2114', glyph: '☀' },
-  gold:   { a: '#9c7619', b: '#6b5011', glyph: '✺' },
-  forest: { a: '#4f6b51', b: '#324a34', glyph: '❄' },
-  slate:  { a: '#3a4658', b: '#232c39', glyph: '☾' },
-  plum:   { a: '#5b3a55', b: '#352031', glyph: '❂' },
-  teal:   { a: '#2f6f6b', b: '#1b4341', glyph: '≋' },
+// Each view gets its OWN deck, built live from the data on that page.
+// Slides have kinds: title | big | bars | rows | grid | quote | closing —
+// so a deck reads like a story, not four copies of the same layout.
+const PRS_PAL = {
+  clay:   { g1:'#9c3a22', g2:'#3e1609', accent:'#f4b083', glyph:'☀' },
+  gold:   { g1:'#a87f12', g2:'#42330a', accent:'#ffe9a8', glyph:'✺' },
+  forest: { g1:'#4f6b51', g2:'#1c2b1a', accent:'#cfe3c4', glyph:'❦' },
+  slate:  { g1:'#3a4658', g2:'#141b26', accent:'#aac4e0', glyph:'☾' },
+  plum:   { g1:'#5b3a55', g2:'#241522', accent:'#e3b8d9', glyph:'❂' },
+  teal:   { g1:'#2f6f6b', g2:'#0f2b26', accent:'#b2e2dd', glyph:'≋' },
+  night:  { g1:'#2a2f36', g2:'#0b0d10', accent:'#d4a017', glyph:'✦' },
 };
 
-// Build a page-specific deck. Each page (view) gets its own slides.
-function buildAGMDeck(view, all) {
+const DIR_BAR_COLORS = { East:'#e8b53a', South:'#d4664c', West:'#9fb4cc', North:'#e9e1cf' };
+
+function pickQuote(all) {
+  const fields = [
+    ['spiritual', 'on spiritual care'], ['physical', 'on physical health'],
+    ['youth', 'on youth programming'], ['mental', 'on mental wellness'],
+    ['survivors', 'on supporting survivors'], ['emotional', 'on emotional support'],
+  ];
+  const candidates = [];
+  for (const c of all) {
+    if (c.orgType !== 'Community') continue;
+    for (const [f, tag] of fields) {
+      const v = c[f];
+      if (v && !window.NA(v)) {
+        const t = String(v).trim();
+        if (t.length > 90 && t.length < 600 && !/https?:\/\//.test(t.slice(0, 120))) {
+          candidates.push({ text: t, by: c.name.trim(), tag });
+        }
+      }
+    }
+  }
+  if (!candidates.length) return null;
+  const q = candidates[Math.floor(Math.random() * candidates.length)];
+  const trimmed = q.text.length > 300 ? q.text.slice(0, 300).replace(/\s\S*$/, '') + '…' : q.text;
+  return { ...q, text: trimmed };
+}
+
+function buildPresentationDeck(view, all) {
   const comms = all.filter(c => c.orgType === 'Community');
   const orgs = all.length - comms.length;
-  const pop = all.reduce((s,c) => s + (c.population||0), 0);
-  const staff = all.reduce((s,c) => s + (c.staff?.length || 0), 0);
-  const has = (k) => comms.filter(c => c['has'+k]).length;
+  const pop = all.reduce((s, c) => s + (c.population || 0), 0);
+  const staff = all.reduce((s, c) => s + (c.staff?.length || 0), 0);
+  const mapped = all.filter(c => c.lat != null).length;
+  const has = (k) => comms.filter(c => c['has' + k]).length;
   const allFour = comms.filter(c => c.hasPhysical && c.hasMental && c.hasSpiritual && c.hasEmotional).length;
   const both = comms.filter(c => c.hasYouth && c.hasSurvivors).length;
-  const dirSeason = { East: 'Spring · Ziigwan', South: 'Summer · Niibin', West: 'Autumn · Dagwaagin', North: 'Winter · Biboon' };
-  const dirPal = { East: 'gold', South: 'clay', West: 'slate', North: 'forest' };
-  const dirs = ['East','South','West','North'].map(d => ({
-    dir: d, count: comms.filter(c => c.direction === d).length,
-    pop: comms.filter(c => c.direction === d).reduce((s,c)=>s+(c.population||0),0),
+  const pendingMissing = comms.reduce((s, c) => s + (c.missingCount || 0), 0);
+  const pendingReview = comms.reduce((s, c) => s + (c.reviewCount || 0), 0);
+  const dirs = ['East', 'South', 'West', 'North'].map(d => ({
+    dir: d,
+    count: comms.filter(c => c.direction === d).length,
+    pop: comms.filter(c => c.direction === d).reduce((s, c) => s + (c.population || 0), 0),
   }));
+  const maxDir = Math.max(1, ...dirs.map(d => d.count));
+  const quote = pickQuote(all);
 
-  const intro = { pal: 'clay', kicker: 'Mino Bimaadiziwin · Community Services Atlas',
-    title: 'A snapshot, for this gathering.',
-    sub: 'Every figure is pulled live from the master sheet — nothing is estimated.',
+  const titleSlide = (kicker, title, sub) => ({ kind: 'title', pal: 'night', kicker, title, sub,
     rows: [
-      { lab: 'Communities documented', num: comms.length },
-      { lab: 'Partner organizations', num: orgs },
-      { lab: 'People served (estimated)', num: pop.toLocaleString() },
-      { lab: 'Direct contacts on file', num: staff },
+      { lab: 'Communities', num: comms.length },
+      { lab: 'Partners', num: orgs },
+      { lab: 'People', num: pop },
+      { lab: 'Contacts on file', num: staff },
+    ] });
+  const dirBars = { kind: 'bars', pal: 'forest', kicker: 'The four directions',
+    title: 'How the communities sit on the land.',
+    sub: 'Each community belongs to one of the four directions of the territory.',
+    bars: dirs.map(d => ({ lab: `${d.dir} · ${DIR_LABELS_SEASON[d.dir]}`, val: d.count, max: maxDir,
+      color: DIR_BAR_COLORS[d.dir], note: d.pop ? `${d.pop.toLocaleString()} people` : '' })) };
+  const pillarsGrid = { kind: 'grid', pal: 'teal', kicker: 'Whole-person care',
+    title: 'The four pillars, counted honestly.',
+    sub: 'A pillar counts only when real programming is documented — placeholders and pending fields do not count.',
+    cells: [
+      { lab: 'Physical', num: has('Physical'), of: comms.length, color: '#e8896b' },
+      { lab: 'Mental', num: has('Mental'), of: comms.length, color: '#aac4e0' },
+      { lab: 'Spiritual', num: has('Spiritual'), of: comms.length, color: '#ffd86b' },
+      { lab: 'Emotional', num: has('Emotional'), of: comms.length, color: '#9fd49f' },
     ] };
-  const outro = { pal: 'slate', kicker: 'Miigwech', title: 'One living atlas.',
-    sub: 'Every direction, every season, held together — updated the moment the master sheet changes.' };
-  const pillarsSlide = { pal: 'teal', kicker: 'Pillar coverage', title: 'Where the care lands.',
-    sub: 'How many communities document each pillar of whole-person care.',
-    rows: [
-      { lab: 'Physical health', num: has('Physical') },
-      { lab: 'Mental health', num: has('Mental') },
-      { lab: 'Spiritual / cultural', num: has('Spiritual') },
-      { lab: 'Emotional wellness', num: has('Emotional') },
-    ] };
-  const fourPillars = { pal: 'gold', kicker: 'Whole-person care', title: 'All four pillars in place.',
-    sub: 'Communities documenting physical, mental, spiritual AND emotional programming.',
-    big: `${allFour}`, bigSub: `of ${comms.length} communities · ${comms.length ? Math.round(allFour/comms.length*100) : 0}%` };
-  const generations = { pal: 'plum', kicker: 'Across the generations', title: 'Youth and survivors.',
+  const allFourBig = { kind: 'big', pal: 'gold', kicker: 'All four pillars in place',
+    title: 'Communities documenting whole-person care.',
+    big: allFour, bigSub: `of ${comms.length} communities · ${comms.length ? Math.round(allFour / comms.length * 100) : 0}%` };
+  const genRows = { kind: 'rows', pal: 'plum', kicker: 'Across the generations',
+    title: 'Youth and survivors, side by side.',
     rows: [
       { lab: 'Communities with youth programming', num: has('Youth') },
       { lab: 'Communities with survivor support', num: has('Survivors') },
-      { lab: 'Both youth + survivor support', num: both },
+      { lab: 'Communities documenting both', num: both },
     ] };
-  const directionsSlide = { pal: 'forest', kicker: 'By the four directions', title: 'How the work is distributed.',
-    sub: 'Each direction holds a season, a medicine, and a stage of life.',
-    rows: dirs.map(d => ({ lab: `${d.dir} · ${d.count} communities`, num: d.pop ? d.pop.toLocaleString() + ' ppl' : '—' })) };
+  const honesty = { kind: 'rows', pal: 'slate', kicker: 'Still being gathered',
+    title: 'What we don’t know yet — on purpose.',
+    sub: 'The atlas marks gaps openly. Each one is being researched and will be updated soon.',
+    rows: [
+      { lab: 'Fields marked “information coming soon”', num: pendingMissing },
+      { lab: 'Fields under review by the team', num: pendingReview },
+      { lab: 'Communities fully documented (all four pillars)', num: allFour },
+    ] };
+  const quoteSlide = quote ? { kind: 'quote', pal: 'clay', kicker: `A community ${quote.tag}`, quote } : null;
+  const closing = { kind: 'closing', pal: 'night', kicker: 'Miigwech · Thank you',
+    title: 'One living atlas.',
+    sub: 'Updated the moment the master sheet changes — every figure on these slides came from the communities’ own records.' };
 
-  if (view === 'story') {
+  if (view === 'analytics' || view === 'stats') {
     return [
-      { pal: 'clay', kicker: 'A guided journey', title: 'Walk the four directions.',
-        sub: 'A living map of community care across Turtle Island.',
-        rows: [ { lab: 'Communities', num: comms.length }, { lab: 'People served', num: pop.toLocaleString() } ] },
-      ...dirs.map((d) => ({ pal: dirPal[d.dir], kicker: dirSeason[d.dir], title: d.dir,
-        sub: `${d.count} communities · ${d.pop.toLocaleString()} people`,
-        big: `${d.count}`, bigSub: `communities in the ${d.dir.toLowerCase()}` })),
-      outro,
+      titleSlide('Analytics · live from the master sheet', 'What the numbers say.',
+        'Real counts, honestly computed — gaps included.'),
+      pillarsGrid, allFourBig, genRows, honesty,
+      ...(quoteSlide ? [quoteSlide] : []), closing,
     ];
   }
-  if (view === 'analytics') {
-    return [ fourPillars, pillarsSlide, generations, outro ];
+  if (view === 'story') {
+    return [
+      titleSlide('A guided journey', 'Walk the four directions.',
+        'A living map of community care across the territory.'),
+      ...dirs.map(d => ({ kind: 'big', pal: { East: 'gold', South: 'clay', West: 'slate', North: 'forest' }[d.dir],
+        kicker: `${d.dir} · ${DIR_LABELS_SEASON[d.dir]}`,
+        title: `The ${d.dir.toLowerCase()} holds ${d.count} communities.`,
+        big: d.count, bigSub: d.pop ? `${d.pop.toLocaleString()} people` : 'communities' })),
+      ...(quoteSlide ? [quoteSlide] : []), closing,
+    ];
+  }
+  if (view === 'stories') {
+    const q2 = pickQuote(all);
+    return [
+      titleSlide('Community stories', 'In their own words.',
+        'Every quote on these slides is real, from the master sheet.'),
+      ...(quoteSlide ? [quoteSlide] : []),
+      ...(q2 && (!quote || q2.by !== quote.by) ? [{ kind: 'quote', pal: 'plum', kicker: `A community ${q2.tag}`, quote: q2 }] : []),
+      genRows, closing,
+    ];
   }
   if (view === 'coverage') {
-    return [ directionsSlide, fourPillars, pillarsSlide, outro ];
+    return [
+      titleSlide('Coverage of the official 85', 'How far the scan has come.',
+        'Tracking every one of the 85 communities the project committed to.'),
+      { kind: 'big', pal: 'gold', kicker: 'The commitment', title: 'Communities documented in the master sheet.',
+        big: comms.length, bigSub: 'records, growing with every scan' },
+      dirBars, honesty, closing,
+    ];
   }
-  // default deck (stats / map / list / stories)
-  return [ intro, fourPillars, directionsSlide, outro ];
+  // default: map / directory
+  return [
+    titleSlide('Mino Bimaadiziwin · Community Services Atlas', 'A living atlas of community care.',
+      'Find programming, people, and places — all in one map.'),
+    { kind: 'big', pal: 'teal', kicker: 'On the map', title: 'Communities and organizations located.',
+      big: mapped, bigSub: `of ${all.length} records pinned to the land` },
+    dirBars, allFourBig,
+    ...(quoteSlide ? [quoteSlide] : []), closing,
+  ];
 }
 
-function AGMPresentation({ all, onClose, view }) {
-  const slides = useMemo(() => buildAGMDeck(view, all), [all, view]);
+const DIR_LABELS_SEASON = { East: 'Spring', South: 'Summer', West: 'Autumn', North: 'Winter' };
 
+// ---- slide bodies ----------------------------------------------------------
+function PrsBigNumber({ value, sub, accent }) {
+  const n = window.useCountUp(typeof value === 'number' ? value : 0, 1800);
+  return (
+    <div className="prs-big">
+      <div className="prs-big-num" style={{ color: accent }}>
+        {typeof value === 'number' ? n.toLocaleString() : value}
+      </div>
+      {sub && <div className="prs-big-sub">{sub}</div>}
+    </div>
+  );
+}
+
+function PrsRows({ rows }) {
+  return (
+    <div className="prs-rows">
+      {rows.map((r, i) => (
+        <div key={i} className="prs-row" style={{ animationDelay: (0.15 + i * 0.12) + 's' }}>
+          <span className="prs-row-lab">{r.lab}</span>
+          <span className="prs-row-dots" aria-hidden="true"></span>
+          <span className="prs-row-num">{typeof r.num === 'number' ? r.num.toLocaleString() : r.num}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PrsBars({ bars }) {
+  return (
+    <div className="prs-bars">
+      {bars.map((b, i) => (
+        <div key={i} className="prs-bar-row" style={{ animationDelay: (0.15 + i * 0.14) + 's' }}>
+          <div className="prs-bar-head">
+            <span className="prs-bar-lab">{b.lab}</span>
+            <span className="prs-bar-num">{b.val}{b.note ? <em> · {b.note}</em> : null}</span>
+          </div>
+          <div className="prs-bar-track">
+            <div className="prs-bar-fill" style={{ width: `${Math.round(b.val / b.max * 100)}%`, background: b.color }}></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PrsGrid({ cells }) {
+  return (
+    <div className="prs-grid">
+      {cells.map((c, i) => {
+        const pct = c.of ? Math.round(c.num / c.of * 100) : 0;
+        return (
+          <div key={i} className="prs-cell" style={{ animationDelay: (0.15 + i * 0.12) + 's', '--cell': c.color }}>
+            <svg viewBox="0 0 100 100" className="prs-cell-ring">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.15)" strokeWidth="7" />
+              <circle cx="50" cy="50" r="42" fill="none" stroke={c.color} strokeWidth="7"
+                strokeDasharray={`${pct * 2.639} 263.9`} strokeLinecap="round" transform="rotate(-90 50 50)" />
+            </svg>
+            <div className="prs-cell-num">{c.num}</div>
+            <div className="prs-cell-lab">{c.lab}</div>
+            <div className="prs-cell-pct">{pct}% of {c.of}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PrsQuote({ quote }) {
+  return (
+    <div className="prs-quote">
+      <div className="prs-quote-mark">“</div>
+      <blockquote>{quote.text}</blockquote>
+      <cite>— {quote.by}</cite>
+    </div>
+  );
+}
+
+// ---- presentation shell -----------------------------------------------------
+function AGMPresentation({ all, onClose, view }) {
+  const slides = useMemo(() => buildPresentationDeck(view, all), [all, view]);
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(false);
   const idx = Math.min(i, slides.length - 1);
   const s = slides[idx] || slides[0];
+  const pal = PRS_PAL[s.pal] || PRS_PAL.night;
 
-  // keyboard nav
   useEffect(() => {
     function k(e) {
       if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowRight' || e.key === ' ') setI(x => Math.min(slides.length - 1, x + 1));
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); setI(x => Math.min(slides.length - 1, x + 1)); }
       if (e.key === 'ArrowLeft') setI(x => Math.max(0, x - 1));
     }
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   }, [slides.length, onClose]);
 
-  // auto-play through the deck, stop at the end
   useEffect(() => {
     if (!playing) return;
     const t = setTimeout(() => {
       setI(x => { if (x >= slides.length - 1) { setPlaying(false); return x; } return x + 1; });
-    }, 6000);
+    }, 7000);
     return () => clearTimeout(t);
   }, [playing, i, slides.length]);
 
-  const th = AGM_PAL[s.pal] || AGM_PAL.clay;
-  // Inline colours so no stale/cached or CMS stylesheet can override them —
-  // every slide stays high-contrast white-on-deep-gradient and readable.
-  const INK = '#ffffff';
-  const SOFT = 'rgba(255,255,255,0.9)';
-  const FAINT = 'rgba(255,255,255,0.78)';
-  const shadow = '0 2px 18px rgba(0,0,0,0.35)';
-
   return (
-    <div className="agm-overlay" role="dialog" aria-label="AGM presentation mode"
-         style={{ background: `radial-gradient(135% 135% at 82% 6%, ${th.a} 0%, ${th.b} 38%, #100b08 104%)` }}>
-      <div className="agm-glyph" aria-hidden="true">{th.glyph}</div>
-      <div className="agm-slide" key={idx}>
-        <div className="agm-kicker" style={{ color: FAINT }}>{s.kicker}</div>
-        <h1 className="agm-title" style={{ color: INK, textShadow: shadow }}>{s.title}</h1>
-        <p className="agm-sub" style={{ color: SOFT }}>{s.sub}</p>
-        {s.big && (
-          <div className="agm-big">
-            <div className="agm-big-num" style={{ color: INK, textShadow: shadow }}>{s.big}</div>
-            {s.bigSub && <div className="agm-big-sub" style={{ color: FAINT }}>{s.bigSub}</div>}
-          </div>
-        )}
-        {s.rows && (
-          <div className="agm-rows">
-            {s.rows.map((r, ii) => (
-              <div key={ii} className="agm-row">
-                <span className="agm-row-lab" style={{ color: SOFT }}>{r.lab}</span>
-                <span className="agm-row-num" style={{ color: INK, textShadow: shadow }}>{typeof r.num === 'number' ? r.num.toLocaleString() : r.num}</span>
-              </div>
-            ))}
-          </div>
-        )}
+    <div className="prs-overlay" role="dialog" aria-label="Presentation mode"
+         style={{ '--g1': pal.g1, '--g2': pal.g2, '--accent': pal.accent }}>
+      <div className="prs-bg" aria-hidden="true">
+        <div className="prs-blob a"></div>
+        <div className="prs-blob b"></div>
+        <div className="prs-stars"></div>
+        <div className="prs-glyph">{pal.glyph}</div>
       </div>
-      <div className="agm-foot">
-        <button className="agm-btn" onClick={() => setI(x => Math.max(0, x-1))} disabled={idx===0}>← Previous</button>
-        <button className="agm-btn agm-play" onClick={() => setPlaying(p => !p)}
-                title={playing ? 'Pause auto-play' : 'Play hands-free'}>
-          {playing ? '⏸ Pause' : '▶ Auto-play'}
-        </button>
-        <div className="agm-dots">
-          {slides.map((_, ii) => (
-            <button key={ii} className={`agm-dot ${ii===idx?'on':''}`} onClick={()=>setI(ii)} aria-label={`Slide ${ii+1}`}></button>
-          ))}
+
+      {/* progress segments */}
+      <div className="prs-progress">
+        {slides.map((_, ii) => (
+          <button key={ii} className={`prs-seg ${ii < idx ? 'done' : ''} ${ii === idx ? 'on' : ''} ${ii === idx && playing ? 'playing' : ''}`}
+                  onClick={() => setI(ii)} aria-label={`Slide ${ii + 1}`} />
+        ))}
+      </div>
+
+      <div className="prs-slide" key={idx}>
+        <div className="prs-kicker">{s.kicker}</div>
+        {s.kind !== 'quote' && <h1 className="prs-title">{s.title}</h1>}
+        {s.sub && <p className="prs-sub">{s.sub}</p>}
+
+        {s.kind === 'big' && <PrsBigNumber value={s.big} sub={s.bigSub} accent={pal.accent} />}
+        {(s.kind === 'rows' || s.kind === 'title' || s.kind === 'closing') && s.rows && <PrsRows rows={s.rows} />}
+        {s.kind === 'bars' && <PrsBars bars={s.bars} />}
+        {s.kind === 'grid' && <PrsGrid cells={s.cells} />}
+        {s.kind === 'quote' && <PrsQuote quote={s.quote} />}
+      </div>
+
+      <div className="prs-foot">
+        <div className="prs-foot-left">
+          <button className="prs-btn" onClick={() => setI(x => Math.max(0, x - 1))} disabled={idx === 0}>← Previous</button>
+          <button className="prs-btn prs-play" onClick={() => setPlaying(p => !p)}>
+            {playing ? '⏸ Pause' : '▶ Auto-play'}
+          </button>
         </div>
-        <button className="agm-btn" onClick={() => setI(x => Math.min(slides.length-1, x+1))} disabled={idx===slides.length-1}>Next →</button>
-        <button className="agm-x" onClick={onClose} title="Exit (Esc)">✕ Exit</button>
+        <div className="prs-counter">{idx + 1} <span>/ {slides.length}</span></div>
+        <div className="prs-foot-right">
+          <button className="prs-btn" onClick={() => setI(x => Math.min(slides.length - 1, x + 1))} disabled={idx === slides.length - 1}>Next →</button>
+          <button className="prs-btn prs-exit" onClick={onClose}>✕ Exit</button>
+        </div>
       </div>
     </div>
   );
