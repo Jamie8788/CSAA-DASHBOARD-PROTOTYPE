@@ -789,7 +789,7 @@ function AGMPresentation({ all, onClose, view }) {
     return () => clearTimeout(t);
   }, [playing, i, slides.length]);
 
-  return (
+  const overlay = (
     <div className="prs-overlay" role="dialog" aria-label="Presentation mode"
          style={{ '--g1': pal.g1, '--g2': pal.g2, '--accent': pal.accent }}>
       <div className="prs-bg" aria-hidden="true">
@@ -834,6 +834,7 @@ function AGMPresentation({ all, onClose, view }) {
       </div>
     </div>
   );
+  return ReactDOM.createPortal(overlay, document.body);
 }
 
 window.PlainSnapshot = PlainSnapshot;
