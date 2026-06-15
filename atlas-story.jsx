@@ -107,8 +107,6 @@ function AtlasStoryView({ all, setView, onSelect }) {
   const scrollingRef = useR_st(false);   // true while the user is actively scrolling
   const permLabelsRef = useR_st([]);     // permanent name labels on the active direction
   const [activeDir, setActiveDir] = useS_st('intro');
-  const activeDirRef = useR_st('intro');
-  useE_st(() => { activeDirRef.current = activeDir; }, [activeDir]);
   const [touring, setTouring] = useS_st(false);   // elder-friendly auto-advance
   const [bigText, setBigText] = useS_st(() => {
     try { return localStorage.getItem('story-big-text') === '1'; } catch (e) { return false; }
@@ -179,8 +177,8 @@ function AtlasStoryView({ all, setView, onSelect }) {
       boxZoom: false, keyboard: false, touchZoom: false, zoomSnap: 0.25,
       preferCanvas: true,          // canvas-render markers/halos → smooth animation
     });
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri — Esri, HERE, Garmin, FAO, NOAA, USGS', maxZoom: 18,
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abc', maxZoom: 18,
     }).addTo(map);
     // keep an SVG renderer just for the route line so it can draw itself in
     svgRendererRef.current = L.svg().addTo(map);
@@ -217,19 +215,15 @@ function AtlasStoryView({ all, setView, onSelect }) {
 
     setTimeout(() => {
       try {
-        map.invalidateSize();
         const allM = Object.values(byDir).flat();
         if (allM.length) map.fitBounds(L.featureGroup(allM).getBounds().pad(0.15), { animate: false });
       } catch (e) {}
     }, 60);
-    const onWinResize = () => { try { map.invalidateSize(); } catch (e) {} };
-    window.addEventListener('resize', onWinResize);
 
     return () => {
       if (pulseRafRef.current) cancelAnimationFrame(pulseRafRef.current);
       if (dropRafRef.current) cancelAnimationFrame(dropRafRef.current);
       if (sparkRafRef.current) cancelAnimationFrame(sparkRafRef.current);
-      window.removeEventListener('resize', onWinResize);
       try { map.remove(); } catch (e) {}
       mapRef.current = null;
     };
@@ -378,7 +372,7 @@ function AtlasStoryView({ all, setView, onSelect }) {
         const ll = m.getLatLng(); return [ll.lat, ll.lng];
       }));
       const line = L.polyline(pts, {
-        color, weight: 2.25, opacity: 0.55, dashArray: '1 9',
+        color, weight: 2.5, opacity: 0.7, dashArray: null,
         lineCap: 'round', lineJoin: 'round',
         renderer: svgRendererRef.current,   // SVG so it can self-draw
       }).addTo(routeLayerRef.current);
@@ -431,7 +425,6 @@ function AtlasStoryView({ all, setView, onSelect }) {
     const dur = reduceMotion ? 0 : 1.3;
     const settleDelay = reduceMotion ? 0 : 280;
     const t = setTimeout(() => {
-      if (activeDirRef.current !== activeDir) return;   // user already scrolled on
       if (activeDir === 'intro' || activeDir === 'outro') {
         try { if (allM.length) map.flyToBounds(L.featureGroup(allM).getBounds().pad(0.15), { duration: dur }); } catch (e) {}
         return;
@@ -451,14 +444,11 @@ function AtlasStoryView({ all, setView, onSelect }) {
       }
       // animations shortly after the camera starts moving
       setTimeout(() => {
-        if (activeDirRef.current !== activeDir) return; // stale — a newer scene owns the map
         dropIn(activeMarkers);
         const pts = drawRoute(activeMarkers, color);
         startPulse(activeMarkers, color);
         showLabels(activeMarkers);
-        if (pts) setTimeout(() => {
-          if (activeDirRef.current === activeDir) startSpark(pts, color);
-        }, 900);
+        if (pts) setTimeout(() => startSpark(pts, color), 900);
       }, reduceMotion ? 0 : 300);
     }, settleDelay);
     return () => clearTimeout(t);
@@ -477,36 +467,18 @@ function AtlasStoryView({ all, setView, onSelect }) {
   }, []);
 
   // ---- scene scroll spy ----
-  // Deterministic: on every scroll frame, the scene whose centre is closest
-  // to the viewport centre is the active one. (The old IntersectionObserver
-  // could leave the map on a stale direction during fast scrolls.)
   useE_st(() => {
-    let raf = null;
-    function pick() {
-      raf = null;
-      const scenes = Array.from(document.querySelectorAll('[data-story-scene]'));
-      if (!scenes.length) return;
-      const mid = window.innerHeight / 2;
-      let best = null, bd = Infinity;
-      for (const s of scenes) {
-        const r = s.getBoundingClientRect();
-        const d = Math.abs((r.top + r.height / 2) - mid);
-        if (d < bd) { bd = d; best = s; }
+    const scenes = Array.from(document.querySelectorAll('[data-story-scene]'));
+    if (!scenes.length) return;
+    const io = new IntersectionObserver((entries) => {
+      let best = null, bestRatio = 0;
+      for (const e of entries) {
+        if (e.isIntersecting && e.intersectionRatio > bestRatio) { bestRatio = e.intersectionRatio; best = e.target; }
       }
-      if (best) {
-        const k = best.getAttribute('data-story-scene');
-        setActiveDir((cur) => (cur === k ? cur : k));
-      }
-    }
-    function onScroll() { if (!raf) raf = requestAnimationFrame(pick); }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll, { passive: true });
-    pick();
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
+      if (best) setActiveDir(best.getAttribute('data-story-scene'));
+    }, { root: null, rootMargin: '-40% 0px -40% 0px', threshold: [0.01, 0.25, 0.5, 0.75] });
+    scenes.forEach((s) => io.observe(s));
+    return () => io.disconnect();
   }, [dirData]);
 
   function flyToCommunity(name) {
@@ -597,13 +569,9 @@ function AtlasStoryView({ all, setView, onSelect }) {
           return (
             <div className="story-scene" data-story-scene={d.key} key={d.key}>
               <div className={`story-card${isActive ? ' is-active' : ''}`} style={{ '--accent': accent }}>
-                {hasImg ? (
+                {hasImg && (
                   <div className="story-card-img" style={{ backgroundImage: `url("${dirImg}")` }} role="img"
                        aria-label={storySetting(d.key + '.title', d.key) + ' image'} />
-                ) : (
-                  <div className={`story-card-art art-${d.key.toLowerCase()}`} aria-hidden="true">
-                    <span className="art-glyph">{{ East: '☀', South: '❋', West: '☾', North: '✦' }[d.key]}</span>
-                  </div>
                 )}
                 <div className="story-card-dir" style={{ color: accent }}>{storySetting(d.key + '.title', d.key)}</div>
                 <div className="story-card-season">{storySetting(d.key + '.subtitle', d.season)}</div>

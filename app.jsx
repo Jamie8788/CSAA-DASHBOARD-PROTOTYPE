@@ -586,22 +586,6 @@ function Hero({ totalCommunities, totalOrgs, grandPop, view, setView, filtered, 
 function NavStrip({ view, setView, filtered, all }) {
   const [items, setItems] = useState(() => window.ATLAS_NAV || null);
   const [, setTickSettings] = useState(0);
-  // Float the nav when the page header has scrolled away, so navigation is
-  // always reachable — especially on the long scrolling Story Map.
-  const [floating, setFloating] = useState(false);
-  useEffect(() => {
-    let raf = null;
-    function check() {
-      raf = null;
-      const hero = document.querySelector('.hero');
-      const threshold = hero ? Math.max(120, hero.offsetTop + hero.offsetHeight - 60) : 320;
-      setFloating(window.scrollY > threshold);
-    }
-    function onScroll() { if (!raf) raf = requestAnimationFrame(check); }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    check();
-    return () => { window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf); };
-  }, []);
   useEffect(() => {
     function h() { setItems(window.ATLAS_NAV ? [...window.ATLAS_NAV] : null); }
     function s() { setTickSettings((t) => t + 1); }
@@ -638,7 +622,7 @@ function NavStrip({ view, setView, filtered, all }) {
     return v == null || String(v).trim().toLowerCase() !== 'false';
   });
   return (
-    <div className={`nav-strip${floating ? ' floating' : ''}`}>
+    <div className="nav-strip">
       {navItems.map((n) => (
         <button key={n.view}
                 className={`nav-tab ${view === n.view ? 'on' : ''}`}

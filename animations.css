@@ -1331,31 +1331,3 @@ input:focus-visible,
   }
   .ap-panel.is-revealed .ap-panel-title::after { animation: none !important; width: 56px; }
 }
-
-/* ============================================================================
-   BACKDROP — static soft colour wash (no animation: flicker-free).
-   The motion happens once, on page load: a calm staggered entrance.
-   ========================================================================== */
-body::before {
-  content: '';
-  position: fixed; inset: 0; z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(45% 38% at 18% 12%, rgba(212,160,23,0.07), transparent 70%),
-    radial-gradient(40% 34% at 84% 20%, rgba(184,53,30,0.05), transparent 70%),
-    radial-gradient(50% 42% at 70% 86%, rgba(107,141,107,0.06), transparent 70%);
-}
-
-/* One-time page entrance — the whole app rises in softly, then stays still. */
-.app { animation: pageEnter .85s cubic-bezier(.16,.84,.3,1) both; }
-.app .hero { animation: pageEnter .9s .08s cubic-bezier(.16,.84,.3,1) both; }
-.app .nav-strip { animation: pageEnter .9s .18s cubic-bezier(.16,.84,.3,1) both; }
-.app .main-grid, .app .stories-view, .app .ap-shell { animation: pageEnter 1s .26s cubic-bezier(.16,.84,.3,1) both; }
-@keyframes pageEnter {
-  from { opacity: 0; transform: translateY(22px); }
-  to   { opacity: 1; transform: none; }
-}
-.reduce-motion .app, .reduce-motion .app .hero, .reduce-motion .app .nav-strip,
-.reduce-motion .app .main-grid, .reduce-motion .app .stories-view, .reduce-motion .app .ap-shell {
-  animation: none;
-}

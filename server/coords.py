@@ -38,9 +38,42 @@ def _slug(s: str) -> str:
     return re.sub(r"^-|-$", "", s)
 
 
+# Canada bounding box (with a little margin). Any community coordinate outside
+# this is wrong — usually a bad Wikidata match (e.g. a same-named place abroad).
+# We drop those so the map never flies off to South America, etc.
+_CA = (40.0, 84.0, -142.0, -51.0)   # min_lat, max_lat, min_lng, max_lng
+
+
+def _in_canada(lat, lng) -> bool:
+    try:
+        lat, lng = float(lat), float(lng)
+    except (TypeError, ValueError):
+        return False
+    return _CA[0] <= lat <= _CA[1] and _CA[2] <= lng <= _CA[3]
+
+
+def scrub_bad_coords(records: list[dict]) -> list[dict]:
+    """Remove coordinates that fall outside Canada (bad enrichment matches) so a
+    single wrong point can't break the map. The gazetteer can then re-fill them."""
+    for r in records:
+        lat = r.get("lat")
+        lng = r.get("lng") if r.get("lng") is not None else r.get("lon")
+        if lat is not None and lng is not None and not _in_canada(lat, lng):
+            r["lat"] = None
+            r["lng"] = None
+            r["lon"] = None
+            ai = r.get("_ai")
+            if isinstance(ai, dict):
+                ai.pop("lat", None)
+                ai.pop("lng", None)
+    return records
+
+
 def fill_missing_coords(records: list[dict]) -> list[dict]:
-    """Overlay coordinates onto records that have none. Idempotent — records
-    already carrying lat + (lng or lon) are left untouched."""
+    """Drop any out-of-Canada coordinates, then overlay coordinates onto records
+    that have none. Idempotent — records already carrying valid lat + (lng or
+    lon) are left untouched."""
+    scrub_bad_coords(records)
     for r in records:
         lat = r.get("lat")
         lng = r.get("lng") if r.get("lng") is not None else r.get("lon")
