@@ -183,6 +183,12 @@ function CanadaMap({ communities, allCommunities, selectedId, onSelect, onHover,
         glyphColor = dir==='North' ? '#1a1612' : '#fbf6ec';
       }
 
+      // Partner / health organizations always read as GREEN dots so they are
+      // clearly distinct from the First Nations communities (every mode).
+      if (c.orgType && c.orgType !== 'Community') {
+        coreColor = '#3d6b40'; ringColor = '#fbf6ec'; glyphColor = '#fbf6ec';
+      }
+
       const html = `
         <div class="marker-pin visible dir-${dir}" style="opacity:${opacity}">
           <div class="pin-pulse" style="background:${dirInfo.color}"></div>
@@ -622,6 +628,11 @@ function DirectionLegend({ activeDir, setDir, byDir }) {
         const count = (byDir[d]||[]).length;
         const isOn = activeDir === d;
         const isDim = activeDir && activeDir !== d;
+        // Bridge/partner organizations render as green dots on the map — make
+        // the legend swatch match so the colour is self-explanatory.
+        const isOrgRow = d === 'AllDirections';
+        const swatchColor = isOrgRow ? '#3d6b40' : info.color;
+        const rowLabel = isOrgRow ? 'Partner / health orgs' : info.label.split(' · ')[0];
         return (
           <button
             key={d}
@@ -630,11 +641,11 @@ function DirectionLegend({ activeDir, setDir, byDir }) {
             style={{ opacity: isDim ? 0.45 : 1 }}
           >
             <span className="dir-swatch" style={{
-              background: info.color,
+              background: swatchColor,
               border: d === 'North' ? '1px solid var(--ink-3)' : '1px solid transparent',
             }}></span>
             <div className="dir-text">
-              <div className="dir-name">{info.label.split(' · ')[0]}</div>
+              <div className="dir-name">{rowLabel}</div>
               <div className="dir-sub">{sub}</div>
             </div>
             <span className="dir-count">{count}</span>
