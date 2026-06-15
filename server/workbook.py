@@ -420,44 +420,106 @@ def _find_sheet(wb, candidates: list[str]) -> str | None:
 
 # --- structured readers per sheet ---------------------------------------- #
 
-def _read_link_grid(path, sheet: str) -> list[dict[int, str]]:
-    """Read a sheet a second time (NON read-only) and return, for each row, a
-    {column_index: url} map of the EXTERNAL hyperlink attached to each cell.
-    Used for the master sheet (source links per field) AND for the Missing
-    Information / Needs Review / Correction tabs (links inside their description
-    and note cells, e.g. "Consolidated Financial Statements March 31, 2023").
-    openpyxl exposes one external target per cell via cell.hyperlink.target;
-    internal anchors (location=...) come back as None and are skipped. The
-    iteration mirrors _read_sheet (same order, same `if not raw` skip) so the
-    i-th entry aligns with rows[i].
+# Hyperlink extraction is done by reading the .xlsx zip's XML directly rather
+# than re-opening the workbook with openpyxl in non-read-only mode. The latter
+# materialises every cell (styles, formats) for the WHOLE workbook and, done
+# once per sheet, spiked memory enough to crash a small instance on upload.
+# The zip/XML path below parses two tiny XML files per sheet and uses almost
+# no memory.
+_NS_MAIN = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+_NS_REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+_NS_PKG = "{http://schemas.openxmlformats.org/package/2006/relationships}"
+
+
+def _ref_to_rc(ref: str) -> tuple[int, int]:
+    """'B3' → (row=3, col_index=1, 0-based). Returns (0,-1) if unparseable."""
+    letters = "".join(ch for ch in ref if ch.isalpha())
+    digits = "".join(ch for ch in ref if ch.isdigit())
+    if not letters or not digits:
+        return (0, -1)
+    col = 0
+    for ch in letters:
+        col = col * 26 + (ord(ch.upper()) - 64)
+    return (int(digits), col - 1)
+
+
+def _extract_hyperlinks(path) -> dict:
+    """Low-memory hyperlink reader straight from the .xlsx zip.
+
+    Returns {sheet_name: {row_number: {col_index: url}}} for EXTERNAL http(s)
+    links only. Internal workbook anchors (location=…, no r:id) are skipped.
+    Row numbers are real 1-based spreadsheet rows, which equal each record's
+    sourceRow (process_rows numbers rows 1:1 with the sheet).
     """
+    import zipfile
+    import xml.etree.ElementTree as ET
+
+    out: dict = {}
     if not path:
-        return []
+        return out
     try:
-        lwb = load_workbook(filename=str(path), data_only=True, read_only=False)
+        zf = zipfile.ZipFile(str(path))
     except Exception:
-        return []
-    if sheet not in lwb.sheetnames:
-        return []
-    lws = lwb[sheet]
-    grid: list[dict[int, str]] = []
-    for raw in lws.iter_rows():
-        if not raw:
-            continue
-        links: dict[int, str] = {}
-        for ci, cell in enumerate(raw):
-            h = getattr(cell, "hyperlink", None)
-            if not h:
+        return out
+    try:
+        names = set(zf.namelist())
+        wb_xml = ET.fromstring(zf.read("xl/workbook.xml"))
+        name_to_rid = {}
+        for sh in wb_xml.iter(_NS_MAIN + "sheet"):
+            nm, rid = sh.get("name"), sh.get(_NS_REL + "id")
+            if nm and rid:
+                name_to_rid[nm] = rid
+        wb_rels = ET.fromstring(zf.read("xl/_rels/workbook.xml.rels"))
+        rid_to_path = {}
+        for rel in wb_rels.iter(_NS_PKG + "Relationship"):
+            tgt = rel.get("Target") or ""
+            wpath = tgt if tgt.startswith("xl/") else "xl/" + tgt.lstrip("/")
+            rid_to_path[rel.get("Id")] = wpath
+
+        for sheet_name, rid in name_to_rid.items():
+            wpath = rid_to_path.get(rid)
+            if not wpath or wpath not in names:
                 continue
-            tgt = getattr(h, "target", None)
-            if tgt and str(tgt).lower().startswith(("http://", "https://")):
-                links[ci] = str(tgt).strip()
-        grid.append(links)
-    try:
-        lwb.close()
+            try:
+                sx = ET.fromstring(zf.read(wpath))
+            except Exception:
+                continue
+            hlinks = sx.find(_NS_MAIN + "hyperlinks")
+            if hlinks is None:
+                continue
+            base = wpath.rsplit("/", 1)[-1]
+            rels_path = wpath.rsplit("/", 1)[0] + "/_rels/" + base + ".rels"
+            rid_target = {}
+            if rels_path in names:
+                try:
+                    sr = ET.fromstring(zf.read(rels_path))
+                    for rel in sr.iter(_NS_PKG + "Relationship"):
+                        rid_target[rel.get("Id")] = rel.get("Target")
+                except Exception:
+                    pass
+            grid: dict = {}
+            for h in hlinks.findall(_NS_MAIN + "hyperlink"):
+                ref = h.get("ref")
+                hid = h.get(_NS_REL + "id")
+                if not ref or not hid:
+                    continue  # internal location-only link → skip
+                url = rid_target.get(hid)
+                if not url or not str(url).lower().startswith(("http://", "https://")):
+                    continue
+                row, col = _ref_to_rc(ref.split(":")[0])
+                if row <= 0 or col < 0:
+                    continue
+                grid.setdefault(row, {})[col] = str(url).strip()
+            if grid:
+                out[sheet_name] = grid
     except Exception:
-        pass
-    return grid
+        return out
+    finally:
+        try:
+            zf.close()
+        except Exception:
+            pass
+    return out
 
 
 # Canonical-field → which record key the front-end reads it under.
@@ -468,19 +530,17 @@ _FIELD_LINK_ALIAS = {
 
 
 def _attach_field_links(records: list[dict], rows: list[list[str]],
-                        link_grid: list[dict[int, str]], ps) -> None:
+                        grid: dict, ps) -> None:
     """Map each row's per-column hyperlinks onto its record as `fieldLinks`,
-    keyed by the front-end field name. Alignment is by sourceRow (1-based index
-    into `rows`), which process_rows assigns as i+1."""
-    if not link_grid:
+    keyed by the front-end field name. `grid` is {row_number: {col: url}};
+    alignment is by sourceRow (== real spreadsheet row)."""
+    if not grid:
         return
     hdr_idx, col_map = ps.detect_header(rows)
     idx_to_field = {ci: field for field, ci in col_map.items()}
     for rec in records:
         sr = rec.get("sourceRow")
-        if not sr or sr - 1 >= len(link_grid):
-            continue
-        row_links = link_grid[sr - 1]
+        row_links = grid.get(sr)
         if not row_links:
             continue
         field_links: dict[str, str] = {}
@@ -494,13 +554,13 @@ def _attach_field_links(records: list[dict], rows: list[list[str]],
             rec["fieldLinks"] = field_links
 
 
-def read_master_sheet(wb, sheet: str | None = None, path=None) -> list[dict]:
+def read_master_sheet(wb, sheet: str | None = None, link_grid=None) -> list[dict]:
     """Master Sheet → enriched community records, via tools/process_sheet.py.
 
     `sheet` can be passed explicitly (preferred — comes from content-based
     detection in ingest_workbook). If not, fall back to name-based search.
-    `path` (when given) enables capturing the hyperlink attached to each cell
-    so source links survive into the dashboard.
+    `link_grid` ({row: {col: url}}, pre-extracted once in ingest_workbook)
+    lets the source link behind each cell survive into the dashboard.
     """
     if not sheet:
         sheet = _find_sheet(wb, ["Master Sheet", "Master", "Programs"])
@@ -512,8 +572,7 @@ def read_master_sheet(wb, sheet: str | None = None, path=None) -> list[dict]:
     ps = _ps()
     records = ps.process_rows(rows, previous=None, verbose=False)
     try:
-        link_grid = _read_link_grid(path, sheet)
-        _attach_field_links(records, rows, link_grid, ps)
+        _attach_field_links(records, rows, link_grid or {}, ps)
     except Exception:
         pass  # links are a bonus — never let them break ingestion
     return records
@@ -568,24 +627,20 @@ def read_85_list(wb, sheet: str | None = None) -> dict:
 
 
 def read_annotations(wb, sheet_name: str, kind: str, sheet: str | None = None,
-                     path=None) -> list[dict]:
+                     link_grid=None) -> list[dict]:
     """Generic reader for Missing Information / Needs Review / Correction sheet.
 
-    When `path` is given, the EXTERNAL hyperlinks attached to each row's cells
-    (e.g. the "Consolidated Financial Statements March 31, 2023" link inside a
-    Needs-Review note) are captured and attached to the entry as `links`, so the
-    dashboard's COMING SOON / UNDER REVIEW cards can show them clickably.
+    When `link_grid` ({row: {col: url}}) is given, the EXTERNAL hyperlinks in
+    each row's cells (e.g. the "Consolidated Financial Statements March 31,
+    2023" link inside a Needs-Review note) are attached to the entry as `links`,
+    so the COMING SOON / UNDER REVIEW cards can show them clickably.
     """
     if not sheet:
         sheet = _find_sheet(wb, [sheet_name])
     if not sheet:
         return []
     rows = _read_sheet(wb, sheet)
-    link_grid = []
-    try:
-        link_grid = _read_link_grid(path, sheet) if path else []
-    except Exception:
-        link_grid = []
+    link_grid = link_grid or {}
     out = []
     for i, r in enumerate(rows[1:], start=1):  # skip header row
         community = r[0] if len(r) > 0 else ""
@@ -615,12 +670,13 @@ def read_annotations(wb, sheet_name: str, kind: str, sheet: str | None = None,
                 "note": (r[5] if len(r) > 5 else "").strip(),
             }
         # Attach any external hyperlinks found in this row (skip the community
-        # name cell in col 0, which often links to a generic homepage).
-        if i < len(link_grid) and link_grid[i]:
-            urls = [u for ci, u in sorted(link_grid[i].items()) if ci >= 1]
+        # name cell in col 0, which often links to a generic homepage). The data
+        # row at list-index i is real spreadsheet row i+1.
+        row_links = link_grid.get(i + 1)
+        if row_links:
             seen, uniq = set(), []
-            for u in urls:
-                if u not in seen:
+            for ci, u in sorted(row_links.items()):
+                if ci >= 1 and u not in seen:
                     seen.add(u); uniq.append(u)
             if uniq:
                 entry["links"] = uniq
@@ -666,11 +722,23 @@ def ingest_workbook(path: Path) -> dict:
     wb = load_workbook(filename=str(path), data_only=True, read_only=True)
     detected = detect_sheets(wb)
 
-    master_records = read_master_sheet(wb, detected["master"], path=path)
+    # Extract every sheet's external hyperlinks ONCE, cheaply, from the zip XML
+    # (no second openpyxl load — that previously spiked memory on upload).
+    hyperlinks = {}
+    try:
+        hyperlinks = _extract_hyperlinks(path)
+    except Exception:
+        hyperlinks = {}
+
+    master_records = read_master_sheet(wb, detected["master"],
+                                       link_grid=hyperlinks.get(detected["master"]))
     list85 = read_85_list(wb, detected["list85"])
-    missing = read_annotations(wb, "Missing Information", "missing", detected["missing"], path=path)
-    review = read_annotations(wb, "Needs Review", "review", detected["review"], path=path)
-    corrections = read_annotations(wb, "Correction sheet", "correction", detected["correction"], path=path)
+    missing = read_annotations(wb, "Missing Information", "missing", detected["missing"],
+                               link_grid=hyperlinks.get(detected["missing"]))
+    review = read_annotations(wb, "Needs Review", "review", detected["review"],
+                              link_grid=hyperlinks.get(detected["review"]))
+    corrections = read_annotations(wb, "Correction sheet", "correction", detected["correction"],
+                                   link_grid=hyperlinks.get(detected["correction"]))
     extra_links = read_additional_links(wb, detected["additional"])
 
     # Precompute keys and tokens for every entry (one-time, makes smart_match fast).
