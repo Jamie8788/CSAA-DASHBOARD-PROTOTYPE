@@ -222,7 +222,11 @@ function enrichRaw(raw, idx) {
   const region = regionGroup(raw.section);
   const dir = raw.direction || (region === 'Pilot' || region === 'Algoma' ? 'North' : (region === 'Partner' ? 'Central' : region));
   const link = raw.link;
+  const fieldLinks = (raw.fieldLinks && typeof raw.fieldLinks === 'object') ? raw.fieldLinks : {};
+  // The website cell sometimes holds plain text ("Home page") with the real URL
+  // attached as a hyperlink — fall back to that captured link.
   const isWebsite = link && /^https?:\/\//.test(link);
+  const websiteUrl = isWebsite ? link : (fieldLinks.website || null);
   // service flags
   const hasPhysical = !NA(raw.physical);
   const hasMental = !NA(raw.mental);
@@ -245,8 +249,9 @@ function enrichRaw(raw, idx) {
     direction: dir,
     population: pop,
     popInfo: populationNote,
-    website: isWebsite ? link : null,
-    websiteNote: !isWebsite ? link : null,
+    website: websiteUrl,
+    websiteNote: (!isWebsite && link) ? link : null,
+    fieldLinks,
     contacts: raw.contact,
     physical: raw.physical, mental: raw.mental, spiritual: raw.spiritual, emotional: raw.emotional,
     survivors: raw.survivors, youth: raw.youth, connect: raw.connect,

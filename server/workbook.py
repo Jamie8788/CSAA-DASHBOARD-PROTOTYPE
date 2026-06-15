@@ -420,11 +420,87 @@ def _find_sheet(wb, candidates: list[str]) -> str | None:
 
 # --- structured readers per sheet ---------------------------------------- #
 
-def read_master_sheet(wb, sheet: str | None = None) -> list[dict]:
+def _read_link_grid(path, sheet: str) -> list[dict[int, str]]:
+    """Read a sheet a second time (NON read-only) and return, for each row, a
+    {column_index: url} map of the EXTERNAL hyperlink attached to each cell.
+    Used for the master sheet (source links per field) AND for the Missing
+    Information / Needs Review / Correction tabs (links inside their description
+    and note cells, e.g. "Consolidated Financial Statements March 31, 2023").
+    openpyxl exposes one external target per cell via cell.hyperlink.target;
+    internal anchors (location=...) come back as None and are skipped. The
+    iteration mirrors _read_sheet (same order, same `if not raw` skip) so the
+    i-th entry aligns with rows[i].
+    """
+    if not path:
+        return []
+    try:
+        lwb = load_workbook(filename=str(path), data_only=True, read_only=False)
+    except Exception:
+        return []
+    if sheet not in lwb.sheetnames:
+        return []
+    lws = lwb[sheet]
+    grid: list[dict[int, str]] = []
+    for raw in lws.iter_rows():
+        if not raw:
+            continue
+        links: dict[int, str] = {}
+        for ci, cell in enumerate(raw):
+            h = getattr(cell, "hyperlink", None)
+            if not h:
+                continue
+            tgt = getattr(h, "target", None)
+            if tgt and str(tgt).lower().startswith(("http://", "https://")):
+                links[ci] = str(tgt).strip()
+        grid.append(links)
+    try:
+        lwb.close()
+    except Exception:
+        pass
+    return grid
+
+
+# Canonical-field → which record key the front-end reads it under.
+_FIELD_LINK_ALIAS = {
+    "link": "website", "contact": "contacts", "additionalLinks": "links",
+    "populationNote": "popInfo",
+}
+
+
+def _attach_field_links(records: list[dict], rows: list[list[str]],
+                        link_grid: list[dict[int, str]], ps) -> None:
+    """Map each row's per-column hyperlinks onto its record as `fieldLinks`,
+    keyed by the front-end field name. Alignment is by sourceRow (1-based index
+    into `rows`), which process_rows assigns as i+1."""
+    if not link_grid:
+        return
+    hdr_idx, col_map = ps.detect_header(rows)
+    idx_to_field = {ci: field for field, ci in col_map.items()}
+    for rec in records:
+        sr = rec.get("sourceRow")
+        if not sr or sr - 1 >= len(link_grid):
+            continue
+        row_links = link_grid[sr - 1]
+        if not row_links:
+            continue
+        field_links: dict[str, str] = {}
+        for ci, url in row_links.items():
+            field = idx_to_field.get(ci)
+            if not field or field in ("lat", "lon", "type", "direction", "population"):
+                continue
+            key = _FIELD_LINK_ALIAS.get(field, field)
+            field_links.setdefault(key, url)
+        if field_links:
+            rec["fieldLinks"] = field_links
+
+
+def read_master_sheet(wb, sheet: str | None = None, path=None) -> list[dict]:
     """Master Sheet → enriched community records, via tools/process_sheet.py.
 
     `sheet` can be passed explicitly (preferred — comes from content-based
     detection in ingest_workbook). If not, fall back to name-based search.
+    `path` (when given) enables capturing the hyperlink attached to each cell
+    so source links survive into the dashboard.
     """
     if not sheet:
         sheet = _find_sheet(wb, ["Master Sheet", "Master", "Programs"])
@@ -434,7 +510,13 @@ def read_master_sheet(wb, sheet: str | None = None) -> list[dict]:
     if not rows:
         return []
     ps = _ps()
-    return ps.process_rows(rows, previous=None, verbose=False)
+    records = ps.process_rows(rows, previous=None, verbose=False)
+    try:
+        link_grid = _read_link_grid(path, sheet)
+        _attach_field_links(records, rows, link_grid, ps)
+    except Exception:
+        pass  # links are a bonus — never let them break ingestion
+    return records
 
 
 def read_85_list(wb, sheet: str | None = None) -> dict:
@@ -485,15 +567,27 @@ def read_85_list(wb, sheet: str | None = None) -> dict:
     return {"official": official, "inMasterNotInList": extra}
 
 
-def read_annotations(wb, sheet_name: str, kind: str, sheet: str | None = None) -> list[dict]:
-    """Generic reader for Missing Information / Needs Review / Correction sheet."""
+def read_annotations(wb, sheet_name: str, kind: str, sheet: str | None = None,
+                     path=None) -> list[dict]:
+    """Generic reader for Missing Information / Needs Review / Correction sheet.
+
+    When `path` is given, the EXTERNAL hyperlinks attached to each row's cells
+    (e.g. the "Consolidated Financial Statements March 31, 2023" link inside a
+    Needs-Review note) are captured and attached to the entry as `links`, so the
+    dashboard's COMING SOON / UNDER REVIEW cards can show them clickably.
+    """
     if not sheet:
         sheet = _find_sheet(wb, [sheet_name])
     if not sheet:
         return []
     rows = _read_sheet(wb, sheet)
+    link_grid = []
+    try:
+        link_grid = _read_link_grid(path, sheet) if path else []
+    except Exception:
+        link_grid = []
     out = []
-    for r in rows[1:]:  # skip header row
+    for i, r in enumerate(rows[1:], start=1):  # skip header row
         community = r[0] if len(r) > 0 else ""
         item = r[1] if len(r) > 1 else ""
         if not community and not item:
@@ -520,6 +614,16 @@ def read_annotations(wb, sheet_name: str, kind: str, sheet: str | None = None) -
                 "date": (r[4] if len(r) > 4 else "").strip(),
                 "note": (r[5] if len(r) > 5 else "").strip(),
             }
+        # Attach any external hyperlinks found in this row (skip the community
+        # name cell in col 0, which often links to a generic homepage).
+        if i < len(link_grid) and link_grid[i]:
+            urls = [u for ci, u in sorted(link_grid[i].items()) if ci >= 1]
+            seen, uniq = set(), []
+            for u in urls:
+                if u not in seen:
+                    seen.add(u); uniq.append(u)
+            if uniq:
+                entry["links"] = uniq
         out.append(entry)
     return out
 
@@ -562,11 +666,11 @@ def ingest_workbook(path: Path) -> dict:
     wb = load_workbook(filename=str(path), data_only=True, read_only=True)
     detected = detect_sheets(wb)
 
-    master_records = read_master_sheet(wb, detected["master"])
+    master_records = read_master_sheet(wb, detected["master"], path=path)
     list85 = read_85_list(wb, detected["list85"])
-    missing = read_annotations(wb, "Missing Information", "missing", detected["missing"])
-    review = read_annotations(wb, "Needs Review", "review", detected["review"])
-    corrections = read_annotations(wb, "Correction sheet", "correction", detected["correction"])
+    missing = read_annotations(wb, "Missing Information", "missing", detected["missing"], path=path)
+    review = read_annotations(wb, "Needs Review", "review", detected["review"], path=path)
+    corrections = read_annotations(wb, "Correction sheet", "correction", detected["correction"], path=path)
     extra_links = read_additional_links(wb, detected["additional"])
 
     # Precompute keys and tokens for every entry (one-time, makes smart_match fast).
