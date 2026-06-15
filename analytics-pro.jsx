@@ -162,6 +162,12 @@ function AnalyticsProView({ all, onSelect, setView }) {
       {/* ────────── Storytelling carousel ────────── */}
       {facts && facts.facts && <StoryCarousel facts={facts.facts} />}
 
+      {/* ────────── Partner & health organizations (separate analysis) ────────── */}
+      <Panel title="Partner & health organizations"
+             sub="Health authorities, child & family services, friendship centres, tribal councils and other partner organizations are analysed separately here — they serve many communities, so blending them into the community counts would distort the picture. Every field on file for them is still fully visible in their record.">
+        <OrgAnalysis all={all} onSelect={onSelect} />
+      </Panel>
+
       {/* ────────── Honest data-quality panel ────────── */}
       <Panel title="Gap tracker — the tracking tabs, as live analytics"
              sub="Every row on the workbook's 'Missing Information', 'Needs Review', and 'Correction sheet' tabs becomes data here: which fields are open, where on the territory, how the work is trending month by month, and which communities to reach out to next. Open fields show as 'will be updated soon' across the atlas.">
@@ -258,6 +264,90 @@ function AnalyticsProView({ all, onSelect, setView }) {
   );
 }
 window.AnalyticsProView = AnalyticsProView;
+
+
+// ---- Organizations: a separate analysis from the communities ------------- #
+function OrgAnalysis({ all, onSelect }) {
+  const orgs = useMemoAP(
+    () => (all || []).filter((c) => c.orgType && c.orgType !== 'Community'),
+    [all]);
+  if (!orgs.length) return <p className="ap-empty">No partner organizations in the current dataset.</p>;
+
+  const byType = {};
+  orgs.forEach((o) => { byType[o.orgType] = (byType[o.orgType] || 0) + 1; });
+  const types = Object.entries(byType).sort((a, b) => b[1] - a[1]);
+  const maxType = Math.max(1, ...types.map((t) => t[1]));
+
+  const pillars = [
+    { k: 'hasPhysical',  label: 'Physical',  color: '#b8351e' },
+    { k: 'hasMental',    label: 'Mental',    color: '#3a5d8c' },
+    { k: 'hasSpiritual', label: 'Spiritual', color: '#d4a017' },
+    { k: 'hasEmotional', label: 'Emotional', color: '#3d6b40' },
+  ];
+  const pillarCounts = pillars.map((p) => ({ ...p, n: orgs.filter((o) => o[p.k]).length }));
+  const withContacts = orgs.filter((o) => (o.staff || []).length > 0).length;
+  const withLinks = orgs.filter((o) => o.fieldLinks && Object.keys(o.fieldLinks).length).length;
+
+  return (
+    <div className="org-analysis">
+      <div className="org-kpis">
+        <div className="org-kpi"><div className="org-kpi-n" style={{ color: '#3d6b40' }}>{orgs.length}</div><div className="org-kpi-l">organizations</div></div>
+        <div className="org-kpi"><div className="org-kpi-n">{types.length}</div><div className="org-kpi-l">types</div></div>
+        <div className="org-kpi"><div className="org-kpi-n">{withContacts}</div><div className="org-kpi-l">with direct contacts</div></div>
+        <div className="org-kpi"><div className="org-kpi-n">{withLinks}</div><div className="org-kpi-l">with source links</div></div>
+      </div>
+
+      <div className="gap-two">
+        <div className="gap-block">
+          <div className="gap-block-title">Organizations by type</div>
+          <div className="gap-block-sub">Counted on their own — green on the map.</div>
+          <div className="gap-bars">
+            {types.map(([t, n]) => (
+              <div key={t} className="gap-bar-row">
+                <span className="gap-bar-lab">{t}</span>
+                <div className="gap-bar-track">
+                  <div className="gap-bar-seg" style={{ width: `${n / maxType * 100}%`, background: '#3d6b40' }}></div>
+                </div>
+                <span className="gap-bar-num">{n}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="gap-block">
+          <div className="gap-block-title">What these organizations document</div>
+          <div className="gap-block-sub">Service pillars present in partner-org records.</div>
+          <div className="gap-bars">
+            {pillarCounts.map((p) => (
+              <div key={p.k} className="gap-bar-row">
+                <span className="gap-bar-lab">{p.label}</span>
+                <div className="gap-bar-track">
+                  <div className="gap-bar-seg" style={{ width: `${p.n / Math.max(1, orgs.length) * 100}%`, background: p.color }}></div>
+                </div>
+                <span className="gap-bar-num">{p.n}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="gap-block">
+        <div className="gap-block-title">Every organization</div>
+        <div className="gap-block-sub">Click any to open its full record — all fields on the sheet are there.</div>
+        <div className="org-chips">
+          {orgs.map((o) => (
+            <button key={o.id} className="org-chip" onClick={() => onSelect && onSelect(o.id)}
+                    title={o.orgType}>
+              <span className="org-chip-dot"></span>
+              {o.name.trim().split('(')[0].trim()}
+              <span className="org-chip-type">{o.orgType.replace(' Services', '').replace('Organization', 'Org')}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+window.OrgAnalysis = OrgAnalysis;
 
 
 // ============== components =============================================

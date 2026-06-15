@@ -214,6 +214,26 @@ const ORG_MARK_LETTERS = (name) => {
   return (words[0]?.[0] || '?').toUpperCase() + (words[1]?.[0] || words[0]?.[1] || '').toUpperCase();
 };
 
+// Sharpen a non-Community org's type from its name. Order matters
+// (most-specific first). Communities never reach this function.
+function refineOrgType(name, fallback) {
+  const s = String(name || '').toLowerCase();
+  if (/friendship/.test(s)) return 'Friendship Centre';
+  // Health orgs win over "family" when they're clearly a health body
+  // (e.g. "Wawa Family Health Team"), unless the name names children.
+  if (/health team|health authorit|health network|health centre|health center|hospital|nursing|wellness|maamwesying|mamaweswen/.test(s) && !/child/.test(s))
+    return 'Health Authority';
+  if (/child|head start|gbezhgomi|kunuwanamano|kunu wana|nogdawindamin|weechi/.test(s)) return 'Child & Family Services';
+  if (/\bhealth\b/.test(s)) return 'Health Authority';
+  if (/family/.test(s)) return 'Child & Family Services';
+  if (/housing/.test(s)) return 'Indigenous Organization';
+  if (/tribal council|grand council|nishnawbe aski|mushkegowuk|wabun|union of ontario|chiefs of ontario|aski nation/.test(s)) return 'Umbrella Organization';
+  if (/council|nation|association|board/.test(s)) return 'Umbrella Organization';
+  if (/network|team|centre|center|services|organization|housing|access/.test(s)) return 'Indigenous Organization';
+  return fallback || 'Indigenous Organization';
+}
+window.refineOrgType = refineOrgType;
+
 // Transform raw record from sheet into runtime shape
 function enrichRaw(raw, idx) {
   const id = slugify(raw.name) + '-' + idx;
@@ -221,6 +241,14 @@ function enrichRaw(raw, idx) {
   const populationNote = raw.populationNote;
   const region = regionGroup(raw.section);
   const dir = raw.direction || (region === 'Pilot' || region === 'Algoma' ? 'North' : (region === 'Partner' ? 'Central' : region));
+  // Org-type refinement: section-based typing mislabels the trailing
+  // organizations block (their section-header row carried content, so it
+  // wasn't recognised as a divider and everything inherited the previous
+  // section). Communities are correct and never touched; for non-Community
+  // records we sharpen the label from the name so the map + organizations
+  // analysis read accurately.
+  const baseType = raw.type || 'Community';
+  const orgType = (baseType === 'Community') ? 'Community' : refineOrgType(raw.name, baseType);
   const link = raw.link;
   const fieldLinks = (raw.fieldLinks && typeof raw.fieldLinks === 'object') ? raw.fieldLinks : {};
   // The website cell sometimes holds plain text ("Home page") with the real URL
@@ -245,7 +273,8 @@ function enrichRaw(raw, idx) {
     name: raw.name,
     section: raw.section,
     regionGroup: region,
-    orgType: raw.type || 'Community',
+    orgType,
+    isOrg: orgType !== 'Community',
     direction: dir,
     population: pop,
     popInfo: populationNote,
