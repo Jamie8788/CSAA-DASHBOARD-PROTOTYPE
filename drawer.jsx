@@ -95,6 +95,39 @@ function CommunityDrawer({ community, onClose, searchQuery }) {
   );
 }
 
+// FieldLink — the source link captured from the Excel hyperlink behind a
+// field's text (e.g. "Click here" → the real plan PDF). Shown clearly at the
+// end of the field: bold label + host, opens in a new tab.
+const FIELD_LINK_LABEL = {
+  strategicPlan: 'Open the strategic plan',
+  agm: 'Open the AGM / annual report',
+  financials: 'Open the financial statement',
+  connect: 'Open the source',
+  links: 'Open link',
+  physical: 'Source for this programming',
+  mental: 'Source for this programming',
+  spiritual: 'Source for this programming',
+  emotional: 'Source for this programming',
+  survivors: 'Source for this support',
+  youth: 'Source for this programming',
+};
+function FieldLink({ url, label }) {
+  if (!url) return null;
+  let host = url;
+  try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
+  const isPdf = /\.pdf(\?|#|$)/i.test(url);
+  return (
+    <a className="field-link" href={url} target="_blank" rel="noopener noreferrer">
+      <span className="fl-icon">{isPdf ? '⤓' : '↗'}</span>
+      <span className="fl-text">{label || 'Open source'}</span>
+      <span className="fl-host">{isPdf ? 'PDF · ' : ''}{host}</span>
+    </a>
+  );
+}
+function fieldLinkFor(c, key) {
+  return (c && c.fieldLinks && c.fieldLinks[key]) || null;
+}
+
 // PendingNotice — friendly card shown instead of raw "Missing Information" /
 // "Needs Review" placeholder text. Pulls the matching note from the workbook's
 // Missing Information / Needs Review tabs when available.
@@ -117,6 +150,13 @@ function PendingNotice({ status, c, fieldKey }) {
           {window.autoLink(String(note.description).slice(0, 400))}
         </div>
       )}
+      {note && Array.isArray(note.links) && note.links.length > 0 && (
+        <div className="pn-links">
+          {note.links.slice(0, 4).map((u, i) => (
+            <FieldLink key={i} url={u} label="What the team found" />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -136,6 +176,7 @@ function Section({ title, swatch, children, value, eyebrow, searchQuery, communi
       {empty
         ? <PendingNotice status={status} c={community} fieldKey={fieldKey} />
         : status === 'ok' && value && <div className="section-body">{searchQuery ? window.highlight(value, searchQuery) : window.autoLink(value)}</div>}
+      {status === 'ok' && <FieldLink url={fieldLinkFor(community, fieldKey)} label={FIELD_LINK_LABEL[fieldKey]} />}
       {children}
       {communityId && fieldKey && <window.EditableField communityId={communityId} fieldKey={fieldKey} value={value} label={title} />}
     </div>
@@ -526,6 +567,12 @@ function PillarServiceCard({ pillar, value, on, c, searchQuery }) {
             <div className="pc-fullbody" style={{ borderLeftColor: pillar.hex }}>
               {display}
             </div>
+
+            {(() => {
+              const src = fieldLinkFor(c, pillar.key);
+              const dup = src && meta.links.some(u => u === src || u.replace(/\/$/,'') === src.replace(/\/$/,''));
+              return src && !dup ? <FieldLink url={src} label={FIELD_LINK_LABEL[pillar.key]} /> : null;
+            })()}
 
             {meta.links.length > 0 && (
               <div className="pc-links">
