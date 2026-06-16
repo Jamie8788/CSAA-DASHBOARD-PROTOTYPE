@@ -95,14 +95,30 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://mattagami.com/",
-      "contacts": "https://mattagami.com/administration/",
-      "physical": "https://mattagami.com/health/",
-      "mental": "https://mattagami.com/health/",
-      "youth": "https://mattagami.com/binoogeesh/",
-      "connect": "https://mattagami.com/responsibility",
-      "popInfo": "https://mattagami.com/",
-      "links": "https://www.wabuntribalcouncil.ca/media-release/wabun-report-2022/"
+      "website": [
+        "https://mattagami.com/"
+      ],
+      "contacts": [
+        "https://mattagami.com/administration/"
+      ],
+      "physical": [
+        "https://mattagami.com/health/"
+      ],
+      "mental": [
+        "https://mattagami.com/health/"
+      ],
+      "youth": [
+        "https://mattagami.com/binoogeesh/"
+      ],
+      "connect": [
+        "https://mattagami.com/responsibility"
+      ],
+      "popInfo": [
+        "https://mattagami.com/"
+      ],
+      "links": [
+        "https://www.wabuntribalcouncil.ca/media-release/wabun-report-2022/"
+      ]
     },
     "nameKey": "mattagamifn",
     "in85List": true,
@@ -414,16 +430,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.kanesatake.ca/",
-      "contacts": "https://www.kanesatake.ca/wp/directory/",
-      "physical": "https://www.kanesatakehealthcenter.ca/primary_care.html",
-      "mental": "https://www.kanesatakehealthcenter.ca/mental_health.html",
-      "spiritual": "https://www.kanesatakehealthcenter.ca/Board_PDFs/Jordan.pdf",
-      "emotional": "https://www.kanesatakehealthcenter.ca/mental_health.html",
-      "youth": "https://www.kanesatake.ca/wp/portfolios/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=69&lang=eng&",
-      "links": "https://www.kanesatakehealthcenter.ca/mental_health.html",
-      "notes": "https://laws-lois.justice.gc.ca/eng/acts/K-0.5/FullText.html?wbdisable=true"
+      "website": [
+        "https://www.kanesatake.ca/"
+      ],
+      "contacts": [
+        "https://www.kanesatake.ca/wp/directory/"
+      ],
+      "physical": [
+        "https://www.kanesatakehealthcenter.ca/primary_care.html"
+      ],
+      "mental": [
+        "https://www.kanesatakehealthcenter.ca/mental_health.html"
+      ],
+      "spiritual": [
+        "https://www.kanesatakehealthcenter.ca/Board_PDFs/Jordan.pdf"
+      ],
+      "emotional": [
+        "https://www.kanesatakehealthcenter.ca/mental_health.html"
+      ],
+      "youth": [
+        "https://www.kanesatake.ca/wp/portfolios/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=69&lang=eng&"
+      ],
+      "links": [
+        "https://www.kanesatakehealthcenter.ca/mental_health.html"
+      ],
+      "notes": [
+        "https://laws-lois.justice.gc.ca/eng/acts/K-0.5/FullText.html?wbdisable=true"
+      ]
     },
     "nameKey": "mohawkcouncilofkanesatake",
     "in85List": true,
@@ -666,16 +702,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://sheguiandahfn.ca/",
-      "physical": "https://sheguiandahfn.ca/health-centre/",
-      "mental": "https://sheguiandahfn.ca/health-centre/",
-      "spiritual": "https://sheguiandahfn.ca/elders-program/",
-      "emotional": "https://sheguiandahfn.ca/health-centre/",
-      "survivors": "https://sheguiandahfn.ca/elders-program/",
-      "youth": "https://sheguiandahfn.ca/early-years/",
-      "connect": "https://sheguiandahfn.ca/health-centre/",
-      "popInfo": "https://sheguiandahfn.ca/about/)",
-      "links": "https://www.connexontario.ca/Program-Details?ProgramId=33986"
+      "website": [
+        "https://sheguiandahfn.ca/"
+      ],
+      "physical": [
+        "https://sheguiandahfn.ca/health-centre/"
+      ],
+      "mental": [
+        "https://sheguiandahfn.ca/health-centre/"
+      ],
+      "spiritual": [
+        "https://sheguiandahfn.ca/elders-program/"
+      ],
+      "emotional": [
+        "https://sheguiandahfn.ca/health-centre/"
+      ],
+      "survivors": [
+        "https://sheguiandahfn.ca/elders-program/"
+      ],
+      "youth": [
+        "https://sheguiandahfn.ca/early-years/"
+      ],
+      "connect": [
+        "https://sheguiandahfn.ca/health-centre/"
+      ],
+      "popInfo": [
+        "https://sheguiandahfn.ca/about/)"
+      ],
+      "links": [
+        "https://www.connexontario.ca/Program-Details?ProgramId=33986"
+      ]
     },
     "nameKey": "sheguiandahfn",
     "in85List": true,
@@ -1000,15 +1056,33 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.sheshegwaning.org/",
-      "contacts": "https://sheshegwaning.org/contact",
-      "physical": "https://www.sheshegwaning.org/residents/health-social-services",
-      "mental": "https://www.sheshegwaning.org/residents/health-social-services",
-      "spiritual": "https://www.sheshegwaning.org/residents/health-social-services",
-      "emotional": "https://www.sheshegwaning.org/residents/health-social-services",
-      "survivors": "https://www.sheshegwaning.org/residents/health-social-services",
-      "youth": "https://www.sheshegwaning.org/residents/education",
-      "popInfo": "https://www.sac-isc.gc.ca/eng/1753213597358/1753213649039"
+      "website": [
+        "https://www.sheshegwaning.org/"
+      ],
+      "contacts": [
+        "https://sheshegwaning.org/contact"
+      ],
+      "physical": [
+        "https://www.sheshegwaning.org/residents/health-social-services"
+      ],
+      "mental": [
+        "https://www.sheshegwaning.org/residents/health-social-services"
+      ],
+      "spiritual": [
+        "https://www.sheshegwaning.org/residents/health-social-services"
+      ],
+      "emotional": [
+        "https://www.sheshegwaning.org/residents/health-social-services"
+      ],
+      "survivors": [
+        "https://www.sheshegwaning.org/residents/health-social-services"
+      ],
+      "youth": [
+        "https://www.sheshegwaning.org/residents/education"
+      ],
+      "popInfo": [
+        "https://www.sac-isc.gc.ca/eng/1753213597358/1753213649039"
+      ]
     },
     "nameKey": "sheshegwaningfn",
     "in85List": true,
@@ -1348,15 +1422,33 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://taykwatagamou.com/",
-      "physical": "https://taykwatagamou.com/departments/health/",
-      "mental": "https://taykwatagamou.com/departments/health/",
-      "spiritual": "https://taykwatagamou.com/departments/health/",
-      "emotional": "https://taykwatagamou.com/departments/health/",
-      "survivors": "https://taykwatagamou.com/departments/health/",
-      "youth": "https://taykwatagamou.com/departments/health/",
-      "popInfo": "https://fr.wikipedia.org/wiki/Nation_Taykwa_Tagamou",
-      "links": "https://www.nan.ca/app/uploads/2023/08/AnnualReport_2022_2023.pdf"
+      "website": [
+        "https://taykwatagamou.com/"
+      ],
+      "physical": [
+        "https://taykwatagamou.com/departments/health/"
+      ],
+      "mental": [
+        "https://taykwatagamou.com/departments/health/"
+      ],
+      "spiritual": [
+        "https://taykwatagamou.com/departments/health/"
+      ],
+      "emotional": [
+        "https://taykwatagamou.com/departments/health/"
+      ],
+      "survivors": [
+        "https://taykwatagamou.com/departments/health/"
+      ],
+      "youth": [
+        "https://taykwatagamou.com/departments/health/"
+      ],
+      "popInfo": [
+        "https://fr.wikipedia.org/wiki/Nation_Taykwa_Tagamou"
+      ],
+      "links": [
+        "https://www.nan.ca/app/uploads/2023/08/AnnualReport_2022_2023.pdf"
+      ]
     },
     "nameKey": "taykwatagamounation",
     "in85List": true,
@@ -1690,17 +1782,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://chisasibi.ca/",
-      "contacts": "https://chisasibi.ca/administration/organizational-chart/",
-      "physical": "https://chisasibi.ca/departments-services/brighter-futures/",
-      "mental": "https://chisasibi.ca/departments-services/brighter-futures/",
-      "spiritual": "https://chisasibi.ca/departments-services/elder-council/",
-      "emotional": "https://chisasibi.ca/departments-services/brighter-futures/",
-      "survivors": "https://creehealth.org/services/chisasibi-elders-home",
-      "youth": "https://chisasibi.ca/youth-center/",
-      "connect": "https://creehealth.org/services/indian-residential-schools-resolution-health-support-program.",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=58&",
-      "links": "https://creehealth.org/events/cbhssjb-chairpersons-progress-update."
+      "website": [
+        "https://chisasibi.ca/"
+      ],
+      "contacts": [
+        "https://chisasibi.ca/administration/organizational-chart/"
+      ],
+      "physical": [
+        "https://chisasibi.ca/departments-services/brighter-futures/"
+      ],
+      "mental": [
+        "https://chisasibi.ca/departments-services/brighter-futures/"
+      ],
+      "spiritual": [
+        "https://chisasibi.ca/departments-services/elder-council/"
+      ],
+      "emotional": [
+        "https://chisasibi.ca/departments-services/brighter-futures/"
+      ],
+      "survivors": [
+        "https://creehealth.org/services/chisasibi-elders-home"
+      ],
+      "youth": [
+        "https://chisasibi.ca/youth-center/"
+      ],
+      "connect": [
+        "https://creehealth.org/services/indian-residential-schools-resolution-health-support-program."
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=58&"
+      ],
+      "links": [
+        "https://creehealth.org/events/cbhssjb-chairpersons-progress-update."
+      ]
     },
     "nameKey": "creenationofchisasibi",
     "in85List": true,
@@ -2043,13 +2157,27 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://chapleaucree.ca/",
-      "contacts": "https://chapleaucree.ca/contact-us/",
-      "physical": "https://chapleaucree.ca/administration/health-centre/",
-      "mental": "https://chapleaucree.ca/wp-content/uploads/2025/11/Weekly-Pamphlet-November-10-16-2025-Final-compressed.pdf",
-      "emotional": "https://chapleaucree.ca/wp-content/uploads/2026/03/Weekly-Pamphlet-March-23-29-2026-finalcompressed.pdf",
-      "youth": "https://chapleaucree.ca/wp-content/uploads/2026/03/Weekly-Pamphlet-March-23-29-2026-finalcompressed.pdf",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=221&lang=eng"
+      "website": [
+        "https://chapleaucree.ca/"
+      ],
+      "contacts": [
+        "https://chapleaucree.ca/contact-us/"
+      ],
+      "physical": [
+        "https://chapleaucree.ca/administration/health-centre/"
+      ],
+      "mental": [
+        "https://chapleaucree.ca/wp-content/uploads/2025/11/Weekly-Pamphlet-November-10-16-2025-Final-compressed.pdf"
+      ],
+      "emotional": [
+        "https://chapleaucree.ca/wp-content/uploads/2026/03/Weekly-Pamphlet-March-23-29-2026-finalcompressed.pdf"
+      ],
+      "youth": [
+        "https://chapleaucree.ca/wp-content/uploads/2026/03/Weekly-Pamphlet-March-23-29-2026-finalcompressed.pdf"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=221&lang=eng"
+      ]
     },
     "nameKey": "chapleaucreefn",
     "in85List": true,
@@ -2362,18 +2490,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.walpoleislandfirstnation.ca/",
-      "contacts": "https://www.walpoleislandfirstnation.ca/chief-and-council",
-      "physical": "https://www.walpoleislandfirstnation.ca/health-centre",
-      "mental": "https://www.walpoleislandfirstnation.ca/health-centre",
-      "spiritual": "https://www.walpoleislandfirstnation.ca/health-centre",
-      "emotional": "https://www.walpoleislandfirstnation.ca/health-centre",
-      "survivors": "https://www.walpoleislandfirstnation.ca/health-centre",
-      "youth": "https://www.walpoleislandfirstnation.ca/bbk",
-      "connect": "https://www.walpoleislandfirstnation.ca/health-centre",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=170&lang=eng",
-      "links": "https://www.walpoleislandfirstnation.ca/events",
-      "strategicPlan": "https://www.walpoleislandfirstnation.ca/cc-2025-ccp-2024-2026-strategic-plan"
+      "website": [
+        "https://www.walpoleislandfirstnation.ca/"
+      ],
+      "contacts": [
+        "https://www.walpoleislandfirstnation.ca/chief-and-council"
+      ],
+      "physical": [
+        "https://www.walpoleislandfirstnation.ca/health-centre"
+      ],
+      "mental": [
+        "https://www.walpoleislandfirstnation.ca/health-centre"
+      ],
+      "spiritual": [
+        "https://www.walpoleislandfirstnation.ca/health-centre"
+      ],
+      "emotional": [
+        "https://www.walpoleislandfirstnation.ca/health-centre"
+      ],
+      "survivors": [
+        "https://www.walpoleislandfirstnation.ca/health-centre"
+      ],
+      "youth": [
+        "https://www.walpoleislandfirstnation.ca/bbk"
+      ],
+      "connect": [
+        "https://www.walpoleislandfirstnation.ca/health-centre"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=170&lang=eng"
+      ],
+      "links": [
+        "https://www.walpoleislandfirstnation.ca/events"
+      ],
+      "strategicPlan": [
+        "https://www.walpoleislandfirstnation.ca/cc-2025-ccp-2024-2026-strategic-plan"
+      ]
     },
     "nameKey": "walpoleislandfn",
     "in85List": true,
@@ -2523,14 +2675,30 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.missanabiecreefn.com/",
-      "physical": "https://www.missanabiecreefn.com/single-post/2020/04/01/non-insured-health-benefits-program-update",
-      "mental": "https://www.missanabiecreefn.com/family-services",
-      "spiritual": "https://www.missanabiecreefn.com/family-services",
-      "emotional": "https://www.missanabiecreefn.com/family-services",
-      "youth": "https://www.missanabiecreefn.com/education",
-      "connect": "https://www.missanabiecreefn.com/family-services",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=223&lang=eng"
+      "website": [
+        "https://www.missanabiecreefn.com/"
+      ],
+      "physical": [
+        "https://www.missanabiecreefn.com/single-post/2020/04/01/non-insured-health-benefits-program-update"
+      ],
+      "mental": [
+        "https://www.missanabiecreefn.com/family-services"
+      ],
+      "spiritual": [
+        "https://www.missanabiecreefn.com/family-services"
+      ],
+      "emotional": [
+        "https://www.missanabiecreefn.com/family-services"
+      ],
+      "youth": [
+        "https://www.missanabiecreefn.com/education"
+      ],
+      "connect": [
+        "https://www.missanabiecreefn.com/family-services"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=223&lang=eng"
+      ]
     },
     "nameKey": "missanabiecreefn",
     "in85List": true,
@@ -2852,18 +3020,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://batchewana.ca/",
-      "physical": "https://batchewana.ca/programs-services/",
-      "mental": "https://batchewana.ca/programs-services/",
-      "spiritual": "https://batchewana.ca/programs-services/",
-      "emotional": "https://batchewana.ca/programs-services/",
-      "survivors": "https://batchewana.ca/programs-services/",
-      "youth": "https://batchewana.ca/programs-services/",
-      "connect": "https://batchewana.ca/programs-services/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=198&lang=eng",
-      "links": "https://batchewana.ca/wp-content/uploads/2025/04/04.2025_apr_newsletter.pdf",
-      "strategicPlan": "https://batchewana.ca/our-story/strategic-plans/",
-      "financials": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FederalFundingMain.aspx?BAND_NUMBER=198&lang=eng"
+      "website": [
+        "https://batchewana.ca/"
+      ],
+      "physical": [
+        "https://batchewana.ca/programs-services/"
+      ],
+      "mental": [
+        "https://batchewana.ca/programs-services/"
+      ],
+      "spiritual": [
+        "https://batchewana.ca/programs-services/"
+      ],
+      "emotional": [
+        "https://batchewana.ca/programs-services/"
+      ],
+      "survivors": [
+        "https://batchewana.ca/programs-services/"
+      ],
+      "youth": [
+        "https://batchewana.ca/programs-services/"
+      ],
+      "connect": [
+        "https://batchewana.ca/programs-services/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=198&lang=eng"
+      ],
+      "links": [
+        "https://batchewana.ca/wp-content/uploads/2025/04/04.2025_apr_newsletter.pdf"
+      ],
+      "strategicPlan": [
+        "https://batchewana.ca/our-story/strategic-plans/"
+      ],
+      "financials": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FederalFundingMain.aspx?BAND_NUMBER=198&lang=eng"
+      ]
     },
     "nameKey": "batchewanafn",
     "in85List": true,
@@ -3178,16 +3370,36 @@ window.COMMUNITIES = [
     "sourceRow": 15,
     "staff": [],
     "fieldLinks": {
-      "website": "https://serpentriverfn.com/",
-      "contacts": "https://serpentriverfn.com/wp-content/uploads/2025/03/SRFN-Contact-List-March-2025-3.pdf",
-      "physical": "https://serpentriverfn.com/meetup/kenabutch-health-centre/",
-      "mental": "https://serpentriverfn.com/meetup/mental-health-team/",
-      "spiritual": "https://serpentriverfn.com/meetup/cultural-program/",
-      "emotional": "https://serpentriverfn.com/meetup/mental-health-team/",
-      "youth": "https://serpentriverfn.com/meetup/mental-health-team/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=201&lang=eng",
-      "links": "https://maamwesying.ca/minobimaadizing-addiction-services/",
-      "strategicPlan": "https://serpentriverfn.com/wp-content/uploads/2025/04/RFP-5-YEAR-STRATEGIC-PLAN-FINAL-1-3.pdf"
+      "website": [
+        "https://serpentriverfn.com/"
+      ],
+      "contacts": [
+        "https://serpentriverfn.com/wp-content/uploads/2025/03/SRFN-Contact-List-March-2025-3.pdf"
+      ],
+      "physical": [
+        "https://serpentriverfn.com/meetup/kenabutch-health-centre/"
+      ],
+      "mental": [
+        "https://serpentriverfn.com/meetup/mental-health-team/"
+      ],
+      "spiritual": [
+        "https://serpentriverfn.com/meetup/cultural-program/"
+      ],
+      "emotional": [
+        "https://serpentriverfn.com/meetup/mental-health-team/"
+      ],
+      "youth": [
+        "https://serpentriverfn.com/meetup/mental-health-team/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=201&lang=eng"
+      ],
+      "links": [
+        "https://maamwesying.ca/minobimaadizing-addiction-services/"
+      ],
+      "strategicPlan": [
+        "https://serpentriverfn.com/wp-content/uploads/2025/04/RFP-5-YEAR-STRATEGIC-PLAN-FINAL-1-3.pdf"
+      ]
     },
     "nameKey": "serpentriver",
     "in85List": true,
@@ -3357,15 +3569,33 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.mississaugi.com/",
-      "physical": "https://serpentriverfn.com/meetup/education-library/",
-      "mental": "https://www.mississaugi.com/health-services",
-      "spiritual": "https://www.mississaugi.com/health-services",
-      "emotional": "https://www.mississaugi.com/social-services",
-      "youth": "https://www.mississaugi.com/education",
-      "connect": "https://www.mississaugi.com/social-services",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=200&lang=eng",
-      "financials": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FederalFundingMain.aspx?BAND_NUMBER=200&lang=eng"
+      "website": [
+        "https://www.mississaugi.com/"
+      ],
+      "physical": [
+        "https://serpentriverfn.com/meetup/education-library/"
+      ],
+      "mental": [
+        "https://www.mississaugi.com/health-services"
+      ],
+      "spiritual": [
+        "https://www.mississaugi.com/health-services"
+      ],
+      "emotional": [
+        "https://www.mississaugi.com/social-services"
+      ],
+      "youth": [
+        "https://www.mississaugi.com/education"
+      ],
+      "connect": [
+        "https://www.mississaugi.com/social-services"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=200&lang=eng"
+      ],
+      "financials": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FederalFundingMain.aspx?BAND_NUMBER=200&lang=eng"
+      ]
     },
     "nameKey": "mississauga",
     "in85List": true,
@@ -3526,17 +3756,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://atikamekshenganishnawbek.ca/",
-      "contacts": "https://atikamekshenganishnawbek.ca/about/our-team",
-      "physical": "https://atikamekshenganishnawbek.ca/program/home-and-community-care-program/",
-      "mental": "https://atikamekshenganishnawbek.ca/program/wellness-mental-health-addictions-traditional-health/",
-      "spiritual": "https://atikamekshenganishnawbek.ca/program/wellness-mental-health-addictions-traditional-health/",
-      "emotional": "https://atikamekshenganishnawbek.ca/program/home-and-community-care-program/",
-      "survivors": "https://atikamekshenganishnawbek.ca/program/wellness-mental-health-addictions-traditional-health/",
-      "youth": "https://atikamekshenganishnawbek.ca/program/child-and-youth-program/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=224&lang=eng",
-      "strategicPlan": "https://atikamekshenganishnawbek.ca/wp-content/uploads/2024/08/AA-Community-Comprehensive-Plan-2020.pdf",
-      "agm": "https://atikamekshenganishnawbek.ca/wp-content/uploads/2025/09/2024-2025-AGM-Report-FINAL.pdf"
+      "website": [
+        "https://atikamekshenganishnawbek.ca/"
+      ],
+      "contacts": [
+        "https://atikamekshenganishnawbek.ca/about/our-team"
+      ],
+      "physical": [
+        "https://atikamekshenganishnawbek.ca/program/home-and-community-care-program/"
+      ],
+      "mental": [
+        "https://atikamekshenganishnawbek.ca/program/wellness-mental-health-addictions-traditional-health/"
+      ],
+      "spiritual": [
+        "https://atikamekshenganishnawbek.ca/program/wellness-mental-health-addictions-traditional-health/"
+      ],
+      "emotional": [
+        "https://atikamekshenganishnawbek.ca/program/home-and-community-care-program/"
+      ],
+      "survivors": [
+        "https://atikamekshenganishnawbek.ca/program/wellness-mental-health-addictions-traditional-health/"
+      ],
+      "youth": [
+        "https://atikamekshenganishnawbek.ca/program/child-and-youth-program/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=224&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://atikamekshenganishnawbek.ca/wp-content/uploads/2024/08/AA-Community-Comprehensive-Plan-2020.pdf"
+      ],
+      "agm": [
+        "https://atikamekshenganishnawbek.ca/wp-content/uploads/2025/09/2024-2025-AGM-Report-FINAL.pdf"
+      ]
     },
     "nameKey": "atikameksheng",
     "in85List": false,
@@ -3746,15 +3998,33 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.thessalonfirstnation.ca/",
-      "contacts": "https://www.thessalonfirstnation.ca/support-staff2.html",
-      "physical": "https://www.thessalonfirstnation.ca/community-health.html",
-      "mental": "https://www.thessalonfirstnation.ca/community-health.html",
-      "spiritual": "https://www.thessalonfirstnation.ca/traditional-health.html",
-      "emotional": "https://www.thessalonfirstnation.ca/traditional-health.html",
-      "youth": "https://www.thessalonfirstnation.ca/tutoring-after-school-program.html",
-      "connect": "https://www.thessalonfirstnation.ca/traditional-health.html",
-      "popInfo": "https://www.sac-isc.gc.ca/eng/1736535095412/1736535509989"
+      "website": [
+        "https://www.thessalonfirstnation.ca/"
+      ],
+      "contacts": [
+        "https://www.thessalonfirstnation.ca/support-staff2.html"
+      ],
+      "physical": [
+        "https://www.thessalonfirstnation.ca/community-health.html"
+      ],
+      "mental": [
+        "https://www.thessalonfirstnation.ca/community-health.html"
+      ],
+      "spiritual": [
+        "https://www.thessalonfirstnation.ca/traditional-health.html"
+      ],
+      "emotional": [
+        "https://www.thessalonfirstnation.ca/traditional-health.html"
+      ],
+      "youth": [
+        "https://www.thessalonfirstnation.ca/tutoring-after-school-program.html"
+      ],
+      "connect": [
+        "https://www.thessalonfirstnation.ca/traditional-health.html"
+      ],
+      "popInfo": [
+        "https://www.sac-isc.gc.ca/eng/1736535095412/1736535509989"
+      ]
     },
     "nameKey": "thessalon",
     "in85List": false,
@@ -3932,16 +4202,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.sagamokanishnawbek.com/",
-      "contacts": "https://www.sagamokanishnawbek.com/directory",
-      "physical": "https://www.sagamokanishnawbek.com/health-services",
-      "mental": "https://www.sagamokanishnawbek.com/mental-health-and-addiction",
-      "spiritual": "https://www.sagamokanishnawbek.com/mental-health-and-addiction",
-      "emotional": "https://www.sagamokanishnawbek.com/mental-health-and-addiction",
-      "survivors": "https://www.sagamokanishnawbek.com/mental-health-and-addiction",
-      "youth": "https://www.sagamokanishnawbek.com/education",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=179&lang=eng",
-      "strategicPlan": "https://www.sagamokanishnawbek.com/about"
+      "website": [
+        "https://www.sagamokanishnawbek.com/"
+      ],
+      "contacts": [
+        "https://www.sagamokanishnawbek.com/directory"
+      ],
+      "physical": [
+        "https://www.sagamokanishnawbek.com/health-services"
+      ],
+      "mental": [
+        "https://www.sagamokanishnawbek.com/mental-health-and-addiction"
+      ],
+      "spiritual": [
+        "https://www.sagamokanishnawbek.com/mental-health-and-addiction"
+      ],
+      "emotional": [
+        "https://www.sagamokanishnawbek.com/mental-health-and-addiction"
+      ],
+      "survivors": [
+        "https://www.sagamokanishnawbek.com/mental-health-and-addiction"
+      ],
+      "youth": [
+        "https://www.sagamokanishnawbek.com/education"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=179&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://www.sagamokanishnawbek.com/about"
+      ]
     },
     "nameKey": "sagamok",
     "in85List": true,
@@ -4140,17 +4430,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://michipicoten.com/",
-      "contacts": "https://michipicoten.com/contact/",
-      "physical": "https://michipicoten.com/services/health-and-social-services/",
-      "mental": "https://michipicoten.com/services/",
-      "spiritual": "https://michipicoten.com/wp-content/uploads/2023/07/Summer-2023-Newsletter_FINAL-ao.pdf",
-      "emotional": "https://michipicoten.com/services/",
-      "survivors": "https://michipicoten.com/services/",
-      "youth": "https://michipicoten.com/services/education/",
-      "connect": "https://michipicoten.com/youth-elders-gathering/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/FNP/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=225&lang=eng",
-      "financials": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FederalFundingMain.aspx?BAND_NUMBER=225&lang=eng"
+      "website": [
+        "https://michipicoten.com/"
+      ],
+      "contacts": [
+        "https://michipicoten.com/contact/"
+      ],
+      "physical": [
+        "https://michipicoten.com/services/health-and-social-services/"
+      ],
+      "mental": [
+        "https://michipicoten.com/services/"
+      ],
+      "spiritual": [
+        "https://michipicoten.com/wp-content/uploads/2023/07/Summer-2023-Newsletter_FINAL-ao.pdf"
+      ],
+      "emotional": [
+        "https://michipicoten.com/services/"
+      ],
+      "survivors": [
+        "https://michipicoten.com/services/"
+      ],
+      "youth": [
+        "https://michipicoten.com/services/education/"
+      ],
+      "connect": [
+        "https://michipicoten.com/youth-elders-gathering/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/FNP/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=225&lang=eng"
+      ],
+      "financials": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FederalFundingMain.aspx?BAND_NUMBER=225&lang=eng"
+      ]
     },
     "nameKey": "michipicoten",
     "in85List": true,
@@ -4317,16 +4629,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://bhfn.ca/",
-      "contacts": "https://bhfn.ca/council-and-staff/",
-      "physical": "https://bhfn.ca/services/health/",
-      "mental": "https://bhfn.ca/services/health/",
-      "emotional": "https://bhfn.ca/services/health/",
-      "survivors": "https://bhfn.ca/services/health/",
-      "youth": "https://bhfn.ca/community/",
-      "connect": "https://bhfn.ca/community/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=228&lang=eng",
-      "strategicPlan": "https://bhfn.ca/community/governance/"
+      "website": [
+        "https://bhfn.ca/"
+      ],
+      "contacts": [
+        "https://bhfn.ca/council-and-staff/"
+      ],
+      "physical": [
+        "https://bhfn.ca/services/health/"
+      ],
+      "mental": [
+        "https://bhfn.ca/services/health/"
+      ],
+      "emotional": [
+        "https://bhfn.ca/services/health/"
+      ],
+      "survivors": [
+        "https://bhfn.ca/services/health/"
+      ],
+      "youth": [
+        "https://bhfn.ca/community/"
+      ],
+      "connect": [
+        "https://bhfn.ca/community/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=228&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://bhfn.ca/community/governance/"
+      ]
     },
     "nameKey": "brunswickhouse",
     "in85List": true,
@@ -4678,18 +5010,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://wahnapitaefirstnation.com/",
-      "contacts": "https://wahnapitaefn.ca/contact.html",
-      "physical": "https://wahnapitaefirstnation.com/administration/health.html",
-      "mental": "https://wahnapitaefirstnation.com/administration/health.html",
-      "spiritual": "https://wahnapitaefirstnation.com/administration/health.html",
-      "emotional": "https://wahnapitaefirstnation.com/administration/health.html",
-      "survivors": "https://wahnapitaefirstnation.com/administration/health.html",
-      "youth": "https://wahnapitaefn.ca/administration/education.html",
-      "connect": "https://wahnapitaefn.ca/images/Newsletters/2013/WFN%20Newsletter%20-%20August%202013.pdf",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=232&lang=eng",
-      "strategicPlan": "https://www.wahnapitaefirstnation.com/images/Policies_Public/WFN%20Strategic%20Plan%202020-2025.pdf",
-      "financials": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/DisplayBinaryData.aspx?BAND_NUMBER_FF=232&DOC=Audited+consolidated+financial+statements&FY=2024-2025&lang=eng"
+      "website": [
+        "https://wahnapitaefirstnation.com/"
+      ],
+      "contacts": [
+        "https://wahnapitaefn.ca/contact.html"
+      ],
+      "physical": [
+        "https://wahnapitaefirstnation.com/administration/health.html"
+      ],
+      "mental": [
+        "https://wahnapitaefirstnation.com/administration/health.html"
+      ],
+      "spiritual": [
+        "https://wahnapitaefirstnation.com/administration/health.html"
+      ],
+      "emotional": [
+        "https://wahnapitaefirstnation.com/administration/health.html"
+      ],
+      "survivors": [
+        "https://wahnapitaefirstnation.com/administration/health.html"
+      ],
+      "youth": [
+        "https://wahnapitaefn.ca/administration/education.html"
+      ],
+      "connect": [
+        "https://wahnapitaefn.ca/images/Newsletters/2013/WFN%20Newsletter%20-%20August%202013.pdf"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=232&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://www.wahnapitaefirstnation.com/images/Policies_Public/WFN%20Strategic%20Plan%202020-2025.pdf"
+      ],
+      "financials": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/DisplayBinaryData.aspx?BAND_NUMBER_FF=232&DOC=Audited+consolidated+financial+statements&FY=2024-2025&lang=eng"
+      ]
     },
     "nameKey": "wahnapitaefn",
     "in85List": false,
@@ -4856,17 +5212,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.gardenriver.org/site/",
-      "physical": "https://www.grwc.ca/services",
-      "mental": "https://www.grwc.ca/newpage",
-      "spiritual": "https://www.grwc.ca/non-residential-programs",
-      "emotional": "https://www.grwc.ca/non-residential-programs",
-      "survivors": "https://www.grwc.ca/non-residential-programs",
-      "youth": "https://www.gardenriver.ca/site/",
-      "connect": "https://www.gardenriver.org/site/pow-wow/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=199&lang=eng",
-      "links": "https://www.grwc.ca/residential-programs",
-      "financials": "https://www.gardenriver.org/site/audited-financials-schedules/"
+      "website": [
+        "https://www.gardenriver.org/site/"
+      ],
+      "physical": [
+        "https://www.grwc.ca/services"
+      ],
+      "mental": [
+        "https://www.grwc.ca/newpage"
+      ],
+      "spiritual": [
+        "https://www.grwc.ca/non-residential-programs"
+      ],
+      "emotional": [
+        "https://www.grwc.ca/non-residential-programs"
+      ],
+      "survivors": [
+        "https://www.grwc.ca/non-residential-programs"
+      ],
+      "youth": [
+        "https://www.gardenriver.ca/site/"
+      ],
+      "connect": [
+        "https://www.gardenriver.org/site/pow-wow/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=199&lang=eng"
+      ],
+      "links": [
+        "https://www.grwc.ca/residential-programs"
+      ],
+      "financials": [
+        "https://www.gardenriver.org/site/audited-financials-schedules/"
+      ]
     },
     "nameKey": "gardenriverfn",
     "in85List": true,
@@ -5190,19 +5568,45 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://caodanak.com/en/",
-      "contacts": "https://caodanak.com/en/contact-us/",
-      "physical": "https://caodanak.com/en/health-center/",
-      "mental": "https://caodanak.com/wp-content/uploads/2016/01/Planification-strat%C3%A9gique-2019-2024-adopt%C3%A9-le-2-juillet-2019-2.pdf",
-      "spiritual": "https://caodanak.com/wp-content/uploads/2024/10/24211_CAO_Rap_FR_WEB_F_150dpi.pdf",
-      "emotional": "https://caodanak.com/wp-content/uploads/2022/10/CAO_Rapport-annuel-FINAL-21-22.pdf",
-      "survivors": "https://caodanak.com/wp-content/uploads/2023/09/CAO_RAPPORT-ANNUEL-22-23_FINAL.pdf",
-      "youth": "https://caodanak.com/wp-content/uploads/2017/10/POLITIQUE-SANT%C3%89_FR.pdf",
-      "connect": "https://caodanak.com/wp-content/uploads/2019/01/PILASKW-Hiver-2019_ENG.pdf",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=72&lang=eng",
-      "strategicPlan": "https://caodanak.com/wp-content/uploads/2024/11/CAO-plan-strat%C3%A9gique-2024-2029_final-version.pdf",
-      "agm": "https://caodanak.com/wp-content/uploads/2025/10/CAO_Rapport-annuel-2024-2025_ENG.pdf",
-      "financials": "https://caodanak.com/wp-content/uploads/2025/10/CAO_Rapport-annuel-2024-2025_ENG.pdf"
+      "website": [
+        "https://caodanak.com/en/"
+      ],
+      "contacts": [
+        "https://caodanak.com/en/contact-us/"
+      ],
+      "physical": [
+        "https://caodanak.com/en/health-center/"
+      ],
+      "mental": [
+        "https://caodanak.com/wp-content/uploads/2016/01/Planification-strat%C3%A9gique-2019-2024-adopt%C3%A9-le-2-juillet-2019-2.pdf"
+      ],
+      "spiritual": [
+        "https://caodanak.com/wp-content/uploads/2024/10/24211_CAO_Rap_FR_WEB_F_150dpi.pdf"
+      ],
+      "emotional": [
+        "https://caodanak.com/wp-content/uploads/2022/10/CAO_Rapport-annuel-FINAL-21-22.pdf"
+      ],
+      "survivors": [
+        "https://caodanak.com/wp-content/uploads/2023/09/CAO_RAPPORT-ANNUEL-22-23_FINAL.pdf"
+      ],
+      "youth": [
+        "https://caodanak.com/wp-content/uploads/2017/10/POLITIQUE-SANT%C3%89_FR.pdf"
+      ],
+      "connect": [
+        "https://caodanak.com/wp-content/uploads/2019/01/PILASKW-Hiver-2019_ENG.pdf"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=72&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://caodanak.com/wp-content/uploads/2024/11/CAO-plan-strat%C3%A9gique-2024-2029_final-version.pdf"
+      ],
+      "agm": [
+        "https://caodanak.com/wp-content/uploads/2025/10/CAO_Rapport-annuel-2024-2025_ENG.pdf"
+      ],
+      "financials": [
+        "https://caodanak.com/wp-content/uploads/2025/10/CAO_Rapport-annuel-2024-2025_ENG.pdf"
+      ]
     },
     "nameKey": "conseildesabenakisodanak",
     "in85List": true,
@@ -5343,16 +5747,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://waskaganish.ca/",
-      "contacts": "https://waskaganish.ca/staff-directory/",
-      "physical": "https://www.creehealth.org/about-us/departments/miyupimaatisiiun",
-      "mental": "https://wwcentre.ca/",
-      "spiritual": "https://waskaganish.ca/wp-content/uploads/2-Waskaganish-Resource-Book-2021-2022.pdf",
-      "emotional": "https://waskaganish.ca/wp-content/uploads/2-Waskaganish-Resource-Book-2021-2022.pdf",
-      "survivors": "https://wwcentre.ca/programs/",
-      "youth": "https://waskaganish.ca/wp-content/uploads/2-Waskaganish-Resource-Book-2021-2022.pdf",
-      "connect": "https://waskaganish.ca/wp-content/uploads/chischeyihtamihiiwewin-Newsletter-2nd-quarter-2020-for-website.pdf",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=61&lang=eng"
+      "website": [
+        "https://waskaganish.ca/"
+      ],
+      "contacts": [
+        "https://waskaganish.ca/staff-directory/"
+      ],
+      "physical": [
+        "https://www.creehealth.org/about-us/departments/miyupimaatisiiun"
+      ],
+      "mental": [
+        "https://wwcentre.ca/"
+      ],
+      "spiritual": [
+        "https://waskaganish.ca/wp-content/uploads/2-Waskaganish-Resource-Book-2021-2022.pdf"
+      ],
+      "emotional": [
+        "https://waskaganish.ca/wp-content/uploads/2-Waskaganish-Resource-Book-2021-2022.pdf"
+      ],
+      "survivors": [
+        "https://wwcentre.ca/programs/"
+      ],
+      "youth": [
+        "https://waskaganish.ca/wp-content/uploads/2-Waskaganish-Resource-Book-2021-2022.pdf"
+      ],
+      "connect": [
+        "https://waskaganish.ca/wp-content/uploads/chischeyihtamihiiwewin-Newsletter-2nd-quarter-2020-for-website.pdf"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=61&lang=eng"
+      ]
     },
     "nameKey": "creenationofwaskaganish",
     "in85List": true,
@@ -5579,14 +6003,30 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://eastmain.ca/",
-      "contacts": "https://eastmain.ca/finance-administration/",
-      "physical": "https://eastmain.ca/wellness-center/",
-      "mental": "https://eastmain.ca/wellness-center/",
-      "spiritual": "https://eastmain.ca/wellness-center/",
-      "emotional": "https://eastmain.ca/wellness-center/",
-      "youth": "https://eastmain.ca/youth-center/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=57&lang=eng"
+      "website": [
+        "https://eastmain.ca/"
+      ],
+      "contacts": [
+        "https://eastmain.ca/finance-administration/"
+      ],
+      "physical": [
+        "https://eastmain.ca/wellness-center/"
+      ],
+      "mental": [
+        "https://eastmain.ca/wellness-center/"
+      ],
+      "spiritual": [
+        "https://eastmain.ca/wellness-center/"
+      ],
+      "emotional": [
+        "https://eastmain.ca/wellness-center/"
+      ],
+      "youth": [
+        "https://eastmain.ca/youth-center/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=57&lang=eng"
+      ]
     },
     "nameKey": "creenationofeastmain",
     "in85List": true,
@@ -5770,20 +6210,48 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://kahnawake.com/",
-      "contacts": "https://kahnawake.com/contact-us/",
-      "physical": "https://www.kscs.ca/",
-      "mental": "https://www.kscs.ca/services/mental-wellness-and-addictions/",
-      "spiritual": "https://www.kscs.ca/services/traditional-services/",
-      "emotional": "https://www.kscs.ca/",
-      "survivors": "https://www.kscs.ca/services/traditional-services/",
-      "youth": "https://kahnawake.com/sru/",
-      "connect": "https://kahnawake.com/wp-content/uploads/2025/07/2024-2027-Portfolio-Distribution-Listing-Updated-February-18-2026.pdf",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=70&lang=eng",
-      "links": "https://kahnawake.com/okkr/",
-      "strategicPlan": "https://kahnawake.com/wp-content/uploads/2024/11/2023-03-28-Strategic-Plan-Community_WEB.pdf",
-      "agm": "https://kahnawake.com/wp-content/uploads/2025/12/2025-12-11-GFX-JusticeServices_Annual-Report.pdf",
-      "financials": "https://kahnawake.com/wp-content/uploads/2025/08/1.03-MCK-Financial-Statements-Conso-Final-Signed-Mar-25-449522.pdf"
+      "website": [
+        "https://kahnawake.com/"
+      ],
+      "contacts": [
+        "https://kahnawake.com/contact-us/"
+      ],
+      "physical": [
+        "https://www.kscs.ca/"
+      ],
+      "mental": [
+        "https://www.kscs.ca/services/mental-wellness-and-addictions/"
+      ],
+      "spiritual": [
+        "https://www.kscs.ca/services/traditional-services/"
+      ],
+      "emotional": [
+        "https://www.kscs.ca/"
+      ],
+      "survivors": [
+        "https://www.kscs.ca/services/traditional-services/"
+      ],
+      "youth": [
+        "https://kahnawake.com/sru/"
+      ],
+      "connect": [
+        "https://kahnawake.com/wp-content/uploads/2025/07/2024-2027-Portfolio-Distribution-Listing-Updated-February-18-2026.pdf"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=70&lang=eng"
+      ],
+      "links": [
+        "https://kahnawake.com/okkr/"
+      ],
+      "strategicPlan": [
+        "https://kahnawake.com/wp-content/uploads/2024/11/2023-03-28-Strategic-Plan-Community_WEB.pdf"
+      ],
+      "agm": [
+        "https://kahnawake.com/wp-content/uploads/2025/12/2025-12-11-GFX-JusticeServices_Annual-Report.pdf"
+      ],
+      "financials": [
+        "https://kahnawake.com/wp-content/uploads/2025/08/1.03-MCK-Financial-Statements-Conso-Final-Signed-Mar-25-449522.pdf"
+      ]
     },
     "nameKey": "mohawksofkahnawake",
     "in85List": true,
@@ -5934,17 +6402,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.srmt-nsn.gov/",
-      "contacts": "https://www.srmt-nsn.gov/support-services/communications",
-      "physical": "https://www.srmt-nsn.gov/programs/health-services",
-      "mental": "https://www.srmt-nsn.gov/programs/health-services/mental-health-kanikonriihne-good-mind-counseling",
-      "spiritual": "https://dvc479a3doke3.cloudfront.net/_uploads/site_files/Traditional-Medicine-Pamphlet-3.pdf",
-      "emotional": "https://www.srmt-nsn.gov/programs/health-services/mental-health-kanikonriihne-good-mind-counseling",
-      "survivors": "https://www.srmt-nsn.gov/calendar/every-child-matters-day",
-      "youth": "https://www.srmt-nsn.gov/education/tribal-learning-assistance-program-tlap/youth-services",
-      "connect": "https://www.srmt-nsn.gov/news/akwesasne-cultural-restoration-program-awarded-897-999",
-      "popInfo": "https://data.census.gov/profile/St._Regis_Mohawk_Reservation,_NY?g=2500000US3320",
-      "strategicPlan": "https://dvc479a3doke3.cloudfront.net/_uploads/site_files/StatPlan.pdf"
+      "website": [
+        "https://www.srmt-nsn.gov/"
+      ],
+      "contacts": [
+        "https://www.srmt-nsn.gov/support-services/communications"
+      ],
+      "physical": [
+        "https://www.srmt-nsn.gov/programs/health-services"
+      ],
+      "mental": [
+        "https://www.srmt-nsn.gov/programs/health-services/mental-health-kanikonriihne-good-mind-counseling"
+      ],
+      "spiritual": [
+        "https://dvc479a3doke3.cloudfront.net/_uploads/site_files/Traditional-Medicine-Pamphlet-3.pdf"
+      ],
+      "emotional": [
+        "https://www.srmt-nsn.gov/programs/health-services/mental-health-kanikonriihne-good-mind-counseling"
+      ],
+      "survivors": [
+        "https://www.srmt-nsn.gov/calendar/every-child-matters-day"
+      ],
+      "youth": [
+        "https://www.srmt-nsn.gov/education/tribal-learning-assistance-program-tlap/youth-services"
+      ],
+      "connect": [
+        "https://www.srmt-nsn.gov/news/akwesasne-cultural-restoration-program-awarded-897-999"
+      ],
+      "popInfo": [
+        "https://data.census.gov/profile/St._Regis_Mohawk_Reservation,_NY?g=2500000US3320"
+      ],
+      "strategicPlan": [
+        "https://dvc479a3doke3.cloudfront.net/_uploads/site_files/StatPlan.pdf"
+      ]
     },
     "nameKey": "stregismohawktribe",
     "in85List": true,
@@ -6127,18 +6617,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.akwesasne.ca/about-us/",
-      "contacts": "https://www.akwesasne.ca/about-us/meet-council/",
-      "physical": "https://www.akwesasne.ca/services/health/",
-      "mental": "https://www.akwesasne.ca/services/health/mental-health-wellness-services/",
-      "spiritual": "https://www.akwesasne.ca/services/health/mental-health-wellness-services/",
-      "emotional": "https://www.akwesasne.ca/services/health/mental-health-wellness-services/",
-      "survivors": "https://www.akwesasne.ca/news/posts/orange-shirt-day-in-akwesasne-a-day-of-strength-and-resilience/",
-      "youth": "https://www.akwesasne.ca/about-us/",
-      "connect": "https://www.akwesasne.ca/news/posts/orange-shirt-day-in-akwesasne-a-day-of-strength-and-resilience/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=159&lang=fra",
-      "strategicPlan": "https://www.akwesasne.ca/about-us/mca-strategic-plan/",
-      "agm": "https://www.akwesasne.ca/news/posts/mca-general-meeting-agenda-for-january-2026/"
+      "website": [
+        "https://www.akwesasne.ca/about-us/"
+      ],
+      "contacts": [
+        "https://www.akwesasne.ca/about-us/meet-council/"
+      ],
+      "physical": [
+        "https://www.akwesasne.ca/services/health/"
+      ],
+      "mental": [
+        "https://www.akwesasne.ca/services/health/mental-health-wellness-services/"
+      ],
+      "spiritual": [
+        "https://www.akwesasne.ca/services/health/mental-health-wellness-services/"
+      ],
+      "emotional": [
+        "https://www.akwesasne.ca/services/health/mental-health-wellness-services/"
+      ],
+      "survivors": [
+        "https://www.akwesasne.ca/news/posts/orange-shirt-day-in-akwesasne-a-day-of-strength-and-resilience/"
+      ],
+      "youth": [
+        "https://www.akwesasne.ca/about-us/"
+      ],
+      "connect": [
+        "https://www.akwesasne.ca/news/posts/orange-shirt-day-in-akwesasne-a-day-of-strength-and-resilience/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=159&lang=fra"
+      ],
+      "strategicPlan": [
+        "https://www.akwesasne.ca/about-us/mca-strategic-plan/"
+      ],
+      "agm": [
+        "https://www.akwesasne.ca/news/posts/mca-general-meeting-agenda-for-january-2026/"
+      ]
     },
     "nameKey": "mohawksofakwesasne",
     "in85List": true,
@@ -6220,17 +6734,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://waswanipi.com/",
-      "contacts": "https://waswanipi.com/staff-directory/",
-      "physical": "https://waswanipi.com/health-and-safety/",
-      "mental": "https://waswanipi.com/health-and-safety/",
-      "spiritual": "https://waswanipi.com/cultural-pursuits/",
-      "emotional": "https://waswanipi.com/social-development/",
-      "survivors": "https://waswanipi.com/social-development/",
-      "youth": "https://waswanipi.com/social-development/",
-      "connect": "https://waswanipi.com/cultural-pursuits/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=56&lang=eng",
-      "agm": "https://waswanipi.com/wp-content/uploads/2026/02/General-Assembly-Highlight_Jan-2026.pdf"
+      "website": [
+        "https://waswanipi.com/"
+      ],
+      "contacts": [
+        "https://waswanipi.com/staff-directory/"
+      ],
+      "physical": [
+        "https://waswanipi.com/health-and-safety/"
+      ],
+      "mental": [
+        "https://waswanipi.com/health-and-safety/"
+      ],
+      "spiritual": [
+        "https://waswanipi.com/cultural-pursuits/"
+      ],
+      "emotional": [
+        "https://waswanipi.com/social-development/"
+      ],
+      "survivors": [
+        "https://waswanipi.com/social-development/"
+      ],
+      "youth": [
+        "https://waswanipi.com/social-development/"
+      ],
+      "connect": [
+        "https://waswanipi.com/cultural-pursuits/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=56&lang=eng"
+      ],
+      "agm": [
+        "https://waswanipi.com/wp-content/uploads/2026/02/General-Assembly-Highlight_Jan-2026.pdf"
+      ]
     },
     "nameKey": "creefnofwaswanipi",
     "in85List": true,
@@ -6401,18 +6937,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://nemaska.com/",
-      "contacts": "https://nemaska.com/contact-us/",
-      "physical": "https://nemaska.com/departments/public-health-and-safety/",
-      "mental": "https://nemaska.com/wellness-centre/",
-      "spiritual": "https://nemaska.com/wellness-centre/",
-      "emotional": "https://nemaska.com/wellness-centre/",
-      "survivors": "https://nemaska.com/wp-content/uploads/2022/10/CreeNation_RapportAnnuel_ALL_2021-22_V8-FINAL-PRINT-09202022-spread.pdf",
-      "youth": "https://nemaska.com/departments/social-development/",
-      "connect": "https://nemaska.com/wellness-centre/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=59&lang=eng",
-      "strategicPlan": "https://nemaska.com/wp-content/uploads/2023/08/external-Cree-Nation-of-Nemaska_Strategic-Plan_REPORT_2023-2027-1.pdf",
-      "financials": "https://nemaska.com/administration/cree-nation-of-nemaska-publishes-its-2024-2025-annual-report/"
+      "website": [
+        "https://nemaska.com/"
+      ],
+      "contacts": [
+        "https://nemaska.com/contact-us/"
+      ],
+      "physical": [
+        "https://nemaska.com/departments/public-health-and-safety/"
+      ],
+      "mental": [
+        "https://nemaska.com/wellness-centre/"
+      ],
+      "spiritual": [
+        "https://nemaska.com/wellness-centre/"
+      ],
+      "emotional": [
+        "https://nemaska.com/wellness-centre/"
+      ],
+      "survivors": [
+        "https://nemaska.com/wp-content/uploads/2022/10/CreeNation_RapportAnnuel_ALL_2021-22_V8-FINAL-PRINT-09202022-spread.pdf"
+      ],
+      "youth": [
+        "https://nemaska.com/departments/social-development/"
+      ],
+      "connect": [
+        "https://nemaska.com/wellness-centre/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=59&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://nemaska.com/wp-content/uploads/2023/08/external-Cree-Nation-of-Nemaska_Strategic-Plan_REPORT_2023-2027-1.pdf"
+      ],
+      "financials": [
+        "https://nemaska.com/administration/cree-nation-of-nemaska-publishes-its-2024-2025-annual-report/"
+      ]
     },
     "nameKey": "creenationofnemaska",
     "in85List": true,
@@ -6544,17 +7104,39 @@ window.COMMUNITIES = [
     "sourceRow": 36,
     "staff": [],
     "fieldLinks": {
-      "website": "https://www.wemindji.ca/",
-      "contacts": "https://www.wemindji.ca/contact",
-      "physical": "https://wemindji.ca/community/businesses",
-      "mental": "https://wemindji.ca/services/departments/community-service",
-      "spiritual": "https://wemindji.ca/services/departments/community-service",
-      "emotional": "https://wemindji.ca/services/departments/community-service",
-      "survivors": "https://wemindji.ca/services/departments/community-service",
-      "youth": "https://wemindji.ca/services/departments/community-service",
-      "connect": "https://wemindji.ca/services/departments/community-service",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=60&lang=eng",
-      "strategicPlan": "https://www.wemindji.ca/strategic-plan/5-year-guide"
+      "website": [
+        "https://www.wemindji.ca/"
+      ],
+      "contacts": [
+        "https://www.wemindji.ca/contact"
+      ],
+      "physical": [
+        "https://wemindji.ca/community/businesses"
+      ],
+      "mental": [
+        "https://wemindji.ca/services/departments/community-service"
+      ],
+      "spiritual": [
+        "https://wemindji.ca/services/departments/community-service"
+      ],
+      "emotional": [
+        "https://wemindji.ca/services/departments/community-service"
+      ],
+      "survivors": [
+        "https://wemindji.ca/services/departments/community-service"
+      ],
+      "youth": [
+        "https://wemindji.ca/services/departments/community-service"
+      ],
+      "connect": [
+        "https://wemindji.ca/services/departments/community-service"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=60&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://www.wemindji.ca/strategic-plan/5-year-guide"
+      ]
     },
     "nameKey": "creenationofwemindji",
     "in85List": true,
@@ -6761,16 +7343,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://mistissini.com/",
-      "contacts": "https://mistissini.com/download/staff-directory/",
-      "physical": "https://mistissini.com/services-in-our-community/",
-      "mental": "https://mistissini.com/pages/departments-3/social-and-cultural-department/",
-      "spiritual": "https://mistissini.com/our-elders/",
-      "survivors": "https://mistissini.com/our-elders/",
-      "youth": "https://mistissini.com/our-youth/",
-      "connect": "https://mistissini.com/our-elders/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=75&lang=eng",
-      "agm": "https://www.facebook.com/creenationofmistissini/videos/cnm-council-meeting-42026/27068163359436818/"
+      "website": [
+        "https://mistissini.com/"
+      ],
+      "contacts": [
+        "https://mistissini.com/download/staff-directory/"
+      ],
+      "physical": [
+        "https://mistissini.com/services-in-our-community/"
+      ],
+      "mental": [
+        "https://mistissini.com/pages/departments-3/social-and-cultural-department/"
+      ],
+      "spiritual": [
+        "https://mistissini.com/our-elders/"
+      ],
+      "survivors": [
+        "https://mistissini.com/our-elders/"
+      ],
+      "youth": [
+        "https://mistissini.com/our-youth/"
+      ],
+      "connect": [
+        "https://mistissini.com/our-elders/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=75&lang=eng"
+      ],
+      "agm": [
+        "https://www.facebook.com/creenationofmistissini/videos/cnm-council-meeting-42026/27068163359436818/"
+      ]
     },
     "nameKey": "creenationofmistissini",
     "in85List": true,
@@ -6934,16 +7536,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.whapmagoostui.ca/",
-      "contacts": "https://www.whapmagoostui.ca/team-1",
-      "physical": "https://creehealth.org/whapmagoostui",
-      "mental": "https://creehealth.org/services/mental-health-services",
-      "spiritual": "https://www.facebook.com/groups/134359579935702/",
-      "emotional": "https://creehealth.org/whapmagoostui",
-      "survivors": "https://creehealth.org/whapmagoostui",
-      "youth": "https://www.whapmagoostui.ca/",
-      "connect": "https://creehealth.org/whapmagoostui",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=95&lang=eng"
+      "website": [
+        "https://www.whapmagoostui.ca/"
+      ],
+      "contacts": [
+        "https://www.whapmagoostui.ca/team-1"
+      ],
+      "physical": [
+        "https://creehealth.org/whapmagoostui"
+      ],
+      "mental": [
+        "https://creehealth.org/services/mental-health-services"
+      ],
+      "spiritual": [
+        "https://www.facebook.com/groups/134359579935702/"
+      ],
+      "emotional": [
+        "https://creehealth.org/whapmagoostui"
+      ],
+      "survivors": [
+        "https://creehealth.org/whapmagoostui"
+      ],
+      "youth": [
+        "https://www.whapmagoostui.ca/"
+      ],
+      "connect": [
+        "https://creehealth.org/whapmagoostui"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=95&lang=eng"
+      ]
     },
     "nameKey": "whapmagoostuifn",
     "in85List": true,
@@ -7091,18 +7713,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://mbq-tmt.org/",
-      "contacts": "https://mbq-tmt.org/mbq-contacts/",
-      "physical": "https://mbq-tmt.org/mc-locations/community-wellbeing-centre/",
-      "mental": "https://mbq-tmt.org/social-services/good-minds/",
-      "spiritual": "https://mbq-tmt.org/social-services/good-minds/",
-      "emotional": "https://mbq-tmt.org/social-services/good-minds/",
-      "survivors": "https://mbq-tmt.org/social-services/good-minds/",
-      "youth": "https://mbq-tmt.org/social-services/good-minds/",
-      "connect": "https://mbq-tmt.org/social-services/good-minds/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=164&lang=eng",
-      "strategicPlan": "https://mbq-tmt.org/kenhteke-community-plan-for-creating-kanyenkeha-speakers/",
-      "financials": "https://mbq-tmt.org/mbq-documents-and-reports/"
+      "website": [
+        "https://mbq-tmt.org/"
+      ],
+      "contacts": [
+        "https://mbq-tmt.org/mbq-contacts/"
+      ],
+      "physical": [
+        "https://mbq-tmt.org/mc-locations/community-wellbeing-centre/"
+      ],
+      "mental": [
+        "https://mbq-tmt.org/social-services/good-minds/"
+      ],
+      "spiritual": [
+        "https://mbq-tmt.org/social-services/good-minds/"
+      ],
+      "emotional": [
+        "https://mbq-tmt.org/social-services/good-minds/"
+      ],
+      "survivors": [
+        "https://mbq-tmt.org/social-services/good-minds/"
+      ],
+      "youth": [
+        "https://mbq-tmt.org/social-services/good-minds/"
+      ],
+      "connect": [
+        "https://mbq-tmt.org/social-services/good-minds/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=164&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://mbq-tmt.org/kenhteke-community-plan-for-creating-kanyenkeha-speakers/"
+      ],
+      "financials": [
+        "https://mbq-tmt.org/mbq-documents-and-reports/"
+      ]
     },
     "nameKey": "bayofquinte",
     "in85List": true,
@@ -7298,18 +7944,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.chimnissing.ca/",
-      "contacts": "https://www.chimnissing.ca/orgdocs/admin-ext-public.pdf",
-      "physical": "https://211ontario.ca/service/71102850/beausoleil-family-health-centre-beausoleil-family-health-centre/",
-      "mental": "https://www.chimnissing.ca/socialservices.html",
-      "spiritual": "https://www.chimnissing.ca/recreation.html",
-      "emotional": "https://chimnissing.ca/famserv.html",
-      "survivors": "https://chimnissing.ca/community/CCP-UPDATE-2024.pdf",
-      "youth": "https://chimnissing.ca/famserv.html",
-      "connect": "https://chimnissing.ca/community/CCP-UPDATE-2024.pdf",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=141&lang=eng",
-      "strategicPlan": "https://www.chimnissing.ca/community/JULY2021-APPROVED-COMMUNITY-PLAN-hr2.pdf",
-      "financials": "https://www.chimnissing.ca/reports/BFN-FINANCIAL-STATEMENTS-2024-2025.pdf"
+      "website": [
+        "https://www.chimnissing.ca/"
+      ],
+      "contacts": [
+        "https://www.chimnissing.ca/orgdocs/admin-ext-public.pdf"
+      ],
+      "physical": [
+        "https://211ontario.ca/service/71102850/beausoleil-family-health-centre-beausoleil-family-health-centre/"
+      ],
+      "mental": [
+        "https://www.chimnissing.ca/socialservices.html"
+      ],
+      "spiritual": [
+        "https://www.chimnissing.ca/recreation.html"
+      ],
+      "emotional": [
+        "https://chimnissing.ca/famserv.html"
+      ],
+      "survivors": [
+        "https://chimnissing.ca/community/CCP-UPDATE-2024.pdf"
+      ],
+      "youth": [
+        "https://chimnissing.ca/famserv.html"
+      ],
+      "connect": [
+        "https://chimnissing.ca/community/CCP-UPDATE-2024.pdf"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=141&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://www.chimnissing.ca/community/JULY2021-APPROVED-COMMUNITY-PLAN-hr2.pdf"
+      ],
+      "financials": [
+        "https://www.chimnissing.ca/reports/BFN-FINANCIAL-STATEMENTS-2024-2025.pdf"
+      ]
     },
     "nameKey": "beausoleilfn",
     "in85List": true,
@@ -7506,20 +8176,48 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.nawash.ca/",
-      "contacts": "https://www.nawash.ca/chief-council/",
-      "physical": "https://www.nawash.ca/health-services/",
-      "mental": "https://www.nawash.ca/wellness-center/",
-      "spiritual": "https://www.nawash.ca/language-revitalization-plan/",
-      "emotional": "https://www.nawash.ca/wellness-how-we-can-help/",
-      "survivors": "https://www.nawash.ca/wordpress/wp-content/uploads/2022/03/March-25-2022-Chippewas-of-Nawash-Newsletter_small_compressed-1.pdf",
-      "youth": "https://www.nawash.ca/native-child-welfare/",
-      "connect": "https://www.nawash.ca/seniors/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=122&lang=eng",
-      "links": "https://www.nawash.ca/audits/",
-      "strategicPlan": "https://www.nawash.ca/comprehensive-community-plan-update-and-five-year-strategic-plan-project/",
-      "agm": "https://nawashtrust.ca/operations/agm-2025",
-      "financials": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FederalFundingMain.aspx?BAND_NUMBER=122&lang=eng"
+      "website": [
+        "https://www.nawash.ca/"
+      ],
+      "contacts": [
+        "https://www.nawash.ca/chief-council/"
+      ],
+      "physical": [
+        "https://www.nawash.ca/health-services/"
+      ],
+      "mental": [
+        "https://www.nawash.ca/wellness-center/"
+      ],
+      "spiritual": [
+        "https://www.nawash.ca/language-revitalization-plan/"
+      ],
+      "emotional": [
+        "https://www.nawash.ca/wellness-how-we-can-help/"
+      ],
+      "survivors": [
+        "https://www.nawash.ca/wordpress/wp-content/uploads/2022/03/March-25-2022-Chippewas-of-Nawash-Newsletter_small_compressed-1.pdf"
+      ],
+      "youth": [
+        "https://www.nawash.ca/native-child-welfare/"
+      ],
+      "connect": [
+        "https://www.nawash.ca/seniors/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=122&lang=eng"
+      ],
+      "links": [
+        "https://www.nawash.ca/audits/"
+      ],
+      "strategicPlan": [
+        "https://www.nawash.ca/comprehensive-community-plan-update-and-five-year-strategic-plan-project/"
+      ],
+      "agm": [
+        "https://nawashtrust.ca/operations/agm-2025"
+      ],
+      "financials": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FederalFundingMain.aspx?BAND_NUMBER=122&lang=eng"
+      ]
     },
     "nameKey": "capecrocker",
     "in85List": true,
@@ -7708,16 +8406,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://cottfn.com/",
-      "contacts": "https://cottfn.com/councillors/",
-      "physical": "https://cottfn.com/departments/health/",
-      "mental": "https://cottfn.com/departments/health/",
-      "spiritual": "https://cottfn.com/departments/health/",
-      "emotional": "https://cottfn.com/departments/health/",
-      "survivors": "https://cottfn.com/event/round-dance/",
-      "youth": "https://cottfn.com/departments/cyfwbs/",
-      "connect": "https://cottfn.com/event/round-dance/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=166&lang=eng"
+      "website": [
+        "https://cottfn.com/"
+      ],
+      "contacts": [
+        "https://cottfn.com/councillors/"
+      ],
+      "physical": [
+        "https://cottfn.com/departments/health/"
+      ],
+      "mental": [
+        "https://cottfn.com/departments/health/"
+      ],
+      "spiritual": [
+        "https://cottfn.com/departments/health/"
+      ],
+      "emotional": [
+        "https://cottfn.com/departments/health/"
+      ],
+      "survivors": [
+        "https://cottfn.com/event/round-dance/"
+      ],
+      "youth": [
+        "https://cottfn.com/departments/cyfwbs/"
+      ],
+      "connect": [
+        "https://cottfn.com/event/round-dance/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=166&lang=eng"
+      ]
     },
     "nameKey": "chippewaofthethames",
     "in85List": true,
@@ -7908,16 +8626,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://curvelakefirstnation.ca/",
-      "contacts": "https://curvelakefirstnation.ca/chief-council/",
-      "physical": "https://curvelakefirstnation.ca/health-family-services/",
-      "mental": "https://curvelakefirstnation.ca/health-family-services/",
-      "spiritual": "https://www.curvelakefirstnation.ca/services/cultural-centre/",
-      "emotional": "https://curvelakefirstnation.ca/health-family-services/",
-      "survivors": "https://www.curvelakefirstnation.ca/services/health-family-services/",
-      "youth": "https://www.curvelakefirstnation.ca/services/education/",
-      "connect": "https://www.curvelakefirstnation.ca/services/cultural-centre/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=161&lang=eng"
+      "website": [
+        "https://curvelakefirstnation.ca/"
+      ],
+      "contacts": [
+        "https://curvelakefirstnation.ca/chief-council/"
+      ],
+      "physical": [
+        "https://curvelakefirstnation.ca/health-family-services/"
+      ],
+      "mental": [
+        "https://curvelakefirstnation.ca/health-family-services/"
+      ],
+      "spiritual": [
+        "https://www.curvelakefirstnation.ca/services/cultural-centre/"
+      ],
+      "emotional": [
+        "https://curvelakefirstnation.ca/health-family-services/"
+      ],
+      "survivors": [
+        "https://www.curvelakefirstnation.ca/services/health-family-services/"
+      ],
+      "youth": [
+        "https://www.curvelakefirstnation.ca/services/education/"
+      ],
+      "connect": [
+        "https://www.curvelakefirstnation.ca/services/cultural-centre/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=161&lang=eng"
+      ]
     },
     "nameKey": "curvelakefn",
     "in85List": true,
@@ -8157,16 +8895,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://delawarenation.on.ca/",
-      "contacts": "https://delawarenation.on.ca/health/",
-      "physical": "https://delawarenation.on.ca/health/",
-      "mental": "https://delawarenation.on.ca/health/",
-      "spiritual": "https://delawarenation.on.ca/health/",
-      "emotional": "https://delawarenation.on.ca/health/",
-      "survivors": "https://delawarenation.on.ca/wp-content/uploads/2023/10/EL-Community-Leadership-Update-October-2023.pdf",
-      "youth": "https://delawarenation.on.ca/health/",
-      "connect": "https://delawarenation.on.ca/wp-content/uploads/2023/10/EL-Community-Leadership-Update-October-2023.pdf",
-      "popInfo": "https://www.sac-isc.gc.ca/eng/1736535095412/1736535509989"
+      "website": [
+        "https://delawarenation.on.ca/"
+      ],
+      "contacts": [
+        "https://delawarenation.on.ca/health/"
+      ],
+      "physical": [
+        "https://delawarenation.on.ca/health/"
+      ],
+      "mental": [
+        "https://delawarenation.on.ca/health/"
+      ],
+      "spiritual": [
+        "https://delawarenation.on.ca/health/"
+      ],
+      "emotional": [
+        "https://delawarenation.on.ca/health/"
+      ],
+      "survivors": [
+        "https://delawarenation.on.ca/wp-content/uploads/2023/10/EL-Community-Leadership-Update-October-2023.pdf"
+      ],
+      "youth": [
+        "https://delawarenation.on.ca/health/"
+      ],
+      "connect": [
+        "https://delawarenation.on.ca/wp-content/uploads/2023/10/EL-Community-Leadership-Update-October-2023.pdf"
+      ],
+      "popInfo": [
+        "https://www.sac-isc.gc.ca/eng/1736535095412/1736535509989"
+      ]
     },
     "nameKey": "delawarenationatmoraviantown",
     "in85List": true,
@@ -8374,15 +9132,33 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.sixnations.ca/",
-      "physical": "https://www.sixnations.ca/health-services/",
-      "mental": "https://www.snhs.ca/mental-wellness/",
-      "spiritual": "https://www.snhs.ca/media/ftqhjneq/annualreport_20242025_final-1.pdf",
-      "emotional": "https://www.snhs.ca/mental-wellness/crisis-hub/",
-      "survivors": "https://snhs.ca/community-health-and-wellness/senior-support-hub/",
-      "youth": "https://www.sixnations.ca/wp-content/uploads/2026/03/SNGRSpringLeisureGuide2026.pdf",
-      "connect": "https://www.sixnations.ca/2025/05/30/kawenniio-gaweniyo-school/",
-      "financials": "https://www.sixnations.ca/finance/"
+      "website": [
+        "https://www.sixnations.ca/"
+      ],
+      "physical": [
+        "https://www.sixnations.ca/health-services/"
+      ],
+      "mental": [
+        "https://www.snhs.ca/mental-wellness/"
+      ],
+      "spiritual": [
+        "https://www.snhs.ca/media/ftqhjneq/annualreport_20242025_final-1.pdf"
+      ],
+      "emotional": [
+        "https://www.snhs.ca/mental-wellness/crisis-hub/"
+      ],
+      "survivors": [
+        "https://snhs.ca/community-health-and-wellness/senior-support-hub/"
+      ],
+      "youth": [
+        "https://www.sixnations.ca/wp-content/uploads/2026/03/SNGRSpringLeisureGuide2026.pdf"
+      ],
+      "connect": [
+        "https://www.sixnations.ca/2025/05/30/kawenniio-gaweniyo-school/"
+      ],
+      "financials": [
+        "https://www.sixnations.ca/finance/"
+      ]
     },
     "nameKey": "grandriversixnations",
     "in85List": true,
@@ -8609,17 +9385,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://mchigeeng.ca/",
-      "contacts": "https://mchigeeng.ca/administrative-directory/",
-      "physical": "https://mchigeeng.ca/programs-and-services/health/",
-      "mental": "https://mchigeeng.ca/programs-and-services/mental-health-program/",
-      "spiritual": "https://mchigeeng.ca/programs-and-services/health/traditional-health/",
-      "emotional": "https://mchigeeng.ca/programs-and-services/health/wellness-centre/",
-      "survivors": "https://mchigeeng.ca/programs-and-services/health/wellness-centre/",
-      "youth": "https://mchigeeng.ca/contact/",
-      "connect": "https://mchigeeng.ca/community/anishinaabemowin/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=181&lang=eng",
-      "financials": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/DisplayBinaryData.aspx?BAND_NUMBER_FF=181&FY=2024-2025&DOC=Audited%20consolidated%20financial%20statements&lang=eng"
+      "website": [
+        "https://mchigeeng.ca/"
+      ],
+      "contacts": [
+        "https://mchigeeng.ca/administrative-directory/"
+      ],
+      "physical": [
+        "https://mchigeeng.ca/programs-and-services/health/"
+      ],
+      "mental": [
+        "https://mchigeeng.ca/programs-and-services/mental-health-program/"
+      ],
+      "spiritual": [
+        "https://mchigeeng.ca/programs-and-services/health/traditional-health/"
+      ],
+      "emotional": [
+        "https://mchigeeng.ca/programs-and-services/health/wellness-centre/"
+      ],
+      "survivors": [
+        "https://mchigeeng.ca/programs-and-services/health/wellness-centre/"
+      ],
+      "youth": [
+        "https://mchigeeng.ca/contact/"
+      ],
+      "connect": [
+        "https://mchigeeng.ca/community/anishinaabemowin/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=181&lang=eng"
+      ],
+      "financials": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/DisplayBinaryData.aspx?BAND_NUMBER_FF=181&FY=2024-2025&DOC=Audited%20consolidated%20financial%20statements&lang=eng"
+      ]
     },
     "nameKey": "mchigeengfn",
     "in85List": true,
@@ -8787,15 +9585,33 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://munsee.ca/",
-      "physical": "https://munsee.ca/community-health-centre/",
-      "mental": "https://munsee.ca/mental-health-awareness/",
-      "spiritual": "https://munsee.ca/nnadap/",
-      "emotional": "https://munsee.ca/family-youth-prevention-services/",
-      "survivors": "https://munsee.ca/bringing-our-children-home/",
-      "youth": "https://munsee.ca/jk-12/",
-      "connect": "https://munsee.ca/bringing-our-children-home/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=168&lang=eng"
+      "website": [
+        "https://munsee.ca/"
+      ],
+      "physical": [
+        "https://munsee.ca/community-health-centre/"
+      ],
+      "mental": [
+        "https://munsee.ca/mental-health-awareness/"
+      ],
+      "spiritual": [
+        "https://munsee.ca/nnadap/"
+      ],
+      "emotional": [
+        "https://munsee.ca/family-youth-prevention-services/"
+      ],
+      "survivors": [
+        "https://munsee.ca/bringing-our-children-home/"
+      ],
+      "youth": [
+        "https://munsee.ca/jk-12/"
+      ],
+      "connect": [
+        "https://munsee.ca/bringing-our-children-home/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=168&lang=eng"
+      ]
     },
     "nameKey": "munseedelawarenation",
     "in85List": true,
@@ -9021,16 +9837,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://oneida.on.ca/",
-      "contacts": "https://oneida.on.ca/contact/directory/",
-      "physical": "https://oneida.on.ca/health-wellness/",
-      "mental": "https://oneida.on.ca/health-wellness/",
-      "spiritual": "https://oneida.on.ca/health-wellness/",
-      "emotional": "https://oneida.on.ca/health-wellness/",
-      "survivors": "https://oneida.on.ca/health-wellness/",
-      "youth": "https://oneida.on.ca/education/education-office/",
-      "connect": "https://oneida.on.ca/education/education-office/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=169&lang=eng"
+      "website": [
+        "https://oneida.on.ca/"
+      ],
+      "contacts": [
+        "https://oneida.on.ca/contact/directory/"
+      ],
+      "physical": [
+        "https://oneida.on.ca/health-wellness/"
+      ],
+      "mental": [
+        "https://oneida.on.ca/health-wellness/"
+      ],
+      "spiritual": [
+        "https://oneida.on.ca/health-wellness/"
+      ],
+      "emotional": [
+        "https://oneida.on.ca/health-wellness/"
+      ],
+      "survivors": [
+        "https://oneida.on.ca/health-wellness/"
+      ],
+      "youth": [
+        "https://oneida.on.ca/education/education-office/"
+      ],
+      "connect": [
+        "https://oneida.on.ca/education/education-office/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=169&lang=eng"
+      ]
     },
     "nameKey": "oneidanationofthethames",
     "in85List": true,
@@ -9253,15 +10089,33 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.ramafirstnation.ca",
-      "physical": "https://www.ramafirstnation.ca/rama-health/",
-      "mental": "https://www.ramafirstnation.ca/community-resources/",
-      "spiritual": "https://www.ramafirstnation.ca/culture-and-events/",
-      "emotional": "https://www.ramafirstnation.ca/rama-contacts/",
-      "survivors": "https://www.ramafirstnation.ca/rama-departments/",
-      "youth": "https://www.ramafirstnation.ca/rama-contacts/",
-      "connect": "https://www.ramafirstnation.ca/culture-and-events/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=139&lang=eng"
+      "website": [
+        "https://www.ramafirstnation.ca"
+      ],
+      "physical": [
+        "https://www.ramafirstnation.ca/rama-health/"
+      ],
+      "mental": [
+        "https://www.ramafirstnation.ca/community-resources/"
+      ],
+      "spiritual": [
+        "https://www.ramafirstnation.ca/culture-and-events/"
+      ],
+      "emotional": [
+        "https://www.ramafirstnation.ca/rama-contacts/"
+      ],
+      "survivors": [
+        "https://www.ramafirstnation.ca/rama-departments/"
+      ],
+      "youth": [
+        "https://www.ramafirstnation.ca/rama-contacts/"
+      ],
+      "connect": [
+        "https://www.ramafirstnation.ca/culture-and-events/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=139&lang=eng"
+      ]
     },
     "nameKey": "ramafn",
     "in85List": true,
@@ -9479,18 +10333,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://saugeenfirstnation.com/",
-      "physical": "https://saugeenfirstnation.com/mino-bimadsawin-health-centre-community-health-nurse-chn/",
-      "mental": "https://saugeenfirstnation.com/mino-bimadsawin-health-centre-building-healthy-communities/",
-      "spiritual": "https://saugeenfirstnation.com/mino-bimadsawin-health-centre-building-healthy-communities/",
-      "emotional": "https://saugeenfirstnation.com/mino-bimadsawin-health-centre-building-healthy-communities/",
-      "survivors": "https://saugeenfirstnation.com/mino-bimadsawin-health-centre-home-and-community-care/",
-      "youth": "https://saugeenfirstnation.com/education-department/",
-      "connect": "https://saugeenfirstnation.com/aaron-roote-memorial-youth-centre/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=123&lang=eng",
-      "strategicPlan": "https://saugeenfirstnation.com/wp-content/uploads/2024/11/Strategic-Plan-w-out-Timeline-2.pdf",
-      "agm": "https://saugeenfirstnation.com/wp-content/uploads/2025/12/SFN-Annual-Report-2025-Final.pdf",
-      "financials": "https://saugeenfirstnation.com/wp-content/uploads/2025/12/SFN-Annual-Report-2025-Final.pdf"
+      "website": [
+        "https://saugeenfirstnation.com/"
+      ],
+      "physical": [
+        "https://saugeenfirstnation.com/mino-bimadsawin-health-centre-community-health-nurse-chn/"
+      ],
+      "mental": [
+        "https://saugeenfirstnation.com/mino-bimadsawin-health-centre-building-healthy-communities/"
+      ],
+      "spiritual": [
+        "https://saugeenfirstnation.com/mino-bimadsawin-health-centre-building-healthy-communities/"
+      ],
+      "emotional": [
+        "https://saugeenfirstnation.com/mino-bimadsawin-health-centre-building-healthy-communities/"
+      ],
+      "survivors": [
+        "https://saugeenfirstnation.com/mino-bimadsawin-health-centre-home-and-community-care/"
+      ],
+      "youth": [
+        "https://saugeenfirstnation.com/education-department/"
+      ],
+      "connect": [
+        "https://saugeenfirstnation.com/aaron-roote-memorial-youth-centre/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=123&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://saugeenfirstnation.com/wp-content/uploads/2024/11/Strategic-Plan-w-out-Timeline-2.pdf"
+      ],
+      "agm": [
+        "https://saugeenfirstnation.com/wp-content/uploads/2025/12/SFN-Annual-Report-2025-Final.pdf"
+      ],
+      "financials": [
+        "https://saugeenfirstnation.com/wp-content/uploads/2025/12/SFN-Annual-Report-2025-Final.pdf"
+      ]
     },
     "nameKey": "saugeenfn",
     "in85List": true,
@@ -9642,15 +10520,33 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://shawanagafirstnation.ca/",
-      "physical": "https://shawanagafirstnation.ca/healing-centre/",
-      "mental": "https://shawanagafirstnation.ca/healing-centre/",
-      "spiritual": "https://shawanagafirstnation.ca/healing-centre/",
-      "emotional": "https://shawanagafirstnation.ca/healing-centre/",
-      "survivors": "https://shawanagafirstnation.ca/healing-centre/",
-      "youth": "https://shawanagafirstnation.ca/school-and-education/",
-      "connect": "https://shawanagafirstnation.ca/healing-centre/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=137&lang=eng"
+      "website": [
+        "https://shawanagafirstnation.ca/"
+      ],
+      "physical": [
+        "https://shawanagafirstnation.ca/healing-centre/"
+      ],
+      "mental": [
+        "https://shawanagafirstnation.ca/healing-centre/"
+      ],
+      "spiritual": [
+        "https://shawanagafirstnation.ca/healing-centre/"
+      ],
+      "emotional": [
+        "https://shawanagafirstnation.ca/healing-centre/"
+      ],
+      "survivors": [
+        "https://shawanagafirstnation.ca/healing-centre/"
+      ],
+      "youth": [
+        "https://shawanagafirstnation.ca/school-and-education/"
+      ],
+      "connect": [
+        "https://shawanagafirstnation.ca/healing-centre/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=137&lang=eng"
+      ]
     },
     "nameKey": "shawanagafn",
     "in85List": true,
@@ -9901,17 +10797,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://wahtamohawks.com/",
-      "contacts": "https://wahtamohawks.com/contact-us/",
-      "physical": "https://wahtamohawks.com/health-and-social/",
-      "mental": "https://wahtamohawks.com/health-and-social/",
-      "spiritual": "https://wahtamohawks.com/education/",
-      "emotional": "https://wahtamohawks.com/health-and-social/social-services/",
-      "survivors": "https://wahtamohawks.com/health-and-social/seniors-services/",
-      "youth": "https://wahtamohawks.com/health-and-social/family-services/",
-      "connect": "https://wahtamohawks.com/education/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=134&lang=eng",
-      "financials": "https://canadaspends.com/en/first-nations/ISC_134/2025"
+      "website": [
+        "https://wahtamohawks.com/"
+      ],
+      "contacts": [
+        "https://wahtamohawks.com/contact-us/"
+      ],
+      "physical": [
+        "https://wahtamohawks.com/health-and-social/"
+      ],
+      "mental": [
+        "https://wahtamohawks.com/health-and-social/"
+      ],
+      "spiritual": [
+        "https://wahtamohawks.com/education/"
+      ],
+      "emotional": [
+        "https://wahtamohawks.com/health-and-social/social-services/"
+      ],
+      "survivors": [
+        "https://wahtamohawks.com/health-and-social/seniors-services/"
+      ],
+      "youth": [
+        "https://wahtamohawks.com/health-and-social/family-services/"
+      ],
+      "connect": [
+        "https://wahtamohawks.com/education/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=134&lang=eng"
+      ],
+      "financials": [
+        "https://canadaspends.com/en/first-nations/ISC_134/2025"
+      ]
     },
     "nameKey": "wahtamohawk",
     "in85List": true,
@@ -10178,16 +11096,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://wasauksing.ca/",
-      "contacts": "https://wasauksing.ca/staff-directory/",
-      "physical": "https://wasauksing.health/",
-      "mental": "https://wasauksing.health/",
-      "spiritual": "https://wasauksing.health/traditional-wellness/",
-      "emotional": "https://wasauksing.health/traditional-wellness/",
-      "survivors": "https://wasauksing.health/traditional-wellness/",
-      "youth": "https://wasauksing.ca/category/community/education/",
-      "connect": "https://wasauksing.health/traditional-wellness/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=136&lang=eng"
+      "website": [
+        "https://wasauksing.ca/"
+      ],
+      "contacts": [
+        "https://wasauksing.ca/staff-directory/"
+      ],
+      "physical": [
+        "https://wasauksing.health/"
+      ],
+      "mental": [
+        "https://wasauksing.health/"
+      ],
+      "spiritual": [
+        "https://wasauksing.health/traditional-wellness/"
+      ],
+      "emotional": [
+        "https://wasauksing.health/traditional-wellness/"
+      ],
+      "survivors": [
+        "https://wasauksing.health/traditional-wellness/"
+      ],
+      "youth": [
+        "https://wasauksing.ca/category/community/education/"
+      ],
+      "connect": [
+        "https://wasauksing.health/traditional-wellness/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=136&lang=eng"
+      ]
     },
     "nameKey": "wasauksingfn",
     "in85List": true,
@@ -10414,13 +11352,27 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://birdtailsioux.ca/",
-      "contacts": "https://birdtailsioux.ca/contact/",
-      "survivors": "https://www.brandonsun.com/local/2021/09/09/healing-garden-honours-survivors",
-      "connect": "https://scoinc.mb.ca/sco-sponsors-third-annual-reconciliation-run/",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://www.facebook.com/share/p/1BQyuxphKn/",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://birdtailsioux.ca/"
+      ],
+      "contacts": [
+        "https://birdtailsioux.ca/contact/"
+      ],
+      "survivors": [
+        "https://www.brandonsun.com/local/2021/09/09/healing-garden-honours-survivors"
+      ],
+      "connect": [
+        "https://scoinc.mb.ca/sco-sponsors-third-annual-reconciliation-run/"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://www.facebook.com/share/p/1BQyuxphKn/"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "birdtaildakotanation",
     "in85List": true,
@@ -10719,8 +11671,12 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://bloodtribe.org/",
-      "physical": "https://www.btdh.ca/program/non-insured-health-benefits/"
+      "website": [
+        "https://bloodtribe.org/"
+      ],
+      "physical": [
+        "https://www.btdh.ca/program/non-insured-health-benefits/"
+      ]
     },
     "nameKey": "bloodtribefn",
     "in85List": true,
@@ -10851,14 +11807,30 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://canupawakpanation.com/",
-      "mental": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "emotional": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "survivors": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "connect": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://canupawakpanation.com/"
+      ],
+      "mental": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "emotional": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "survivors": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "connect": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "canupawakpadakotafn",
     "in85List": true,
@@ -11038,12 +12010,24 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.mltc.net/",
-      "survivors": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "connect": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.mltc.net/"
+      ],
+      "survivors": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "connect": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "islandlake",
     "in85List": true,
@@ -11200,13 +12184,27 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://mistawasis.ca/",
-      "mental": "https://mistawasis.ca/health/",
-      "survivors": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "connect": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://mistawasis.ca/"
+      ],
+      "mental": [
+        "https://mistawasis.ca/health/"
+      ],
+      "survivors": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "connect": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "mistawasisnehiyawak",
     "in85List": true,
@@ -11387,11 +12385,21 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://whitebearfirstnation.com/",
-      "survivors": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "connect": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://whitebearfirstnation.com/"
+      ],
+      "survivors": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "connect": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "moosemountain",
     "in85List": true,
@@ -11590,10 +12598,18 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.onionlake.ca/",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.onionlake.ca/"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "onionlakecreenation",
     "in85List": true,
@@ -11775,9 +12791,15 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://peguis.ca/",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://peguis.ca/"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "peguisfn",
     "in85List": true,
@@ -11983,8 +13005,12 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://svdngovernance.com/",
-      "connect": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://svdngovernance.com/"
+      ],
+      "connect": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "siouxvalleydakotanation",
     "in85List": true,
@@ -12173,11 +13199,21 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://scfn.ca/",
-      "mental": "https://scfn.ca/",
-      "survivors": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "connect": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://scfn.ca/"
+      ],
+      "mental": [
+        "https://scfn.ca/"
+      ],
+      "survivors": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "connect": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "suckercreekfn",
     "in85List": true,
@@ -12381,12 +13417,24 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "http://www.yffn.ca/",
-      "survivors": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "connect": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "http://www.yffn.ca/"
+      ],
+      "survivors": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "connect": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "yorkfactoryfn",
     "in85List": true,
@@ -12564,9 +13612,15 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://mushkegowuk.ca/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=143&lang=eng",
-      "notes": "https://211ontario.ca/service/65282244/agency/attawapiskat-first-nation/"
+      "website": [
+        "https://mushkegowuk.ca/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=143&lang=eng"
+      ],
+      "notes": [
+        "https://211ontario.ca/service/65282244/agency/attawapiskat-first-nation/"
+      ]
     },
     "nameKey": "attawapiskatfn",
     "in85List": true,
@@ -12739,17 +13793,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "http://biggrassy.ca/",
-      "contacts": "http://biggrassy.ca/contact/",
-      "physical": "http://biggrassy.ca/departments-and-programs/health/",
-      "mental": "http://biggrassy.ca/departments-and-programs/health/national-native-alcohol-and-drug-abuse-program-nnadap/",
-      "spiritual": "http://biggrassy.ca/departments-and-programs/health/national-native-alcohol-and-drug-abuse-program-nnadap/",
-      "emotional": "http://biggrassy.ca/departments-and-programs/health/national-native-alcohol-and-drug-abuse-program-nnadap/",
-      "survivors": "http://biggrassy.ca/community/elders-advisory-council/",
-      "youth": "http://biggrassy.ca/departments-and-programs/education/pegimigaabo-school/",
-      "connect": "http://biggrassy.ca/departments-and-programs/prevention/",
-      "popInfo": "https://www.sac-isc.gc.ca/eng/1753213597358/1753213649039",
-      "strategicPlan": "http://biggrassy.ca/wp-content/uploads/2010/08/BGR-CCP_-Final-Version.pdf"
+      "website": [
+        "http://biggrassy.ca/"
+      ],
+      "contacts": [
+        "http://biggrassy.ca/contact/"
+      ],
+      "physical": [
+        "http://biggrassy.ca/departments-and-programs/health/"
+      ],
+      "mental": [
+        "http://biggrassy.ca/departments-and-programs/health/national-native-alcohol-and-drug-abuse-program-nnadap/"
+      ],
+      "spiritual": [
+        "http://biggrassy.ca/departments-and-programs/health/national-native-alcohol-and-drug-abuse-program-nnadap/"
+      ],
+      "emotional": [
+        "http://biggrassy.ca/departments-and-programs/health/national-native-alcohol-and-drug-abuse-program-nnadap/"
+      ],
+      "survivors": [
+        "http://biggrassy.ca/community/elders-advisory-council/"
+      ],
+      "youth": [
+        "http://biggrassy.ca/departments-and-programs/education/pegimigaabo-school/"
+      ],
+      "connect": [
+        "http://biggrassy.ca/departments-and-programs/prevention/"
+      ],
+      "popInfo": [
+        "https://www.sac-isc.gc.ca/eng/1753213597358/1753213649039"
+      ],
+      "strategicPlan": [
+        "http://biggrassy.ca/wp-content/uploads/2010/08/BGR-CCP_-Final-Version.pdf"
+      ]
     },
     "nameKey": "assabaska",
     "in85List": true,
@@ -12949,16 +14025,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.bigisland.ca/",
-      "contacts": "https://www.bigisland.ca/contact-us",
-      "physical": "https://www.bigisland.ca/health-department",
-      "mental": "https://www.bigisland.ca/health-department",
-      "spiritual": "https://www.bigisland.ca/health-department",
-      "emotional": "https://www.bigisland.ca/community-care",
-      "survivors": "https://www.bigisland.ca/community-care",
-      "youth": "https://www.bigisland.ca/health-department",
-      "connect": "https://www.bigisland.ca/social-services",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=125&lang=eng"
+      "website": [
+        "https://www.bigisland.ca/"
+      ],
+      "contacts": [
+        "https://www.bigisland.ca/contact-us"
+      ],
+      "physical": [
+        "https://www.bigisland.ca/health-department"
+      ],
+      "mental": [
+        "https://www.bigisland.ca/health-department"
+      ],
+      "spiritual": [
+        "https://www.bigisland.ca/health-department"
+      ],
+      "emotional": [
+        "https://www.bigisland.ca/community-care"
+      ],
+      "survivors": [
+        "https://www.bigisland.ca/community-care"
+      ],
+      "youth": [
+        "https://www.bigisland.ca/health-department"
+      ],
+      "connect": [
+        "https://www.bigisland.ca/social-services"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=125&lang=eng"
+      ]
     },
     "nameKey": "bigislandojibwayanishinaabeofnaongashiing",
     "in85List": true,
@@ -13158,16 +14254,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://ki-btl.ca/",
-      "contacts": "https://ki-btl.ca/directory",
-      "physical": "https://ki-btl.ca/health",
-      "mental": "https://ki-btl.ca/health",
-      "spiritual": "https://ki-btl.ca/health",
-      "emotional": "https://ki-btl.ca/health",
-      "survivors": "https://ki-btl.ca/health",
-      "youth": "https://ki-btl.ca/health",
-      "connect": "https://ki-btl.ca/health",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=209&lang=eng"
+      "website": [
+        "https://ki-btl.ca/"
+      ],
+      "contacts": [
+        "https://ki-btl.ca/directory"
+      ],
+      "physical": [
+        "https://ki-btl.ca/health"
+      ],
+      "mental": [
+        "https://ki-btl.ca/health"
+      ],
+      "spiritual": [
+        "https://ki-btl.ca/health"
+      ],
+      "emotional": [
+        "https://ki-btl.ca/health"
+      ],
+      "survivors": [
+        "https://ki-btl.ca/health"
+      ],
+      "youth": [
+        "https://ki-btl.ca/health"
+      ],
+      "connect": [
+        "https://ki-btl.ca/health"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=209&lang=eng"
+      ]
     },
     "nameKey": "bigtroutlake",
     "in85List": true,
@@ -13304,18 +14420,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.catlakefirstnation.com/",
-      "contacts": "https://www.northwesthealthline.ca/displayservice.aspx?id=140670",
-      "physical": "https://www.catlakefirstnation.com/health-authority",
-      "mental": "https://www.catlakefirstnation.com/nodin-mental-health",
-      "spiritual": "https://www.catlakefirstnation.com/choose-life",
-      "emotional": "https://www.catlakefirstnation.com/nodin-mental-health",
-      "survivors": "https://www.catlakefirstnation.com/about",
-      "youth": "https://www.catlakefirstnation.com/choose-life",
-      "connect": "https://www.catlakefirstnation.com/choose-life",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=216&lang=eng",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.catlakefirstnation.com/"
+      ],
+      "contacts": [
+        "https://www.northwesthealthline.ca/displayservice.aspx?id=140670"
+      ],
+      "physical": [
+        "https://www.catlakefirstnation.com/health-authority"
+      ],
+      "mental": [
+        "https://www.catlakefirstnation.com/nodin-mental-health"
+      ],
+      "spiritual": [
+        "https://www.catlakefirstnation.com/choose-life"
+      ],
+      "emotional": [
+        "https://www.catlakefirstnation.com/nodin-mental-health"
+      ],
+      "survivors": [
+        "https://www.catlakefirstnation.com/about"
+      ],
+      "youth": [
+        "https://www.catlakefirstnation.com/choose-life"
+      ],
+      "connect": [
+        "https://www.catlakefirstnation.com/choose-life"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=216&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "catlakefn",
     "in85List": true,
@@ -13439,16 +14579,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "physical": "https://211ontario.ca/service/65285491/zhiibaahaasing-first-nation-health-services/",
-      "mental": "https://211ontario.ca/service/65285491/zhiibaahaasing-first-nation-health-services/",
-      "spiritual": "https://211ontario.ca/service/71464979/zhiibaahaasing-first-nation-family-well-being-program/",
-      "emotional": "https://211ontario.ca/service/71464979/zhiibaahaasing-first-nation-family-well-being-program/",
-      "survivors": "https://211ontario.ca/service/65285481/site/",
-      "youth": "https://211ontario.ca/service/71464979/zhiibaahaasing-first-nation-family-well-being-program/",
-      "connect": "https://211ontario.ca/service/71464979/zhiibaahaasing-first-nation-family-well-being-program/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=173&lang=eng",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "physical": [
+        "https://211ontario.ca/service/65285491/zhiibaahaasing-first-nation-health-services/"
+      ],
+      "mental": [
+        "https://211ontario.ca/service/65285491/zhiibaahaasing-first-nation-health-services/"
+      ],
+      "spiritual": [
+        "https://211ontario.ca/service/71464979/zhiibaahaasing-first-nation-family-well-being-program/"
+      ],
+      "emotional": [
+        "https://211ontario.ca/service/71464979/zhiibaahaasing-first-nation-family-well-being-program/"
+      ],
+      "survivors": [
+        "https://211ontario.ca/service/65285481/site/"
+      ],
+      "youth": [
+        "https://211ontario.ca/service/71464979/zhiibaahaasing-first-nation-family-well-being-program/"
+      ],
+      "connect": [
+        "https://211ontario.ca/service/71464979/zhiibaahaasing-first-nation-family-well-being-program/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=173&lang=eng"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "cockburnisland",
     "in85List": true,
@@ -13639,18 +14799,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://constancelake.ca/",
-      "contacts": "https://constancelake.ca/",
-      "physical": "https://constancelakefn.ca/jane-mattinas-health-clinic/",
-      "mental": "https://constancelakefn.ca/choose-life/",
-      "spiritual": "https://constancelakefn.ca/our-culture-and-language/",
-      "emotional": "https://constancelakefn.ca/social-and-wellness/",
-      "survivors": "https://constancelakefn.ca/our-culture-and-language/",
-      "youth": "https://constancelakefn.ca/choose-life/",
-      "connect": "https://constancelakefn.ca/our-culture-and-language/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/FNP/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=182&lang=eng",
-      "strategicPlan": "https://hearst.civicweb.net/document/64265/Invitation_Participate_ENG_%20FR.pdf?handle=60967E72004545E2929563B07421C1D1",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://constancelake.ca/"
+      ],
+      "contacts": [
+        "https://constancelake.ca/"
+      ],
+      "physical": [
+        "https://constancelakefn.ca/jane-mattinas-health-clinic/"
+      ],
+      "mental": [
+        "https://constancelakefn.ca/choose-life/"
+      ],
+      "spiritual": [
+        "https://constancelakefn.ca/our-culture-and-language/"
+      ],
+      "emotional": [
+        "https://constancelakefn.ca/social-and-wellness/"
+      ],
+      "survivors": [
+        "https://constancelakefn.ca/our-culture-and-language/"
+      ],
+      "youth": [
+        "https://constancelakefn.ca/choose-life/"
+      ],
+      "connect": [
+        "https://constancelakefn.ca/our-culture-and-language/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/FNP/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=182&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://hearst.civicweb.net/document/64265/Invitation_Participate_ENG_%20FR.pdf?handle=60967E72004545E2929563B07421C1D1"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "constancelakefn",
     "in85List": true,
@@ -13842,16 +15026,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "physical": "https://211ontario.ca/service/65301739/agency/eabametoong-first-nation/",
-      "mental": "https://211ontario.ca/service/65301739/agency/eabametoong-first-nation/",
-      "spiritual": "https://211ontario.ca/service/89983162/eabametoong-first-nation-family-well-being-program/",
-      "emotional": "https://211ontario.ca/service/89983162/eabametoong-first-nation-family-well-being-program/",
-      "survivors": "https://www.northwesthealthline.ca/displayservice.aspx?id=189372",
-      "youth": "https://211ontario.ca/service/89983162/eabametoong-first-nation-family-well-being-program/",
-      "connect": "https://211ontario.ca/service/89983162/eabametoong-first-nation-family-well-being-program/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=183&lang=eng",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "physical": [
+        "https://211ontario.ca/service/65301739/agency/eabametoong-first-nation/"
+      ],
+      "mental": [
+        "https://211ontario.ca/service/65301739/agency/eabametoong-first-nation/"
+      ],
+      "spiritual": [
+        "https://211ontario.ca/service/89983162/eabametoong-first-nation-family-well-being-program/"
+      ],
+      "emotional": [
+        "https://211ontario.ca/service/89983162/eabametoong-first-nation-family-well-being-program/"
+      ],
+      "survivors": [
+        "https://www.northwesthealthline.ca/displayservice.aspx?id=189372"
+      ],
+      "youth": [
+        "https://211ontario.ca/service/89983162/eabametoong-first-nation-family-well-being-program/"
+      ],
+      "connect": [
+        "https://211ontario.ca/service/89983162/eabametoong-first-nation-family-well-being-program/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=183&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "eabametoong",
     "in85List": true,
@@ -14048,18 +15252,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "http://www.flyingpost.ca/",
-      "contacts": "https://www.flyingpost.ca/contact/",
-      "physical": "https://211ontario.ca/service/65274636/flying-post-first-nation-healthy-babies-healthy-children/",
-      "mental": "https://211ontario.ca/service/65274640/flying-post-first-nation-family-well-being-program/",
-      "spiritual": "https://211ontario.ca/service/65274640/flying-post-first-nation-family-well-being-program/",
-      "emotional": "https://211ontario.ca/service/65274640/flying-post-first-nation-family-well-being-program/",
-      "survivors": "https://211ontario.ca/service/65274640/flying-post-first-nation-family-well-being-program/",
-      "youth": "https://211ontario.ca/service/65274636/flying-post-first-nation-healthy-babies-healthy-children/",
-      "connect": "https://211ontario.ca/service/65274636/flying-post-first-nation-healthy-babies-healthy-children/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=227&lang=eng",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "http://www.flyingpost.ca/"
+      ],
+      "contacts": [
+        "https://www.flyingpost.ca/contact/"
+      ],
+      "physical": [
+        "https://211ontario.ca/service/65274636/flying-post-first-nation-healthy-babies-healthy-children/"
+      ],
+      "mental": [
+        "https://211ontario.ca/service/65274640/flying-post-first-nation-family-well-being-program/"
+      ],
+      "spiritual": [
+        "https://211ontario.ca/service/65274640/flying-post-first-nation-family-well-being-program/"
+      ],
+      "emotional": [
+        "https://211ontario.ca/service/65274640/flying-post-first-nation-family-well-being-program/"
+      ],
+      "survivors": [
+        "https://211ontario.ca/service/65274640/flying-post-first-nation-family-well-being-program/"
+      ],
+      "youth": [
+        "https://211ontario.ca/service/65274636/flying-post-first-nation-healthy-babies-healthy-children/"
+      ],
+      "connect": [
+        "https://211ontario.ca/service/65274636/flying-post-first-nation-healthy-babies-healthy-children/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=227&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "flyingpostfn",
     "in85List": false,
@@ -14271,16 +15499,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://fortalbanyfirstnation.weebly.com/",
-      "physical": "https://211north.ca/record/65273626/site/",
-      "mental": "https://211ontario.ca/service/65273638/fort-albany-first-nation-family-well-being-program/",
-      "spiritual": "https://211ontario.ca/service/65273638/fort-albany-first-nation-family-well-being-program/",
-      "emotional": "https://211ontario.ca/service/65273638/fort-albany-first-nation-family-well-being-program/",
-      "survivors": "https://211north.ca/record/65273626/site/",
-      "youth": "https://211ontario.ca/service/65273611/fort-albany-first-nation-child-and-family-services/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=142&lang=eng",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://fortalbanyfirstnation.weebly.com/"
+      ],
+      "physical": [
+        "https://211north.ca/record/65273626/site/"
+      ],
+      "mental": [
+        "https://211ontario.ca/service/65273638/fort-albany-first-nation-family-well-being-program/"
+      ],
+      "spiritual": [
+        "https://211ontario.ca/service/65273638/fort-albany-first-nation-family-well-being-program/"
+      ],
+      "emotional": [
+        "https://211ontario.ca/service/65273638/fort-albany-first-nation-family-well-being-program/"
+      ],
+      "survivors": [
+        "https://211north.ca/record/65273626/site/"
+      ],
+      "youth": [
+        "https://211ontario.ca/service/65273611/fort-albany-first-nation-child-and-family-services/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=142&lang=eng"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "fortalbanyfn",
     "in85List": true,
@@ -14598,18 +15846,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://fwfn.com/",
-      "contacts": "https://fwfn.com/employee-directory/",
-      "physical": "https://fwfn.com/departments/health/",
-      "mental": "https://fwfn.com/departments/health/addictions-wellness/",
-      "spiritual": "https://fwfn.com/",
-      "emotional": "https://fwfn.com/departments/health/addictions-wellness/",
-      "survivors": "https://fwfn.com/employee-directory/",
-      "youth": "https://fwfn.com/departments/youth-and-social-development/",
-      "connect": "https://fwfn.com/employee-directory/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/FNP/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=187&lang=eng",
-      "strategicPlan": "https://fwfn.com/departments/governance/community-comprehensive-plan/",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://fwfn.com/"
+      ],
+      "contacts": [
+        "https://fwfn.com/employee-directory/"
+      ],
+      "physical": [
+        "https://fwfn.com/departments/health/"
+      ],
+      "mental": [
+        "https://fwfn.com/departments/health/addictions-wellness/"
+      ],
+      "spiritual": [
+        "https://fwfn.com/"
+      ],
+      "emotional": [
+        "https://fwfn.com/departments/health/addictions-wellness/"
+      ],
+      "survivors": [
+        "https://fwfn.com/employee-directory/"
+      ],
+      "youth": [
+        "https://fwfn.com/departments/youth-and-social-development/"
+      ],
+      "connect": [
+        "https://fwfn.com/employee-directory/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/FNP/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=187&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://fwfn.com/departments/governance/community-comprehensive-plan/"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "fortwilliamoflakesuperior",
     "in85List": true,
@@ -14911,19 +16183,45 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://lacseulfn.org",
-      "contacts": "https://www.lacseulfn.org/contact",
-      "physical": "https://www.lacseulfn.org/health",
-      "mental": "https://www.lacseulfn.org/prevention",
-      "spiritual": "https://www.lacseulfn.org/bringing-our-children-home",
-      "emotional": "https://www.lacseulfn.org/prevention",
-      "survivors": "https://www.lacseulfn.org/bringing-our-children-home",
-      "youth": "https://www.lacseulfn.org/youth",
-      "connect": "https://www.lacseulfn.org/bringing-our-children-home",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=205&lang=eng",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://lacseulfn.org"
+      ],
+      "contacts": [
+        "https://www.lacseulfn.org/contact"
+      ],
+      "physical": [
+        "https://www.lacseulfn.org/health"
+      ],
+      "mental": [
+        "https://www.lacseulfn.org/prevention"
+      ],
+      "spiritual": [
+        "https://www.lacseulfn.org/bringing-our-children-home"
+      ],
+      "emotional": [
+        "https://www.lacseulfn.org/prevention"
+      ],
+      "survivors": [
+        "https://www.lacseulfn.org/bringing-our-children-home"
+      ],
+      "youth": [
+        "https://www.lacseulfn.org/youth"
+      ],
+      "connect": [
+        "https://www.lacseulfn.org/bringing-our-children-home"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=205&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "lacseulfn",
     "in85List": true,
@@ -15152,19 +16450,45 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.longlake58fn.ca",
-      "contacts": "https://www.longlake58fn.ca/band-administration-staff",
-      "physical": "https://www.longlake58fn.ca/health-and-wellness",
-      "mental": "https://www.longlake58fn.ca/health-and-wellness",
-      "spiritual": "https://www.longlake58fn.ca/education",
-      "emotional": "https://www.longlake58fn.ca/health-and-wellness",
-      "survivors": "https://www.longlake58fn.ca/health-and-wellness",
-      "youth": "https://www.longlake58fn.ca/health-and-wellness",
-      "connect": "https://www.longlake58fn.ca/education",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=184&lang=eng%5D",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://www.facebook.com/reel/700816299088221",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.longlake58fn.ca"
+      ],
+      "contacts": [
+        "https://www.longlake58fn.ca/band-administration-staff"
+      ],
+      "physical": [
+        "https://www.longlake58fn.ca/health-and-wellness"
+      ],
+      "mental": [
+        "https://www.longlake58fn.ca/health-and-wellness"
+      ],
+      "spiritual": [
+        "https://www.longlake58fn.ca/education"
+      ],
+      "emotional": [
+        "https://www.longlake58fn.ca/health-and-wellness"
+      ],
+      "survivors": [
+        "https://www.longlake58fn.ca/health-and-wellness"
+      ],
+      "youth": [
+        "https://www.longlake58fn.ca/health-and-wellness"
+      ],
+      "connect": [
+        "https://www.longlake58fn.ca/education"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=184&lang=eng%5D"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://www.facebook.com/reel/700816299088221"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "longlacfn",
     "in85List": true,
@@ -15354,17 +16678,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://martenfalls.com",
-      "physical": "https://211ontario.ca/service/65300600/marten-falls-first-nation-health-centre/",
-      "mental": "https://211ontario.ca/service/65300600/marten-falls-first-nation-health-centre/",
-      "spiritual": "https://211ontario.ca/service/65300594/marten-falls-first-nation-family-well-being-program/",
-      "emotional": "https://211ontario.ca/service/65300594/marten-falls-first-nation-family-well-being-program/",
-      "survivors": "https://211ontario.ca/service/65300594/marten-falls-first-nation-family-well-being-program/",
-      "youth": "https://211ontario.ca/service/65300582/marten-falls-first-nation-healthy-babies-healthy-children/",
-      "connect": "https://211ontario.ca/service/65300594/marten-falls-first-nation-family-well-being-program/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=186&lang=eng",
-      "links": "https://www.martenfallsaccessroad.ca/documents/",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://martenfalls.com"
+      ],
+      "physical": [
+        "https://211ontario.ca/service/65300600/marten-falls-first-nation-health-centre/"
+      ],
+      "mental": [
+        "https://211ontario.ca/service/65300600/marten-falls-first-nation-health-centre/"
+      ],
+      "spiritual": [
+        "https://211ontario.ca/service/65300594/marten-falls-first-nation-family-well-being-program/"
+      ],
+      "emotional": [
+        "https://211ontario.ca/service/65300594/marten-falls-first-nation-family-well-being-program/"
+      ],
+      "survivors": [
+        "https://211ontario.ca/service/65300594/marten-falls-first-nation-family-well-being-program/"
+      ],
+      "youth": [
+        "https://211ontario.ca/service/65300582/marten-falls-first-nation-healthy-babies-healthy-children/"
+      ],
+      "connect": [
+        "https://211ontario.ca/service/65300594/marten-falls-first-nation-family-well-being-program/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=186&lang=eng"
+      ],
+      "links": [
+        "https://www.martenfallsaccessroad.ca/documents/"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "martenfallsfn",
     "in85List": true,
@@ -15586,19 +16932,45 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.matachewanfirstnation.com",
-      "contacts": "https://www.matachewanfirstnation.com/contact",
-      "physical": "https://www.matachewanfirstnation.com/health",
-      "mental": "https://www.matachewanfirstnation.com/health",
-      "spiritual": "https://www.matachewanfirstnation.com/health",
-      "emotional": "https://www.matachewanfirstnation.com/health",
-      "survivors": "https://www.matachewanfirstnation.com/contact",
-      "youth": "https://lignesantenord-est.ca/displayService.aspx?id=179491",
-      "connect": "https://www.matachewanfirstnation.com/health",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=219&lang=eng",
-      "strategicPlan": "https://www.matachewan.com/planning/strategic-plan/",
-      "agm": "https://www.matachewanfirstnation.com/council-meeting-minutes",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.matachewanfirstnation.com"
+      ],
+      "contacts": [
+        "https://www.matachewanfirstnation.com/contact"
+      ],
+      "physical": [
+        "https://www.matachewanfirstnation.com/health"
+      ],
+      "mental": [
+        "https://www.matachewanfirstnation.com/health"
+      ],
+      "spiritual": [
+        "https://www.matachewanfirstnation.com/health"
+      ],
+      "emotional": [
+        "https://www.matachewanfirstnation.com/health"
+      ],
+      "survivors": [
+        "https://www.matachewanfirstnation.com/contact"
+      ],
+      "youth": [
+        "https://lignesantenord-est.ca/displayService.aspx?id=179491"
+      ],
+      "connect": [
+        "https://www.matachewanfirstnation.com/health"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=219&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://www.matachewan.com/planning/strategic-plan/"
+      ],
+      "agm": [
+        "https://www.matachewanfirstnation.com/council-meeting-minutes"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "matachewanfn",
     "in85List": true,
@@ -15807,16 +17179,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "http://www.mishkeegogamang.ca",
-      "physical": "https://mishkeegogamang.ca/services/health/",
-      "mental": "https://mishkeegogamang.ca/services/health/",
-      "spiritual": "https://mishkeegogamang.ca/services/health/",
-      "emotional": "https://mishkeegogamang.ca/services/health/",
-      "survivors": "https://www.northwesthealthline.ca/displayservice.aspx?id=197408",
-      "youth": "https://mishkeegogamang.ca/services/education/",
-      "connect": "https://mishkeegogamang.ca/services/health/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=203&lang=eng",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "http://www.mishkeegogamang.ca"
+      ],
+      "physical": [
+        "https://mishkeegogamang.ca/services/health/"
+      ],
+      "mental": [
+        "https://mishkeegogamang.ca/services/health/"
+      ],
+      "spiritual": [
+        "https://mishkeegogamang.ca/services/health/"
+      ],
+      "emotional": [
+        "https://mishkeegogamang.ca/services/health/"
+      ],
+      "survivors": [
+        "https://www.northwesthealthline.ca/displayservice.aspx?id=197408"
+      ],
+      "youth": [
+        "https://mishkeegogamang.ca/services/education/"
+      ],
+      "connect": [
+        "https://mishkeegogamang.ca/services/health/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=203&lang=eng"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "mishkeegogamang",
     "in85List": true,
@@ -16058,18 +17450,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.moosecree.com",
-      "contacts": "https://www.moosecree.com/contact/",
-      "physical": "https://www.moosecree.com/departments/healthservices/",
-      "mental": "https://www.moosecree.com/departments/healthservices/",
-      "spiritual": "http://spiritual/cultural%20support%20is%20reflected%20through%20Moose%20Cree%E2%80%99s%20Language%20&%20Culture%20Department,%20which%20preserves%20cultural%20identity%20through%20land-based%20programs,%20cultural%20activities,%20community%20memorial%20round%20dances,%20Wahkotowin%20Gathering,%20healing-from-trauma%20workshops,%20men%E2%80%99s/women%E2%80%99s%20cultural%20retreats,%20language%20immersion%20camps,%20community%20feasts,%20the%20Moose%20Cree%20Dictionary,%20Cree%20children%E2%80%99s%20books,%20a%20cultural%20lodge%20project,%20and%20the%20annual%20Gathering%20of%20our%20People%20festival.",
-      "survivors": "https://www.moosecree.com/tag/residential-school/",
-      "youth": "https://www.moosecree.com/departments/youthservices/",
-      "connect": "https://www.moosecree.com/tag/residential-school/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=144&lang=eng",
-      "links": "https://firstnationsirt.org/sites/firstnationsirt.org/files/docs/case/AMP%20Executive%20Summary%20Report_Moose%20Cree%20FN%202020.pdf",
-      "agm": "https://www.moosecree.com/mcea-annual-general-assembly/",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.moosecree.com"
+      ],
+      "contacts": [
+        "https://www.moosecree.com/contact/"
+      ],
+      "physical": [
+        "https://www.moosecree.com/departments/healthservices/"
+      ],
+      "mental": [
+        "https://www.moosecree.com/departments/healthservices/"
+      ],
+      "spiritual": [
+        "http://spiritual/cultural%20support%20is%20reflected%20through%20Moose%20Cree%E2%80%99s%20Language%20&%20Culture%20Department,%20which%20preserves%20cultural%20identity%20through%20land-based%20programs,%20cultural%20activities,%20community%20memorial%20round%20dances,%20Wahkotowin%20Gathering,%20healing-from-trauma%20workshops,%20men%E2%80%99s/women%E2%80%99s%20cultural%20retreats,%20language%20immersion%20camps,%20community%20feasts,%20the%20Moose%20Cree%20Dictionary,%20Cree%20children%E2%80%99s%20books,%20a%20cultural%20lodge%20project,%20and%20the%20annual%20Gathering%20of%20our%20People%20festival."
+      ],
+      "survivors": [
+        "https://www.moosecree.com/tag/residential-school/"
+      ],
+      "youth": [
+        "https://www.moosecree.com/departments/youthservices/"
+      ],
+      "connect": [
+        "https://www.moosecree.com/tag/residential-school/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=144&lang=eng"
+      ],
+      "links": [
+        "https://firstnationsirt.org/sites/firstnationsirt.org/files/docs/case/AMP%20Executive%20Summary%20Report_Moose%20Cree%20FN%202020.pdf"
+      ],
+      "agm": [
+        "https://www.moosecree.com/mcea-annual-general-assembly/"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "moosecreefn",
     "in85List": true,
@@ -16261,17 +17677,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "http://weagamow.firstnation.ca",
-      "contacts": "http://weagamow.firstnation.ca/Contact",
-      "physical": "https://211ontario.ca/service/65300002/north-caribou-lake-first-nation-health-services/",
-      "mental": "https://211ontario.ca/service/65299998/north-caribou-lake-first-nation-mental-health-program/",
-      "spiritual": "https://211ontario.ca/service/65299998/north-caribou-lake-first-nation-mental-health-program/",
-      "emotional": "https://211ontario.ca/service/65299998/north-caribou-lake-first-nation-mental-health-program/",
-      "survivors": "https://211ontario.ca/service/65300002/north-caribou-lake-first-nation-health-services/",
-      "youth": "https://211ontario.ca/service/65300010/north-caribou-lake-first-nation-early-childhood-development/",
-      "connect": "https://211ontario.ca/service/65300021/north-caribou-lake-first-nation-family-well-being-program/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=204&lang=eng",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "http://weagamow.firstnation.ca"
+      ],
+      "contacts": [
+        "http://weagamow.firstnation.ca/Contact"
+      ],
+      "physical": [
+        "https://211ontario.ca/service/65300002/north-caribou-lake-first-nation-health-services/"
+      ],
+      "mental": [
+        "https://211ontario.ca/service/65299998/north-caribou-lake-first-nation-mental-health-program/"
+      ],
+      "spiritual": [
+        "https://211ontario.ca/service/65299998/north-caribou-lake-first-nation-mental-health-program/"
+      ],
+      "emotional": [
+        "https://211ontario.ca/service/65299998/north-caribou-lake-first-nation-mental-health-program/"
+      ],
+      "survivors": [
+        "https://211ontario.ca/service/65300002/north-caribou-lake-first-nation-health-services/"
+      ],
+      "youth": [
+        "https://211ontario.ca/service/65300010/north-caribou-lake-first-nation-early-childhood-development/"
+      ],
+      "connect": [
+        "https://211ontario.ca/service/65300021/north-caribou-lake-first-nation-family-well-being-program/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=204&lang=eng"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "northcariboulakefn",
     "in85List": true,
@@ -16490,18 +17928,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://picmobert.ca/",
-      "contacts": "https://picmobert.ca/contact/",
-      "physical": "https://www.picmobert.com/health-social-services",
-      "mental": "https://www.picmobert.com/health-social-services",
-      "emotional": "https://www.picmobert.com/health-social-services",
-      "survivors": "https://www.picmobert.com/health-social-services",
-      "youth": "https://www.picmobert.com/education-training",
-      "connect": "https://www.picmobert.com/education-training",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=195&lang=eng",
-      "strategicPlan": "https://www.picmobert.com/ccp",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "notes": "https://www.northamericanforts.com/Canada/on-north2.html"
+      "website": [
+        "https://picmobert.ca/"
+      ],
+      "contacts": [
+        "https://picmobert.ca/contact/"
+      ],
+      "physical": [
+        "https://www.picmobert.com/health-social-services"
+      ],
+      "mental": [
+        "https://www.picmobert.com/health-social-services"
+      ],
+      "emotional": [
+        "https://www.picmobert.com/health-social-services"
+      ],
+      "survivors": [
+        "https://www.picmobert.com/health-social-services"
+      ],
+      "youth": [
+        "https://www.picmobert.com/education-training"
+      ],
+      "connect": [
+        "https://www.picmobert.com/education-training"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=195&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://www.picmobert.com/ccp"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "notes": [
+        "https://www.northamericanforts.com/Canada/on-north2.html"
+      ]
     },
     "nameKey": "montizanbert",
     "in85List": true,
@@ -16753,18 +18215,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.picriver.com",
-      "contacts": "https://www.picriver.com/departments/health/",
-      "physical": "https://www.picriver.com/departments/health/",
-      "mental": "https://www.picriver.com/departments/social-services/",
-      "spiritual": "https://www.picriver.com/about-us/language/",
-      "emotional": "https://www.picriver.com/departments/social-services/",
-      "survivors": "https://www.picriver.com/departments/social-services/",
-      "youth": "https://www.picriver.com/departments/education/",
-      "connect": "https://www.picriver.com/departments/social-services/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=192&lang=eng",
-      "strategicPlan": "https://online.flippingbook.com/view/693974156/",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.picriver.com"
+      ],
+      "contacts": [
+        "https://www.picriver.com/departments/health/"
+      ],
+      "physical": [
+        "https://www.picriver.com/departments/health/"
+      ],
+      "mental": [
+        "https://www.picriver.com/departments/social-services/"
+      ],
+      "spiritual": [
+        "https://www.picriver.com/about-us/language/"
+      ],
+      "emotional": [
+        "https://www.picriver.com/departments/social-services/"
+      ],
+      "survivors": [
+        "https://www.picriver.com/departments/social-services/"
+      ],
+      "youth": [
+        "https://www.picriver.com/departments/education/"
+      ],
+      "connect": [
+        "https://www.picriver.com/departments/social-services/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=192&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://online.flippingbook.com/view/693974156/"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "picriver",
     "in85List": true,
@@ -16976,15 +18462,33 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "physical": "https://www.pikangikumhealth.ca/services",
-      "mental": "https://www.pikangikumhealth.ca/services",
-      "spiritual": "https://www.pikangikumhealth.ca/services",
-      "emotional": "https://www.pikangikumhealth.ca/services",
-      "survivors": "https://www.pikangikumhealth.ca/services/elders",
-      "youth": "https://www.pikangikumhealth.ca/services/youth",
-      "connect": "https://www.pikangikumhealth.ca/services/youth",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=208&lang=eng",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "physical": [
+        "https://www.pikangikumhealth.ca/services"
+      ],
+      "mental": [
+        "https://www.pikangikumhealth.ca/services"
+      ],
+      "spiritual": [
+        "https://www.pikangikumhealth.ca/services"
+      ],
+      "emotional": [
+        "https://www.pikangikumhealth.ca/services"
+      ],
+      "survivors": [
+        "https://www.pikangikumhealth.ca/services/elders"
+      ],
+      "youth": [
+        "https://www.pikangikumhealth.ca/services/youth"
+      ],
+      "connect": [
+        "https://www.pikangikumhealth.ca/services/youth"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=208&lang=eng"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "pikangikum",
     "in85List": true,
@@ -17212,17 +18716,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.rockybayfn.ca",
-      "physical": "https://www.northwesthealthline.ca/displayservice.aspx?id=159111",
-      "mental": "https://www.northwesthealthline.ca/displayservice.aspx?id=159111",
-      "spiritual": "https://211ontario.ca/service/65313052/biinjitiwaabik-zaaging-anishinaabek-brighter-futures/",
-      "emotional": "https://www.northwesthealthline.ca/displayservice.aspx?id=159111",
-      "survivors": "https://www.northwesthealthline.ca/displayservice.aspx?id=159111",
-      "youth": "https://211ontario.ca/service/65313052/biinjitiwaabik-zaaging-anishinaabek-brighter-futures/",
-      "connect": "https://211ontario.ca/service/65313052/biinjitiwaabik-zaaging-anishinaabek-brighter-futures/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=197&lang=eng",
-      "links": "https://docs2.cer-rec.gc.ca/ll-eng/llisapi.dll/fetch/2000/90464/90552/2432218/2540913/2995824/2968287/A76975%2D20_V10_Appendix_10%2D65A_Community_Summary_Biinjitiwaabik_Zaaging_Anishinabek_ON_%2D_A5A5I4.pdf?nodeid=2967502&vernum=-2",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.rockybayfn.ca"
+      ],
+      "physical": [
+        "https://www.northwesthealthline.ca/displayservice.aspx?id=159111"
+      ],
+      "mental": [
+        "https://www.northwesthealthline.ca/displayservice.aspx?id=159111"
+      ],
+      "spiritual": [
+        "https://211ontario.ca/service/65313052/biinjitiwaabik-zaaging-anishinaabek-brighter-futures/"
+      ],
+      "emotional": [
+        "https://www.northwesthealthline.ca/displayservice.aspx?id=159111"
+      ],
+      "survivors": [
+        "https://www.northwesthealthline.ca/displayservice.aspx?id=159111"
+      ],
+      "youth": [
+        "https://211ontario.ca/service/65313052/biinjitiwaabik-zaaging-anishinaabek-brighter-futures/"
+      ],
+      "connect": [
+        "https://211ontario.ca/service/65313052/biinjitiwaabik-zaaging-anishinaabek-brighter-futures/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=197&lang=eng"
+      ],
+      "links": [
+        "https://docs2.cer-rec.gc.ca/ll-eng/llisapi.dll/fetch/2000/90464/90552/2432218/2540913/2995824/2968287/A76975%2D20_V10_Appendix_10%2D65A_Community_Summary_Biinjitiwaabik_Zaaging_Anishinabek_ON_%2D_A5A5I4.pdf?nodeid=2967502&vernum=-2"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "rockybayfn",
     "in85List": true,
@@ -17431,16 +18957,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.windigo.on.ca/sachigo-lake-first-nation",
-      "physical": "https://211ontario.ca/service/65300332/sachigo-lake-first-nation-health-centre/",
-      "mental": "https://211ontario.ca/service/65300332/sachigo-lake-first-nation-health-centre/",
-      "spiritual": "https://211ontario.ca/service/65300311/sachigo-lake-first-nation-national-native-alcohol-and-drug-abuse-program/",
-      "emotional": "https://211ontario.ca/service/71294590/sachigo-lake-first-nation-crisis-intervention/",
-      "survivors": "https://211ontario.ca/service/65300332/sachigo-lake-first-nation-health-centre/",
-      "connect": "https://211ontario.ca/service/71294800/sachigo-lake-first-nation-family-well-being-program/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=214&lang=eng",
-      "links": "https://www.atlas101.ca/pm/wp-content/uploads/2018/03/Sachigo_Lake_BN2_KS.pdf",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.windigo.on.ca/sachigo-lake-first-nation"
+      ],
+      "physical": [
+        "https://211ontario.ca/service/65300332/sachigo-lake-first-nation-health-centre/"
+      ],
+      "mental": [
+        "https://211ontario.ca/service/65300332/sachigo-lake-first-nation-health-centre/"
+      ],
+      "spiritual": [
+        "https://211ontario.ca/service/65300311/sachigo-lake-first-nation-national-native-alcohol-and-drug-abuse-program/"
+      ],
+      "emotional": [
+        "https://211ontario.ca/service/71294590/sachigo-lake-first-nation-crisis-intervention/"
+      ],
+      "survivors": [
+        "https://211ontario.ca/service/65300332/sachigo-lake-first-nation-health-centre/"
+      ],
+      "connect": [
+        "https://211ontario.ca/service/71294800/sachigo-lake-first-nation-family-well-being-program/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=214&lang=eng"
+      ],
+      "links": [
+        "https://www.atlas101.ca/pm/wp-content/uploads/2018/03/Sachigo_Lake_BN2_KS.pdf"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "sachigolakefn",
     "in85List": true,
@@ -17659,18 +19205,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://shoallake40.ca",
-      "physical": "https://shoallake40.ca/health/",
-      "mental": "https://shoallake40.ca/social-services/",
-      "spiritual": "https://shoallake40.ca/culture/",
-      "emotional": "https://shoallake40.ca/health/",
-      "survivors": "https://shoallake40.ca/health/",
-      "youth": "https://shoallake40.ca/recreation/",
-      "connect": "https://shoallake40.ca/culture/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=357&lang=eng",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://shoallake40.ca"
+      ],
+      "physical": [
+        "https://shoallake40.ca/health/"
+      ],
+      "mental": [
+        "https://shoallake40.ca/social-services/"
+      ],
+      "spiritual": [
+        "https://shoallake40.ca/culture/"
+      ],
+      "emotional": [
+        "https://shoallake40.ca/health/"
+      ],
+      "survivors": [
+        "https://shoallake40.ca/health/"
+      ],
+      "youth": [
+        "https://shoallake40.ca/recreation/"
+      ],
+      "connect": [
+        "https://shoallake40.ca/culture/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=357&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "shoallakefn",
     "in85List": true,
@@ -17885,17 +19455,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://wonation.ca/",
-      "physical": "https://211ontario.ca/service/65282591/wauzhushk-onigum-nation-community-medical-clinic/",
-      "mental": "https://211ontario.ca/service/65282591/wauzhushk-onigum-nation-community-medical-clinic/",
-      "spiritual": "https://211ontario.ca/service/65282579/wauzhushk-onigum-nation-national-native-alcohol-and-drug-abuse-program/",
-      "emotional": "https://211ontario.ca/service/65282587/wauzhushk-onigum-nation-community-wellness-worker/",
-      "survivors": "https://211ontario.ca/service/71330467/wauzhushk-onigum-nation-home-and-community-care/",
-      "youth": "https://211ontario.ca/service/65282563/wauzhushk-onigum-nation-daycare-centre/",
-      "connect": "https://211ontario.ca/service/71330467/wauzhushk-onigum-nation-home-and-community-care/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=153&lang=eng",
-      "links": "https://www.canada.ca/en/housing-infrastructure-communities/news/2024/12/investing-in-the-wauzhushk-onigum-multipurpose-centre.html",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://wonation.ca/"
+      ],
+      "physical": [
+        "https://211ontario.ca/service/65282591/wauzhushk-onigum-nation-community-medical-clinic/"
+      ],
+      "mental": [
+        "https://211ontario.ca/service/65282591/wauzhushk-onigum-nation-community-medical-clinic/"
+      ],
+      "spiritual": [
+        "https://211ontario.ca/service/65282579/wauzhushk-onigum-nation-national-native-alcohol-and-drug-abuse-program/"
+      ],
+      "emotional": [
+        "https://211ontario.ca/service/65282587/wauzhushk-onigum-nation-community-wellness-worker/"
+      ],
+      "survivors": [
+        "https://211ontario.ca/service/71330467/wauzhushk-onigum-nation-home-and-community-care/"
+      ],
+      "youth": [
+        "https://211ontario.ca/service/65282563/wauzhushk-onigum-nation-daycare-centre/"
+      ],
+      "connect": [
+        "https://211ontario.ca/service/71330467/wauzhushk-onigum-nation-home-and-community-care/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=153&lang=eng"
+      ],
+      "links": [
+        "https://www.canada.ca/en/housing-infrastructure-communities/news/2024/12/investing-in-the-wauzhushk-onigum-multipurpose-centre.html"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "wauzhuskonigumnation",
     "in85List": true,
@@ -18147,17 +19739,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "http://www.wawakapewin.ca/",
-      "contacts": "http://www.wawakapewin.ca/profile.html",
-      "physical": "https://211ontario.ca/service/65282550/wawakapewin-first-nation-health-services/",
-      "mental": "https://211ontario.ca/service/65282550/wawakapewin-first-nation-health-services/",
-      "spiritual": "https://211ontario.ca/service/65282552/wawakapewin-first-nation-family-well-being-program/",
-      "emotional": "https://211ontario.ca/service/65282550/wawakapewin-first-nation-health-services/",
-      "survivors": "https://211ontario.ca/service/65282550/wawakapewin-first-nation-health-services/",
-      "youth": "https://211ontario.ca/service/65282552/wawakapewin-first-nation-family-well-being-program/",
-      "connect": "https://211ontario.ca/service/65282552/wawakapewin-first-nation-family-well-being-program/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=234&lang=eng",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "http://www.wawakapewin.ca/"
+      ],
+      "contacts": [
+        "http://www.wawakapewin.ca/profile.html"
+      ],
+      "physical": [
+        "https://211ontario.ca/service/65282550/wawakapewin-first-nation-health-services/"
+      ],
+      "mental": [
+        "https://211ontario.ca/service/65282550/wawakapewin-first-nation-health-services/"
+      ],
+      "spiritual": [
+        "https://211ontario.ca/service/65282552/wawakapewin-first-nation-family-well-being-program/"
+      ],
+      "emotional": [
+        "https://211ontario.ca/service/65282550/wawakapewin-first-nation-health-services/"
+      ],
+      "survivors": [
+        "https://211ontario.ca/service/65282550/wawakapewin-first-nation-health-services/"
+      ],
+      "youth": [
+        "https://211ontario.ca/service/65282552/wawakapewin-first-nation-family-well-being-program/"
+      ],
+      "connect": [
+        "https://211ontario.ca/service/65282552/wawakapewin-first-nation-family-well-being-program/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=234&lang=eng"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "wawakapewinfn",
     "in85List": true,
@@ -18396,17 +20010,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "http://www.webequie.ca/",
-      "contacts": "http://www.webequie.ca/chief-and-council-contact-info",
-      "physical": "https://www.northwesthealthline.ca/displayService.aspx?id=141626",
-      "mental": "https://www.webequie.ca/article/web-equay-mamownokiiwin-139.asp",
-      "spiritual": "https://www.webequie.ca/article/web-equay-mamownokiiwin-139.asp",
-      "emotional": "https://www.webequie.ca/article/web-equay-mamownokiiwin-139.asp",
-      "survivors": "https://www.webequie.ca/article/web-equay-mamownokiiwin-139.asp",
-      "youth": "https://www.webequie.ca/article/web-equay-mamownokiiwin-139.asp",
-      "connect": "https://www.webequie.ca/article/web-equay-mamownokiiwin-139.asp",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=240&lang=eng",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "http://www.webequie.ca/"
+      ],
+      "contacts": [
+        "http://www.webequie.ca/chief-and-council-contact-info"
+      ],
+      "physical": [
+        "https://www.northwesthealthline.ca/displayService.aspx?id=141626"
+      ],
+      "mental": [
+        "https://www.webequie.ca/article/web-equay-mamownokiiwin-139.asp"
+      ],
+      "spiritual": [
+        "https://www.webequie.ca/article/web-equay-mamownokiiwin-139.asp"
+      ],
+      "emotional": [
+        "https://www.webequie.ca/article/web-equay-mamownokiiwin-139.asp"
+      ],
+      "survivors": [
+        "https://www.webequie.ca/article/web-equay-mamownokiiwin-139.asp"
+      ],
+      "youth": [
+        "https://www.webequie.ca/article/web-equay-mamownokiiwin-139.asp"
+      ],
+      "connect": [
+        "https://www.webequie.ca/article/web-equay-mamownokiiwin-139.asp"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=240&lang=eng"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "webequiefn",
     "in85List": true,
@@ -18605,18 +20241,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.whitefishriver.ca",
-      "physical": "https://www.whitefishriver.ca/health-social-services",
-      "mental": "https://www.whitefishriver.ca/health-social-services",
-      "spiritual": "https://www.whitefishriver.ca/health-social-services",
-      "emotional": "https://www.whitefishriver.ca/health-social-services",
-      "survivors": "https://www.whitefishriver.ca/health-social-services",
-      "youth": "https://www.whitefishriver.ca/education",
-      "connect": "https://211ontario.ca/service/65285450/whitefish-river-first-nation-youth-and-elders-centre/?searchLocation=Central+Manitoulin&exct=1&topicPath=9&latitude=45.73116&longitude=-82.16231",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=230&lang=eng",
-      "strategicPlan": "https://www.whitefishriver.ca/wp-content/uploads/2025/01/WRFN_Strategic-Plan_Signed.pdf",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.whitefishriver.ca"
+      ],
+      "physical": [
+        "https://www.whitefishriver.ca/health-social-services"
+      ],
+      "mental": [
+        "https://www.whitefishriver.ca/health-social-services"
+      ],
+      "spiritual": [
+        "https://www.whitefishriver.ca/health-social-services"
+      ],
+      "emotional": [
+        "https://www.whitefishriver.ca/health-social-services"
+      ],
+      "survivors": [
+        "https://www.whitefishriver.ca/health-social-services"
+      ],
+      "youth": [
+        "https://www.whitefishriver.ca/education"
+      ],
+      "connect": [
+        "https://211ontario.ca/service/65285450/whitefish-river-first-nation-youth-and-elders-centre/?searchLocation=Central+Manitoulin&exct=1&topicPath=9&latitude=45.73116&longitude=-82.16231"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=230&lang=eng"
+      ],
+      "strategicPlan": [
+        "https://www.whitefishriver.ca/wp-content/uploads/2025/01/WRFN_Strategic-Plan_Signed.pdf"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "whitefishriverfn",
     "in85List": true,
@@ -18828,18 +20488,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://wiikwemkoong.ca",
-      "physical": "https://www.wiikwemkoong.ca/community/health-and-social-well-being/",
-      "mental": "https://www.wiikwemkoong.ca/community/health-and-social-well-being/",
-      "spiritual": "https://www.wiikwemkoong.ca/community/health-and-social-well-being/",
-      "emotional": "https://www.wiikwemkoong.ca/community/health-and-social-well-being/",
-      "survivors": "https://www.wiikwemkoong.ca/community/health-and-social-well-being/",
-      "youth": "https://www.wbe-education.ca/apps/pages/index.jsp?uREC_ID=1163424&type=d&pREC_ID=1396619",
-      "connect": "https://www.wiikwemkoong.ca/community/health-and-social-well-being/",
-      "popInfo": "https://211ontario.ca/service/65284966/wiikwemkoong-unceded-territory-youth-centre/?searchLocation=North+Bay&exct=1&topicPath=155&latitude=46.3091152&longitude=-79.4608204",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://wiikwemkoong.ca"
+      ],
+      "physical": [
+        "https://www.wiikwemkoong.ca/community/health-and-social-well-being/"
+      ],
+      "mental": [
+        "https://www.wiikwemkoong.ca/community/health-and-social-well-being/"
+      ],
+      "spiritual": [
+        "https://www.wiikwemkoong.ca/community/health-and-social-well-being/"
+      ],
+      "emotional": [
+        "https://www.wiikwemkoong.ca/community/health-and-social-well-being/"
+      ],
+      "survivors": [
+        "https://www.wiikwemkoong.ca/community/health-and-social-well-being/"
+      ],
+      "youth": [
+        "https://www.wbe-education.ca/apps/pages/index.jsp?uREC_ID=1163424&type=d&pREC_ID=1396619"
+      ],
+      "connect": [
+        "https://www.wiikwemkoong.ca/community/health-and-social-well-being/"
+      ],
+      "popInfo": [
+        "https://211ontario.ca/service/65284966/wiikwemkoong-unceded-territory-youth-centre/?searchLocation=North+Bay&exct=1&topicPath=155&latitude=46.3091152&longitude=-79.4608204"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "wikwemikongfn",
     "in85List": true,
@@ -19054,16 +20738,36 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://wunnumin.com/",
-      "physical": "https://211ontario.ca/service/65282391/site/",
-      "mental": "https://www.northwesthealthline.ca/displayservice.aspx?id=146059",
-      "spiritual": "https://211ontario.ca/service/92268327/wunnumin-lake-first-nation-family-well-being-program/",
-      "emotional": "https://211ontario.ca/service/65282391/site/",
-      "youth": "https://211ontario.ca/service/65282408/wunnumin-lake-first-nation-education-authority/",
-      "connect": "https://211ontario.ca/service/92268327/wunnumin-lake-first-nation-family-well-being-program/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=217&lang=eng",
-      "links": "https://fnfmb.com/en/tools-and-templates/finance/strategic-planning",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://wunnumin.com/"
+      ],
+      "physical": [
+        "https://211ontario.ca/service/65282391/site/"
+      ],
+      "mental": [
+        "https://www.northwesthealthline.ca/displayservice.aspx?id=146059"
+      ],
+      "spiritual": [
+        "https://211ontario.ca/service/92268327/wunnumin-lake-first-nation-family-well-being-program/"
+      ],
+      "emotional": [
+        "https://211ontario.ca/service/65282391/site/"
+      ],
+      "youth": [
+        "https://211ontario.ca/service/65282408/wunnumin-lake-first-nation-education-authority/"
+      ],
+      "connect": [
+        "https://211ontario.ca/service/92268327/wunnumin-lake-first-nation-family-well-being-program/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=217&lang=eng"
+      ],
+      "links": [
+        "https://fnfmb.com/en/tools-and-templates/finance/strategic-planning"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "wunnuminfn",
     "in85List": true,
@@ -19270,15 +20974,33 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "http://fortsevern.firstnation.ca/",
-      "physical": "https://www.northwesthealthline.ca/displayservice.aspx?id=147497",
-      "mental": "https://211north.ca/record/65301113/",
-      "spiritual": "https://211ontario.ca/service/65301125/fort-severn-first-nation-family-well-being-program/",
-      "emotional": "https://211ontario.ca/service/65301125/fort-severn-first-nation-family-well-being-program/",
-      "youth": "https://211ontario.ca/service/65301092/fort-severn-first-nation-first-nation-school/",
-      "connect": "https://211ontario.ca/service/65301125/fort-severn-first-nation-family-well-being-program/",
-      "popInfo": "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=215&lang=eng",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "http://fortsevern.firstnation.ca/"
+      ],
+      "physical": [
+        "https://www.northwesthealthline.ca/displayservice.aspx?id=147497"
+      ],
+      "mental": [
+        "https://211north.ca/record/65301113/"
+      ],
+      "spiritual": [
+        "https://211ontario.ca/service/65301125/fort-severn-first-nation-family-well-being-program/"
+      ],
+      "emotional": [
+        "https://211ontario.ca/service/65301125/fort-severn-first-nation-family-well-being-program/"
+      ],
+      "youth": [
+        "https://211ontario.ca/service/65301092/fort-severn-first-nation-first-nation-school/"
+      ],
+      "connect": [
+        "https://211ontario.ca/service/65301125/fort-severn-first-nation-family-well-being-program/"
+      ],
+      "popInfo": [
+        "https://fnp-ppn.aadnc-aandc.gc.ca/fnp/Main/Search/FNRegPopulation.aspx?BAND_NUMBER=215&lang=eng"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "fortsevernfn",
     "in85List": true,
@@ -19515,18 +21237,42 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "name": "https://mamaweswen.com/",
-      "website": "https://mamaweswen.com/",
-      "contacts": "https://mamaweswen.com/contact-listings/",
-      "physical": "https://mamaweswen.com/maamwesying/",
-      "mental": "https://mamaweswen.com/maamwesying/",
-      "spiritual": "https://mamaweswen.com/maamwesying/",
-      "emotional": "https://maamwesying.ca/mental-wellness-services/",
-      "survivors": "https://maamwesying.ca/traditional-health/",
-      "youth": "https://mamaweswen.com/education/",
-      "connect": "https://mamaweswen.com/wp-content/uploads/2021/11/Mamaweswen-NSTC-Organizational-Review-and-Strategic-Plan-FINAL.pdf",
-      "strategicPlan": "https://mamaweswen.com/wp-content/uploads/2021/11/Mamaweswen-NSTC-Organizational-Review-and-Strategic-Plan-FINAL.pdf",
-      "financials": "https://mamaweswen.com/wp-content/uploads/2025/10/Mamaweswen-NSTC-2025-2-Financial-Statements.pdf"
+      "name": [
+        "https://mamaweswen.com/"
+      ],
+      "website": [
+        "https://mamaweswen.com/"
+      ],
+      "contacts": [
+        "https://mamaweswen.com/contact-listings/"
+      ],
+      "physical": [
+        "https://mamaweswen.com/maamwesying/"
+      ],
+      "mental": [
+        "https://mamaweswen.com/maamwesying/"
+      ],
+      "spiritual": [
+        "https://mamaweswen.com/maamwesying/"
+      ],
+      "emotional": [
+        "https://maamwesying.ca/mental-wellness-services/"
+      ],
+      "survivors": [
+        "https://maamwesying.ca/traditional-health/"
+      ],
+      "youth": [
+        "https://mamaweswen.com/education/"
+      ],
+      "connect": [
+        "https://mamaweswen.com/wp-content/uploads/2021/11/Mamaweswen-NSTC-Organizational-Review-and-Strategic-Plan-FINAL.pdf"
+      ],
+      "strategicPlan": [
+        "https://mamaweswen.com/wp-content/uploads/2021/11/Mamaweswen-NSTC-Organizational-Review-and-Strategic-Plan-FINAL.pdf"
+      ],
+      "financials": [
+        "https://mamaweswen.com/wp-content/uploads/2025/10/Mamaweswen-NSTC-2025-2-Financial-Statements.pdf"
+      ]
     },
     "nameKey": "mamaweswen",
     "in85List": false,
@@ -19665,14 +21411,30 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://maamwesying.ca/",
-      "physical": "https://maamwesying.ca/primary-health-care/",
-      "mental": "https://maamwesying.ca/mental-wellness-services/",
-      "spiritual": "https://maamwesying.ca/traditional-health/",
-      "emotional": "https://maamwesying.ca/mental-wellness-services/",
-      "survivors": "https://maamwesying.ca/traditional-health/",
-      "youth": "https://maamwesying.ca/primary-health-care/",
-      "connect": "https://maamwesying.ca/traditional-health/"
+      "website": [
+        "https://maamwesying.ca/"
+      ],
+      "physical": [
+        "https://maamwesying.ca/primary-health-care/"
+      ],
+      "mental": [
+        "https://maamwesying.ca/mental-wellness-services/"
+      ],
+      "spiritual": [
+        "https://maamwesying.ca/traditional-health/"
+      ],
+      "emotional": [
+        "https://maamwesying.ca/mental-wellness-services/"
+      ],
+      "survivors": [
+        "https://maamwesying.ca/traditional-health/"
+      ],
+      "youth": [
+        "https://maamwesying.ca/primary-health-care/"
+      ],
+      "connect": [
+        "https://maamwesying.ca/traditional-health/"
+      ]
     },
     "nameKey": "maamwesying",
     "in85List": false,
@@ -19778,12 +21540,24 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://ancfsao.ca/",
-      "connect": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "links": "https://ancfsao.ca/home/careers/",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://ancfsao.ca/"
+      ],
+      "connect": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "links": [
+        "https://ancfsao.ca/home/careers/"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "ancfsaoassociationofnativechildandfamilyserviceagenciesofontario",
     "in85List": false,
@@ -20579,11 +22353,21 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://ofifc.org/",
-      "links": "https://ofifc.org/research/",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://ofifc.org/"
+      ],
+      "links": [
+        "https://ofifc.org/research/"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "indigenousfriendshipcenter",
     "in85List": false,
@@ -20888,9 +22672,15 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.ontarioaboriginalhousing.ca/",
-      "links": "https://www.ontarioaboriginalhousing.ca/our-framework",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.ontarioaboriginalhousing.ca/"
+      ],
+      "links": [
+        "https://www.ontarioaboriginalhousing.ca/our-framework"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "ontarioaboringinalhousing",
     "in85List": false,
@@ -21153,8 +22943,12 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.nshn.care/",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.nshn.care/"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "northshorehealthnetwork",
     "in85List": true,
@@ -22375,8 +24169,12 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "contacts": "https://maamwesying.ca/contact-us/",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "contacts": [
+        "https://maamwesying.ca/contact-us/"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "mamwesyingnorthshorecommunityhealthyservices",
     "in85List": true,
@@ -23607,13 +25405,27 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.wawafamilyhealthteam.com/",
-      "spiritual": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "connect": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "links": "https://www.wawafamilyhealthteam.com/our-team",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.wawafamilyhealthteam.com/"
+      ],
+      "spiritual": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "connect": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "links": [
+        "https://www.wawafamilyhealthteam.com/our-team"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "wawafamilyhealthteam",
     "in85List": false,
@@ -23867,10 +25679,18 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://ssmifc.ca",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://ssmifc.ca"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "saultstemarieindigenousfriendshipcentre",
     "in85List": false,
@@ -24167,10 +25987,18 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.enjimaawinjidiyaang.com/",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.enjimaawinjidiyaang.com/"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "elliotlakeindigenousfriendshipcentre",
     "in85List": false,
@@ -24410,8 +26238,12 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "http://www.nog.ca",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "http://www.nog.ca"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "nogdawindaminchildandfamilyservices",
     "in85List": false,
@@ -25329,9 +27161,15 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.weechi.ca/",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.weechi.ca/"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "weechiittiwinchildandfamilyservices",
     "in85List": false,
@@ -26137,9 +27975,15 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.kgcfs.org/",
-      "links": "https://www.kgcfs.org/event/",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.kgcfs.org/"
+      ],
+      "links": [
+        "https://www.kgcfs.org/event/"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "kinagbezhgomi",
     "in85List": false,
@@ -26488,9 +28332,15 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://kunuwanimano.com/",
-      "links": "https://kunuwanimano.com/contact-us/service-resolution-process/",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://kunuwanimano.com/"
+      ],
+      "links": [
+        "https://kunuwanimano.com/contact-us/service-resolution-process/"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "kunuwanamano",
     "in85List": false,
@@ -26779,10 +28629,18 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://oahsa.ca/waabinong/",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "financials": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://oahsa.ca/waabinong/"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "financials": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "waabinongheadstar",
     "in85List": false,
@@ -27089,17 +28947,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.nan.ca/",
-      "physical": "https://www.nan.ca/resources/jordans-principle/",
-      "mental": "https://www.nan.ca/resources/nan-hope/",
-      "spiritual": "https://www.nan.ca/resources/choose-life/",
-      "emotional": "https://www.nan.ca/resources/nan-hope/",
-      "survivors": "https://www.nan.ca/event/irss-gathering/",
-      "youth": "https://www.nan.ca/about/advisory-councils/",
-      "connect": "https://www.nan.ca/wp-content/uploads/2020/10/youth-and-elders-report-final-sept-24006.pdf",
-      "popInfo": "https://www.nan.ca/about/history/",
-      "strategicPlan": "https://nanlegal.on.ca/wp-content/uploads/2021/10/NALSC-Strategic-Plan-2021-2026.pdf",
-      "agm": "https://indd.adobe.com/view/d1a72a4f-4543-45a1-99f6-350017358757"
+      "website": [
+        "https://www.nan.ca/"
+      ],
+      "physical": [
+        "https://www.nan.ca/resources/jordans-principle/"
+      ],
+      "mental": [
+        "https://www.nan.ca/resources/nan-hope/"
+      ],
+      "spiritual": [
+        "https://www.nan.ca/resources/choose-life/"
+      ],
+      "emotional": [
+        "https://www.nan.ca/resources/nan-hope/"
+      ],
+      "survivors": [
+        "https://www.nan.ca/event/irss-gathering/"
+      ],
+      "youth": [
+        "https://www.nan.ca/about/advisory-councils/"
+      ],
+      "connect": [
+        "https://www.nan.ca/wp-content/uploads/2020/10/youth-and-elders-report-final-sept-24006.pdf"
+      ],
+      "popInfo": [
+        "https://www.nan.ca/about/history/"
+      ],
+      "strategicPlan": [
+        "https://nanlegal.on.ca/wp-content/uploads/2021/10/NALSC-Strategic-Plan-2021-2026.pdf"
+      ],
+      "agm": [
+        "https://indd.adobe.com/view/d1a72a4f-4543-45a1-99f6-350017358757"
+      ]
     },
     "nameKey": "nishnawbeaskination",
     "in85List": false,
@@ -27197,15 +29077,33 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.wabuntribalcouncil.ca/",
-      "contacts": "https://www.wabuntribalcouncil.ca/about-us/directory/",
-      "physical": "https://www.wabuntribalcouncil.ca/services/health/",
-      "mental": "https://www.wabuntribalcouncil.ca/services/health/",
-      "spiritual": "https://www.wabuntribalcouncil.ca/about-us/directory/",
-      "emotional": "https://www.wabuntribalcouncil.ca/upcoming-events/",
-      "survivors": "https://www.wabuntribalcouncil.ca/services/health/",
-      "youth": "https://www.wabuntribalcouncil.ca/services/wabun-youth/",
-      "connect": "https://www.wabuntribalcouncil.ca/services/wabun-youth/"
+      "website": [
+        "https://www.wabuntribalcouncil.ca/"
+      ],
+      "contacts": [
+        "https://www.wabuntribalcouncil.ca/about-us/directory/"
+      ],
+      "physical": [
+        "https://www.wabuntribalcouncil.ca/services/health/"
+      ],
+      "mental": [
+        "https://www.wabuntribalcouncil.ca/services/health/"
+      ],
+      "spiritual": [
+        "https://www.wabuntribalcouncil.ca/about-us/directory/"
+      ],
+      "emotional": [
+        "https://www.wabuntribalcouncil.ca/upcoming-events/"
+      ],
+      "survivors": [
+        "https://www.wabuntribalcouncil.ca/services/health/"
+      ],
+      "youth": [
+        "https://www.wabuntribalcouncil.ca/services/wabun-youth/"
+      ],
+      "connect": [
+        "https://www.wabuntribalcouncil.ca/services/wabun-youth/"
+      ]
     },
     "nameKey": "wabuntribalcouncil",
     "in85List": false,
@@ -27309,17 +29207,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.cngov.ca/",
-      "contacts": "https://www.cngov.ca/governance-structure/departments/social-and-cultural-development/",
-      "physical": "https://www.cngov.ca/services/child-family/",
-      "mental": "https://www.cngov.ca/new-community-miyupimaatisiiun-committee-partnership/",
-      "spiritual": "https://www.cngov.ca/governance-structure/departments/social-and-cultural-development/",
-      "emotional": "https://www.cngov.ca/new-community-miyupimaatisiiun-committee-partnership/",
-      "survivors": "https://www.cngov.ca/cree-nation-response-to-indian-residential-schools/",
-      "youth": "https://www.cngov.ca/governance-structure/departments/social-and-cultural-development/",
-      "connect": "https://www.cngov.ca/governance-structure/departments/social-and-cultural-development/",
-      "agm": "https://www.cngov.ca/events/annual-general-assembly-3/",
-      "financials": "https://www.cngov.ca/resources/annual-reports/"
+      "website": [
+        "https://www.cngov.ca/"
+      ],
+      "contacts": [
+        "https://www.cngov.ca/governance-structure/departments/social-and-cultural-development/"
+      ],
+      "physical": [
+        "https://www.cngov.ca/services/child-family/"
+      ],
+      "mental": [
+        "https://www.cngov.ca/new-community-miyupimaatisiiun-committee-partnership/"
+      ],
+      "spiritual": [
+        "https://www.cngov.ca/governance-structure/departments/social-and-cultural-development/"
+      ],
+      "emotional": [
+        "https://www.cngov.ca/new-community-miyupimaatisiiun-committee-partnership/"
+      ],
+      "survivors": [
+        "https://www.cngov.ca/cree-nation-response-to-indian-residential-schools/"
+      ],
+      "youth": [
+        "https://www.cngov.ca/governance-structure/departments/social-and-cultural-development/"
+      ],
+      "connect": [
+        "https://www.cngov.ca/governance-structure/departments/social-and-cultural-development/"
+      ],
+      "agm": [
+        "https://www.cngov.ca/events/annual-general-assembly-3/"
+      ],
+      "financials": [
+        "https://www.cngov.ca/resources/annual-reports/"
+      ]
     },
     "nameKey": "grandcouncilofthecrees",
     "in85List": false,
@@ -27387,17 +29307,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.creehealth.org/",
-      "physical": "https://creehealth.org/home",
-      "mental": "https://creehealth.org/services/mental-health-services",
-      "spiritual": "https://www.creehealth.org/about-us/departments/nishiiyuu",
-      "emotional": "https://www.creehealth.org/health-tips/how-receive-support-residential-school-trauma",
-      "survivors": "https://www.creehealth.org/services/indian-residential-schools-resolution-health-support-program",
-      "youth": "https://www.creehealth.org/services/youth-healing-services",
-      "connect": "https://www.creehealth.org/services/indian-residential-schools-resolution-health-support-program",
-      "strategicPlan": "https://www.creehealth.org/our-mission/strategic-regional-plan",
-      "agm": "https://www.creehealth.org/about-us/governance/annual-reports",
-      "financials": "https://creehealth.org/sites/default/files/2025-09/Financial%20statement%20%28AS-425%29%20-%20Fiscal%20year%20ending%20March%2031%2C%202025.pdf"
+      "website": [
+        "https://www.creehealth.org/"
+      ],
+      "physical": [
+        "https://creehealth.org/home"
+      ],
+      "mental": [
+        "https://creehealth.org/services/mental-health-services"
+      ],
+      "spiritual": [
+        "https://www.creehealth.org/about-us/departments/nishiiyuu"
+      ],
+      "emotional": [
+        "https://www.creehealth.org/health-tips/how-receive-support-residential-school-trauma"
+      ],
+      "survivors": [
+        "https://www.creehealth.org/services/indian-residential-schools-resolution-health-support-program"
+      ],
+      "youth": [
+        "https://www.creehealth.org/services/youth-healing-services"
+      ],
+      "connect": [
+        "https://www.creehealth.org/services/indian-residential-schools-resolution-health-support-program"
+      ],
+      "strategicPlan": [
+        "https://www.creehealth.org/our-mission/strategic-regional-plan"
+      ],
+      "agm": [
+        "https://www.creehealth.org/about-us/governance/annual-reports"
+      ],
+      "financials": [
+        "https://creehealth.org/sites/default/files/2025-09/Financial%20statement%20%28AS-425%29%20-%20Fiscal%20year%20ending%20March%2031%2C%202025.pdf"
+      ]
     },
     "nameKey": "creeboardofhealthandsocialservicesofjamesbay",
     "in85List": false,
@@ -27579,15 +29521,33 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://mushkegowuk.ca/",
-      "contacts": "https://www.mushkegowukhealth.com/our-team",
-      "physical": "https://mushkegowuk.ca/departments/health/",
-      "mental": "https://www.mushkegowukhealth.com/mental-health-program",
-      "spiritual": "https://www.mushkegowukhealth.com/traditional-wellness-program",
-      "emotional": "https://www.mushkegowukhealth.com/mentalhealth",
-      "survivors": "https://www.mushkegowukhealth.com/traditional-wellness-program",
-      "youth": "https://mushkegowuk.ca/departments/youth/",
-      "connect": "https://mushkegowuk.ca/departments/youth/"
+      "website": [
+        "https://mushkegowuk.ca/"
+      ],
+      "contacts": [
+        "https://www.mushkegowukhealth.com/our-team"
+      ],
+      "physical": [
+        "https://mushkegowuk.ca/departments/health/"
+      ],
+      "mental": [
+        "https://www.mushkegowukhealth.com/mental-health-program"
+      ],
+      "spiritual": [
+        "https://www.mushkegowukhealth.com/traditional-wellness-program"
+      ],
+      "emotional": [
+        "https://www.mushkegowukhealth.com/mentalhealth"
+      ],
+      "survivors": [
+        "https://www.mushkegowukhealth.com/traditional-wellness-program"
+      ],
+      "youth": [
+        "https://mushkegowuk.ca/departments/youth/"
+      ],
+      "connect": [
+        "https://mushkegowuk.ca/departments/youth/"
+      ]
     },
     "nameKey": "mushkegowukcouncil",
     "in85List": false,
@@ -27701,9 +29661,15 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://accessopenminds.ca/",
-      "mental": "https://www.publicsafety.gc.ca/cnt/cntrng-crm/crm-prvntn/nvntr/dtls-en.aspx?i=10165",
-      "youth": "https://accessopenminds.ca/who-we-are/"
+      "website": [
+        "https://accessopenminds.ca/"
+      ],
+      "mental": [
+        "https://www.publicsafety.gc.ca/cnt/cntrng-crm/crm-prvntn/nvntr/dtls-en.aspx?i=10165"
+      ],
+      "youth": [
+        "https://accessopenminds.ca/who-we-are/"
+      ]
     },
     "nameKey": "accessopenminds",
     "in85List": false,
@@ -27820,7 +29786,9 @@ window.COMMUNITIES = [
     "sourceRow": 140,
     "staff": [],
     "fieldLinks": {
-      "website": "https://geo.sac-isc.gc.ca/cippn-fnpim/index-eng.html"
+      "website": [
+        "https://geo.sac-isc.gc.ca/cippn-fnpim/index-eng.html"
+      ]
     },
     "nameKey": "mapofindigenouscommunitiesinontario",
     "in85List": false,
@@ -27875,14 +29843,30 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://ofifc.org/friendship-centre/indian-friendship-centre-sault-ste-marie/",
-      "contacts": "https://www.enjimaawinjidiyaang.com/",
-      "survivors": "https://211ontario.ca/service/86239859/agency/enji-maawinjidiyaang-indigenous-friendship-centre/",
-      "youth": "https://ssmifc.ca/programservice/akwego-program",
-      "connect": "https://www.sac-isc.gc.ca/eng/1581971225188/1581971250953",
-      "links": "https://www.enjimaawinjidiyaang.com/",
-      "strategicPlan": "https://pub-elliotlake.escribemeetings.com/filestream.ashx?DocumentId=6807",
-      "financials": "https://ofifc.org/wp-content/uploads/2020/03/2024-2025-Apatisiwin-Annual-Report.pdf"
+      "website": [
+        "https://ofifc.org/friendship-centre/indian-friendship-centre-sault-ste-marie/"
+      ],
+      "contacts": [
+        "https://www.enjimaawinjidiyaang.com/"
+      ],
+      "survivors": [
+        "https://211ontario.ca/service/86239859/agency/enji-maawinjidiyaang-indigenous-friendship-centre/"
+      ],
+      "youth": [
+        "https://ssmifc.ca/programservice/akwego-program"
+      ],
+      "connect": [
+        "https://www.sac-isc.gc.ca/eng/1581971225188/1581971250953"
+      ],
+      "links": [
+        "https://www.enjimaawinjidiyaang.com/"
+      ],
+      "strategicPlan": [
+        "https://pub-elliotlake.escribemeetings.com/filestream.ashx?DocumentId=6807"
+      ],
+      "financials": [
+        "https://ofifc.org/wp-content/uploads/2020/03/2024-2025-Apatisiwin-Annual-Report.pdf"
+      ]
     },
     "nameKey": "indigenousfriendshipcenter",
     "in85List": false,
@@ -28207,17 +30191,39 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.ontarioaboriginalhousing.ca/contact",
-      "contacts": "https://www.ontarioaboriginalhousing.ca/contact",
-      "physical": "https://www.ontarioaboriginalhousing.ca/programs/mkaana-gii-we-add-program",
-      "mental": "https://www.ontarioaboriginalhousing.ca/property/sault-ste-marie",
-      "spiritual": "https://www.ontarioaboriginalhousing.ca/programs/mkaana-gii-we-add-program",
-      "emotional": "https://www.ontarioaboriginalhousing.ca/wp-content/uploads/2023/06/Mkaana-wii-giiweaad-Program-Brochure.pdf",
-      "survivors": "https://211ontario.ca/service/79166197/ontario-aboriginal-housing-services-mkaanaaa-wii-giiweaad-program/",
-      "youth": "https://www.oacas.org/2022/07/ancfsao-indigenous-youth-in-transition-resource-guide/",
-      "strategicPlan": "https://www.ontarioaboriginalhousing.ca/wp-content/uploads/2024/05/RTH1-Advancing-a-Rights-Based-Approach-to-Housing-Urban-Rural-and-Northern-Indigenous-Housing-Strategy-and-access-to-Culturally-Safe-Housing.pdf",
-      "agm": "https://www.ontarioaboriginalhousing.ca/wp-content/uploads/2023/11/OAHS-Annual-Report-2022-2023-web.pdf",
-      "financials": "https://www.ontarioaboriginalhousing.ca/uncategorized/oahs-2024-2025-annual-report"
+      "website": [
+        "https://www.ontarioaboriginalhousing.ca/contact"
+      ],
+      "contacts": [
+        "https://www.ontarioaboriginalhousing.ca/contact"
+      ],
+      "physical": [
+        "https://www.ontarioaboriginalhousing.ca/programs/mkaana-gii-we-add-program"
+      ],
+      "mental": [
+        "https://www.ontarioaboriginalhousing.ca/property/sault-ste-marie"
+      ],
+      "spiritual": [
+        "https://www.ontarioaboriginalhousing.ca/programs/mkaana-gii-we-add-program"
+      ],
+      "emotional": [
+        "https://www.ontarioaboriginalhousing.ca/wp-content/uploads/2023/06/Mkaana-wii-giiweaad-Program-Brochure.pdf"
+      ],
+      "survivors": [
+        "https://211ontario.ca/service/79166197/ontario-aboriginal-housing-services-mkaanaaa-wii-giiweaad-program/"
+      ],
+      "youth": [
+        "https://www.oacas.org/2022/07/ancfsao-indigenous-youth-in-transition-resource-guide/"
+      ],
+      "strategicPlan": [
+        "https://www.ontarioaboriginalhousing.ca/wp-content/uploads/2024/05/RTH1-Advancing-a-Rights-Based-Approach-to-Housing-Urban-Rural-and-Northern-Indigenous-Housing-Strategy-and-access-to-Culturally-Safe-Housing.pdf"
+      ],
+      "agm": [
+        "https://www.ontarioaboriginalhousing.ca/wp-content/uploads/2023/11/OAHS-Annual-Report-2022-2023-web.pdf"
+      ],
+      "financials": [
+        "https://www.ontarioaboriginalhousing.ca/uncategorized/oahs-2024-2025-annual-report"
+      ]
     },
     "nameKey": "ontarioaboriginalhousing",
     "in85List": false,
@@ -28480,9 +30486,15 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://www.nog.ca/",
-      "connect": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://www.nog.ca/"
+      ],
+      "connect": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "nogdawindaminfamlyandcommunityservices",
     "in85List": false,
@@ -28905,10 +30917,18 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://oahsa.ca/waabinong/",
-      "contacts": "https://oahsa.ca/waabinong/",
-      "youth": "https://oahsa.ca/waabinong/",
-      "connect": "https://oahsa.ca/waabinong/"
+      "website": [
+        "https://oahsa.ca/waabinong/"
+      ],
+      "contacts": [
+        "https://oahsa.ca/waabinong/"
+      ],
+      "youth": [
+        "https://oahsa.ca/waabinong/"
+      ],
+      "connect": [
+        "https://oahsa.ca/waabinong/"
+      ]
     },
     "nameKey": "waabinongheadstart",
     "in85List": false,
@@ -29224,13 +31244,27 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://kunuwanimano.com/",
-      "contacts": "https://kunuwanimano.com/contact-us/",
-      "spiritual": "https://kunuwanimano.com/services/cultural-support-services/",
-      "emotional": "https://kunuwanimano.com/services/prevention-services-and-family-support/",
-      "survivors": "https://kunuwanimano.com/about/",
-      "youth": "https://kunuwanimano.com/services/prevention-services-and-family-support/",
-      "connect": "https://icwrn.uvic.ca/wp-content/uploads/2013/10/KUNUPromisingPractice.pdf"
+      "website": [
+        "https://kunuwanimano.com/"
+      ],
+      "contacts": [
+        "https://kunuwanimano.com/contact-us/"
+      ],
+      "spiritual": [
+        "https://kunuwanimano.com/services/cultural-support-services/"
+      ],
+      "emotional": [
+        "https://kunuwanimano.com/services/prevention-services-and-family-support/"
+      ],
+      "survivors": [
+        "https://kunuwanimano.com/about/"
+      ],
+      "youth": [
+        "https://kunuwanimano.com/services/prevention-services-and-family-support/"
+      ],
+      "connect": [
+        "https://icwrn.uvic.ca/wp-content/uploads/2013/10/KUNUPromisingPractice.pdf"
+      ]
     },
     "nameKey": "kunuwanamanochildandfamilyservices",
     "in85List": false,
@@ -30015,12 +32049,24 @@ window.COMMUNITIES = [
     "sourceRow": 150,
     "staff": [],
     "fieldLinks": {
-      "website": "http://wawafamilyhealthteam.com/",
-      "contacts": "https://www.wawafamilyhealthteam.com/contact",
-      "emotional": "https://www.wawafamilyhealthteam.com/our-team",
-      "survivors": "https://www.wawafamilyhealthteam.com/program/mental-health",
-      "youth": "https://www.northeasthealthline.ca/displayservice.aspx?id=111982",
-      "connect": "https://www.wawafamilyhealthteam.com/our-team"
+      "website": [
+        "http://wawafamilyhealthteam.com/"
+      ],
+      "contacts": [
+        "https://www.wawafamilyhealthteam.com/contact"
+      ],
+      "emotional": [
+        "https://www.wawafamilyhealthteam.com/our-team"
+      ],
+      "survivors": [
+        "https://www.wawafamilyhealthteam.com/program/mental-health"
+      ],
+      "youth": [
+        "https://www.northeasthealthline.ca/displayservice.aspx?id=111982"
+      ],
+      "connect": [
+        "https://www.wawafamilyhealthteam.com/our-team"
+      ]
     },
     "nameKey": "wawahealthteam",
     "in85List": false,
@@ -30274,11 +32320,21 @@ window.COMMUNITIES = [
       }
     ],
     "fieldLinks": {
-      "website": "https://mamaweswen.com/",
-      "survivors": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "connect": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "strategicPlan": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit",
-      "agm": "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      "website": [
+        "https://mamaweswen.com/"
+      ],
+      "survivors": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "connect": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "strategicPlan": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ],
+      "agm": [
+        "https://docs.google.com/spreadsheets/d/12Uvg8aCCR4KVxqOPZz9ZfpSCQQt14PE0s3pWmFrITzk/edit"
+      ]
     },
     "nameKey": "maamweysingnorthshorecommunityhealthservices",
     "in85List": true,

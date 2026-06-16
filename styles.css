@@ -6521,3 +6521,17 @@ button.gap-tr:hover { background: var(--paper-2, #f3ecdd); }
 .org-chip:hover { background: rgba(61,107,64,.1); transform: translateY(-1px); }
 .org-chip-dot { width: 9px; height: 9px; border-radius: 50%; background: #3d6b40; flex: 0 0 auto; }
 .org-chip-type { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); padding-left: 6px; border-left: 1px solid var(--paper-3,#e7dcc6); }
+
+/* ---- multiple source links per field + collapsible team note ---- */
+.field-links-group { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; align-items: flex-start; }
+.field-links-group .field-link { margin-top: 0; }
+.pn-note-wrap { margin-top: 10px; }
+.pn-note-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: none; cursor: pointer; padding: 4px 0;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-3, #5a4f40);
+}
+.pn-note-toggle:hover { color: var(--ink-1, #1a1612); }
+.pn-note-chevron { font-size: 10px; }
+.pn-note-wrap .pn-note { margin-top: 8px; }

@@ -111,7 +111,7 @@ const FIELD_LINK_LABEL = {
   survivors: 'Source for this support',
   youth: 'Source for this programming',
 };
-function FieldLink({ url, label }) {
+function FieldLinkOne({ url, label }) {
   if (!url) return null;
   let host = url;
   try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
@@ -124,8 +124,28 @@ function FieldLink({ url, label }) {
     </a>
   );
 }
+// A field can carry SEVERAL source links — render them all, numbered when >1.
+function FieldLink({ url, urls, label }) {
+  const list = (urls && urls.length) ? urls : (url ? [url] : []);
+  if (!list.length) return null;
+  if (list.length === 1) return <FieldLinkOne url={list[0]} label={label} />;
+  return (
+    <div className="field-links-group">
+      {list.map((u, i) => (
+        <FieldLinkOne key={i} url={u} label={`${label || 'Source'} ${i + 1}`} />
+      ))}
+    </div>
+  );
+}
+// Always return an array of URLs for a field (values may be string or array).
+function fieldLinksFor(c, key) {
+  const v = c && c.fieldLinks && c.fieldLinks[key];
+  if (!v) return [];
+  return Array.isArray(v) ? v.filter(Boolean) : [v];
+}
 function fieldLinkFor(c, key) {
-  return (c && c.fieldLinks && c.fieldLinks[key]) || null;
+  const a = fieldLinksFor(c, key);
+  return a.length ? a[0] : null;
 }
 
 // PendingNotice — friendly card shown instead of raw "Missing Information" /
@@ -136,6 +156,11 @@ function PendingNotice({ status, c, fieldKey }) {
   const anns = (c && fieldKey) ? window.fieldAnnotations(c, fieldKey) : [];
   const note = anns.find(a => a.kind === (status === 'review' ? 'review' : 'missing'));
   const when = note && note.date ? String(note.date).slice(0, 10) : null;
+  const hasNote = note && note.description && String(note.description).trim();
+  const noteLinks = (note && Array.isArray(note.links)) ? note.links : [];
+  // The raw team note can be long / inconsistently formatted, so keep it tucked
+  // away behind a toggle by default — the link(s) the team found stay visible.
+  const [showNote, setShowNote] = useState(false);
   return (
     <div className={`pending-notice pn-${status}`}>
       <div className="pn-top">
@@ -144,17 +169,24 @@ function PendingNotice({ status, c, fieldKey }) {
       </div>
       <div className="pn-title">{copy.title}</div>
       <div className="pn-body">{copy.body}</div>
-      {note && note.description && (
-        <div className="pn-note">
-          <span className="pn-note-lab">Team note</span>
-          {window.autoLink(String(note.description).slice(0, 400))}
+      {noteLinks.length > 0 && (
+        <div className="pn-links">
+          {noteLinks.slice(0, 6).map((u, i) => (
+            <FieldLinkOne key={i} url={u} label={noteLinks.length > 1 ? `What the team found ${i + 1}` : 'What the team found'} />
+          ))}
         </div>
       )}
-      {note && Array.isArray(note.links) && note.links.length > 0 && (
-        <div className="pn-links">
-          {note.links.slice(0, 4).map((u, i) => (
-            <FieldLink key={i} url={u} label="What the team found" />
-          ))}
+      {hasNote && (
+        <div className="pn-note-wrap">
+          <button className="pn-note-toggle" onClick={() => setShowNote(s => !s)} aria-expanded={showNote}>
+            <span className="pn-note-chevron">{showNote ? '▾' : '▸'}</span>
+            {showNote ? 'Hide team note' : 'Read the team’s note'}
+          </button>
+          {showNote && (
+            <div className="pn-note">
+              {window.autoLink(String(note.description).slice(0, 600))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -176,7 +208,7 @@ function Section({ title, swatch, children, value, eyebrow, searchQuery, communi
       {empty
         ? <PendingNotice status={status} c={community} fieldKey={fieldKey} />
         : status === 'ok' && value && <div className="section-body">{searchQuery ? window.highlight(value, searchQuery) : window.autoLink(value)}</div>}
-      {status === 'ok' && <FieldLink url={fieldLinkFor(community, fieldKey)} label={FIELD_LINK_LABEL[fieldKey]} />}
+      {status === 'ok' && <FieldLink urls={fieldLinksFor(community, fieldKey)} label={FIELD_LINK_LABEL[fieldKey]} />}
       {children}
       {communityId && fieldKey && <window.EditableField communityId={communityId} fieldKey={fieldKey} value={value} label={title} />}
     </div>
@@ -569,9 +601,9 @@ function PillarServiceCard({ pillar, value, on, c, searchQuery }) {
             </div>
 
             {(() => {
-              const src = fieldLinkFor(c, pillar.key);
-              const dup = src && meta.links.some(u => u === src || u.replace(/\/$/,'') === src.replace(/\/$/,''));
-              return src && !dup ? <FieldLink url={src} label={FIELD_LINK_LABEL[pillar.key]} /> : null;
+              const srcs = fieldLinksFor(c, pillar.key).filter(src =>
+                !meta.links.some(u => u === src || u.replace(/\/$/,'') === src.replace(/\/$/,'')));
+              return srcs.length ? <FieldLink urls={srcs} label={FIELD_LINK_LABEL[pillar.key]} /> : null;
             })()}
 
             {meta.links.length > 0 && (

@@ -509,7 +509,13 @@ def _extract_hyperlinks(path) -> dict:
                 row, col = _ref_to_rc(ref.split(":")[0])
                 if row <= 0 or col < 0:
                     continue
-                grid.setdefault(row, {})[col] = str(url).strip()
+                # A single cell can carry SEVERAL links (rich-text anchors like
+                # "Health Services" + "Home and Community Care Services"). Keep
+                # them ALL, in order, deduped — never collapse to one.
+                bucket = grid.setdefault(row, {}).setdefault(col, [])
+                u = str(url).strip()
+                if u not in bucket:
+                    bucket.append(u)
             if grid:
                 out[sheet_name] = grid
     except Exception:
@@ -543,13 +549,16 @@ def _attach_field_links(records: list[dict], rows: list[list[str]],
         row_links = grid.get(sr)
         if not row_links:
             continue
-        field_links: dict[str, str] = {}
-        for ci, url in row_links.items():
+        field_links: dict[str, list] = {}
+        for ci, urls in row_links.items():
             field = idx_to_field.get(ci)
             if not field or field in ("lat", "lon", "type", "direction", "population"):
                 continue
             key = _FIELD_LINK_ALIAS.get(field, field)
-            field_links.setdefault(key, url)
+            bucket = field_links.setdefault(key, [])
+            for u in urls:
+                if u not in bucket:
+                    bucket.append(u)
         if field_links:
             rec["fieldLinks"] = field_links
 
@@ -675,9 +684,12 @@ def read_annotations(wb, sheet_name: str, kind: str, sheet: str | None = None,
         row_links = link_grid.get(i + 1)
         if row_links:
             seen, uniq = set(), []
-            for ci, u in sorted(row_links.items()):
-                if ci >= 1 and u not in seen:
-                    seen.add(u); uniq.append(u)
+            for ci, urls in sorted(row_links.items()):
+                if ci < 1:
+                    continue
+                for u in urls:
+                    if u not in seen:
+                        seen.add(u); uniq.append(u)
             if uniq:
                 entry["links"] = uniq
         out.append(entry)
