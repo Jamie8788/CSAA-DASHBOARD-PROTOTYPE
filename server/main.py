@@ -37,6 +37,7 @@ GET  /api/analytics/full
 Plus static file serving for the dashboard at `/` and the CMS at `/cms`.
 """
 from __future__ import annotations
+import os
 import shutil
 import sys
 import time
@@ -51,7 +52,7 @@ from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, Res
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import analytics, auth, config, coords, db, enrich, events, mailer, processor, workbook
+from . import analytics, auth, config, coords, db, enrich, events, gsheets, mailer, processor, workbook
 
 
 app = FastAPI(
@@ -621,6 +622,65 @@ async def communities_upload(
         out["meta"] = snapshot["meta"]
         out["annotations"] = snapshot["annotations"]["totals"]
     return out
+
+
+class GSheetSyncIn(BaseModel):
+    spreadsheetId: str | None = None
+    apiKey: str | None = None
+
+
+@app.post("/api/communities/sync-gsheet")
+def communities_sync_gsheet(payload: GSheetSyncIn,
+                            actor: dict = Depends(auth.require_admin)) -> dict:
+    """Pull the dataset straight from the live Google Sheet via the Sheets API.
+    Unlike .xlsx upload, this preserves EVERY in-cell link. Credentials resolve
+    from the request body, then env (GOOGLE_SHEETS_ID / GOOGLE_SHEETS_API_KEY),
+    then CMS settings (sheets.spreadsheetId / sheets.apiKey)."""
+    settings = db.get_settings()
+    sid = (payload.spreadsheetId or os.environ.get("GOOGLE_SHEETS_ID", "")
+           or settings.get("sheets.spreadsheetId", "")).strip()
+    key = (payload.apiKey or os.environ.get("GOOGLE_SHEETS_API_KEY", "")
+           or settings.get("sheets.apiKey", "")).strip()
+    if not sid or not key:
+        raise HTTPException(400, "Provide a Google Sheet ID/URL and an API key "
+                                 "(or set them in Settings / env vars).")
+    # Persist for next time (so the admin can just click 'Sync' later).
+    try:
+        db.set_setting("sheets.spreadsheetId", gsheets.extract_spreadsheet_id(sid), actor["username"])
+        if not os.environ.get("GOOGLE_SHEETS_API_KEY"):
+            db.set_setting("sheets.apiKey", key, actor["username"])
+    except Exception:
+        pass
+
+    previous = (db.current_dataset() or {}).get("records") or []
+    try:
+        snapshot = gsheets.ingest_gsheet(sid, key)
+        records = snapshot["records"]
+        by_name = {processor._slugify(r.get("name", "")): r for r in previous}
+        for r in records:
+            if r.get("lat") is None or r.get("lon") is None:
+                prior = by_name.get(processor._slugify(r.get("name", "")))
+                if prior:
+                    r.setdefault("lat", prior.get("lat"))
+                    r.setdefault("lon", prior.get("lon"))
+    except Exception as e:
+        raise HTTPException(400, f"Google Sheets sync failed: {e}")
+    if not records:
+        raise HTTPException(400, "No records parsed from the Google Sheet")
+
+    coords.fill_missing_coords(records)
+    version = db.save_dataset(records, source_filename="Google Sheet (live sync)",
+                              uploaded_by=actor["username"], snapshot=snapshot)
+    processor.write_communities_js(records)
+    db.log_audit(actor["username"], "dataset.gsheet-sync",
+                 "Google Sheet", f"v{version}, {len(records)} records")
+    events.publish("dataset.updated", {
+        "version": version, "records": len(records), "source": "Google Sheet (live sync)",
+        "annotations": (snapshot or {}).get("annotations", {}).get("totals", {}),
+    })
+    link_total = sum(len(v) for r in records for v in (r.get("fieldLinks") or {}).values())
+    return {"ok": True, "version": version, "records": len(records),
+            "fieldLinks": link_total, "meta": snapshot.get("meta")}
 
 
 @app.post("/api/communities/{community_id}/edit")

@@ -80,6 +80,8 @@
         fd.append('file', file);
         return request('POST', '/api/communities/upload', fd);
       },
+      syncGsheet: (spreadsheetId, apiKey) =>
+        request('POST', '/api/communities/sync-gsheet', { spreadsheetId, apiKey }),
       edits: () => request('GET', '/api/communities/edits'),
       versions: () => request('GET', '/api/communities/versions'),
       activate: (v) => request('POST', `/api/communities/versions/${v}/activate`),

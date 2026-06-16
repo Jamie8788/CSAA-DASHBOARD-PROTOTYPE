@@ -732,7 +732,6 @@ def ingest_workbook(path: Path) -> dict:
     'Sandbox') are ignored. A renamed Master Sheet still works.
     """
     wb = load_workbook(filename=str(path), data_only=True, read_only=True)
-    detected = detect_sheets(wb)
 
     # Extract every sheet's external hyperlinks ONCE, cheaply, from the zip XML
     # (no second openpyxl load — that previously spiked memory on upload).
@@ -741,6 +740,17 @@ def ingest_workbook(path: Path) -> dict:
         hyperlinks = _extract_hyperlinks(path)
     except Exception:
         hyperlinks = {}
+
+    return assemble_snapshot(wb, hyperlinks)
+
+
+def assemble_snapshot(wb, hyperlinks: dict) -> dict:
+    """Shared snapshot builder used by BOTH the .xlsx path (ingest_workbook)
+    and the Google Sheets API path (server.gsheets). `wb` only needs to expose
+    `.sheetnames` and `wb[title].iter_rows(values_only=True)`; `hyperlinks` is
+    {sheet_title: {row_number: {col_index: [urls]}}}.
+    """
+    detected = detect_sheets(wb)
 
     master_records = read_master_sheet(wb, detected["master"],
                                        link_grid=hyperlinks.get(detected["master"]))
