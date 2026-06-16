@@ -496,3 +496,11 @@ tr.unread td { background: rgba(212,160,23,0.06); }
 .ai-link:hover { color: #3f2870; }
 .ai-explain { font-size: 10.5px; color: #6a6a6a; margin-top: 3px; line-height: 1.3; white-space: normal; }
 .ai-prev td.ai-cell { white-space: normal; }
+
+/* Google Sheets sync block */
+.gsheet-sync { border: 1px solid var(--line, #e2d8c4); border-left: 3px solid #3d6b40;
+  border-radius: 10px; padding: 16px 18px; margin-top: 28px; background: rgba(61,107,64,.04); }
+.gsheet-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+.gsheet-input { flex: 1; min-width: 220px; padding: 9px 12px; border-radius: 8px;
+  border: 1px solid var(--line, #cdbf9f); font-size: 13px; background: #fff; }
+.gsheet-row .btn { white-space: nowrap; }

@@ -40,6 +40,20 @@ function UploadView() {
     } catch (e) { toast.push('Activate failed: ' + e.message, 'error'); }
   }
 
+  const [gsId, setGsId] = useState_up('');
+  const [gsKey, setGsKey] = useState_up('');
+  const [gsBusy, setGsBusy] = useState_up(false);
+  async function syncGsheet() {
+    setGsBusy(true);
+    try {
+      const res = await API.communities.syncGsheet(gsId.trim(), gsKey.trim());
+      toast.push(`Synced from Google Sheet — v${res.version}, ${res.records} records, ${res.fieldLinks} links`, 'success', 6000);
+      refresh();
+    } catch (e) {
+      toast.push('Google Sheet sync failed: ' + e.message, 'error', 7000);
+    } finally { setGsBusy(false); }
+  }
+
   return (
     <div>
       <h1>Upload data</h1>
@@ -67,6 +81,26 @@ function UploadView() {
         <p className="small">.xlsx, .xls, .csv up to 50 MB</p>
         <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" hidden
                onChange={(e) => doUpload(e.target.files && e.target.files[0])} />
+      </div>
+
+      <div className="gsheet-sync">
+        <h2 style={{ marginTop: 32 }}>Sync from Google Sheet <span className="tag" style={{verticalAlign:'middle'}}>keeps every link</span></h2>
+        <p className="subhead">
+          Reads the live Google Sheet through the Sheets API. Unlike .xlsx upload, this keeps
+          <strong> every in-cell link</strong> (Excel export drops all but the first link in a cell).
+          Share the Sheet as “anyone with the link can view”, create a Google API key, and paste both below.
+          They’re saved, so next time just click Sync.
+        </p>
+        <div className="gsheet-row">
+          <input type="text" placeholder="Google Sheet URL or ID" value={gsId}
+                 onChange={(e) => setGsId(e.target.value)} className="gsheet-input" />
+          <input type="password" placeholder="Google API key (saved securely)" value={gsKey}
+                 onChange={(e) => setGsKey(e.target.value)} className="gsheet-input" />
+          <button className="btn" onClick={syncGsheet} disabled={gsBusy}>
+            {gsBusy ? <window.Spinner size={16} /> : '↻ Sync now'}
+          </button>
+        </div>
+        <p className="small muted">Leave the key blank to reuse a previously saved key or one set via the GOOGLE_SHEETS_API_KEY env var.</p>
       </div>
 
       <h2 style={{ marginTop: 32 }}>Dataset versions</h2>
