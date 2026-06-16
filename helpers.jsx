@@ -253,8 +253,10 @@ function enrichRaw(raw, idx) {
   const fieldLinks = (raw.fieldLinks && typeof raw.fieldLinks === 'object') ? raw.fieldLinks : {};
   // The website cell sometimes holds plain text ("Home page") with the real URL
   // attached as a hyperlink — fall back to that captured link.
+  // fieldLinks values are arrays of URLs (a cell can carry several links).
+  const firstLink = (v) => Array.isArray(v) ? (v[0] || null) : (v || null);
   const isWebsite = link && /^https?:\/\//.test(link);
-  const websiteUrl = isWebsite ? link : (fieldLinks.website || null);
+  const websiteUrl = isWebsite ? link : (firstLink(fieldLinks.website) || null);
   // service flags
   const hasPhysical = !NA(raw.physical);
   const hasMental = !NA(raw.mental);
