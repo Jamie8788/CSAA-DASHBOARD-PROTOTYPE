@@ -845,8 +845,24 @@ def audit_log(_: dict = Depends(auth.require_admin), limit: int = 100) -> dict:
 
 @app.get("/api/settings")
 def settings_get() -> dict:
-    """Public — the dashboard reads these to customise the UI."""
-    return db.get_settings()
+    """Public — the dashboard reads these to customise the UI. Secrets
+    (API keys / tokens) are NEVER returned here; they are write-only from the
+    admin UI and live only server-side (DB or env)."""
+    return _redact_secrets(db.get_settings())
+
+
+# Setting keys that must never be exposed on the public settings endpoint.
+_SECRET_SETTING_KEYS = {"sheets.apiKey", "ai.groq_key"}
+
+
+def _redact_secrets(settings: dict) -> dict:
+    out = {}
+    for k, v in (settings or {}).items():
+        lk = str(k).lower()
+        if k in _SECRET_SETTING_KEYS or lk.endswith(("apikey", "secret", "token", "password")) or lk.endswith(".key"):
+            continue  # drop entirely — never leak
+        out[k] = v
+    return out
 
 
 @app.put("/api/settings")
@@ -855,7 +871,7 @@ def settings_update(payload: SettingsIn, actor: dict = Depends(auth.require_admi
     db.log_audit(actor["username"], "settings.update", None,
                  f"keys: {', '.join(payload.values.keys())}")
     events.publish("settings.updated", {"keys": list(payload.values.keys())})
-    return db.get_settings()
+    return _redact_secrets(db.get_settings())
 
 
 @app.post("/api/settings/reset")
