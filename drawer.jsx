@@ -148,24 +148,45 @@ function fieldLinkFor(c, key) {
   return a.length ? a[0] : null;
 }
 
+// ── Pending-field display rules (EASILY REVERSIBLE) ───────────────────────
+// To revert: set PENDING_UNIFY = false (brings back separate "Coming soon" vs
+// "Under review"), and/or PENDING_HIDE_NOTES = false (shows team notes again).
+//
+//  • PENDING_UNIFY: any field whose sheet value is "Missing Information" OR
+//    "Needs Review" is shown to users as ONE simple "Under review" state.
+//  • PENDING_HIDE_NOTES: for those same fields, the internal team notes
+//    (and the links inside them) are hidden from public users.
+const PENDING_UNIFY = true;
+const PENDING_HIDE_NOTES = true;
+const UNIFIED_PENDING_COPY = {
+  badge: 'Under review',
+  title: 'This information is being reviewed.',
+  body: 'The team is reviewing this and it will be updated soon.',
+};
+
 // PendingNotice — friendly card shown instead of raw "Missing Information" /
-// "Needs Review" placeholder text. Pulls the matching note from the workbook's
-// Missing Information / Needs Review tabs when available.
+// "Needs Review" placeholder text.
 function PendingNotice({ status, c, fieldKey }) {
-  const copy = window.PENDING_COPY[status] || window.PENDING_COPY.empty;
+  // Unify missing + review into one "under review" presentation for users.
+  const unified = PENDING_UNIFY && (status === 'missing' || status === 'review');
+  const copy = unified ? UNIFIED_PENDING_COPY
+                       : (window.PENDING_COPY[status] || window.PENDING_COPY.empty);
+  // When a field says "Missing Information" / "Needs Review", its internal
+  // team notes + note-links are hidden from public users.
+  const restricted = PENDING_HIDE_NOTES && (status === 'missing' || status === 'review');
   const anns = (c && fieldKey) ? window.fieldAnnotations(c, fieldKey) : [];
   const note = anns.find(a => a.kind === (status === 'review' ? 'review' : 'missing'));
   const when = note && note.date ? String(note.date).slice(0, 10) : null;
-  const hasNote = note && note.description && String(note.description).trim();
-  const noteLinks = (note && Array.isArray(note.links)) ? note.links : [];
+  const hasNote = !restricted && note && note.description && String(note.description).trim();
+  const noteLinks = (!restricted && note && Array.isArray(note.links)) ? note.links : [];
   // The raw team note can be long / inconsistently formatted, so keep it tucked
   // away behind a toggle by default — the link(s) the team found stay visible.
   const [showNote, setShowNote] = useState(false);
   return (
-    <div className={`pending-notice pn-${status}`}>
+    <div className={`pending-notice pn-${unified ? 'review' : status}`}>
       <div className="pn-top">
         <span className="pn-badge">{copy.badge}</span>
-        {when && <span className="pn-date">checked {when}</span>}
+        {when && !restricted && <span className="pn-date">checked {when}</span>}
       </div>
       <div className="pn-title">{copy.title}</div>
       <div className="pn-body">{copy.body}</div>
@@ -531,13 +552,15 @@ function PillarServiceCard({ pillar, value, on, c, searchQuery }) {
             <div className="pc-titles">
               <h3 className="pc-title">{pillar.label}</h3>
               <div className="pc-meta">{
-                window.fieldStatus(c, pillar.key, value) === 'missing' ? 'Being gathered — update coming soon'
-                : window.fieldStatus(c, pillar.key, value) === 'review' ? 'Being verified by the team'
-                : 'No programming on file yet'
+                (window.fieldStatus(c, pillar.key, value) === 'missing' || window.fieldStatus(c, pillar.key, value) === 'review')
+                  ? 'Being reviewed — update coming soon'
+                  : 'No programming on file yet'
               }</div>
             </div>
-            <span className={`pc-status off pcs-${window.fieldStatus(c, pillar.key, value)}`}>
-              {(window.PENDING_COPY[window.fieldStatus(c, pillar.key, value)] || window.PENDING_COPY.empty).badge}
+            <span className={`pc-status off pcs-${(window.fieldStatus(c, pillar.key, value) === 'missing' || window.fieldStatus(c, pillar.key, value) === 'review') ? 'review' : window.fieldStatus(c, pillar.key, value)}`}>
+              {(window.fieldStatus(c, pillar.key, value) === 'missing' || window.fieldStatus(c, pillar.key, value) === 'review')
+                ? 'Under review'
+                : (window.PENDING_COPY[window.fieldStatus(c, pillar.key, value)] || window.PENDING_COPY.empty).badge}
             </span>
           </div>
           <PendingNotice status={window.fieldStatus(c, pillar.key, value)} c={c} fieldKey={pillar.key} />
