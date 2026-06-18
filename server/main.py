@@ -683,6 +683,56 @@ def communities_sync_gsheet(payload: GSheetSyncIn,
             "fieldLinks": link_total, "meta": snapshot.get("meta")}
 
 
+@app.post("/api/communities/import-gscript")
+async def communities_import_gscript(request: Request) -> dict:
+    """Receive sheet data (with ALL in-cell links) from the Google Apps Script
+    that runs inside the user's sheet. Auth is a shared token so it works
+    without a login flow. Works even when the org blocks link-sharing and
+    service accounts, because the script runs as the signed-in user."""
+    expected = (os.environ.get("GSCRIPT_SYNC_TOKEN", "")
+                or db.get_settings().get("sync.gscriptToken", "")).strip()
+    if not expected:
+        raise HTTPException(400, "Apps Script sync is not configured yet "
+                                 "(set GSCRIPT_SYNC_TOKEN).")
+    token = (request.headers.get("X-Sync-Token") or "").strip()
+    if token != expected:
+        raise HTTPException(401, "Bad sync token")
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(400, "Invalid JSON body")
+
+    previous = (db.current_dataset() or {}).get("records") or []
+    try:
+        snapshot = gsheets.ingest_gscript(payload)
+        records = snapshot["records"]
+        by_name = {processor._slugify(r.get("name", "")): r for r in previous}
+        for r in records:
+            if r.get("lat") is None or r.get("lon") is None:
+                prior = by_name.get(processor._slugify(r.get("name", "")))
+                if prior:
+                    r.setdefault("lat", prior.get("lat"))
+                    r.setdefault("lon", prior.get("lon"))
+    except Exception as e:
+        raise HTTPException(400, f"Apps Script import failed: {e}")
+    if not records:
+        raise HTTPException(400, "No records parsed from the Apps Script payload")
+
+    coords.fill_missing_coords(records)
+    version = db.save_dataset(records, source_filename="Google Sheet (Apps Script sync)",
+                              uploaded_by="apps-script", snapshot=snapshot)
+    processor.write_communities_js(records)
+    db.log_audit("apps-script", "dataset.gscript-sync", "Google Sheet",
+                 f"v{version}, {len(records)} records")
+    events.publish("dataset.updated", {
+        "version": version, "records": len(records),
+        "source": "Google Sheet (Apps Script sync)",
+        "annotations": (snapshot or {}).get("annotations", {}).get("totals", {}),
+    })
+    link_total = sum(len(v) for r in records for v in (r.get("fieldLinks") or {}).values())
+    return {"ok": True, "version": version, "records": len(records), "fieldLinks": link_total}
+
+
 @app.post("/api/communities/{community_id}/edit")
 def communities_edit(community_id: str, payload: EditIn,
                      actor: dict = Depends(auth.require_admin)) -> dict:

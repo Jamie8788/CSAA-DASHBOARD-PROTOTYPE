@@ -120,3 +120,46 @@ def ingest_gsheet(spreadsheet_id: str, api_key: str) -> dict:
     data = fetch_spreadsheet(spreadsheet_id, api_key)
     wb, hyperlinks = build_from_api(data)
     return workbook.assemble_snapshot(wb, hyperlinks)
+
+
+def build_from_gscript(payload: dict) -> tuple[_FakeWorkbook, dict]:
+    """Turn the Apps Script payload into (fake workbook, hyperlinks grid).
+
+    Apps Script runs INSIDE the sheet as the signed-in user, so it works even
+    when the org forbids link-sharing or service accounts. It reads every
+    cell's text plus all in-cell link URLs (RichTextValue runs) and posts:
+        {"sheets": [{"title": str, "rows": [[{"v": text, "links": [url,...]}]]}]}
+    """
+    sheets: dict[str, list[list[str]]] = {}
+    hyperlinks: dict[str, dict] = {}
+    for sh in (payload.get("sheets") or []):
+        title = sh.get("title") or ""
+        rows: list[list[str]] = []
+        grid: dict = {}
+        for ri, row in enumerate(sh.get("rows") or []):
+            cells = []
+            for ci, cell in enumerate(row or []):
+                if isinstance(cell, dict):
+                    cells.append(cell.get("v") or "")
+                    links = cell.get("links") or []
+                else:
+                    cells.append(cell or "")
+                    links = []
+                clean = []
+                for u in links:
+                    u = str(u).strip()
+                    if u.lower().startswith(("http://", "https://")) and u not in clean:
+                        clean.append(u)
+                if clean:
+                    grid.setdefault(ri + 1, {})[ci] = clean
+            rows.append(cells)
+        sheets[title] = rows
+        if grid:
+            hyperlinks[title] = grid
+    return _FakeWorkbook(sheets), hyperlinks
+
+
+def ingest_gscript(payload: dict) -> dict:
+    """Apps Script payload → snapshot (same downstream as the .xlsx path)."""
+    wb, hyperlinks = build_from_gscript(payload)
+    return workbook.assemble_snapshot(wb, hyperlinks)
