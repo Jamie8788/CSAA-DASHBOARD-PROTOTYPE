@@ -6579,3 +6579,129 @@ button.gap-tr:hover { background: var(--paper-2, #f3ecdd); }
   font-size: 13px; line-height: 1.6;
 }
 .as-recorded .rt-p { font-size: 13px; }
+
+/* ============================================================================
+   WELCOME / HOME — the friendly landing page (default view)
+   ========================================================================== */
+.welcome { max-width: 1100px; margin: 0 auto; padding: 0 20px 60px; }
+.welcome-hero {
+  position: relative; overflow: hidden; border-radius: 22px; margin: 18px 0 40px;
+  padding: clamp(36px, 6vw, 80px) clamp(24px, 5vw, 64px);
+  background: radial-gradient(120% 140% at 80% 0%, #2a2114 0%, #15110d 60%, #0c0a07 100%);
+  color: #fbf6ec;
+}
+.welcome-aura {
+  position: absolute; inset: -30% -10% auto -10%; height: 90%;
+  background:
+    radial-gradient(40% 60% at 20% 30%, rgba(212,160,23,.30), transparent 70%),
+    radial-gradient(38% 55% at 78% 20%, rgba(184,53,30,.22), transparent 70%),
+    radial-gradient(45% 60% at 60% 80%, rgba(107,141,107,.22), transparent 70%);
+  filter: blur(46px);
+  animation: welcomeAura 22s ease-in-out infinite alternate;
+}
+@keyframes welcomeAura { from { transform: translate(0,0) scale(1); } to { transform: translate(4%, 5%) scale(1.12); } }
+.welcome-hero-inner { position: relative; z-index: 2; }
+.welcome-eyebrow {
+  font-family: var(--mono, monospace); font-size: 12px; letter-spacing: .22em;
+  text-transform: uppercase; color: #e8c97a; margin-bottom: 16px;
+  animation: wUp .7s cubic-bezier(.2,.9,.3,1) both;
+}
+.welcome-title {
+  font-family: var(--serif, 'Newsreader', serif); font-weight: 500;
+  font-size: clamp(36px, 6vw, 72px); line-height: 1.04; letter-spacing: -.015em;
+  margin: 0 0 18px; text-shadow: 0 2px 24px rgba(0,0,0,.4);
+  animation: wUp .7s .08s cubic-bezier(.2,.9,.3,1) both;
+}
+.welcome-title em { font-style: italic; color: #f0d488; }
+.welcome-lead {
+  max-width: 680px; font-size: clamp(15px, 1.8vw, 20px); line-height: 1.6;
+  color: rgba(251,246,236,.86); margin: 0 0 28px;
+  animation: wUp .7s .16s cubic-bezier(.2,.9,.3,1) both;
+}
+.welcome-stats { display: flex; flex-wrap: wrap; gap: 36px; margin-bottom: 30px;
+  animation: wUp .7s .24s cubic-bezier(.2,.9,.3,1) both; }
+.welcome-stat .ws-num {
+  font-family: var(--serif, 'Newsreader', serif); font-size: clamp(34px, 5vw, 52px);
+  line-height: 1; color: #f0d488;
+}
+.welcome-stat .ws-lab {
+  font-family: var(--mono, monospace); font-size: 11px; letter-spacing: .14em;
+  text-transform: uppercase; color: rgba(251,246,236,.7); margin-top: 8px;
+}
+.welcome-cta-row { display: flex; flex-wrap: wrap; gap: 14px;
+  animation: wUp .7s .32s cubic-bezier(.2,.9,.3,1) both; }
+.welcome-cta {
+  font-family: var(--mono, monospace); font-size: 14px; letter-spacing: .06em;
+  padding: 15px 26px; border-radius: 999px; cursor: pointer; border: none;
+  background: #f0d488; color: #1a1612; font-weight: 600; transition: transform .15s, box-shadow .15s;
+}
+.welcome-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(240,212,136,.3); }
+.welcome-cta.ghost { background: transparent; color: #fbf6ec; border: 1px solid rgba(251,246,236,.4); }
+.welcome-cta.ghost:hover { background: rgba(251,246,236,.1); box-shadow: none; }
+
+.welcome-section { margin-bottom: 48px; }
+.welcome-h2 {
+  font-family: var(--serif, 'Newsreader', serif); font-size: clamp(24px, 3vw, 34px);
+  margin: 0 0 22px; color: var(--ink-1, #1a1612);
+}
+.welcome-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+@media (max-width: 900px) { .welcome-actions { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .welcome-actions { grid-template-columns: 1fr; } }
+.welcome-action {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  text-align: left; cursor: pointer; padding: 24px 22px; border-radius: 16px;
+  background: var(--paper, #fbf6ec); border: 1px solid var(--paper-3, #e7dcc6);
+  transition: transform .18s, box-shadow .18s, border-color .18s;
+  animation: wUp .6s cubic-bezier(.2,.9,.3,1) both;
+}
+.welcome-action:hover {
+  transform: translateY(-4px); border-color: var(--clay, #b8351e);
+  box-shadow: 0 14px 32px rgba(26,22,18,.14);
+}
+.wa-icon {
+  font-size: 26px; width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--paper-2, #f3ecdd); color: var(--clay, #b8351e);
+}
+.wa-title { font-family: var(--serif, 'Newsreader', serif); font-size: 20px; font-weight: 600; color: var(--ink-1); }
+.wa-body { font-size: 13.5px; line-height: 1.55; color: var(--ink-2, #3d3527); flex: 1; }
+.wa-go { font-family: var(--mono, monospace); font-size: 12px; letter-spacing: .08em; color: var(--clay, #b8351e); margin-top: 4px; }
+
+.welcome-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+@media (max-width: 760px) { .welcome-steps { grid-template-columns: 1fr; } }
+.welcome-step { display: flex; gap: 14px; align-items: flex-start; }
+.ws-n {
+  flex: 0 0 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ink-1, #1a1612); color: #f0d488;
+  font-family: var(--serif, 'Newsreader', serif); font-size: 20px;
+}
+.ws-t { font-weight: 600; font-size: 15.5px; color: var(--ink-1); }
+.ws-d { font-size: 13.5px; line-height: 1.55; color: var(--ink-2); margin-top: 3px; }
+.welcome-foot { margin-top: 26px; font-size: 13px; font-style: italic; color: var(--ink-3, #5a4f40); line-height: 1.6; }
+
+.reduce-motion .welcome-aura,
+.reduce-motion .welcome-eyebrow, .reduce-motion .welcome-title, .reduce-motion .welcome-lead,
+.reduce-motion .welcome-stats, .reduce-motion .welcome-cta-row, .reduce-motion .welcome-action {
+  animation: none;
+}
+@keyframes wUp { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+
+/* ============================================================================
+   MAP — bigger, clearer zoom controls for accessibility (esp. Elders)
+   ========================================================================== */
+.leaflet-control-zoom { border: none !important; box-shadow: 0 4px 14px rgba(26,22,18,.25) !important; }
+.leaflet-control-zoom a {
+  width: 46px !important; height: 46px !important; line-height: 44px !important;
+  font-size: 26px !important; font-weight: 700 !important;
+  color: #1a1612 !important; background: #fbf6ec !important;
+  border: 1px solid #cabd9c !important;
+}
+.leaflet-control-zoom a:hover { background: #f0d488 !important; color: #1a1612 !important; }
+.leaflet-control-zoom-in { border-radius: 12px 12px 0 0 !important; }
+.leaflet-control-zoom-out { border-radius: 0 0 12px 12px !important; }
+
+/* On the Welcome landing page, hide the header's repeated title/stats row
+   (the Welcome hero already shows them) — but keep the nav strip + banner. */
+.view-welcome .hero-row { display: none; }
+.view-welcome .hero { padding-top: 8px; padding-bottom: 0; }
