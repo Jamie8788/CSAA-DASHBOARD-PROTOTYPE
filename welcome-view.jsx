@@ -28,8 +28,8 @@ function _rampA(stops, p) { // returns [r,g,b] for alpha use
 // time-of-day palettes: [dawn, morning, afternoon, dusk, night]
 const SKY_TOP   = ['#2a1f38', '#23476a', '#2f5b86', '#43263f', '#070b18'];
 const SKY_HORIZ = ['#c97b2e', '#e8c879', '#f0d486', '#d35a28', '#16223a'];
-const WATER_TOP = ['#b9742b', '#cdab5c', '#d8c074', '#c25a2e', '#15273a'];
-const WATER_BOT = ['#1c2e2c', '#22383a', '#243c3a', '#241a22', '#080f18'];
+const WATER_TOP = ['#8a5a2e', '#5f7a6c', '#577a70', '#8a4730', '#102132'];
+const WATER_BOT = ['#13201f', '#172726', '#192c29', '#161219', '#06101a'];
 const SUN_COL   = ['#ffe2a0', '#fff3d0', '#fff6dd', '#ff9d5c', '#cdd8ee'];
 
 // precomputed star + bird seeds (stable across frames)
@@ -120,27 +120,34 @@ function drawScene(ctx, W, H, p, tt) {
   // ---- WATER ----
   const water = ctx.createLinearGradient(0, hY, 0, H);
   water.addColorStop(0, _ramp(WATER_TOP, p));
-  water.addColorStop(0.5, _mix(_ramp(WATER_TOP, p), _ramp(WATER_BOT, p), 0.6));
+  water.addColorStop(0.45, _mix(_ramp(WATER_TOP, p), _ramp(WATER_BOT, p), 0.7));
   water.addColorStop(1, _ramp(WATER_BOT, p));
   ctx.fillStyle = water; ctx.fillRect(0, hY, W, H - hY);
-  // sun/moon reflection shimmer
-  for (let i = 0; i < 30; i++) {
-    const ry = hY + i * ((H - hY) / 30);
-    const wob = Math.sin(tt * 2.4 + i * 0.7) * (6 + i);
-    const w = 60 + i * 7;
-    ctx.fillStyle = `rgba(${hr},${hg},${hb},${(isMoon ? 0.14 : 0.22) * (1 - i / 30)})`;
-    ctx.fillRect(sunX - w / 2 + wob, ry, w, 3);
+  // soft horizon mist where the sky meets the lake (stronger toward dusk/night)
+  const [mr, mg, mb] = _rampA(SKY_HORIZ, p);
+  const mist = ctx.createLinearGradient(0, hY - 18, 0, hY + 48);
+  mist.addColorStop(0, `rgba(${mr},${mg},${mb},0)`);
+  mist.addColorStop(0.5, `rgba(${mr},${mg},${mb},${0.30 + 0.18 * _smooth(0.5, 0.9, p)})`);
+  mist.addColorStop(1, `rgba(${mr},${mg},${mb},0)`);
+  ctx.fillStyle = mist; ctx.fillRect(0, hY - 18, W, 66);
+  // sun/moon reflection: a soft, narrow shimmer column beneath the light (never washes out)
+  for (let i = 0; i < 24; i++) {
+    const ry = hY + 3 + i * ((H - hY) / 24);
+    const wob = Math.sin(tt * 1.8 + i * 0.6) * (3 + i * 0.5);
+    const w = 22 + i * 3.2;
+    ctx.fillStyle = `rgba(${hr},${hg},${hb},${(isMoon ? 0.07 : 0.11) * (1 - i / 24)})`;
+    ctx.fillRect(sunX - w / 2 + wob, ry, w, 2.3);
   }
-  // moving wave lines
-  for (let L = 0; L < 9; L++) {
-    const baseY = hY + 12 + L * ((H - hY) / 9);
-    const amp = 2.5 + L * 1.5;
+  // calm wave lines (subtle — read as ripples, not glare)
+  for (let L = 0; L < 7; L++) {
+    const baseY = hY + 16 + L * ((H - hY) / 7);
+    const amp = 2 + L * 1.4;
     ctx.beginPath();
-    for (let x = 0; x <= W; x += 12) {
-      const y = baseY + Math.sin(x * 0.014 + tt * (1.1 + L * 0.14) + L) * amp;
+    for (let x = 0; x <= W; x += 14) {
+      const y = baseY + Math.sin(x * 0.013 + tt * (1 + L * 0.12) + L) * amp;
       x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = `rgba(251,246,236,${0.04 + L * 0.012})`; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.strokeStyle = `rgba(228,234,226,${0.028 + L * 0.006})`; ctx.lineWidth = 1.3; ctx.stroke();
   }
 
   // ---- CANOE journeys across the lake by scroll progress ----
@@ -200,9 +207,6 @@ function WelcomeView({ all, setView }) {
   const nOrg = window.useCountUp(data.orgs, 1600);
   const nPeople = window.useCountUp(data.people, 1900);
 
-  // panel scroll ranges [start, end] in 0..1
-  const RANGES = [[0.0, 0.17], [0.20, 0.38], [0.42, 0.60], [0.64, 0.82], [0.86, 1.0]];
-
   // ---- canvas animation loop ----
   useE_w(() => {
     const canvas = canvasRef.current; if (!canvas) return;
@@ -216,12 +220,12 @@ function WelcomeView({ all, setView }) {
     else {
       const frame = (time) => {
         raf = requestAnimationFrame(frame);
-        if (time - last < 28) return; last = time; if (t0 == null) t0 = time;
+        if (time - last < 18) return; last = time; if (t0 == null) t0 = time;
         drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000);
       };
       raf = requestAnimationFrame(frame);
     }
-    function onVis() { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = null; } else if (!document.hidden && !raf && !reduce) { last = 0; raf = requestAnimationFrame((t) => { t0 = null; const f = (time) => { raf = requestAnimationFrame(f); if (time - last < 28) return; last = time; if (t0 == null) t0 = time; drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000); }; f(t); }); } }
+    function onVis() { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = null; } else if (!document.hidden && !raf && !reduce) { last = 0; raf = requestAnimationFrame((t) => { t0 = null; const f = (time) => { raf = requestAnimationFrame(f); if (time - last < 18) return; last = time; if (t0 == null) t0 = time; drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000); }; f(t); }); } }
     document.addEventListener('visibilitychange', onVis);
     return () => { if (raf) cancelAnimationFrame(raf); if (ro) ro.disconnect(); else window.removeEventListener('resize', resize); document.removeEventListener('visibilitychange', onVis); };
   }, [reduce]);
@@ -237,14 +241,20 @@ function WelcomeView({ all, setView }) {
       const total = rect.height - window.innerHeight;
       const p = _clamp(-rect.top / (total || 1), 0, 1);
       progressRef.current = p;
+      // Crossfade: each panel owns an even slice and fades gently across its
+      // neighbours, so there is always at least one chapter on screen.
+      const N = panelRefs.current.length || 1;
+      const seg = 1 / N;
       panelRefs.current.forEach((el, i) => {
         if (!el) return;
-        const [s, e] = RANGES[i];
-        const op = Math.min(_smooth(s, s + 0.06, p), 1 - _smooth(e - 0.06, e, p));
-        const center = (s + e) / 2;
+        const center = (i + 0.5) * seg;
+        let d = Math.abs(p - center);
+        if (i === 0 && p < center) d = 0;          // hero stays solid at the very top
+        if (i === N - 1 && p > center) d = 0;      // last chapter stays solid at the bottom
+        const op = 1 - _smooth(seg * 0.44, seg * 0.80, d);
         el.style.opacity = String(_clamp(op, 0, 1));
-        el.style.transform = `translateY(${(p - center) * -120}px)`;
-        el.style.pointerEvents = op > 0.5 ? 'auto' : 'none';
+        el.style.transform = `translateY(${(p - center) * -70}px)`;
+        el.style.pointerEvents = op > 0.55 ? 'auto' : 'none';
       });
     }
     function onScroll() { if (!raf) raf = requestAnimationFrame(update); }

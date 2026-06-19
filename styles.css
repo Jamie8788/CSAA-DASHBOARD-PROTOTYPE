@@ -6712,7 +6712,7 @@ button.gap-tr:hover { background: var(--paper-2, #f3ecdd); }
 .welcome2 { width: 100%; }
 
 /* ---- scrollytelling stage: a tall track with a PINNED lake scene ---- */
-.wv-stage { position: relative; height: 480vh; }
+.wv-stage { position: relative; height: 640vh; }
 .wv-pin {
   position: sticky; top: 0; height: 100vh; min-height: 520px;
   overflow: hidden; background: #0a0e16;
@@ -6725,12 +6725,13 @@ button.gap-tr:hover { background: var(--paper-2, #f3ecdd); }
   padding: 0 clamp(24px, 7vw, 110px);
   will-change: opacity, transform;
 }
-/* legibility scrim under each panel's text, anchored bottom-left */
+/* legibility scrim under each panel's text, anchored to the left column —
+   strong enough that cream text stays readable even over a bright midday sky */
 .wv-panel::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(8,10,16,.62), rgba(8,10,16,.22) 46%, rgba(8,10,16,0) 72%),
-    linear-gradient(0deg, rgba(8,10,16,.5), rgba(8,10,16,0) 38%);
+    linear-gradient(90deg, rgba(6,9,14,.74) 0%, rgba(6,9,14,.52) 40%, rgba(6,9,14,.2) 68%, rgba(6,9,14,0) 88%),
+    linear-gradient(0deg, rgba(6,9,14,.55), rgba(6,9,14,0) 44%);
 }
 .wv-panel > * { width: 100%; max-width: 1000px; }
 .wv-scrollcue { z-index: 3; }
@@ -6844,9 +6845,12 @@ button.gap-tr:hover { background: var(--paper-2, #f3ecdd); }
 }
 
 /* ---- panel text sits over the dark living scene: make it legible ---- */
-.welcome2 .wv-panel .wv-h2 { color: #fdf8ee; text-shadow: 0 3px 26px rgba(0,0,0,.6); }
-.welcome2 .wv-panel .wv-p { color: rgba(251,246,236,.94); text-shadow: 0 2px 14px rgba(0,0,0,.55); }
-.welcome2 .wv-panel .wv-kick { color: #ffe6a0; text-shadow: 0 2px 12px rgba(0,0,0,.5); }
+.welcome2 .wv-panel .wv-title { text-shadow: 0 2px 6px rgba(0,0,0,.55), 0 6px 34px rgba(0,0,0,.6); }
+.welcome2 .wv-panel .wv-lead { color: rgba(251,246,236,.96); text-shadow: 0 1px 4px rgba(0,0,0,.6), 0 3px 18px rgba(0,0,0,.5); }
+.welcome2 .wv-panel .wv-eyebrow { text-shadow: 0 1px 8px rgba(0,0,0,.6); }
+.welcome2 .wv-panel .wv-h2 { color: #fdf8ee; text-shadow: 0 2px 6px rgba(0,0,0,.5), 0 4px 30px rgba(0,0,0,.6); }
+.welcome2 .wv-panel .wv-p { color: rgba(251,246,236,.96); text-shadow: 0 1px 4px rgba(0,0,0,.6), 0 2px 16px rgba(0,0,0,.55); }
+.welcome2 .wv-panel .wv-kick { color: #ffe6a0; text-shadow: 0 1px 10px rgba(0,0,0,.55); }
 .welcome2 .wv-panel .wv-foot { color: rgba(251,246,236,.82); }
 .welcome2 .wv-panel .wv-stat .n { color: #ffd886; text-shadow: 0 3px 20px rgba(0,0,0,.5); }
 .welcome2 .wv-panel .wv-stat .l { color: rgba(251,246,236,.82); }
