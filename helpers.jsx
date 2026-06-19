@@ -90,9 +90,138 @@ function _hrefFor(token) {
   if (/^[\w._%+-]+@[\w.-]+\.[A-Za-z]{2,}$/.test(t)) return 'mailto:' + t;
   return 'https://' + t.replace(/^www\./i, 'www.');
 }
+
+// tidyText — normalise the formatting inconsistencies that creep into the
+// master sheet so EVERY field renders cleanly on the dashboard. It ONLY fixes
+// whitespace and phone-number separators — it never changes words, digits,
+// capitalisation, or drops any content. Applied to every autolinked/
+// highlighted field, so it works in ALL fields, not just contacts.
+function tidyText(s) {
+  if (s == null) return s;
+  let t = String(s).replace(/\r/g, '');
+  t = t.replace(/[\u00a0\u2007\u202f]/g, ' ');  // non-breaking spaces -> normal
+  t = t.replace(/[\u2010-\u2015\u2212]/g, '-'); // fancy dashes -> hyphen
+  // Rejoin phone numbers split by stray spaces or a line break (3-3-4 groups):
+  //   "1-705-\n856-1313"  → "1-705-856-1313"
+  //   "(705) 894 - 2072"  → "(705) 894-2072"
+  t = t.replace(
+    /(\(?\d{3}\)?)[ \t]*[-.]?[ \t]*\n?[ \t]*(\d{3})[ \t]*[-.]?[ \t]*\n?[ \t]*(\d{4})\b/g,
+    (m, a, b, c) => (a.indexOf(')') >= 0 ? a + ' ' : a + '-') + b + '-' + c
+  );
+  t = t.replace(/[ \t]{2,}/g, ' ');            // collapse runs of spaces/tabs
+  t = t.replace(/ *\n */g, '\n');              // trim spaces around line breaks
+  t = t.replace(/\n{3,}/g, '\n\n');            // at most one blank line in a row
+  return t.trim();
+}
+window.tidyText = tidyText;
+
+// ============================================================================
+// richText — SMART, consistent rendering for the inconsistent free text in the
+// master sheet. Whatever a contributor typed — ALL-CAPS sub-headings, bare
+// "Link:" labels, "Sources:" numbered lists, scattered phone numbers, emails,
+// raw URLs, too many line breaks — every field renders clean and beautiful,
+// the SAME way, WITHOUT changing the wording or dropping content.
+//   • phone numbers  -> bold, tap-to-call
+//   • emails         -> highlighted, tap-to-email
+//   • URLs / domains -> tidy clickable link (shows the site, not a giant URL)
+//   • ALL-CAPS / "Label:" lines -> styled sub-heading
+//   • "1- … / 2- …" or "Sources:" -> a clean list
+// ============================================================================
+const _RT_URL_SRC = "https?:\\/\\/[^\\s<>()\\[\\]]+|(?:www\\.)?[a-z0-9][a-z0-9-]*(?:\\.[a-z0-9-]+)+\\.(?:ca|com|org|net|edu|gov|io|co|info|us|uk|dev|app|health|care|first|nation|cree)(?:\\/[^\\s<>()\\[\\]]*)?";
+const _RT_EMAIL_SRC = "[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}";
+const _RT_PHONE_SRC = "(?:\\+?1[\\s.-]?)?\\(?\\d{3}\\)?[\\s.-]?\\d{3}[\\s.-]?\\d{4}(?:\\s*(?:ext\\.?|x)\\s*\\d+)?";
+const _RT_EMAIL_RX = new RegExp('^' + _RT_EMAIL_SRC + '$', 'i');
+
+function _rtHost(url) {
+  try { return new URL(/^https?:/i.test(url) ? url : 'https://' + url).hostname.replace(/^www\./, ''); }
+  catch (e) { return url.replace(/^https?:\/\//i, '').replace(/^www\./, '').split('/')[0]; }
+}
+function _rtTextSegs(t, keyBase, q) {
+  if (!q || q.length < 2) return [<span key={keyBase}>{t}</span>];
+  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+  return t.split(re).map((seg, i) =>
+    re.test(seg) ? <mark key={keyBase + 'h' + i} className="search-hit">{seg}</mark>
+                 : <span key={keyBase + 's' + i}>{seg}</span>);
+}
+function _rtInline(line, keyBase, q) {
+  const rx = new RegExp('(' + _RT_URL_SRC + ')|(' + _RT_EMAIL_SRC + ')|(' + _RT_PHONE_SRC + ')', 'gi');
+  const parts = [];
+  let last = 0, m;
+  while ((m = rx.exec(line)) !== null) {
+    if (m.index > last) parts.push(..._rtTextSegs(line.slice(last, m.index), keyBase + 't' + last, q));
+    const tok = m[0];
+    if (m[1]) {
+      const href = /^https?:/i.test(tok) ? tok : 'https://' + tok.replace(/^www\./i, 'www.');
+      parts.push(<a key={keyBase + 'u' + m.index} className="rt-link" href={href} target="_blank" rel="noopener noreferrer">{_rtHost(tok)} <span className="rt-ext">↗</span></a>);
+    } else if (m[2]) {
+      parts.push(<a key={keyBase + 'e' + m.index} className="rt-email" href={'mailto:' + tok}>{tok}</a>);
+    } else {
+      parts.push(<a key={keyBase + 'p' + m.index} className="rt-phone" href={'tel:' + tok.replace(/[^\d+]/g, '')}>{tok}</a>);
+    }
+    last = m.index + tok.length;
+  }
+  if (last < line.length) parts.push(..._rtTextSegs(line.slice(last), keyBase + 't' + last, q));
+  return parts;
+}
+function _rtIsHeading(line) {
+  const t = line.trim();
+  if (t.length < 2 || t.length > 72) return false;
+  if (/^https?:/i.test(t) || _RT_EMAIL_RX.test(t)) return false;
+  const letters = t.replace(/[^A-Za-z]/g, '');
+  if (letters.length < 2) return false;
+  const upper = (t.match(/[A-Z]/g) || []).length;
+  if (upper / letters.length > 0.7) return true;                          // ALL-CAPS line
+  if (/^[A-Z][\w &/'’,-]{1,48}:$/.test(t) && !/\d{3}/.test(t)) return true; // "Label:"
+  return false;
+}
+function richText(text, q) {
+  if (text == null || text === '') return null;
+  const s = tidyText(String(text));
+  if (!s) return null;
+  const lines = s.split('\n');
+  const out = [];
+  let para = [];
+  let list = null;
+  const flushPara = () => {
+    if (!para.length) return;
+    const k = 'p' + out.length;
+    out.push(
+      <p key={k} className="rt-p">
+        {para.map((ln, i) => (
+          <React.Fragment key={i}>{i > 0 ? <br /> : null}{_rtInline(ln, k + '_' + i + '_', q)}</React.Fragment>
+        ))}
+      </p>
+    );
+    para = [];
+  };
+  const flushList = () => {
+    if (!list || !list.length) { list = null; return; }
+    const k = 'l' + out.length;
+    out.push(
+      <ol key={k} className="rt-sources">
+        {list.map((li, i) => <li key={i}>{_rtInline(li, k + '_' + i + '_', q)}</li>)}
+      </ol>
+    );
+    list = null;
+  };
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) { flushPara(); flushList(); continue; }
+    if (/^links?:?$/i.test(line)) { continue; }               // bare "Link:" label -> drop; URL follows
+    const numbered = line.match(/^(\d{1,2})[).\-:]\s*(.+)$/);  // "1- …", "2) …"
+    if (numbered) { flushPara(); (list = list || []).push(numbered[2]); continue; }
+    if (_rtIsHeading(line)) { flushPara(); flushList(); out.push(<div key={'h' + out.length} className="rt-head">{line.replace(/:$/, '')}</div>); continue; }
+    flushList();
+    para.push(line);
+  }
+  flushPara(); flushList();
+  return <div className="rt">{out}</div>;
+}
+window.richText = richText;
+
 function autoLink(text) {
   if (!text) return text;
-  const s = String(text);
+  const s = tidyText(String(text));
   const out = [];
   let last = 0;
   let m;

@@ -228,7 +228,7 @@ function Section({ title, swatch, children, value, eyebrow, searchQuery, communi
       <h3 className="section-title">{title}</h3>
       {empty
         ? <PendingNotice status={status} c={community} fieldKey={fieldKey} />
-        : status === 'ok' && value && <div className="section-body">{searchQuery ? window.highlight(value, searchQuery) : window.autoLink(value)}</div>}
+        : status === 'ok' && value && <div className="section-body">{window.richText(value, searchQuery)}</div>}
       {status === 'ok' && <FieldLink urls={fieldLinksFor(community, fieldKey)} label={FIELD_LINK_LABEL[fieldKey]} />}
       {children}
       {communityId && fieldKey && <window.EditableField communityId={communityId} fieldKey={fieldKey} value={value} label={title} />}
@@ -397,7 +397,7 @@ function OverviewTab({ c, dirInfo, setTab }) {
             <div>
               <div className="eyebrow">Population context</div>
               <div className="od-callout-body">
-                {window.autoLink(c.popInfo)}
+                {window.richText(c.popInfo)}
               </div>
             </div>
           </div>
@@ -571,7 +571,7 @@ function PillarServiceCard({ pillar, value, on, c, searchQuery }) {
   }
 
   // Render the COMPLETE text — never drop content.
-  const display = searchQuery ? window.highlight(value, searchQuery) : window.autoLink(value);
+  const display = window.richText(value, searchQuery);
 
   return (
     <div className={`pillar-card ${pillar.key} pc-active`} data-pillar={pillar.key}>
@@ -734,8 +734,8 @@ function ContactTab({ c }) {
         <div className="section">
           <div className="section-eyebrow"><span>Original contact text (from sheet)</span></div>
           <h3 className="section-title">As recorded</h3>
-          <div style={{whiteSpace:'pre-wrap', fontSize:12.5, lineHeight:1.7, fontFamily:'var(--mono)', background:'var(--paper-2)', padding:'14px 16px', borderLeft:`2px solid ${window.dirHex(c)}`, color:'var(--ink-2)'}}>
-            {window.autoLink(c.contacts)}
+          <div className="as-recorded" style={{ borderLeft:`2px solid ${window.dirHex(c)}` }}>
+            {window.richText(c.contacts)}
           </div>
           <window.EditableField community={c} communityId={c.id} fieldKey="contacts" value={c.contacts} label="Original contact block" />
         </div>
