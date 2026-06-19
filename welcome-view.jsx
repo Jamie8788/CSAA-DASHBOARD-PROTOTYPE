@@ -28,8 +28,8 @@ function _rampA(stops, p) { // returns [r,g,b] for alpha use
 // time-of-day palettes: [dawn, morning, afternoon, dusk, night]
 const SKY_TOP   = ['#2a1f38', '#23476a', '#2f5b86', '#43263f', '#070b18'];
 const SKY_HORIZ = ['#c97b2e', '#e8c879', '#f0d486', '#d35a28', '#16223a'];
-const WATER_TOP = ['#9a6a38', '#6f8a7a', '#688a7e', '#9a5538', '#1c3450'];
-const WATER_BOT = ['#24322e', '#28423c', '#2c463f', '#261e26', '#0c1828'];
+const WATER_TOP = ['#b07a42', '#80a48e', '#79a494', '#b06038', '#274463'];
+const WATER_BOT = ['#46584e', '#4c6c64', '#527066', '#46343a', '#182a44'];
 const SUN_COL   = ['#ffe2a0', '#fff3d0', '#fff6dd', '#ff9d5c', '#cdd8ee'];
 
 // precomputed star + bird seeds (stable across frames)
@@ -54,6 +54,9 @@ const _LODGES = [
 
 function drawScene(ctx, W, H, p, tt) {
   const hY = H * 0.5;
+  // Begin the story in bright MORNING (not pre-dawn dark) and end at night, so
+  // the very first screen is a luminous, lit lake. The whole day still unfolds.
+  p = 0.30 + 0.70 * _clamp(p, 0, 1);
   // ---- SKY ----
   const sky = ctx.createLinearGradient(0, 0, 0, hY + 30);
   sky.addColorStop(0, _ramp(SKY_TOP, p));
@@ -160,13 +163,17 @@ function drawScene(ctx, W, H, p, tt) {
   // ---- WATER ----
   const water = ctx.createLinearGradient(0, hY, 0, H);
   water.addColorStop(0, _ramp(WATER_TOP, p));
-  water.addColorStop(0.45, _mix(_ramp(WATER_TOP, p), _ramp(WATER_BOT, p), 0.7));
+  water.addColorStop(0.6, _mix(_ramp(WATER_TOP, p), _ramp(WATER_BOT, p), 0.5));
   water.addColorStop(1, _ramp(WATER_BOT, p));
   ctx.fillStyle = water; ctx.fillRect(0, hY, W, H - hY);
-  // a darker band right under the horizon → the water reads as its own surface
-  const band = ctx.createLinearGradient(0, hY, 0, hY + 70);
-  band.addColorStop(0, 'rgba(0,0,0,0.10)'); band.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = band; ctx.fillRect(0, hY, W, 70);
+  // faint reflected sky keeps the whole lake luminous (never a black void)
+  const [sr, sg, sb] = _rampA(SKY_HORIZ, p);
+  const [tr2, tg2, tb2] = _rampA(SKY_TOP, p);
+  const refl = ctx.createLinearGradient(0, hY, 0, H);
+  refl.addColorStop(0, `rgba(${sr},${sg},${sb},0.30)`);
+  refl.addColorStop(0.5, `rgba(${sr},${sg},${sb},0.10)`);
+  refl.addColorStop(1, `rgba(${tr2},${tg2},${tb2},0.05)`);
+  ctx.fillStyle = refl; ctx.fillRect(0, hY, W, H - hY);
   // soft horizon mist where the sky meets the lake
   const [mr, mg, mb] = _rampA(SKY_HORIZ, p);
   const mist = ctx.createLinearGradient(0, hY - 16, 0, hY + 42);
@@ -286,7 +293,7 @@ function drawScene(ctx, W, H, p, tt) {
   // ---- top + bottom vignette to blend with page ----
   const vg = ctx.createLinearGradient(0, 0, 0, H);
   vg.addColorStop(0, 'rgba(10,8,6,0.30)'); vg.addColorStop(0.22, 'rgba(10,8,6,0)');
-  vg.addColorStop(0.88, 'rgba(10,8,6,0)'); vg.addColorStop(1, 'rgba(10,8,6,0.3)');
+  vg.addColorStop(0.9, 'rgba(10,8,6,0)'); vg.addColorStop(1, 'rgba(10,8,6,0.14)');
   ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
 }
 
