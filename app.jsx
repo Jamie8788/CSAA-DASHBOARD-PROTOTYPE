@@ -7,7 +7,7 @@ const DIR_KEYS = ['East','South','West','North','Central'];
 function readURLState() {
   const p = new URLSearchParams(window.location.hash.slice(1));
   return {
-    view: p.get('v') || 'map',
+    view: p.get('v') || 'welcome',
     search: p.get('q') || '',
     regions: new Set((p.get('r') || '').split(',').filter(Boolean)),
     orgTypes: new Set((p.get('o') || '').split(',').filter(Boolean)),
@@ -163,12 +163,14 @@ function AppInner() {
   };
 
   return (
-    <div className="app">
+    <div className={`app view-${view}`}>
       <BlockRenderer slot="header" blocks={DEFAULT_HEADER} ctx={heroCtx} />
 
       <BlockRenderer slot={`view.${view}.header`} blocks={[]} ctx={heroCtx} />
 
-      {view === 'story' ? (
+      {view === 'welcome' ? (
+        <window.WelcomeView all={all} setView={setView} heroCtx={heroCtx} />
+      ) : view === 'story' ? (
         <window.AtlasStoryView all={all} onSelect={setSelectedId} setView={setView} />
       ) : view === 'analytics' ? (
         <window.AnalyticsProView all={all} onSelect={setSelectedId} setView={setView} />
@@ -621,6 +623,11 @@ function NavStrip({ view, setView, filtered, all }) {
     const v = settings[settingKey];
     return v == null || String(v).trim().toLowerCase() !== 'false';
   });
+  // Always offer the Welcome/home tab first — it's the friendly landing page,
+  // so it must appear even when the nav comes from the CMS/backend.
+  if (!navItems.some((n) => n.view === 'welcome')) {
+    navItems = [{ view: 'welcome', label: 'Welcome', icon: '⌂' }, ...navItems];
+  }
   return (
     <div className="nav-strip">
       {navItems.map((n) => (
