@@ -6725,13 +6725,13 @@ button.gap-tr:hover { background: var(--paper-2, #f3ecdd); }
   padding: 0 clamp(24px, 7vw, 110px);
   will-change: opacity, transform;
 }
-/* legibility scrim under each panel's text, anchored to the left column —
-   strong enough that cream text stays readable even over a bright midday sky */
+/* legibility scrim — a soft pool of shade hugging only the LEFT text column,
+   fading out well before the lake on the right and bottom so the water shows. */
 .wv-panel::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(6,9,14,.74) 0%, rgba(6,9,14,.52) 40%, rgba(6,9,14,.2) 68%, rgba(6,9,14,0) 88%),
-    linear-gradient(0deg, rgba(6,9,14,.55), rgba(6,9,14,0) 44%);
+    radial-gradient(95% 78% at 17% 42%,
+      rgba(6,9,14,.74) 0%, rgba(6,9,14,.42) 34%, rgba(6,9,14,.12) 56%, rgba(6,9,14,0) 74%);
 }
 .wv-panel > * { width: 100%; max-width: 1000px; }
 .wv-scrollcue { z-index: 3; }
@@ -6845,7 +6845,7 @@ button.gap-tr:hover { background: var(--paper-2, #f3ecdd); }
 }
 
 /* ---- panel text sits over the dark living scene: make it legible ---- */
-.welcome2 .wv-panel .wv-title { text-shadow: 0 2px 6px rgba(0,0,0,.55), 0 6px 34px rgba(0,0,0,.6); }
+.welcome2 .wv-panel .wv-title { text-shadow: 0 1px 2px rgba(0,0,0,.45), 0 2px 12px rgba(0,0,0,.5); }
 .welcome2 .wv-panel .wv-lead { color: rgba(251,246,236,.96); text-shadow: 0 1px 4px rgba(0,0,0,.6), 0 3px 18px rgba(0,0,0,.5); }
 .welcome2 .wv-panel .wv-eyebrow { text-shadow: 0 1px 8px rgba(0,0,0,.6); }
 .welcome2 .wv-panel .wv-h2 { color: #fdf8ee; text-shadow: 0 2px 6px rgba(0,0,0,.5), 0 4px 30px rgba(0,0,0,.6); }

@@ -28,8 +28,8 @@ function _rampA(stops, p) { // returns [r,g,b] for alpha use
 // time-of-day palettes: [dawn, morning, afternoon, dusk, night]
 const SKY_TOP   = ['#2a1f38', '#23476a', '#2f5b86', '#43263f', '#070b18'];
 const SKY_HORIZ = ['#c97b2e', '#e8c879', '#f0d486', '#d35a28', '#16223a'];
-const WATER_TOP = ['#8a5a2e', '#5f7a6c', '#577a70', '#8a4730', '#102132'];
-const WATER_BOT = ['#13201f', '#172726', '#192c29', '#161219', '#06101a'];
+const WATER_TOP = ['#9a6a38', '#6f8a7a', '#688a7e', '#9a5538', '#1c3450'];
+const WATER_BOT = ['#24322e', '#28423c', '#2c463f', '#261e26', '#0c1828'];
 const SUN_COL   = ['#ffe2a0', '#fff3d0', '#fff6dd', '#ff9d5c', '#cdd8ee'];
 
 // precomputed star + bird seeds (stable across frames)
@@ -165,7 +165,7 @@ function drawScene(ctx, W, H, p, tt) {
   ctx.fillStyle = water; ctx.fillRect(0, hY, W, H - hY);
   // a darker band right under the horizon → the water reads as its own surface
   const band = ctx.createLinearGradient(0, hY, 0, hY + 70);
-  band.addColorStop(0, 'rgba(0,0,0,0.22)'); band.addColorStop(1, 'rgba(0,0,0,0)');
+  band.addColorStop(0, 'rgba(0,0,0,0.10)'); band.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = band; ctx.fillRect(0, hY, W, 70);
   // soft horizon mist where the sky meets the lake
   const [mr, mg, mb] = _rampA(SKY_HORIZ, p);
@@ -286,7 +286,7 @@ function drawScene(ctx, W, H, p, tt) {
   // ---- top + bottom vignette to blend with page ----
   const vg = ctx.createLinearGradient(0, 0, 0, H);
   vg.addColorStop(0, 'rgba(10,8,6,0.30)'); vg.addColorStop(0.22, 'rgba(10,8,6,0)');
-  vg.addColorStop(0.88, 'rgba(10,8,6,0)'); vg.addColorStop(1, 'rgba(10,8,6,0.5)');
+  vg.addColorStop(0.88, 'rgba(10,8,6,0)'); vg.addColorStop(1, 'rgba(10,8,6,0.3)');
   ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
 }
 
