@@ -35,8 +35,21 @@ const SUN_COL   = ['#ffe2a0', '#fff3d0', '#fff6dd', '#ff9d5c', '#cdd8ee'];
 // precomputed star + bird seeds (stable across frames)
 const _STARS = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random() * 0.5, r: 0.4 + Math.random() * 1.3, ph: Math.random() * 6.28 }));
 const _FLOCKS = [
-  { baseX: 0.15, y: 0.16, n: 5, sp: 0.018, ph: 0 },
-  { baseX: 0.55, y: 0.24, n: 4, sp: 0.012, ph: 2 },
+  { baseX: 0.02, y: 0.20, n: 7, sp: 0.020, ph: 0, scale: 1.05 },
+  { baseX: 0.38, y: 0.13, n: 5, sp: 0.015, ph: 1.6, scale: 0.78 },
+  { baseX: 0.66, y: 0.25, n: 6, sp: 0.012, ph: 3.1, scale: 1.18 },
+];
+// jumping-fish ripple sources: x across, yb = how far down the water (0..1)
+const _RIPPLES = [
+  { x: 0.30, yb: 0.30, period: 6.5, phase: 0.0 },
+  { x: 0.67, yb: 0.52, period: 8.2, phase: 2.6 },
+  { x: 0.49, yb: 0.18, period: 10.4, phase: 5.1 },
+  { x: 0.82, yb: 0.40, period: 7.4, phase: 1.3 },
+  { x: 0.16, yb: 0.62, period: 9.1, phase: 3.7 },
+];
+// far-shore community lodges (silhouettes on the horizon)
+const _LODGES = [
+  { x: 0.595, s: 1.0 }, { x: 0.63, s: 0.78 }, { x: 0.668, s: 1.15 }, { x: 0.715, s: 0.9 },
 ];
 
 function drawScene(ctx, W, H, p, tt) {
@@ -80,42 +93,69 @@ function drawScene(ctx, W, H, p, tt) {
   const isMoon = p > 0.86;
   const sunR = isMoon ? 30 : _lerp(40, 60, _smooth(0.55, 1, p));
   const sc = _ramp(SUN_COL, p);
-  const halo = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, H * 0.55);
+  const halo = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, H * 0.46);
   const [hr, hg, hb] = _rampA(SUN_COL, p);
-  halo.addColorStop(0, `rgba(${hr},${hg},${hb},${isMoon ? 0.35 : 0.8})`);
-  halo.addColorStop(0.16, `rgba(${hr},${hg},${hb},0.32)`);
-  halo.addColorStop(0.5, `rgba(${hr},${hg},${hb},0.08)`);
+  halo.addColorStop(0, `rgba(${hr},${hg},${hb},${isMoon ? 0.30 : 0.7})`);
+  halo.addColorStop(0.18, `rgba(${hr},${hg},${hb},0.22)`);
+  halo.addColorStop(0.55, `rgba(${hr},${hg},${hb},0.06)`);
   halo.addColorStop(1, `rgba(${hr},${hg},${hb},0)`);
-  ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
+  // keep the glow in the SKY only, so it never floods (washes out) the lake
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hY + 2); ctx.clip();
+  ctx.fillStyle = halo; ctx.fillRect(0, 0, W, hY + 2); ctx.restore();
   ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, 6.283); ctx.fillStyle = sc; ctx.fill();
 
-  // ---- BIRDS (more around day) ----
-  const birdA = _smooth(0.12, 0.28, p) * (1 - _smooth(0.66, 0.82, p));
+  // ---- BIRDS — geese in V-formation, wings flapping, crossing the sky ----
+  const birdA = _smooth(0.08, 0.24, p) * (1 - _smooth(0.60, 0.80, p));
   if (birdA > 0.02) {
+    ctx.lineCap = 'round';
     for (const f of _FLOCKS) {
-      const fx = ((f.baseX + tt * f.sp) % 1.4) - 0.2;
+      const lead = ((f.baseX + tt * f.sp) % 1.5) - 0.25;   // leader sweeps L→R
+      const lx = lead * W, ly = f.y * H;
       for (let i = 0; i < f.n; i++) {
-        const bx = (fx * W) + i * 22 * (i % 2 ? 1 : -1) * 0.6 - i * 4;
-        const by = f.y * H + Math.abs(i - f.n / 2) * 9 + Math.sin(tt + i) * 2;
-        const flap = Math.sin(tt * 6 + f.ph + i) * 4;
-        ctx.globalAlpha = birdA * 0.8;
-        ctx.strokeStyle = '#2a2018'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+        const side = i % 2 ? 1 : -1, rank = Math.ceil(i / 2);
+        const bx = lx - rank * 26 * f.scale;
+        const by = ly + rank * 12 * side * 0.5 + Math.sin(tt * 1.4 + i) * 1.5;
+        const flap = Math.sin(tt * 7 + f.ph + i * 0.7);
+        const wing = (6 + 3 * Math.abs(flap)) * f.scale;
+        ctx.globalAlpha = birdA * 0.9;
+        ctx.strokeStyle = '#241c14'; ctx.lineWidth = 1.7 * f.scale;
         ctx.beginPath();
-        ctx.moveTo(bx - 7, by + flap); ctx.lineTo(bx, by - 2); ctx.lineTo(bx + 7, by + flap);
+        ctx.moveTo(bx - wing, by + flap * 3);
+        ctx.quadraticCurveTo(bx - wing * 0.35, by - wing * 0.55, bx, by);
+        ctx.quadraticCurveTo(bx + wing * 0.35, by - wing * 0.55, bx + wing, by + flap * 3);
         ctx.stroke();
       }
     }
     ctx.globalAlpha = 1;
   }
 
-  // ---- far treeline silhouette on the horizon ----
+  // ---- far shore: treeline + a small community of lodges, with a fire glow ----
+  const shoreAlpha = 0.6 + 0.28 * _smooth(0.6, 1, p);
+  // campfire glow on the far shore, warming toward dusk & night (flickering)
+  const fireA = _smooth(0.5, 0.95, p);
+  if (fireA > 0.02) {
+    const fx = W * 0.655, fy = hY - 2;
+    const flick = 0.7 + 0.3 * Math.sin(tt * 9) + 0.15 * Math.sin(tt * 17);
+    const fglow = ctx.createRadialGradient(fx, fy, 0, fx, fy, 84);
+    fglow.addColorStop(0, `rgba(255,170,70,${0.5 * fireA * flick})`);
+    fglow.addColorStop(1, 'rgba(255,170,70,0)');
+    ctx.fillStyle = fglow; ctx.fillRect(fx - 84, fy - 84, 168, 120);
+  }
   ctx.beginPath(); ctx.moveTo(0, hY);
   for (let x = 0; x <= W; x += 14) {
     const t = hY - (6 + Math.abs(Math.sin(x * 0.05) * 10) + Math.sin(x * 0.13) * 5);
     ctx.lineTo(x, t);
   }
   ctx.lineTo(W, hY); ctx.closePath();
-  ctx.fillStyle = `rgba(20,16,12,${0.55 + 0.25 * _smooth(0.6, 1, p)})`; ctx.fill();
+  ctx.fillStyle = `rgba(20,16,12,${shoreAlpha})`; ctx.fill();
+  // lodge / teepee silhouettes on the far shore — the community by the water
+  for (const Lg of _LODGES) {
+    const lx = Lg.x * W, lh = 16 * Lg.s, lw = 11 * Lg.s;
+    ctx.fillStyle = `rgba(16,12,9,${shoreAlpha})`;
+    ctx.beginPath(); ctx.moveTo(lx, hY - lh); ctx.lineTo(lx - lw, hY); ctx.lineTo(lx + lw, hY); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = `rgba(16,12,9,${shoreAlpha})`; ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.moveTo(lx - lw * 0.45, hY - lh * 0.5); ctx.lineTo(lx + lw * 0.45, hY - lh * 0.5); ctx.stroke();
+  }
 
   // ---- WATER ----
   const water = ctx.createLinearGradient(0, hY, 0, H);
@@ -123,54 +163,114 @@ function drawScene(ctx, W, H, p, tt) {
   water.addColorStop(0.45, _mix(_ramp(WATER_TOP, p), _ramp(WATER_BOT, p), 0.7));
   water.addColorStop(1, _ramp(WATER_BOT, p));
   ctx.fillStyle = water; ctx.fillRect(0, hY, W, H - hY);
-  // soft horizon mist where the sky meets the lake (stronger toward dusk/night)
+  // a darker band right under the horizon → the water reads as its own surface
+  const band = ctx.createLinearGradient(0, hY, 0, hY + 70);
+  band.addColorStop(0, 'rgba(0,0,0,0.22)'); band.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = band; ctx.fillRect(0, hY, W, 70);
+  // soft horizon mist where the sky meets the lake
   const [mr, mg, mb] = _rampA(SKY_HORIZ, p);
-  const mist = ctx.createLinearGradient(0, hY - 18, 0, hY + 48);
+  const mist = ctx.createLinearGradient(0, hY - 16, 0, hY + 42);
   mist.addColorStop(0, `rgba(${mr},${mg},${mb},0)`);
-  mist.addColorStop(0.5, `rgba(${mr},${mg},${mb},${0.30 + 0.18 * _smooth(0.5, 0.9, p)})`);
+  mist.addColorStop(0.5, `rgba(${mr},${mg},${mb},${0.26 + 0.16 * _smooth(0.5, 0.9, p)})`);
   mist.addColorStop(1, `rgba(${mr},${mg},${mb},0)`);
-  ctx.fillStyle = mist; ctx.fillRect(0, hY - 18, W, 66);
-  // sun/moon reflection: a soft, narrow shimmer column beneath the light (never washes out)
-  for (let i = 0; i < 24; i++) {
-    const ry = hY + 3 + i * ((H - hY) / 24);
-    const wob = Math.sin(tt * 1.8 + i * 0.6) * (3 + i * 0.5);
-    const w = 22 + i * 3.2;
-    ctx.fillStyle = `rgba(${hr},${hg},${hb},${(isMoon ? 0.07 : 0.11) * (1 - i / 24)})`;
-    ctx.fillRect(sunX - w / 2 + wob, ry, w, 2.3);
+  ctx.fillStyle = mist; ctx.fillRect(0, hY - 16, W, 58);
+  // wavering reflection of the horizon colour just below the shore
+  ctx.save();
+  ctx.globalAlpha = 0.16 + 0.1 * _smooth(0.4, 1, p);
+  for (let i = 0; i < 8; i++) {
+    const ry = hY + 4 + i * 4;
+    const off = Math.sin(tt * 1.6 + i * 0.9) * (2 + i);
+    ctx.fillStyle = `rgba(${mr},${mg},${mb},${0.5 - i * 0.05})`;
+    ctx.fillRect(off, ry, W, 2.4);
   }
-  // calm wave lines (subtle — read as ripples, not glare)
+  ctx.restore();
+
+  // ---- sun / moon GLITTER: a tidy column of light on the water (clipped, no flood) ----
+  ctx.save();
+  const colHalf = Math.max(34, W * 0.05);
+  ctx.beginPath();
+  ctx.moveTo(sunX - colHalf, hY + 2); ctx.lineTo(sunX + colHalf, hY + 2);
+  ctx.lineTo(sunX + colHalf * 0.4, H); ctx.lineTo(sunX - colHalf * 0.4, H);
+  ctx.closePath(); ctx.clip();
+  const gcol = ctx.createLinearGradient(0, hY, 0, H);
+  gcol.addColorStop(0, `rgba(${hr},${hg},${hb},${isMoon ? 0.16 : 0.26})`);
+  gcol.addColorStop(1, `rgba(${hr},${hg},${hb},0)`);
+  ctx.fillStyle = gcol; ctx.fillRect(sunX - colHalf, hY, colHalf * 2, H - hY);
+  for (let i = 0; i < 26; i++) {
+    const f = i / 26, ry = hY + 4 + f * (H - hY);
+    const a = (isMoon ? 0.10 : 0.16) * (1 - f) * (0.45 + 0.55 * Math.sin(tt * 3 + i * 0.8));
+    if (a <= 0) continue;
+    const w = 16 + 12 * Math.sin(i * 1.2 + tt);
+    const dx = Math.sin(tt * 2 + i * 0.7) * 7;
+    ctx.fillStyle = `rgba(255,250,236,${a})`;
+    ctx.fillRect(sunX + dx - w / 2, ry, Math.max(4, w), 2);
+  }
+  ctx.restore();
+
+  // ---- gentle ripple lines across the whole lake ----
   for (let L = 0; L < 7; L++) {
-    const baseY = hY + 16 + L * ((H - hY) / 7);
-    const amp = 2 + L * 1.4;
+    const baseY = hY + 18 + L * ((H - hY) / 7);
+    const amp = 2 + L * 1.3;
     ctx.beginPath();
     for (let x = 0; x <= W; x += 14) {
       const y = baseY + Math.sin(x * 0.013 + tt * (1 + L * 0.12) + L) * amp;
       x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = `rgba(228,234,226,${0.028 + L * 0.006})`; ctx.lineWidth = 1.3; ctx.stroke();
+    ctx.strokeStyle = `rgba(228,234,226,${0.03 + L * 0.006})`; ctx.lineWidth = 1.2; ctx.stroke();
   }
 
-  // ---- CANOE journeys across the lake by scroll progress ----
-  const cx = -70 + _clamp(p, 0, 1) * (W + 140);
-  const cy = hY + (H - hY) * 0.46 + Math.sin(tt * 1.4) * 3;
-  const scl = Math.max(0.8, Math.min(1.5, W / 1100));
+  // ---- jumping-fish ripple rings expanding on the surface ----
+  for (const r of _RIPPLES) {
+    const loc = ((tt + r.phase) % r.period) / r.period;   // 0..1 cycle
+    if (loc >= 0.62) continue;
+    const k = loc / 0.62;
+    const rx = r.x * W, ry = hY + 10 + (H - hY) * r.yb;
+    const rad = 5 + k * 46, a = 0.22 * (1 - k);
+    ctx.strokeStyle = `rgba(232,238,230,${a})`; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.ellipse(rx, ry, rad, rad * 0.34, 0, 0, 6.283); ctx.stroke();
+    if (k > 0.25) {
+      ctx.strokeStyle = `rgba(232,238,230,${a * 0.6})`;
+      ctx.beginPath(); ctx.ellipse(rx, ry, rad * 0.6, rad * 0.6 * 0.34, 0, 0, 6.283); ctx.stroke();
+    }
+  }
+
+  // ---- CANOE journeys across the lake by scroll progress (with a wake) ----
+  const cx = -80 + _clamp(p, 0, 1) * (W + 160);
+  const cy = hY + (H - hY) * 0.5 + Math.sin(tt * 1.4) * 3;
+  const scl = Math.max(0.95, Math.min(1.7, W / 1000));
+  // V-shaped wake trailing behind the canoe, drawn on the water
+  ctx.save();
+  ctx.strokeStyle = 'rgba(245,238,222,0.16)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+  for (let s = -1; s <= 1; s += 2) {
+    ctx.beginPath(); ctx.moveTo(cx - 40 * scl, cy);
+    ctx.quadraticCurveTo(cx - 150 * scl, cy + s * 10, cx - 280 * scl, cy + s * 46 * scl);
+    ctx.stroke();
+  }
+  ctx.restore();
   ctx.save(); ctx.translate(cx, cy); ctx.scale(scl, scl);
   if (isMoon || p > 0.7) { // lantern glow at dusk/night
     const g = ctx.createRadialGradient(8, -14, 0, 8, -14, 60);
     g.addColorStop(0, 'rgba(255,180,80,0.55)'); g.addColorStop(1, 'rgba(255,180,80,0)');
     ctx.fillStyle = g; ctx.fillRect(-60, -70, 130, 90);
   }
-  ctx.beginPath(); ctx.moveTo(-6, 6); ctx.quadraticCurveTo(-70, 2, -150, 12);
-  ctx.strokeStyle = 'rgba(255,236,190,0.18)'; ctx.lineWidth = 2; ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-46, 0); ctx.quadraticCurveTo(0, 16, 46, 0); ctx.quadraticCurveTo(0, 7, -46, 0);
+  // hull
+  ctx.beginPath(); ctx.moveTo(-46, 0); ctx.quadraticCurveTo(0, 18, 46, 0); ctx.quadraticCurveTo(0, 7, -46, 0);
   ctx.fillStyle = '#15100b'; ctx.fill();
-  ctx.strokeStyle = '#15100b'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(2, -2); ctx.lineTo(2, -16); ctx.stroke();
-  ctx.beginPath(); ctx.arc(2, -20, 3.6, 0, 6.283); ctx.fillStyle = '#15100b'; ctx.fill();
-  const pad = Math.sin(tt * 3) * 0.55;
-  ctx.beginPath(); ctx.moveTo(2, -10); ctx.lineTo(2 + 17 * Math.cos(pad + 0.4), -10 + 17 * Math.sin(pad + 0.4)); ctx.stroke();
-  if (isMoon || p > 0.7) { ctx.beginPath(); ctx.arc(8, -16, 2.4, 0, 6.283); ctx.fillStyle = '#ffcf7a'; ctx.fill(); }
+  // paddler
+  ctx.strokeStyle = '#15100b'; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(2, -2); ctx.lineTo(2, -17); ctx.stroke();
+  ctx.beginPath(); ctx.arc(2, -21, 3.8, 0, 6.283); ctx.fillStyle = '#15100b'; ctx.fill();
+  // paddle dipping side to side
+  const pad = Math.sin(tt * 3) * 0.6;
+  ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(2, -11); ctx.lineTo(2 + 20 * Math.cos(pad + 0.4), -11 + 20 * Math.sin(pad + 0.4)); ctx.stroke();
+  if (isMoon || p > 0.7) { ctx.beginPath(); ctx.arc(8, -17, 2.4, 0, 6.283); ctx.fillStyle = '#ffcf7a'; ctx.fill(); }
   ctx.restore();
+  // a small ripple where the paddle dips the water
+  if (Math.sin(tt * 3) > 0.85) {
+    ctx.strokeStyle = 'rgba(240,244,236,0.22)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.ellipse(cx + 22 * scl, cy + 3 * scl, 8 * scl, 3 * scl, 0, 0, 6.283); ctx.stroke();
+  }
 
   // ---- foreground reeds for depth ----
   ctx.strokeStyle = 'rgba(15,12,9,0.8)'; ctx.lineCap = 'round';
