@@ -6710,6 +6710,31 @@ button.gap-tr:hover { background: var(--paper-2, #f3ecdd); }
    WELCOME v2 — immersive, scroll-told landing page with living lake canvas
    ========================================================================== */
 .welcome2 { width: 100%; }
+
+/* ---- scrollytelling stage: a tall track with a PINNED lake scene ---- */
+.wv-stage { position: relative; height: 480vh; }
+.wv-pin {
+  position: sticky; top: 0; height: 100vh; min-height: 520px;
+  overflow: hidden; background: #0a0e16;
+}
+.wv-pin .wv-canvas { z-index: 1; }
+.wv-panels { position: absolute; inset: 0; z-index: 2; }
+.wv-panel {
+  position: absolute; inset: 0; opacity: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 0 clamp(24px, 7vw, 110px);
+  will-change: opacity, transform;
+}
+/* legibility scrim under each panel's text, anchored bottom-left */
+.wv-panel::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(8,10,16,.62), rgba(8,10,16,.22) 46%, rgba(8,10,16,0) 72%),
+    linear-gradient(0deg, rgba(8,10,16,.5), rgba(8,10,16,0) 38%);
+}
+.wv-panel > * { width: 100%; max-width: 1000px; }
+.wv-scrollcue { z-index: 3; }
+
 .wv-hero {
   position: relative; height: 92vh; min-height: 560px; overflow: hidden;
   display: flex; align-items: center;
@@ -6817,3 +6842,33 @@ button.gap-tr:hover { background: var(--paper-2, #f3ecdd); }
 .reduce-motion .wv-scrollcue i, .reduce-motion .wv-reveal, .reduce-motion .wv-reveal .wv-dir, .reduce-motion .wv-reveal .wv-action {
   animation: none !important; transition: none !important; opacity: 1 !important; transform: none !important;
 }
+
+/* ---- panel text sits over the dark living scene: make it legible ---- */
+.welcome2 .wv-panel .wv-h2 { color: #fdf8ee; text-shadow: 0 3px 26px rgba(0,0,0,.6); }
+.welcome2 .wv-panel .wv-p { color: rgba(251,246,236,.94); text-shadow: 0 2px 14px rgba(0,0,0,.55); }
+.welcome2 .wv-panel .wv-kick { color: #ffe6a0; text-shadow: 0 2px 12px rgba(0,0,0,.5); }
+.welcome2 .wv-panel .wv-foot { color: rgba(251,246,236,.82); }
+.welcome2 .wv-panel .wv-stat .n { color: #ffd886; text-shadow: 0 3px 20px rgba(0,0,0,.5); }
+.welcome2 .wv-panel .wv-stat .l { color: rgba(251,246,236,.82); }
+.welcome2 .wv-panel .wv-step b { color: #fdf8ee; }
+.welcome2 .wv-panel .wv-step p { color: rgba(251,246,236,.86); }
+/* cards become frosted glass so they belong to the scene */
+.welcome2 .wv-panel .wv-dir,
+.welcome2 .wv-panel .wv-action {
+  background: rgba(251,246,236,.93); backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px); box-shadow: 0 10px 30px rgba(0,0,0,.28);
+}
+
+/* ---- reduce-motion: calm stacked layout over a still dark scene ---- */
+.welcome2.wv-static { background: #0e1a29; }
+.wv-static .wv-pin { position: relative; top: auto; height: 62vh; min-height: 360px; }
+.wv-static-flow {
+  position: relative;
+  background: linear-gradient(180deg, #15273a 0%, #122033 60%, #0e1a29 100%);
+}
+.wv-static-flow .wv-panel {
+  position: relative; inset: auto; opacity: 1; transform: none;
+  padding: clamp(44px, 8vh, 96px) clamp(24px, 6vw, 90px);
+}
+.wv-static-flow .wv-panel::before { display: none; }
+.wv-static .wv-scrollcue { display: none; }

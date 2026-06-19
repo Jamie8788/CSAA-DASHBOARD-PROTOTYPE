@@ -1,12 +1,11 @@
 /* global React */
 // ============================================================================
-// WelcomeView — an immersive, scroll-told landing page.
-//   • A living dawn-lake canvas: moving water, sun shimmer, and a canoe that
-//     paddles slowly across — drawn in the brand palette.
-//   • The story of the atlas unfolds as you scroll: each chapter rises in.
-//   • Big quick-action cards into every section, and a short how-to.
-//   • Accessible: large type, big targets; all motion stops when the
-//     reduce-motion setting is on (then a calm still frame is shown).
+// WelcomeView — a scroll-driven cinematic landing page.
+//   The lake scene is PINNED while you scroll; scroll progress drives the whole
+//   story: dawn → morning → golden afternoon → dusk → starry night with aurora.
+//   The sun arcs and sets, the moon rises, birds fly, and a canoe paddles all
+//   the way across the lake. Each chapter of the atlas rises in over the scene.
+//   Rich but performant canvas; fully reduce-motion aware (calm stacked layout).
 // ============================================================================
 const { useState: useS_w, useEffect: useE_w, useMemo: useM_w, useRef: useR_w } = React;
 
@@ -14,158 +13,246 @@ function _motionOff() {
   return (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
       || document.documentElement.classList.contains('reduce-motion');
 }
+const _lerp = (a, b, t) => a + (b - a) * t;
+const _clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const _smooth = (a, b, x) => { if (x <= a) return 0; if (x >= b) return 1; const t = (x - a) / (b - a); return t * t * (3 - 2 * t); };
+function _hex(h) { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
+function _mix(c1, c2, t) { const a = _hex(c1), b = _hex(c2); return `rgb(${Math.round(_lerp(a[0], b[0], t))},${Math.round(_lerp(a[1], b[1], t))},${Math.round(_lerp(a[2], b[2], t))})`; }
+function _ramp(stops, p) { const n = stops.length - 1; const x = _clamp(p, 0, 1) * n; const i = Math.min(n - 1, Math.floor(x)); return _mix(stops[i], stops[i + 1], x - i); }
+function _rampA(stops, p) { // returns [r,g,b] for alpha use
+  const n = stops.length - 1; const x = _clamp(p, 0, 1) * n; const i = Math.min(n - 1, Math.floor(x));
+  const a = _hex(stops[i]), b = _hex(stops[i + 1]), t = x - i;
+  return [Math.round(_lerp(a[0], b[0], t)), Math.round(_lerp(a[1], b[1], t)), Math.round(_lerp(a[2], b[2], t))];
+}
 
-// ---- the living dawn-lake + canoe canvas -----------------------------------
-function useLakeCanvas(canvasRef) {
-  useE_w(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let W = 0, H = 0, dpr = 1, raf = null, t0 = null, last = 0;
+// time-of-day palettes: [dawn, morning, afternoon, dusk, night]
+const SKY_TOP   = ['#2a1f38', '#23476a', '#2f5b86', '#43263f', '#070b18'];
+const SKY_HORIZ = ['#c97b2e', '#e8c879', '#f0d486', '#d35a28', '#16223a'];
+const WATER_TOP = ['#b9742b', '#cdab5c', '#d8c074', '#c25a2e', '#15273a'];
+const WATER_BOT = ['#1c2e2c', '#22383a', '#243c3a', '#241a22', '#080f18'];
+const SUN_COL   = ['#ffe2a0', '#fff3d0', '#fff6dd', '#ff9d5c', '#cdd8ee'];
 
-    function resize() {
-      dpr = Math.min(2, window.devicePixelRatio || 1);
-      W = canvas.clientWidth; H = canvas.clientHeight;
-      canvas.width = Math.max(1, W * dpr); canvas.height = Math.max(1, H * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+// precomputed star + bird seeds (stable across frames)
+const _STARS = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random() * 0.5, r: 0.4 + Math.random() * 1.3, ph: Math.random() * 6.28 }));
+const _FLOCKS = [
+  { baseX: 0.15, y: 0.16, n: 5, sp: 0.018, ph: 0 },
+  { baseX: 0.55, y: 0.24, n: 4, sp: 0.012, ph: 2 },
+];
+
+function drawScene(ctx, W, H, p, tt) {
+  const hY = H * 0.5;
+  // ---- SKY ----
+  const sky = ctx.createLinearGradient(0, 0, 0, hY + 30);
+  sky.addColorStop(0, _ramp(SKY_TOP, p));
+  sky.addColorStop(1, _ramp(SKY_HORIZ, p));
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, hY + 30);
+
+  // ---- STARS (night) ----
+  const starA = _smooth(0.66, 0.95, p);
+  if (starA > 0.01) {
+    for (const s of _STARS) {
+      const tw = 0.5 + 0.5 * Math.sin(tt * 2 + s.ph);
+      ctx.globalAlpha = starA * tw * 0.9;
+      ctx.beginPath(); ctx.arc(s.x * W, s.y * hY, s.r, 0, 6.283);
+      ctx.fillStyle = '#fdf6e8'; ctx.fill();
     }
-    resize();
-    const ro = ('ResizeObserver' in window) ? new ResizeObserver(resize) : null;
-    if (ro) ro.observe(canvas); else window.addEventListener('resize', resize);
-
-    function scene(tt) {
-      const hY = H * 0.52;                         // horizon
-      // -- sky --
-      const sky = ctx.createLinearGradient(0, 0, 0, hY);
-      sky.addColorStop(0, '#241a10');
-      sky.addColorStop(0.45, '#6e3f1a');
-      sky.addColorStop(0.8, '#b9742b');
-      sky.addColorStop(1, '#e7b264');
-      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, hY);
-      // -- sun + halo --
-      const sx = W * 0.62, sy = hY - 24;
-      const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, H * 0.5);
-      halo.addColorStop(0, 'rgba(255,228,150,0.85)');
-      halo.addColorStop(0.18, 'rgba(243,196,110,0.45)');
-      halo.addColorStop(0.5, 'rgba(220,150,70,0.12)');
-      halo.addColorStop(1, 'rgba(220,150,70,0)');
-      ctx.fillStyle = halo; ctx.fillRect(0, 0, W, hY + 40);
-      ctx.beginPath(); ctx.arc(sx, sy, 46, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffe6a0'; ctx.fill();
-      // -- water base --
-      const water = ctx.createLinearGradient(0, hY, 0, H);
-      water.addColorStop(0, '#c98a3a');
-      water.addColorStop(0.12, '#7d6a3c');
-      water.addColorStop(0.5, '#3f5a52');
-      water.addColorStop(1, '#1c2e2c');
-      ctx.fillStyle = water; ctx.fillRect(0, hY, W, H - hY);
-      // -- sun reflection shimmer column --
-      for (let i = 0; i < 26; i++) {
-        const ry = hY + i * ((H - hY) / 26);
-        const wob = Math.sin(tt * 1.6 + i * 0.7) * (6 + i);
-        const w = 70 + i * 7;
-        ctx.fillStyle = `rgba(255,224,150,${0.20 * (1 - i / 26)})`;
-        ctx.fillRect(sx - w / 2 + wob, ry, w, 3);
+    ctx.globalAlpha = 1;
+  }
+  // ---- AURORA (deep night) ----
+  const aurA = _smooth(0.74, 1, p);
+  if (aurA > 0.01) {
+    for (let b = 0; b < 3; b++) {
+      ctx.beginPath();
+      const baseY = hY * (0.18 + b * 0.12);
+      for (let x = 0; x <= W; x += 16) {
+        const y = baseY + Math.sin(x * 0.006 + tt * 0.5 + b) * 18 + Math.sin(x * 0.018 + tt) * 8;
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
-      // -- moving wave lines --
-      for (let L = 0; L < 7; L++) {
-        const baseY = hY + 16 + L * ((H - hY) / 7);
-        const amp = 3 + L * 1.6;
+      const col = b === 1 ? '150,90,200' : '90,200,150';
+      ctx.strokeStyle = `rgba(${col},${aurA * 0.28})`;
+      ctx.lineWidth = 22; ctx.lineCap = 'round'; ctx.stroke();
+    }
+  }
+
+  // ---- SUN / MOON ----
+  const sunX = W * (0.18 + p * 0.64);
+  const sunY = hY - Math.sin(_clamp(p, 0, 1) * Math.PI) * (hY * 0.72) + 8;
+  const isMoon = p > 0.86;
+  const sunR = isMoon ? 30 : _lerp(40, 60, _smooth(0.55, 1, p));
+  const sc = _ramp(SUN_COL, p);
+  const halo = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, H * 0.55);
+  const [hr, hg, hb] = _rampA(SUN_COL, p);
+  halo.addColorStop(0, `rgba(${hr},${hg},${hb},${isMoon ? 0.35 : 0.8})`);
+  halo.addColorStop(0.16, `rgba(${hr},${hg},${hb},0.32)`);
+  halo.addColorStop(0.5, `rgba(${hr},${hg},${hb},0.08)`);
+  halo.addColorStop(1, `rgba(${hr},${hg},${hb},0)`);
+  ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
+  ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, 6.283); ctx.fillStyle = sc; ctx.fill();
+
+  // ---- BIRDS (more around day) ----
+  const birdA = _smooth(0.12, 0.28, p) * (1 - _smooth(0.66, 0.82, p));
+  if (birdA > 0.02) {
+    for (const f of _FLOCKS) {
+      const fx = ((f.baseX + tt * f.sp) % 1.4) - 0.2;
+      for (let i = 0; i < f.n; i++) {
+        const bx = (fx * W) + i * 22 * (i % 2 ? 1 : -1) * 0.6 - i * 4;
+        const by = f.y * H + Math.abs(i - f.n / 2) * 9 + Math.sin(tt + i) * 2;
+        const flap = Math.sin(tt * 6 + f.ph + i) * 4;
+        ctx.globalAlpha = birdA * 0.8;
+        ctx.strokeStyle = '#2a2018'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
         ctx.beginPath();
-        for (let x = 0; x <= W; x += 12) {
-          const y = baseY + Math.sin(x * 0.012 + tt * (0.6 + L * 0.12) + L) * amp;
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = `rgba(251,246,236,${0.05 + L * 0.012})`;
-        ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.moveTo(bx - 7, by + flap); ctx.lineTo(bx, by - 2); ctx.lineTo(bx + 7, by + flap);
+        ctx.stroke();
       }
-      // -- the canoe --
-      const period = 46;                            // seconds to cross
-      const prog = ((tt % period) / period);
-      const cx = -80 + prog * (W + 160);
-      const cy = hY + (H - hY) * 0.42 + Math.sin(tt * 0.9) * 4;
-      const scale = Math.max(0.7, Math.min(1.3, W / 1200));
-      ctx.save();
-      ctx.translate(cx, cy); ctx.scale(scale, scale);
-      // wake
-      ctx.beginPath();
-      ctx.moveTo(-6, 6);
-      ctx.quadraticCurveTo(-70, 2, -150, 12);
-      ctx.strokeStyle = 'rgba(255,236,190,0.18)'; ctx.lineWidth = 2; ctx.stroke();
-      // hull (crescent)
-      ctx.beginPath();
-      ctx.moveTo(-46, 0);
-      ctx.quadraticCurveTo(0, 16, 46, 0);
-      ctx.quadraticCurveTo(0, 7, -46, 0);
-      ctx.fillStyle = '#1a1410'; ctx.fill();
-      // paddler
-      ctx.strokeStyle = '#1a1410'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(2, -2); ctx.lineTo(2, -16); ctx.stroke();      // body
-      ctx.beginPath(); ctx.arc(2, -20, 3.5, 0, Math.PI * 2); ctx.fillStyle = '#1a1410'; ctx.fill(); // head
-      const paddle = Math.sin(tt * 2.2) * 0.5;                                  // paddling motion
-      ctx.beginPath(); ctx.moveTo(2, -10);
-      ctx.lineTo(2 + 16 * Math.cos(paddle + 0.4), -10 + 16 * Math.sin(paddle + 0.4));
-      ctx.stroke();
-      ctx.restore();
-      // -- soft top + bottom vignette to blend into the page --
-      const vg = ctx.createLinearGradient(0, 0, 0, H);
-      vg.addColorStop(0, 'rgba(20,14,9,0.35)');
-      vg.addColorStop(0.25, 'rgba(20,14,9,0)');
-      vg.addColorStop(0.85, 'rgba(20,14,9,0)');
-      vg.addColorStop(1, 'rgba(20,14,9,0.45)');
-      ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     }
+    ctx.globalAlpha = 1;
+  }
 
-    function frame(time) {
-      raf = requestAnimationFrame(frame);
-      if (time - last < 33) return;                 // ~30fps cap
-      last = time; if (t0 == null) t0 = time;
-      scene((time - t0) / 1000);
+  // ---- far treeline silhouette on the horizon ----
+  ctx.beginPath(); ctx.moveTo(0, hY);
+  for (let x = 0; x <= W; x += 14) {
+    const t = hY - (6 + Math.abs(Math.sin(x * 0.05) * 10) + Math.sin(x * 0.13) * 5);
+    ctx.lineTo(x, t);
+  }
+  ctx.lineTo(W, hY); ctx.closePath();
+  ctx.fillStyle = `rgba(20,16,12,${0.55 + 0.25 * _smooth(0.6, 1, p)})`; ctx.fill();
+
+  // ---- WATER ----
+  const water = ctx.createLinearGradient(0, hY, 0, H);
+  water.addColorStop(0, _ramp(WATER_TOP, p));
+  water.addColorStop(0.5, _mix(_ramp(WATER_TOP, p), _ramp(WATER_BOT, p), 0.6));
+  water.addColorStop(1, _ramp(WATER_BOT, p));
+  ctx.fillStyle = water; ctx.fillRect(0, hY, W, H - hY);
+  // sun/moon reflection shimmer
+  for (let i = 0; i < 30; i++) {
+    const ry = hY + i * ((H - hY) / 30);
+    const wob = Math.sin(tt * 2.4 + i * 0.7) * (6 + i);
+    const w = 60 + i * 7;
+    ctx.fillStyle = `rgba(${hr},${hg},${hb},${(isMoon ? 0.14 : 0.22) * (1 - i / 30)})`;
+    ctx.fillRect(sunX - w / 2 + wob, ry, w, 3);
+  }
+  // moving wave lines
+  for (let L = 0; L < 9; L++) {
+    const baseY = hY + 12 + L * ((H - hY) / 9);
+    const amp = 2.5 + L * 1.5;
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 12) {
+      const y = baseY + Math.sin(x * 0.014 + tt * (1.1 + L * 0.14) + L) * amp;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
+    ctx.strokeStyle = `rgba(251,246,236,${0.04 + L * 0.012})`; ctx.lineWidth = 1.4; ctx.stroke();
+  }
 
-    if (_motionOff()) { scene(0); }                 // still frame for reduced motion
-    else raf = requestAnimationFrame(frame);
+  // ---- CANOE journeys across the lake by scroll progress ----
+  const cx = -70 + _clamp(p, 0, 1) * (W + 140);
+  const cy = hY + (H - hY) * 0.46 + Math.sin(tt * 1.4) * 3;
+  const scl = Math.max(0.8, Math.min(1.5, W / 1100));
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(scl, scl);
+  if (isMoon || p > 0.7) { // lantern glow at dusk/night
+    const g = ctx.createRadialGradient(8, -14, 0, 8, -14, 60);
+    g.addColorStop(0, 'rgba(255,180,80,0.55)'); g.addColorStop(1, 'rgba(255,180,80,0)');
+    ctx.fillStyle = g; ctx.fillRect(-60, -70, 130, 90);
+  }
+  ctx.beginPath(); ctx.moveTo(-6, 6); ctx.quadraticCurveTo(-70, 2, -150, 12);
+  ctx.strokeStyle = 'rgba(255,236,190,0.18)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-46, 0); ctx.quadraticCurveTo(0, 16, 46, 0); ctx.quadraticCurveTo(0, 7, -46, 0);
+  ctx.fillStyle = '#15100b'; ctx.fill();
+  ctx.strokeStyle = '#15100b'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(2, -2); ctx.lineTo(2, -16); ctx.stroke();
+  ctx.beginPath(); ctx.arc(2, -20, 3.6, 0, 6.283); ctx.fillStyle = '#15100b'; ctx.fill();
+  const pad = Math.sin(tt * 3) * 0.55;
+  ctx.beginPath(); ctx.moveTo(2, -10); ctx.lineTo(2 + 17 * Math.cos(pad + 0.4), -10 + 17 * Math.sin(pad + 0.4)); ctx.stroke();
+  if (isMoon || p > 0.7) { ctx.beginPath(); ctx.arc(8, -16, 2.4, 0, 6.283); ctx.fillStyle = '#ffcf7a'; ctx.fill(); }
+  ctx.restore();
 
-    function onVis() { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = null; }
-                       else if (!document.hidden && !raf && !_motionOff()) raf = requestAnimationFrame(frame); }
-    document.addEventListener('visibilitychange', onVis);
+  // ---- foreground reeds for depth ----
+  ctx.strokeStyle = 'rgba(15,12,9,0.8)'; ctx.lineCap = 'round';
+  const reeds = [[W * 0.04, 5], [W * 0.07, 4], [W * 0.95, 5], [W * 0.92, 4], [W * 0.98, 6]];
+  reeds.forEach((r, i) => {
+    const sway = Math.sin(tt * 1.2 + i) * 6;
+    ctx.lineWidth = r[1]; ctx.beginPath();
+    ctx.moveTo(r[0], H);
+    ctx.quadraticCurveTo(r[0] + sway * 0.5, H - 70, r[0] + sway, H - 130);
+    ctx.stroke();
+  });
 
-    return () => {
-      if (raf) cancelAnimationFrame(raf);
-      if (ro) ro.disconnect(); else window.removeEventListener('resize', resize);
-      document.removeEventListener('visibilitychange', onVis);
-    };
-  }, [canvasRef]);
+  // ---- top + bottom vignette to blend with page ----
+  const vg = ctx.createLinearGradient(0, 0, 0, H);
+  vg.addColorStop(0, 'rgba(10,8,6,0.30)'); vg.addColorStop(0.22, 'rgba(10,8,6,0)');
+  vg.addColorStop(0.88, 'rgba(10,8,6,0)'); vg.addColorStop(1, 'rgba(10,8,6,0.5)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
 }
 
 function WelcomeView({ all, setView }) {
+  const stageRef = useR_w(null);
   const canvasRef = useR_w(null);
-  useLakeCanvas(canvasRef);
-
-  // Reveal-on-scroll
-  useE_w(() => {
-    const els = Array.from(document.querySelectorAll('.wv-reveal'));
-    if (!els.length) return;
-    if (_motionOff()) { els.forEach((e) => e.classList.add('in')); return; }
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-    }, { threshold: 0.18 });
-    els.forEach((e) => io.observe(e));
-    return () => io.disconnect();
-  }, []);
+  const progressRef = useR_w(0);
+  const panelRefs = useR_w([]);
+  const setPanelRef = (i) => (el) => { panelRefs.current[i] = el; };
+  const reduce = _motionOff();
 
   const data = useM_w(() => {
     const list = Array.isArray(all) ? all : [];
     const comms = list.filter((c) => c.orgType === 'Community');
-    return {
-      communities: comms.length,
-      orgs: list.length - comms.length,
-      people: list.reduce((s, c) => s + (c.population || 0), 0),
-    };
+    return { communities: comms.length, orgs: list.length - comms.length, people: list.reduce((s, c) => s + (c.population || 0), 0) };
   }, [all]);
   const nComm = window.useCountUp(data.communities, 1600);
   const nOrg = window.useCountUp(data.orgs, 1600);
   const nPeople = window.useCountUp(data.people, 1900);
+
+  // panel scroll ranges [start, end] in 0..1
+  const RANGES = [[0.0, 0.17], [0.20, 0.38], [0.42, 0.60], [0.64, 0.82], [0.86, 1.0]];
+
+  // ---- canvas animation loop ----
+  useE_w(() => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let W, H, dpr, raf = null, t0 = null, last = 0;
+    function resize() { dpr = Math.min(2, window.devicePixelRatio || 1); W = canvas.clientWidth; H = canvas.clientHeight; canvas.width = Math.max(1, W * dpr); canvas.height = Math.max(1, H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+    resize();
+    const ro = ('ResizeObserver' in window) ? new ResizeObserver(resize) : null;
+    if (ro) ro.observe(canvas); else window.addEventListener('resize', resize);
+    if (reduce) { drawScene(ctx, W, H, 0.32, 0); }
+    else {
+      const frame = (time) => {
+        raf = requestAnimationFrame(frame);
+        if (time - last < 28) return; last = time; if (t0 == null) t0 = time;
+        drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000);
+      };
+      raf = requestAnimationFrame(frame);
+    }
+    function onVis() { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = null; } else if (!document.hidden && !raf && !reduce) { last = 0; raf = requestAnimationFrame((t) => { t0 = null; const f = (time) => { raf = requestAnimationFrame(f); if (time - last < 28) return; last = time; if (t0 == null) t0 = time; drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000); }; f(t); }); } }
+    document.addEventListener('visibilitychange', onVis);
+    return () => { if (raf) cancelAnimationFrame(raf); if (ro) ro.disconnect(); else window.removeEventListener('resize', resize); document.removeEventListener('visibilitychange', onVis); };
+  }, [reduce]);
+
+  // ---- scroll → progress + panel opacities ----
+  useE_w(() => {
+    if (reduce) { panelRefs.current.forEach((el) => { if (el) { el.style.opacity = 1; el.style.transform = 'none'; } }); return; }
+    let raf = null;
+    function update() {
+      raf = null;
+      const stage = stageRef.current; if (!stage) return;
+      const rect = stage.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      const p = _clamp(-rect.top / (total || 1), 0, 1);
+      progressRef.current = p;
+      panelRefs.current.forEach((el, i) => {
+        if (!el) return;
+        const [s, e] = RANGES[i];
+        const op = Math.min(_smooth(s, s + 0.06, p), 1 - _smooth(e - 0.06, e, p));
+        const center = (s + e) / 2;
+        el.style.opacity = String(_clamp(op, 0, 1));
+        el.style.transform = `translateY(${(p - center) * -120}px)`;
+        el.style.pointerEvents = op > 0.5 ? 'auto' : 'none';
+      });
+    }
+    function onScroll() { if (!raf) raf = requestAnimationFrame(update); }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    update();
+    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); if (raf) cancelAnimationFrame(raf); };
+  }, [reduce]);
 
   const directions = [
     { k: 'East', season: 'Spring · Ziigwan', body: 'New beginnings — programs taking root.', color: '#d4a017' },
@@ -174,100 +261,90 @@ function WelcomeView({ all, setView }) {
     { k: 'North', season: 'Winter · Biboon', body: 'Wisdom — elders, ceremony, deep memory.', color: '#6b8d6b' },
   ];
   const actions = [
-    { view: 'map', icon: '◉', title: 'Explore the Map', body: 'Every community and partner across the territory. Click a marker to open its record.' },
-    { view: 'list', icon: '☷', title: 'Browse the Directory', body: 'A searchable list — filter by region, services, or population.' },
-    { view: 'story', icon: '✦', title: 'The Guided Journey', body: 'A scrolling Story Map through the four directions, season by season.' },
-    { view: 'stories', icon: '❋', title: 'Stories & Games', body: 'Calm games and real quotes — learn the atlas by playing.' },
-    { view: 'analytics', icon: '◐', title: 'The Analytics', body: 'Honest, live numbers: coverage, gaps, and partner organizations.' },
-    { view: 'coverage', icon: '⌧', title: 'Coverage of the 85', body: 'Track every one of the 85 communities the project set out to document.' },
+    { view: 'map', icon: '◉', title: 'Explore the Map', body: 'Every community and partner across the territory.' },
+    { view: 'list', icon: '☷', title: 'Browse the Directory', body: 'A searchable list — filter by region, services, population.' },
+    { view: 'story', icon: '✦', title: 'The Guided Journey', body: 'A Story Map through the four directions, season by season.' },
+    { view: 'stories', icon: '❋', title: 'Stories & Games', body: 'Calm games and real quotes — learn by playing.' },
+    { view: 'analytics', icon: '◐', title: 'The Analytics', body: 'Honest, live numbers: coverage, gaps, organizations.' },
+    { view: 'coverage', icon: '⌧', title: 'Coverage of the 85', body: 'Track every one of the 85 committed communities.' },
   ];
+
+  const panels = [
+    <div className="wv-panel wv-p-hero" key="hero" ref={setPanelRef(0)}>
+      <p className="wv-eyebrow">Mino Bimaadiziwin · The Good Life</p>
+      <h1 className="wv-title">A living atlas of<br /><em>community care.</em></h1>
+      <p className="wv-lead">Physical, mental, spiritual, and emotional health programming across First Nations communities and partners — in their own words.</p>
+      <div className="wv-hero-cta">
+        <button className="wv-btn" onClick={() => setView('map')}>◉ Explore the map</button>
+        <button className="wv-btn ghost" onClick={() => setView('story')}>✦ Guided journey</button>
+      </div>
+    </div>,
+    <div className="wv-panel" key="what" ref={setPanelRef(1)}>
+      <p className="wv-kick">As the sun rises</p>
+      <h2 className="wv-h2">One place for the whole picture of care.</h2>
+      <p className="wv-p">Knowledge that once lived in scattered notes and websites, gathered into one living record — searchable, mappable, and kept current as communities share more.</p>
+      <div className="wv-stats">
+        <div className="wv-stat"><div className="n">{nComm}</div><div className="l">Communities</div></div>
+        <div className="wv-stat"><div className="n">{nOrg}</div><div className="l">Partners</div></div>
+        <div className="wv-stat"><div className="n">{nPeople.toLocaleString()}</div><div className="l">People served</div></div>
+      </div>
+    </div>,
+    <div className="wv-panel" key="dirs" ref={setPanelRef(2)}>
+      <p className="wv-kick">Through the day</p>
+      <h2 className="wv-h2">A circle of care, season by season.</h2>
+      <div className="wv-dirs">
+        {directions.map((d) => (
+          <div key={d.k} className="wv-dir" style={{ '--dc': d.color }}>
+            <span className="wv-dir-dot"></span>
+            <div className="wv-dir-name">{d.k}</div>
+            <div className="wv-dir-season">{d.season}</div>
+            <div className="wv-dir-body">{d.body}</div>
+          </div>
+        ))}
+      </div>
+    </div>,
+    <div className="wv-panel" key="act" ref={setPanelRef(3)}>
+      <p className="wv-kick">As the sun sets</p>
+      <h2 className="wv-h2">Where would you like to begin?</h2>
+      <div className="wv-actions">
+        {actions.map((a) => (
+          <button key={a.view} className="wv-action" onClick={() => setView(a.view)}>
+            <span className="wv-a-icon" aria-hidden="true">{a.icon}</span>
+            <span className="wv-a-title">{a.title}</span>
+            <span className="wv-a-body">{a.body}</span>
+            <span className="wv-a-go" aria-hidden="true">Open →</span>
+          </button>
+        ))}
+      </div>
+    </div>,
+    <div className="wv-panel" key="how" ref={setPanelRef(4)}>
+      <p className="wv-kick">Under the stars</p>
+      <h2 className="wv-h2">Simple to use, for everyone.</h2>
+      <div className="wv-steps">
+        <div className="wv-step"><span className="s-n">1</span><div><b>Use the tabs up top</b><p>Or any card — each takes you straight there.</p></div></div>
+        <div className="wv-step"><span className="s-n">2</span><div><b>Open a community</b><p>Click a marker or card to see everything on file.</p></div></div>
+        <div className="wv-step"><span className="s-n">3</span><div><b>Make it comfortable</b><p>“Accessibility” (top-right) enlarges text or pauses motion.</p></div></div>
+      </div>
+      <p className="wv-foot">Every figure and quote is pulled live from the project’s master sheet. Honouring the original peoples of these lands.</p>
+    </div>,
+  ];
+
+  if (reduce) {
+    return (
+      <section className="welcome2 wv-static">
+        <div className="wv-pin"><canvas ref={canvasRef} className="wv-canvas" aria-hidden="true"></canvas></div>
+        <div className="wv-static-flow">{panels}</div>
+      </section>
+    );
+  }
 
   return (
     <section className="welcome2">
-      {/* ── HERO with living lake ── */}
-      <div className="wv-hero">
-        <canvas ref={canvasRef} className="wv-canvas" aria-hidden="true"></canvas>
-        <div className="wv-hero-content">
-          <p className="wv-eyebrow">Mino Bimaadiziwin · The Good Life</p>
-          <h1 className="wv-title">A living atlas of<br/><em>community care.</em></h1>
-          <p className="wv-lead">
-            Physical, mental, spiritual, and emotional health programming across
-            First Nations communities and partners — in their own words.
-          </p>
-          <div className="wv-hero-cta">
-            <button className="wv-btn" onClick={() => setView('map')}>◉ Explore the map</button>
-            <button className="wv-btn ghost" onClick={() => setView('story')}>✦ Guided journey</button>
-          </div>
-        </div>
-        <div className="wv-scrollcue" aria-hidden="true"><span>scroll to discover</span><i>↓</i></div>
-      </div>
-
-      {/* ── CHAPTER: what it is + stats ── */}
-      <div className="wv-chapter wv-reveal">
-        <div className="wv-chapter-inner">
-          <p className="wv-kick">What this is</p>
-          <h2 className="wv-h2">One place for the whole picture of care.</h2>
-          <p className="wv-p">
-            For years this knowledge lived in scattered notes and websites. The atlas
-            gathers it into one living record — searchable, mappable, and kept current
-            as communities and partners share more.
-          </p>
-          <div className="wv-stats">
-            <div className="wv-stat"><div className="n">{nComm}</div><div className="l">Communities</div></div>
-            <div className="wv-stat"><div className="n">{nOrg}</div><div className="l">Partner organizations</div></div>
-            <div className="wv-stat"><div className="n">{nPeople.toLocaleString()}</div><div className="l">People served</div></div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── CHAPTER: four directions ── */}
-      <div className="wv-chapter wv-reveal">
-        <div className="wv-chapter-inner">
-          <p className="wv-kick">The four directions</p>
-          <h2 className="wv-h2">A circle of care, season by season.</h2>
-          <div className="wv-dirs">
-            {directions.map((d, i) => (
-              <div key={d.k} className="wv-dir" style={{ '--dc': d.color, transitionDelay: (0.08 * i) + 's' }}>
-                <span className="wv-dir-dot"></span>
-                <div className="wv-dir-name">{d.k}</div>
-                <div className="wv-dir-season">{d.season}</div>
-                <div className="wv-dir-body">{d.body}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── CHAPTER: quick actions ── */}
-      <div className="wv-chapter wv-reveal">
-        <div className="wv-chapter-inner">
-          <p className="wv-kick">Begin anywhere</p>
-          <h2 className="wv-h2">Where would you like to start?</h2>
-          <div className="wv-actions">
-            {actions.map((a, i) => (
-              <button key={a.view} className="wv-action" style={{ transitionDelay: (0.05 * i) + 's' }}
-                      onClick={() => setView(a.view)}>
-                <span className="wv-a-icon" aria-hidden="true">{a.icon}</span>
-                <span className="wv-a-title">{a.title}</span>
-                <span className="wv-a-body">{a.body}</span>
-                <span className="wv-a-go" aria-hidden="true">Open →</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── CHAPTER: how to navigate ── */}
-      <div className="wv-chapter wv-reveal wv-howto">
-        <div className="wv-chapter-inner">
-          <p className="wv-kick">Finding your way</p>
-          <h2 className="wv-h2">Simple to use, for everyone.</h2>
-          <div className="wv-steps">
-            <div className="wv-step"><span className="s-n">1</span><div><b>Use the tabs up top</b><p>Or any card above — each takes you straight to a section.</p></div></div>
-            <div className="wv-step"><span className="s-n">2</span><div><b>Open a community</b><p>Click a map marker or a directory card to see everything on file.</p></div></div>
-            <div className="wv-step"><span className="s-n">3</span><div><b>Make it comfortable</b><p>The “Accessibility” button (top-right) enlarges text, raises contrast, or pauses motion.</p></div></div>
-          </div>
-          <p className="wv-foot">Every figure and quote is pulled live from the project’s master sheet — nothing is invented. Honouring the original peoples of these lands.</p>
+      <div className="wv-stage" ref={stageRef}>
+        <div className="wv-pin">
+          <canvas ref={canvasRef} className="wv-canvas" aria-hidden="true"></canvas>
+          <div className="wv-panels">{panels}</div>
+          <div className="wv-scrollcue" aria-hidden="true"><span>scroll to discover</span><i>↓</i></div>
         </div>
       </div>
     </section>
