@@ -56,7 +56,7 @@ function CommunityDrawer({ community, onClose, searchQuery }) {
           <div className="drawer-meta-row">
             {c.population != null && <span><span className="pop-big">{c.population.toLocaleString()}</span> people</span>}
             {c.website && <a href={c.website} target="_blank" rel="noopener noreferrer">Website ↗</a>}
-            {staff.length > 0 && <span>{staff.length} staff on file</span>}
+            {staff.length > 0 && <span>{staff.length} {staff.length===1?'contact':'contacts'}</span>}
             {depts.length > 0 && <span>{depts.length} departments</span>}
             <span>{Math.round(c.completeness*100)}% documented</span>
           </div>
@@ -706,7 +706,7 @@ function ContactTab({ c }) {
       <div className="section">
         <div className="section-eyebrow"><span>Direct contacts</span></div>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-          <h3 className="section-title">{staff.length > 0 ? `${staff.length} ${staff.length===1?'person':'people'} on file` : 'No staff on file'}</h3>
+          <h3 className="section-title">{staff.length > 0 ? `${staff.length} ${staff.length===1?'contact':'contacts'} on file` : 'No contacts on file'}</h3>
           {cms.isAdmin && !addingStaff && (
             <button className="add-btn" onClick={()=>setAddingStaff(true)}>+ Add person</button>
           )}
