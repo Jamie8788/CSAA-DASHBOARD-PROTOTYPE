@@ -70,12 +70,17 @@ const _VIGIL = [
   { x: 0.88, y: 0.30, sp: 0.0045, ph: 4.0 },
   { x: 0.60, y: 0.70, sp: 0.0030, ph: 5.1 },
 ];
+// cursor position (-1..1 from centre), eased, for a parallax depth effect
+let _MX = 0, _MY = 0, _MXe = 0, _MYe = 0;
 
 function drawScene(ctx, W, H, p, tt, now) {
   const hY = H * 0.5;
   // Begin the story in bright MORNING (not pre-dawn dark) and end at night, so
   // the very first screen is a luminous, lit lake. The whole day still unfolds.
   p = 0.30 + 0.70 * _clamp(p, 0, 1);
+  // ease the cursor for a gentle parallax (foreground moves more than background)
+  _MXe += (_MX - _MXe) * 0.08; _MYe += (_MY - _MYe) * 0.08;
+  const pxX = _MXe, pxY = _MYe;
   // ---- SKY ----
   const sky = ctx.createLinearGradient(0, 0, 0, hY + 30);
   sky.addColorStop(0, _ramp(SKY_TOP, p));
@@ -87,8 +92,8 @@ function drawScene(ctx, W, H, p, tt, now) {
   if (cloudA > 0.02) {
     const ct = _rampA(SKY_HORIZ, p);
     for (const cl of _CLOUDS) {
-      const cxp = (((cl.x + tt * cl.sp) % 1.3) - 0.15) * W;
-      const cyp = cl.y * hY;
+      const cxp = (((cl.x + tt * cl.sp) % 1.3) - 0.15) * W + pxX * 7;
+      const cyp = cl.y * hY + pxY * 5;
       ctx.save(); ctx.translate(cxp, cyp); ctx.scale(1, 0.4);
       const g = ctx.createRadialGradient(0, 0, 0, 0, 0, cl.r);
       g.addColorStop(0, `rgba(${ct[0] + 18},${ct[1] + 14},${ct[2] + 10},${cloudA * cl.op})`);
@@ -148,22 +153,31 @@ function drawScene(ctx, W, H, p, tt, now) {
     const sunR = _lerp(86, 38, alt);                   // large & low at sunset, small at noon
     // colour: deep red-orange when low, warm white-gold when high overhead
     const sunC = [255, Math.round(_lerp(82, 246, alt)), Math.round(_lerp(40, 214, alt))];
-    const halo = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 7);
-    halo.addColorStop(0, `rgba(${sunC[0]},${sunC[1]},${sunC[2]},${0.55 * sunA})`);
-    halo.addColorStop(0.22, `rgba(${sunC[0]},${sunC[1]},${sunC[2]},${0.2 * sunA})`);
+    const halo = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 8);
+    halo.addColorStop(0, `rgba(${sunC[0]},${sunC[1]},${sunC[2]},${0.6 * sunA})`);
+    halo.addColorStop(0.16, `rgba(${sunC[0]},${sunC[1]},${sunC[2]},${0.28 * sunA})`);
+    halo.addColorStop(0.45, `rgba(${sunC[0]},${sunC[1]},${sunC[2]},${0.08 * sunA})`);
     halo.addColorStop(1, `rgba(${sunC[0]},${sunC[1]},${sunC[2]},0)`);
     ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hY + 2); ctx.clip();
     ctx.fillStyle = halo; ctx.fillRect(0, 0, W, hY + 2);
-    // soft, slowly-turning rays
-    ctx.globalAlpha = 0.09 * sunA * (0.7 + 0.3 * Math.sin(tt * 1.4));
-    ctx.strokeStyle = `rgb(${sunC[0]},${sunC[1]},${sunC[2]})`; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-    for (let r = 0; r < 12; r++) {
-      const ang = (r / 12) * 6.283 + tt * 0.06;
+    // volumetric light shafts (god rays) fanning softly down from the sun
+    ctx.globalCompositeOperation = 'lighter';
+    for (let r = 0; r < 7; r++) {
+      const ang = Math.PI / 2 + (r - 3) * 0.13 + Math.sin(tt * 0.3 + r) * 0.025;
+      const len = H * 0.75;
+      const ex = sunX + Math.cos(ang) * len, ey = sunY + Math.sin(ang) * len;
+      const nx = Math.cos(ang + Math.PI / 2), ny = Math.sin(ang + Math.PI / 2);
+      const wTop = 5, wBot = 24 + 10 * Math.sin(tt * 0.5 + r * 1.3);
       ctx.beginPath();
-      ctx.moveTo(sunX + Math.cos(ang) * sunR * 1.35, sunY + Math.sin(ang) * sunR * 1.35);
-      ctx.lineTo(sunX + Math.cos(ang) * sunR * 2.2, sunY + Math.sin(ang) * sunR * 2.2);
-      ctx.stroke();
+      ctx.moveTo(sunX - nx * wTop, sunY - ny * wTop);
+      ctx.lineTo(sunX + nx * wTop, sunY + ny * wTop);
+      ctx.lineTo(ex + nx * wBot, ey + ny * wBot);
+      ctx.lineTo(ex - nx * wBot, ey - ny * wBot);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(${sunC[0]},${sunC[1]},${sunC[2]},${0.035 * sunA})`;
+      ctx.fill();
     }
+    ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1; ctx.restore();
     ctx.globalAlpha = sunA;
     const disc = ctx.createRadialGradient(sunX - sunR * 0.25, sunY - sunR * 0.25, sunR * 0.1, sunX, sunY, sunR);
@@ -340,25 +354,27 @@ function drawScene(ctx, W, H, p, tt, now) {
   }
   ctx.restore();
 
-  // ---- GLITTER: a tidy column of light reflected from the sun/moon (clipped, no flood) ----
+  // ---- GLITTER: a wide, living column of light reflected from the sun/moon ----
   ctx.save();
-  const colHalf = Math.max(34, W * 0.05);
+  const colHalf = Math.max(46, W * 0.07);
   ctx.beginPath();
   ctx.moveTo(lightX - colHalf, hY + 2); ctx.lineTo(lightX + colHalf, hY + 2);
-  ctx.lineTo(lightX + colHalf * 0.4, H); ctx.lineTo(lightX - colHalf * 0.4, H);
+  ctx.lineTo(lightX + colHalf * 0.45, H); ctx.lineTo(lightX - colHalf * 0.45, H);
   ctx.closePath(); ctx.clip();
+  ctx.globalCompositeOperation = 'lighter';
   const gcol = ctx.createLinearGradient(0, hY, 0, H);
-  gcol.addColorStop(0, `rgba(${hr},${hg},${hb},${(isMoon ? 0.16 : 0.28) * Math.max(lightA, 0.3)})`);
+  gcol.addColorStop(0, `rgba(${hr},${hg},${hb},${(isMoon ? 0.22 : 0.4) * Math.max(lightA, 0.3)})`);
   gcol.addColorStop(1, `rgba(${hr},${hg},${hb},0)`);
   ctx.fillStyle = gcol; ctx.fillRect(lightX - colHalf, hY, colHalf * 2, H - hY);
-  for (let i = 0; i < 26; i++) {
-    const f = i / 26, ry = hY + 4 + f * (H - hY);
-    const a = (isMoon ? 0.10 : 0.16) * Math.max(lightA, 0.4) * (1 - f) * (0.45 + 0.55 * Math.sin(tt * 3 + i * 0.8));
+  // dancing specular dashes — brighter and busier so the water clearly shimmers
+  for (let i = 0; i < 40; i++) {
+    const f = i / 40, ry = hY + 4 + f * (H - hY);
+    const a = (isMoon ? 0.13 : 0.22) * Math.max(lightA, 0.4) * (1 - f) * (0.4 + 0.6 * Math.sin(tt * 3.4 + i * 0.7));
     if (a <= 0) continue;
-    const w = 16 + 12 * Math.sin(i * 1.2 + tt);
-    const dx = Math.sin(tt * 2 + i * 0.7) * 7;
-    ctx.fillStyle = isMoon ? `rgba(208,221,246,${a})` : `rgba(255,250,236,${a})`;
-    ctx.fillRect(lightX + dx - w / 2, ry, Math.max(4, w), 2);
+    const w = 20 + 16 * Math.sin(i * 1.1 + tt * 1.3);
+    const dx = Math.sin(tt * 2.2 + i * 0.6) * (8 + f * 18);
+    ctx.fillStyle = isMoon ? `rgba(214,226,250,${a})` : `rgba(255,250,236,${a})`;
+    ctx.fillRect(lightX + dx - w / 2, ry, Math.max(5, w), 2.2);
   }
   ctx.restore();
 
@@ -427,9 +443,9 @@ function drawScene(ctx, W, H, p, tt, now) {
   }
 
   // ---- CANOE: a warm wooden canoe + paddler, gliding across with bob, wake & reflection ----
-  const cx = 70 + _clamp(p, 0, 1) * (W - 140);
+  const cx = 70 + _clamp(p, 0, 1) * (W - 140) + pxX * 26;
   const bob = Math.sin(tt * 1.3) * 3;
-  const cy = hY + (H - hY) * 0.15 + bob;
+  const cy = hY + (H - hY) * 0.15 + bob + pxY * 14;
   const scl = Math.max(1.3, Math.min(2.5, W / 780));
   const rock = Math.sin(tt * 1.3 + 0.5) * 0.035;
   const strokeT = Math.sin(tt * 2.1);
@@ -540,9 +556,10 @@ function drawScene(ctx, W, H, p, tt, now) {
   const reeds = [[W * 0.04, 5], [W * 0.07, 4], [W * 0.95, 5], [W * 0.92, 4], [W * 0.98, 6]];
   reeds.forEach((r, i) => {
     const sway = Math.sin(tt * 1.2 + i) * 6;
+    const rx = r[0] + pxX * 40;                 // foreground parallax: reeds move most
     ctx.lineWidth = r[1]; ctx.beginPath();
-    ctx.moveTo(r[0], H);
-    ctx.quadraticCurveTo(r[0] + sway * 0.5, H - 70, r[0] + sway, H - 130);
+    ctx.moveTo(rx, H);
+    ctx.quadraticCurveTo(rx + sway * 0.5, H - 70, rx + sway, H - 130);
     ctx.stroke();
   });
 
@@ -570,6 +587,11 @@ function WelcomeView({ all, setView }) {
   const nOrg = window.useCountUp(data.orgs, 1600);
   const nPeople = window.useCountUp(data.people, 1900);
 
+  // cursor parallax: track the pointer over the scene (-1..1 from centre)
+  const onMoveScene = (e) => {
+    _MX = (e.clientX / (window.innerWidth || 1)) * 2 - 1;
+    _MY = (e.clientY / (window.innerHeight || 1)) * 2 - 1;
+  };
   // tap the lake → an expanding ripple (ignored on buttons/links)
   const onTapLake = (e) => {
     if (e.target && e.target.closest && e.target.closest('button, a')) return;
@@ -737,7 +759,7 @@ function WelcomeView({ all, setView }) {
   return (
     <section className="welcome2">
       <div className="wv-stage" ref={stageRef}>
-        <div className="wv-pin" onPointerDown={onTapLake}>
+        <div className="wv-pin" onPointerDown={onTapLake} onPointerMove={onMoveScene}>
           <canvas ref={canvasRef} className="wv-canvas" aria-hidden="true"></canvas>
           <div className="wv-panels">{panels}</div>
           <button type="button" className="wv-scrollcue" onClick={scrollNext} aria-label="Scroll to the next chapter">
