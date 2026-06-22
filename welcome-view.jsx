@@ -53,6 +53,13 @@ const _LODGES = [
 ];
 // visitor taps on the lake → expanding ripples (interactive). { x, y, t } in px / ms.
 const _CLICKS = [];
+// slow drifting clouds, tinted by the sky for atmosphere
+const _CLOUDS = [
+  { x: 0.10, y: 0.34, r: 150, sp: 0.006, op: 0.5 },
+  { x: 0.45, y: 0.22, r: 110, sp: 0.009, op: 0.42 },
+  { x: 0.72, y: 0.40, r: 170, sp: 0.005, op: 0.55 },
+  { x: 0.92, y: 0.28, r: 120, sp: 0.007, op: 0.4 },
+];
 
 function drawScene(ctx, W, H, p, tt, now) {
   const hY = H * 0.5;
@@ -64,6 +71,23 @@ function drawScene(ctx, W, H, p, tt, now) {
   sky.addColorStop(0, _ramp(SKY_TOP, p));
   sky.addColorStop(1, _ramp(SKY_HORIZ, p));
   ctx.fillStyle = sky; ctx.fillRect(0, 0, W, hY + 30);
+
+  // ---- drifting clouds, tinted by the horizon light (fade away at night) ----
+  const cloudA = 0.55 * (1 - _smooth(0.66, 0.92, p));
+  if (cloudA > 0.02) {
+    const ct = _rampA(SKY_HORIZ, p);
+    for (const cl of _CLOUDS) {
+      const cxp = (((cl.x + tt * cl.sp) % 1.3) - 0.15) * W;
+      const cyp = cl.y * hY;
+      ctx.save(); ctx.translate(cxp, cyp); ctx.scale(1, 0.4);
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, cl.r);
+      g.addColorStop(0, `rgba(${ct[0] + 18},${ct[1] + 14},${ct[2] + 10},${cloudA * cl.op})`);
+      g.addColorStop(0.6, `rgba(${ct[0]},${ct[1]},${ct[2]},${cloudA * cl.op * 0.4})`);
+      g.addColorStop(1, `rgba(${ct[0]},${ct[1]},${ct[2]},0)`);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, cl.r, 0, 6.283); ctx.fill();
+      ctx.restore();
+    }
+  }
 
   // ---- STARS (night) ----
   const starA = _smooth(0.66, 0.95, p);
@@ -180,36 +204,46 @@ function drawScene(ctx, W, H, p, tt, now) {
 
   // ---- far shore: treeline + a small community of lodges, with a fire glow ----
   const shoreAlpha = 0.6 + 0.28 * _smooth(0.6, 1, p);
-  // campfire glow on the far shore, warming toward dusk & night (flickering)
-  const fireA = _smooth(0.5, 0.95, p);
+  const vx = W * 0.66;                                 // the village sits here on the shore
+  // warm campfire glow at the village, warming toward dusk & night (flickering)
+  const fireA = _smooth(0.45, 0.95, p);
   if (fireA > 0.02) {
-    const fx = W * 0.655, fy = hY - 2;
     const flick = 0.7 + 0.3 * Math.sin(tt * 9) + 0.15 * Math.sin(tt * 17);
-    const fglow = ctx.createRadialGradient(fx, fy, 0, fx, fy, 84);
-    fglow.addColorStop(0, `rgba(255,170,70,${0.5 * fireA * flick})`);
-    fglow.addColorStop(1, 'rgba(255,170,70,0)');
-    ctx.fillStyle = fglow; ctx.fillRect(fx - 84, fy - 84, 168, 120);
+    const fglow = ctx.createRadialGradient(vx, hY - 2, 0, vx, hY - 2, 96);
+    fglow.addColorStop(0, `rgba(255,168,72,${0.55 * fireA * flick})`);
+    fglow.addColorStop(1, 'rgba(255,168,72,0)');
+    ctx.fillStyle = fglow; ctx.fillRect(vx - 96, hY - 96, 192, 130);
   }
-  // layered ridges of distant hills — rolling profiles (sum of sines) with depth
-  const ridge = (base, amp, freq, phase, col) => {
-    ctx.beginPath(); ctx.moveTo(0, hY);
+  // ---- distant hills: three layered ridges with atmospheric haze (far = lighter) ----
+  const haze = _rampA(SKY_HORIZ, p);
+  const ridge = (base, amp, freq, phase, mixF, alpha) => {
+    const r = Math.round(_lerp(26, haze[0], mixF)), g = Math.round(_lerp(21, haze[1], mixF)), b = Math.round(_lerp(15, haze[2], mixF));
+    ctx.beginPath(); ctx.moveTo(0, hY + 2);
     for (let x = 0; x <= W; x += 12) {
-      const y = hY - base - amp * (0.62 * Math.sin(x * freq + phase)
-        + 0.26 * Math.sin(x * freq * 2.3 + phase * 1.7)
-        + 0.12 * Math.sin(x * freq * 0.5 + phase));
+      const y = hY - base - amp * (0.6 * Math.sin(x * freq + phase) + 0.28 * Math.sin(x * freq * 2.3 + phase * 1.7) + 0.12 * Math.sin(x * freq * 0.5));
       ctx.lineTo(x, y);
     }
-    ctx.lineTo(W, hY); ctx.closePath(); ctx.fillStyle = col; ctx.fill();
+    ctx.lineTo(W, hY + 2); ctx.closePath();
+    ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`; ctx.fill();
   };
-  ridge(8, 13, 0.010, 1.3, `rgba(54,46,42,${shoreAlpha * 0.55})`);   // far ridge, hazy
-  ridge(2, 20, 0.014, 0.0, `rgba(20,16,12,${shoreAlpha})`);          // near ridge, dark
-  // lodge / teepee silhouettes on the far shore — the community by the water
-  for (const Lg of _LODGES) {
-    const lx = Lg.x * W, lh = 16 * Lg.s, lw = 11 * Lg.s;
-    ctx.fillStyle = `rgba(16,12,9,${shoreAlpha})`;
-    ctx.beginPath(); ctx.moveTo(lx, hY - lh); ctx.lineTo(lx - lw, hY); ctx.lineTo(lx + lw, hY); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = `rgba(16,12,9,${shoreAlpha})`; ctx.lineWidth = 1.1;
-    ctx.beginPath(); ctx.moveTo(lx - lw * 0.45, hY - lh * 0.5); ctx.lineTo(lx + lw * 0.45, hY - lh * 0.5); ctx.stroke();
+  ridge(24, 15, 0.0080, 2.1, 0.62, shoreAlpha * 0.5);   // farthest, hazy & pale
+  ridge(13, 19, 0.0110, 0.7, 0.34, shoreAlpha * 0.72);  // middle
+  ridge(3, 22, 0.0140, 0.0, 0.10, shoreAlpha);          // nearest, darkest
+  // a pine treeline standing along the nearest ridge crest
+  ctx.fillStyle = `rgba(13,10,7,${shoreAlpha})`;
+  for (let x = 7; x < W; x += 12) {
+    const crest = hY - 3 - 22 * (0.6 * Math.sin(x * 0.014) + 0.28 * Math.sin(x * 0.0322) + 0.12 * Math.sin(x * 0.007));
+    const th = 8 + (Math.sin(x * 1.7) * 0.5 + 0.5) * 9;
+    const tw = th * 0.34;
+    ctx.beginPath(); ctx.moveTo(x, crest - th); ctx.lineTo(x - tw, crest + 1); ctx.lineTo(x + tw, crest + 1); ctx.closePath(); ctx.fill();
+  }
+  // ---- a small Anishinaabe village (wigwam domes) nestled at the shore ----
+  for (const Lg of [[-30, 0.85], [-12, 1.05], [6, 0.8], [22, 1.0], [38, 0.7]]) {
+    const lx = vx + Lg[0] * 1.25, s = Lg[1], lw = 9 * s, lh = 7 * s;
+    ctx.fillStyle = `rgba(11,8,5,${shoreAlpha})`;
+    ctx.beginPath(); ctx.ellipse(lx, hY, lw, lh, 0, Math.PI, 2 * Math.PI); ctx.fill();
+    // a soft warm doorway light at dusk/night
+    if (fireA > 0.3) { ctx.fillStyle = `rgba(255,176,86,${0.5 * fireA})`; ctx.beginPath(); ctx.arc(lx, hY - 1, 1.2 * s, 0, 6.283); ctx.fill(); }
   }
 
   // ---- WATER: a darkened, rippling MIRROR of the sky (never a dead black slab) ----
@@ -322,6 +356,12 @@ function drawScene(ctx, W, H, p, tt, now) {
   const padSide = strokeT >= 0 ? 1 : -1;
   const rim = lightX < cx ? -1 : 1;                    // warm rim-light from the sun/moon side
   const night = isMoon || p > 0.72;
+
+  // contact shadow so the hull sits IN the water (not floating on top)
+  ctx.save();
+  ctx.fillStyle = 'rgba(8,10,12,0.22)';
+  ctx.beginPath(); ctx.ellipse(cx, cy + 9 * scl, 52 * scl, 7 * scl, 0, 0, 6.283); ctx.fill();
+  ctx.restore();
 
   // soft reflection of the canoe on the water (flipped, faded)
   ctx.save();
@@ -518,6 +558,8 @@ function WelcomeView({ all, setView }) {
         // translate + scale only — both GPU-composited, so scrolling stays smooth
         el.style.transform = `translate3d(0, ${(p - center) * -90}px, 0) scale(${scale})`;
         el.style.pointerEvents = op > 0.55 ? 'auto' : 'none';
+        // graceful staggered line-reveal: arm it once the chapter is on screen
+        if (opc > 0.5) el.classList.add('wv-in'); else if (opc < 0.12) el.classList.remove('wv-in');
       });
     }
     function onScroll() { if (!raf) raf = requestAnimationFrame(update); }
