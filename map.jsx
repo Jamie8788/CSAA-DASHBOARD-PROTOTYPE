@@ -41,19 +41,43 @@ const TILE_LAYERS = {
   },
 };
 
-// Ambient scenery over the map — drifting "spirit lights" + a faint aurora ribbon.
-// Purely decorative (pointer-events: none) so the map stays fully usable.
-function MapAmbient() {
+// Ambient scenery over the map — a living "network of care" (glowing arcs between
+// neighbouring communities with a light travelling along each), plus a drifting
+// canoe, birds and spirit-lights. Decorative (pointer-events:none) so the map
+// stays fully usable; the arcs are projected through the map so they pan & zoom.
+function MapAmbient({ getMap, coords }) {
   const cref = useRef(null);
+  const mapGetRef = useRef(getMap); mapGetRef.current = getMap;
+  const arcsRef = useRef([]);
+
+  // Build arcs: connect each community to its nearest neighbour (dedup + capped).
+  useEffect(() => {
+    const pts = coords || [];
+    const seen = new Set(); const arcs = [];
+    for (let i = 0; i < pts.length && arcs.length < 80; i++) {
+      let best = -1, bd = Infinity;
+      for (let j = 0; j < pts.length; j++) {
+        if (i === j) continue;
+        const dx = pts[i][0] - pts[j][0], dy = pts[i][1] - pts[j][1];
+        const d = dx * dx + dy * dy;
+        if (d < bd) { bd = d; best = j; }
+      }
+      if (best >= 0) {
+        const key = i < best ? i + '-' + best : best + '-' + i;
+        if (!seen.has(key)) { seen.add(key); arcs.push({ a: pts[i], b: pts[best], ph: Math.random(), sp: 0.08 + Math.random() * 0.08 }); }
+      }
+    }
+    arcsRef.current = arcs;
+  }, [coords]);
+
   useEffect(() => {
     const cv = cref.current; if (!cv) return;
     if ((window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
         || document.documentElement.classList.contains('reduce-motion')) return;
     const ctx = cv.getContext('2d');
     let W = 0, H = 0, dpr = 1, raf = null, t0 = null, last = 0;
-    const N = 26;
-    const motes = Array.from({ length: N }, () => ({
-      x: Math.random(), y: Math.random(), r: 0.8 + Math.random() * 2.2,
+    const motes = Array.from({ length: 22 }, () => ({
+      x: Math.random(), y: Math.random(), r: 0.9 + Math.random() * 2.2,
       sp: 0.006 + Math.random() * 0.018, drift: 0.2 + Math.random() * 0.8,
       ph: Math.random() * 6.28, warm: Math.random() > 0.35,
     }));
@@ -71,27 +95,42 @@ function MapAmbient() {
       if (time - last < 33) return; last = time;       // ~30fps, light
       if (t0 == null) t0 = time; const tt = (time - t0) / 1000;
       ctx.clearRect(0, 0, W, H);
-      // faint aurora ribbon drifting along the top
-      ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      for (let b = 0; b < 2; b++) {
-        ctx.beginPath();
-        const baseY = 40 + b * 34;
-        for (let x = 0; x <= W; x += 20) {
-          const y = baseY + Math.sin(x * 0.004 + tt * 0.4 + b) * 16 + Math.sin(x * 0.011 + tt * 0.7) * 7;
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+
+      // ---- the network of care: glowing arcs between neighbouring communities ----
+      const map = mapGetRef.current && mapGetRef.current();
+      if (map && arcsRef.current.length) {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+        for (const arc of arcsRef.current) {
+          let pa, pb;
+          try { pa = map.latLngToContainerPoint(arc.a); pb = map.latLngToContainerPoint(arc.b); } catch (e) { continue; }
+          if ((pa.x < -60 && pb.x < -60) || (pa.x > W + 60 && pb.x > W + 60) ||
+              (pa.y < -60 && pb.y < -60) || (pa.y > H + 60 && pb.y > H + 60)) continue;
+          const mx = (pa.x + pb.x) / 2, my = (pa.y + pb.y) / 2;
+          const dx = pb.x - pa.x, dy = pb.y - pa.y; const len = Math.hypot(dx, dy) || 1;
+          if (len > W * 0.9) continue;                  // skip very long cross-map lines
+          const nx = -dy / len, ny = dx / len; const lift = Math.min(46, len * 0.2);
+          const cxp = mx + nx * lift, cyp = my + ny * lift;
+          ctx.strokeStyle = 'rgba(212,160,23,0.12)'; ctx.lineWidth = 1.1;
+          ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.quadraticCurveTo(cxp, cyp, pb.x, pb.y); ctx.stroke();
+          // a warm light travelling along the arc
+          const t2 = ((tt * arc.sp + arc.ph) % 1), it = 1 - t2;
+          const qx = it * it * pa.x + 2 * it * t2 * cxp + t2 * t2 * pb.x;
+          const qy = it * it * pa.y + 2 * it * t2 * cyp + t2 * t2 * pb.y;
+          const g = ctx.createRadialGradient(qx, qy, 0, qx, qy, 6);
+          g.addColorStop(0, 'rgba(255,226,150,0.85)'); g.addColorStop(1, 'rgba(255,226,150,0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(qx, qy, 6, 0, 6.283); ctx.fill();
         }
-        ctx.strokeStyle = b === 0 ? 'rgba(110,160,120,0.06)' : 'rgba(150,140,200,0.05)';
-        ctx.lineWidth = 26; ctx.lineCap = 'round'; ctx.stroke();
+        ctx.restore();
       }
-      ctx.restore();
-      // drifting spirit-lights rising slowly
+
+      // ---- drifting spirit-lights rising slowly ----
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       for (const m of motes) {
         const y = ((m.y - tt * m.sp) % 1 + 1) % 1;
         const x = (m.x + Math.sin(tt * 0.3 * m.drift + m.ph) * 0.02);
         const px = x * W, py = y * H;
         const tw = 0.5 + 0.5 * Math.sin(tt * 1.6 + m.ph);
-        const a = 0.06 + 0.10 * tw;
+        const a = 0.08 + 0.13 * tw;
         const col = m.warm ? '255,196,110' : '210,224,255';
         const g = ctx.createRadialGradient(px, py, 0, px, py, m.r * 6);
         g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`);
@@ -100,30 +139,37 @@ function MapAmbient() {
       }
       ctx.restore();
 
-      // a small flock of birds crossing the upper sky (ambient)
-      ctx.save(); ctx.globalAlpha = 0.32; ctx.strokeStyle = 'rgba(38,30,22,0.85)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-      const fxx = (((tt * 0.02 + 0.15) % 1.4) - 0.2) * W;
-      for (let i = 0; i < 5; i++) {
-        const bx = fxx - i * 16, by = H * 0.14 + Math.abs(i - 2) * 7 + Math.sin(tt + i) * 2;
-        const flap = Math.sin(tt * 7 + i) * 3;
-        ctx.beginPath(); ctx.moveTo(bx - 6, by + flap); ctx.lineTo(bx, by - 1); ctx.lineTo(bx + 6, by + flap); ctx.stroke();
+      // ---- a flock of geese crossing the sky (clearly visible) ----
+      ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = 'rgba(40,32,24,0.9)'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+      const fxx = (((tt * 0.026 + 0.15) % 1.45) - 0.2) * W;
+      for (let i = 0; i < 6; i++) {
+        const side = i % 2 ? 1 : -1, rank = Math.ceil(i / 2);
+        const bx = fxx - rank * 22, by = H * 0.13 + rank * 11 * side * 0.5 + Math.sin(tt + i) * 2;
+        const flap = Math.sin(tt * 7 + i) * 4, wing = 8 + 3 * Math.abs(Math.sin(tt * 7 + i));
+        ctx.beginPath();
+        ctx.moveTo(bx - wing, by + flap);
+        ctx.quadraticCurveTo(bx - wing * 0.35, by - wing * 0.5, bx, by);
+        ctx.quadraticCurveTo(bx + wing * 0.35, by - wing * 0.5, bx + wing, by + flap);
+        ctx.stroke();
       }
       ctx.restore();
 
-      // a canoe drifting slowly across (echoes the landing page), with the orange-shirt paddler
-      const cx = (((tt * 0.012) % 1.25) - 0.13) * W;
-      const cy = H * 0.84 + Math.sin(tt * 0.8) * 4;
-      const s = Math.max(0.7, Math.min(1.25, W / 1400));
-      ctx.save(); ctx.globalAlpha = 0.5; ctx.translate(cx, cy); ctx.scale(s, s);
-      ctx.strokeStyle = 'rgba(255,240,210,0.10)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(-30, 0); ctx.quadraticCurveTo(-120, 8, -230, 30); ctx.stroke();   // wake
-      ctx.beginPath(); ctx.moveTo(-34, -1); ctx.quadraticCurveTo(0, 12, 34, -1); ctx.quadraticCurveTo(0, 5, -34, -1); ctx.closePath();
-      ctx.fillStyle = 'rgba(58,37,21,0.9)'; ctx.fill();                                              // hull
-      ctx.fillStyle = 'rgba(233,104,28,0.95)'; ctx.fillRect(-2.4, -10, 5, 8);                        // orange shirt
-      ctx.fillStyle = 'rgba(202,160,122,0.95)'; ctx.beginPath(); ctx.arc(0, -13, 2.6, 0, 6.283); ctx.fill();  // head
-      const pad = Math.sin(tt * 2.5) * 0.5;
-      ctx.strokeStyle = 'rgba(94,60,34,0.95)'; ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(13 * Math.cos(pad + 0.4), -7 + 13 * Math.sin(pad + 0.4)); ctx.stroke();  // paddle
+      // ---- a canoe gliding across (clearly visible), with the orange-shirt paddler ----
+      const cx = (((tt * 0.018) % 1.3) - 0.15) * W;
+      const cy = H * 0.86 + Math.sin(tt * 0.8) * 4;
+      const s = Math.max(1.0, Math.min(1.7, W / 1100));
+      ctx.save(); ctx.globalAlpha = 0.72; ctx.translate(cx, cy); ctx.scale(s, s);
+      ctx.strokeStyle = 'rgba(255,240,210,0.14)'; ctx.lineWidth = 1.3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-34, 0); ctx.quadraticCurveTo(-130, 8, -250, 30); ctx.stroke();   // wake
+      ctx.beginPath(); ctx.moveTo(-38, -1); ctx.quadraticCurveTo(0, 13, 38, -1); ctx.quadraticCurveTo(0, 6, -38, -1); ctx.closePath();
+      const hg = ctx.createLinearGradient(0, -8, 0, 13); hg.addColorStop(0, '#7a4d2c'); hg.addColorStop(1, '#34200f');
+      ctx.fillStyle = hg; ctx.fill();                                                                 // hull
+      ctx.strokeStyle = 'rgba(220,176,116,0.8)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-34, -7); ctx.quadraticCurveTo(0, -1, 34, -7); ctx.stroke();
+      ctx.fillStyle = 'rgba(233,104,28,1)'; ctx.fillRect(-3, -12, 6, 9);                              // orange shirt
+      ctx.fillStyle = 'rgba(202,160,122,1)'; ctx.beginPath(); ctx.arc(0, -15, 3, 0, 6.283); ctx.fill();  // head
+      const pad = Math.sin(tt * 2.5) * 0.55;
+      ctx.strokeStyle = '#5e3c22'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(15 * Math.cos(pad + 0.4), -8 + 15 * Math.sin(pad + 0.4)); ctx.stroke();  // paddle
       ctx.restore();
     }
     raf = requestAnimationFrame(frame);
@@ -543,6 +589,7 @@ function CanadaMap({ communities, allCommunities, selectedId, onSelect, onHover,
   }, [heatOn, communities]);
 
   const projected = allCommunities.filter(c => c.lat != null);
+  const ambientCoords = useMemo(() => projected.filter(c => c.lng != null).map(c => [c.lat, c.lng]), [allCommunities]);
   const byDir = useMemo(() => {
     const g = { East: [], South: [], West: [], North: [], AllDirections: [] };
     projected.forEach(p => { const d = p.direction || 'AllDirections'; if (g[d]) g[d].push(p); });
@@ -552,7 +599,7 @@ function CanadaMap({ communities, allCommunities, selectedId, onSelect, onHover,
   return (
     <div className={`map-wrap ${selectedId ? 'drawer-open' : ''}`}>
       <div ref={containerRef} className="leaflet-container-wrap"></div>
-      <MapAmbient />
+      <MapAmbient getMap={() => mapRef.current} coords={ambientCoords} />
 
       <div className="map-overlay map-eyebrow">
         <span className="sub">Atlas · 01</span>
