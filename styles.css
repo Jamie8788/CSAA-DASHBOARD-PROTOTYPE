@@ -6775,10 +6775,14 @@ button.gap-tr:hover { background: var(--paper-2, #f3ecdd); }
 .wv-btn.ghost { background: rgba(251,246,236,.1); color: #fbf6ec; border: 1px solid rgba(251,246,236,.5); backdrop-filter: blur(4px); }
 .wv-btn.ghost:hover { background: rgba(251,246,236,.2); box-shadow: none; }
 .wv-scrollcue {
-  position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 2;
-  display: flex; flex-direction: column; align-items: center; gap: 6px; color: rgba(251,246,236,.8);
+  position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 3;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; color: rgba(251,246,236,.82);
   font-family: var(--mono, monospace); font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+  background: none; border: 0; cursor: pointer; padding: 10px 16px; border-radius: 999px;
+  transition: color .2s, background .2s, transform .2s;
 }
+.wv-scrollcue:hover { color: #ffe6a0; background: rgba(251,246,236,.08); transform: translateX(-50%) translateY(-2px); }
+.wv-scrollcue:focus-visible { outline: 2px solid #ffe6a0; outline-offset: 3px; }
 .wv-scrollcue i { font-size: 18px; font-style: normal; animation: wvBob 1.8s ease-in-out infinite; }
 @keyframes wvBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(7px); } }
 
