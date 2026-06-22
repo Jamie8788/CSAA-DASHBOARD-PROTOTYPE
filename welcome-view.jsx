@@ -51,8 +51,10 @@ const _RIPPLES = [
 const _LODGES = [
   { x: 0.595, s: 1.0 }, { x: 0.63, s: 0.78 }, { x: 0.668, s: 1.15 }, { x: 0.715, s: 0.9 },
 ];
+// visitor taps on the lake → expanding ripples (interactive). { x, y, t } in px / ms.
+const _CLICKS = [];
 
-function drawScene(ctx, W, H, p, tt) {
+function drawScene(ctx, W, H, p, tt, now) {
   const hY = H * 0.5;
   // Begin the story in bright MORNING (not pre-dawn dark) and end at night, so
   // the very first screen is a luminous, lit lake. The whole day still unfolds.
@@ -90,37 +92,63 @@ function drawScene(ctx, W, H, p, tt) {
     }
   }
 
-  // ---- SUN / MOON ----
-  const sunX = W * (0.18 + p * 0.64);
-  const sunY = hY - Math.sin(_clamp(p, 0, 1) * Math.PI) * (hY * 0.72) + 8;
-  const isMoon = p > 0.86;
-  const sunR = isMoon ? 30 : _lerp(40, 60, _smooth(0.55, 1, p));
-  const sc = _ramp(SUN_COL, p);
-  const [hr, hg, hb] = _rampA(SUN_COL, p);
-  if (isMoon) {
-    // ---- MOON: pale and cool, with craters and a soft cool glow (clearly NOT the sun) ----
-    const mh = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 6);
-    mh.addColorStop(0, 'rgba(206,219,243,0.42)');
-    mh.addColorStop(0.4, 'rgba(206,219,243,0.10)');
+  // ---- SUN & MOON (a smooth, believable hand-off at dusk) ----
+  const alt = Math.sin(_clamp(p, 0, 1) * Math.PI);     // 0 at the horizon, 1 at the zenith
+  const sunX = W * (0.16 + p * 0.66);
+  const sunY = hY - alt * (hY * 0.74) + 8;
+  const sunA = 1 - _smooth(0.82, 0.93, p);             // sun dims out as night arrives
+  const moonA = _smooth(0.84, 0.985, p);               // moon glows up
+  const moonRise = _smooth(0.80, 1.0, p);
+  const moonX = W * 0.30;
+  const moonY = hY - (0.12 + moonRise * 0.5) * hY;
+  const moonR = 34;
+  let lightX = sunX, lightCol = [255, 240, 210], lightA = 0.2;
+
+  if (sunA > 0.01) {
+    const sunR = _lerp(70, 40, alt);                   // big near the horizon, small at noon
+    // colour: deep orange-red when low, warm white-gold when high
+    const sunC = [255, Math.round(_lerp(108, 244, alt)), Math.round(_lerp(50, 212, alt))];
+    const halo = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 7);
+    halo.addColorStop(0, `rgba(${sunC[0]},${sunC[1]},${sunC[2]},${0.55 * sunA})`);
+    halo.addColorStop(0.22, `rgba(${sunC[0]},${sunC[1]},${sunC[2]},${0.2 * sunA})`);
+    halo.addColorStop(1, `rgba(${sunC[0]},${sunC[1]},${sunC[2]},0)`);
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hY + 2); ctx.clip();
+    ctx.fillStyle = halo; ctx.fillRect(0, 0, W, hY + 2);
+    // soft, slowly-turning rays
+    ctx.globalAlpha = 0.09 * sunA * (0.7 + 0.3 * Math.sin(tt * 1.4));
+    ctx.strokeStyle = `rgb(${sunC[0]},${sunC[1]},${sunC[2]})`; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+    for (let r = 0; r < 12; r++) {
+      const ang = (r / 12) * 6.283 + tt * 0.06;
+      ctx.beginPath();
+      ctx.moveTo(sunX + Math.cos(ang) * sunR * 1.35, sunY + Math.sin(ang) * sunR * 1.35);
+      ctx.lineTo(sunX + Math.cos(ang) * sunR * 2.2, sunY + Math.sin(ang) * sunR * 2.2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1; ctx.restore();
+    ctx.globalAlpha = sunA;
+    ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, 6.283); ctx.fillStyle = `rgb(${sunC[0]},${sunC[1]},${sunC[2]})`; ctx.fill();
+    ctx.globalAlpha = 1;
+    lightCol = sunC; lightA = sunA;
+  }
+
+  if (moonA > 0.01) {
+    const mh = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, moonR * 6);
+    mh.addColorStop(0, `rgba(206,219,243,${0.42 * moonA})`);
+    mh.addColorStop(0.4, `rgba(206,219,243,${0.1 * moonA})`);
     mh.addColorStop(1, 'rgba(206,219,243,0)');
     ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hY + 2); ctx.clip();
     ctx.fillStyle = mh; ctx.fillRect(0, 0, W, hY + 2); ctx.restore();
-    ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, 6.283); ctx.fillStyle = '#e9eef8'; ctx.fill();
-    ctx.fillStyle = 'rgba(150,165,198,0.55)';
-    for (const c of [[-8, -6, 5], [7, 3, 4], [-3, 9, 3], [11, -8, 2.6], [-13, 4, 2.2]]) {
-      ctx.beginPath(); ctx.arc(sunX + c[0], sunY + c[1], c[2], 0, 6.283); ctx.fill();
+    ctx.globalAlpha = moonA;
+    ctx.beginPath(); ctx.arc(moonX, moonY, moonR, 0, 6.283); ctx.fillStyle = '#e9eef8'; ctx.fill();
+    ctx.fillStyle = 'rgba(150,165,198,0.5)';
+    for (const c of [[-9, -7, 6], [8, 4, 4.5], [-4, 10, 3.4], [13, -9, 3], [-15, 5, 2.6]]) {
+      ctx.beginPath(); ctx.arc(moonX + c[0], moonY + c[1], c[2], 0, 6.283); ctx.fill();
     }
-  } else {
-    // ---- SUN: warm disc with a warm halo, kept in the SKY only so it never floods the lake ----
-    const halo = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, H * 0.46);
-    halo.addColorStop(0, `rgba(${hr},${hg},${hb},0.7)`);
-    halo.addColorStop(0.18, `rgba(${hr},${hg},${hb},0.22)`);
-    halo.addColorStop(0.55, `rgba(${hr},${hg},${hb},0.06)`);
-    halo.addColorStop(1, `rgba(${hr},${hg},${hb},0)`);
-    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hY + 2); ctx.clip();
-    ctx.fillStyle = halo; ctx.fillRect(0, 0, W, hY + 2); ctx.restore();
-    ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, 6.283); ctx.fillStyle = sc; ctx.fill();
+    ctx.globalAlpha = 1;
+    if (moonA >= sunA) { lightX = moonX; lightCol = [206, 219, 243]; lightA = moonA; }
   }
+  const isMoon = moonA > 0.5;
+  const [hr, hg, hb] = lightCol;
 
   // ---- BIRDS — geese in V-formation, wings flapping, crossing the sky ----
   const birdA = _smooth(0.08, 0.24, p) * (1 - _smooth(0.60, 0.80, p));
@@ -204,25 +232,25 @@ function drawScene(ctx, W, H, p, tt) {
   }
   ctx.restore();
 
-  // ---- sun / moon GLITTER: a tidy column of light on the water (clipped, no flood) ----
+  // ---- GLITTER: a tidy column of light reflected from the sun/moon (clipped, no flood) ----
   ctx.save();
   const colHalf = Math.max(34, W * 0.05);
   ctx.beginPath();
-  ctx.moveTo(sunX - colHalf, hY + 2); ctx.lineTo(sunX + colHalf, hY + 2);
-  ctx.lineTo(sunX + colHalf * 0.4, H); ctx.lineTo(sunX - colHalf * 0.4, H);
+  ctx.moveTo(lightX - colHalf, hY + 2); ctx.lineTo(lightX + colHalf, hY + 2);
+  ctx.lineTo(lightX + colHalf * 0.4, H); ctx.lineTo(lightX - colHalf * 0.4, H);
   ctx.closePath(); ctx.clip();
   const gcol = ctx.createLinearGradient(0, hY, 0, H);
-  gcol.addColorStop(0, `rgba(${hr},${hg},${hb},${isMoon ? 0.16 : 0.26})`);
+  gcol.addColorStop(0, `rgba(${hr},${hg},${hb},${(isMoon ? 0.16 : 0.28) * Math.max(lightA, 0.3)})`);
   gcol.addColorStop(1, `rgba(${hr},${hg},${hb},0)`);
-  ctx.fillStyle = gcol; ctx.fillRect(sunX - colHalf, hY, colHalf * 2, H - hY);
+  ctx.fillStyle = gcol; ctx.fillRect(lightX - colHalf, hY, colHalf * 2, H - hY);
   for (let i = 0; i < 26; i++) {
     const f = i / 26, ry = hY + 4 + f * (H - hY);
-    const a = (isMoon ? 0.10 : 0.16) * (1 - f) * (0.45 + 0.55 * Math.sin(tt * 3 + i * 0.8));
+    const a = (isMoon ? 0.10 : 0.16) * Math.max(lightA, 0.4) * (1 - f) * (0.45 + 0.55 * Math.sin(tt * 3 + i * 0.8));
     if (a <= 0) continue;
     const w = 16 + 12 * Math.sin(i * 1.2 + tt);
     const dx = Math.sin(tt * 2 + i * 0.7) * 7;
     ctx.fillStyle = isMoon ? `rgba(208,221,246,${a})` : `rgba(255,250,236,${a})`;
-    ctx.fillRect(sunX + dx - w / 2, ry, Math.max(4, w), 2);
+    ctx.fillRect(lightX + dx - w / 2, ry, Math.max(4, w), 2);
   }
   ctx.restore();
 
@@ -255,42 +283,89 @@ function drawScene(ctx, W, H, p, tt) {
     }
   }
 
-  // ---- CANOE journeys across the lake by scroll progress (with a wake) ----
+  // ---- INTERACTIVE: ripples where the visitor taps the lake ----
+  for (let i = _CLICKS.length - 1; i >= 0; i--) {
+    const age = (now - _CLICKS[i].t) / 1000;
+    if (age > 1.7) { _CLICKS.splice(i, 1); continue; }
+    const k = age / 1.7;
+    const rx = _CLICKS[i].x, ry = Math.max(_CLICKS[i].y, hY + 6);
+    const rad = 6 + k * 80, a = 0.4 * (1 - k);
+    ctx.lineWidth = 1.7; ctx.strokeStyle = `rgba(250,250,242,${a})`;
+    ctx.beginPath(); ctx.ellipse(rx, ry, rad, rad * 0.3, 0, 0, 6.283); ctx.stroke();
+    if (k > 0.18) {
+      ctx.strokeStyle = `rgba(250,250,242,${a * 0.55})`;
+      ctx.beginPath(); ctx.ellipse(rx, ry, rad * 0.55, rad * 0.55 * 0.3, 0, 0, 6.283); ctx.stroke();
+    }
+  }
+
+  // ---- CANOE: a warm wooden canoe + paddler, gliding across with bob, wake & reflection ----
   const cx = 70 + _clamp(p, 0, 1) * (W - 140);
-  const cy = hY + (H - hY) * 0.15 + Math.sin(tt * 1.4) * 3;
-  const scl = Math.max(1.05, Math.min(1.9, W / 940));
-  // V-shaped wake trailing behind the canoe, drawn on the water
+  const bob = Math.sin(tt * 1.3) * 3;
+  const cy = hY + (H - hY) * 0.15 + bob;
+  const scl = Math.max(1.1, Math.min(2.0, W / 900));
+  const rock = Math.sin(tt * 1.3 + 0.5) * 0.03;
+  const strokeT = Math.sin(tt * 2.1);
+  const padSide = strokeT >= 0 ? 1 : -1;
+  const rim = lightX < cx ? -1 : 1;                    // warm rim-light from the sun/moon side
+  const night = isMoon || p > 0.72;
+
+  // soft reflection of the canoe on the water (flipped, faded)
   ctx.save();
-  ctx.strokeStyle = 'rgba(245,238,222,0.16)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+  ctx.translate(cx, cy + 15 * scl); ctx.scale(scl, -scl * 0.55); ctx.globalAlpha = 0.14;
+  ctx.beginPath(); ctx.moveTo(-44, 0); ctx.quadraticCurveTo(0, 15, 44, 0); ctx.quadraticCurveTo(0, 6, -44, 0);
+  ctx.fillStyle = '#3a2515'; ctx.fill();
+  ctx.restore();
+
+  // V-wake trailing behind
+  ctx.save();
+  ctx.strokeStyle = 'rgba(250,244,228,0.18)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
   for (let s = -1; s <= 1; s += 2) {
-    ctx.beginPath(); ctx.moveTo(cx - 40 * scl, cy);
-    ctx.quadraticCurveTo(cx - 150 * scl, cy + s * 10, cx - 280 * scl, cy + s * 46 * scl);
+    ctx.beginPath(); ctx.moveTo(cx - 36 * scl, cy);
+    ctx.quadraticCurveTo(cx - 150 * scl, cy + s * 9, cx - 300 * scl, cy + s * 44 * scl);
     ctx.stroke();
   }
   ctx.restore();
-  ctx.save(); ctx.translate(cx, cy); ctx.scale(scl, scl);
-  if (isMoon || p > 0.7) { // lantern glow at dusk/night
-    const g = ctx.createRadialGradient(8, -14, 0, 8, -14, 60);
-    g.addColorStop(0, 'rgba(255,180,80,0.55)'); g.addColorStop(1, 'rgba(255,180,80,0)');
-    ctx.fillStyle = g; ctx.fillRect(-60, -70, 130, 90);
+
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(rock); ctx.scale(scl, scl);
+  if (night) { // lantern glow
+    const g = ctx.createRadialGradient(0, -16, 0, 0, -16, 54);
+    g.addColorStop(0, 'rgba(255,185,90,0.5)'); g.addColorStop(1, 'rgba(255,185,90,0)');
+    ctx.fillStyle = g; ctx.fillRect(-54, -64, 108, 80);
   }
-  // hull
-  ctx.beginPath(); ctx.moveTo(-46, 0); ctx.quadraticCurveTo(0, 18, 46, 0); ctx.quadraticCurveTo(0, 7, -46, 0);
-  ctx.fillStyle = '#15100b'; ctx.fill();
-  // paddler
-  ctx.strokeStyle = '#15100b'; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(2, -2); ctx.lineTo(2, -17); ctx.stroke();
-  ctx.beginPath(); ctx.arc(2, -21, 3.8, 0, 6.283); ctx.fillStyle = '#15100b'; ctx.fill();
-  // paddle dipping side to side
-  const pad = Math.sin(tt * 3) * 0.6;
-  ctx.lineWidth = 2.4;
-  ctx.beginPath(); ctx.moveTo(2, -11); ctx.lineTo(2 + 20 * Math.cos(pad + 0.4), -11 + 20 * Math.sin(pad + 0.4)); ctx.stroke();
-  if (isMoon || p > 0.7) { ctx.beginPath(); ctx.arc(8, -17, 2.4, 0, 6.283); ctx.fillStyle = '#ffcf7a'; ctx.fill(); }
+  // hull — a Canadian canoe with upturned ends and a wood-grain gradient
+  ctx.beginPath();
+  ctx.moveTo(-46, -2);
+  ctx.quadraticCurveTo(-52, -10, -42, -10);
+  ctx.quadraticCurveTo(0, -3, 42, -10);
+  ctx.quadraticCurveTo(52, -10, 46, -2);
+  ctx.quadraticCurveTo(0, 17, -46, -2);
+  ctx.closePath();
+  const hullG = ctx.createLinearGradient(0, -10, 0, 16);
+  hullG.addColorStop(0, '#7a4d2c'); hullG.addColorStop(0.5, '#522f1a'); hullG.addColorStop(1, '#2b190d');
+  ctx.fillStyle = hullG; ctx.fill();
+  // gunwale + warm rim light on the lit side
+  ctx.strokeStyle = 'rgba(220,176,116,0.75)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-42, -9); ctx.quadraticCurveTo(0, -2.5, 42, -9); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,212,150,0.55)'; ctx.lineWidth = 1.3;
+  ctx.beginPath(); ctx.moveTo(rim * 6, -5); ctx.quadraticCurveTo(rim * 44, -9, rim * 47, -2); ctx.stroke();
+  // paddler — torso, head, arm + paddle with alternating strokes
+  const tipx = padSide * (15 + 7 * Math.abs(strokeT)), tipy = 5 + 7 * Math.abs(strokeT);
+  ctx.fillStyle = '#43291a';
+  ctx.beginPath(); ctx.moveTo(-4, -3); ctx.quadraticCurveTo(-7, -17, -1, -21); ctx.quadraticCurveTo(5, -22, 5, -15); ctx.quadraticCurveTo(5, -8, 4, -3); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, -25, 4.4, 0, 6.283); ctx.fillStyle = '#43291a'; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,208,140,0.4)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(0, -25, 4.4, rim < 0 ? 2 : -1.1, rim < 0 ? 4.2 : 1.1); ctx.stroke();
+  ctx.strokeStyle = '#5e3c22'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0, -13); ctx.lineTo(tipx, tipy); ctx.stroke();       // shaft
+  ctx.lineWidth = 1.7;
+  ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(tipx * 0.5, -11); ctx.stroke();   // arm
+  ctx.save(); ctx.translate(tipx, tipy); ctx.rotate(Math.atan2(tipy + 13, tipx));
+  ctx.fillStyle = '#5e3c22'; ctx.beginPath(); ctx.ellipse(3, 0, 5, 2.4, 0, 0, 6.283); ctx.fill(); ctx.restore();
   ctx.restore();
-  // a small ripple where the paddle dips the water
-  if (Math.sin(tt * 3) > 0.85) {
-    ctx.strokeStyle = 'rgba(240,244,236,0.22)'; ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.ellipse(cx + 22 * scl, cy + 3 * scl, 8 * scl, 3 * scl, 0, 0, 6.283); ctx.stroke();
+  // ripple where the paddle dips
+  if (Math.abs(strokeT) > 0.9) {
+    ctx.strokeStyle = 'rgba(245,248,240,0.22)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.ellipse(cx + padSide * 22 * scl, cy + 6 * scl, 7 * scl, 2.6 * scl, 0, 0, 6.283); ctx.stroke();
   }
 
   // ---- foreground reeds for depth ----
@@ -328,6 +403,27 @@ function WelcomeView({ all, setView }) {
   const nOrg = window.useCountUp(data.orgs, 1600);
   const nPeople = window.useCountUp(data.people, 1900);
 
+  // tap the lake → an expanding ripple (ignored on buttons/links)
+  const onTapLake = (e) => {
+    if (e.target && e.target.closest && e.target.closest('button, a')) return;
+    const cv = canvasRef.current; if (!cv) return;
+    const r = cv.getBoundingClientRect();
+    _CLICKS.push({ x: e.clientX - r.left, y: e.clientY - r.top, t: performance.now() });
+    if (_CLICKS.length > 24) _CLICKS.shift();
+  };
+  // smooth-scroll the arrow to the next chapter
+  const scrollNext = () => {
+    const stage = stageRef.current;
+    if (!stage) { window.scrollBy({ top: window.innerHeight, behavior: 'smooth' }); return; }
+    const rect = stage.getBoundingClientRect();
+    const top = window.scrollY + rect.top;
+    const total = rect.height - window.innerHeight;
+    const cur = _clamp((window.scrollY - top) / (total || 1), 0, 1);
+    const seg = 1 / 5;
+    const next = Math.min(1, (Math.floor(cur / seg + 0.001) + 1.5) * seg);
+    window.scrollTo({ top: top + next * total, behavior: 'smooth' });
+  };
+
   // ---- canvas animation loop ----
   useE_w(() => {
     const canvas = canvasRef.current; if (!canvas) return;
@@ -337,16 +433,16 @@ function WelcomeView({ all, setView }) {
     resize();
     const ro = ('ResizeObserver' in window) ? new ResizeObserver(resize) : null;
     if (ro) ro.observe(canvas); else window.addEventListener('resize', resize);
-    if (reduce) { drawScene(ctx, W, H, 0.32, 0); }
+    if (reduce) { drawScene(ctx, W, H, 0.32, 0, performance.now()); }
     else {
       const frame = (time) => {
         raf = requestAnimationFrame(frame);
         if (time - last < 18) return; last = time; if (t0 == null) t0 = time;
-        drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000);
+        drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000, time);
       };
       raf = requestAnimationFrame(frame);
     }
-    function onVis() { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = null; } else if (!document.hidden && !raf && !reduce) { last = 0; raf = requestAnimationFrame((t) => { t0 = null; const f = (time) => { raf = requestAnimationFrame(f); if (time - last < 18) return; last = time; if (t0 == null) t0 = time; drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000); }; f(t); }); } }
+    function onVis() { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = null; } else if (!document.hidden && !raf && !reduce) { last = 0; raf = requestAnimationFrame((t) => { t0 = null; const f = (time) => { raf = requestAnimationFrame(f); if (time - last < 18) return; last = time; if (t0 == null) t0 = time; drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000, time); }; f(t); }); } }
     document.addEventListener('visibilitychange', onVis);
     return () => { if (raf) cancelAnimationFrame(raf); if (ro) ro.disconnect(); else window.removeEventListener('resize', resize); document.removeEventListener('visibilitychange', onVis); };
   }, [reduce]);
@@ -475,10 +571,12 @@ function WelcomeView({ all, setView }) {
   return (
     <section className="welcome2">
       <div className="wv-stage" ref={stageRef}>
-        <div className="wv-pin">
+        <div className="wv-pin" onPointerDown={onTapLake}>
           <canvas ref={canvasRef} className="wv-canvas" aria-hidden="true"></canvas>
           <div className="wv-panels">{panels}</div>
-          <div className="wv-scrollcue" aria-hidden="true"><span>scroll to discover</span><i>↓</i></div>
+          <button type="button" className="wv-scrollcue" onClick={scrollNext} aria-label="Scroll to the next chapter">
+            <span>scroll to discover</span><i>↓</i>
+          </button>
         </div>
       </div>
     </section>
