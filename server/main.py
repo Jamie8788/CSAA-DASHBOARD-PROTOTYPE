@@ -79,7 +79,13 @@ async def _no_cache_source(request, call_next):
     responses (which set their own Cache-Control) are left untouched."""
     response = await call_next(request)
     path = request.url.path.lower()
-    if path.endswith((".html", ".jsx", ".js", ".css")) or path == "/" or path.endswith("/"):
+    if path.endswith(".html") or path == "/" or path.endswith("/"):
+        # The HTML is the entry point that references every versioned asset.
+        # Never cache it, so a deploy is picked up immediately (no hard-refresh).
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    elif path.endswith((".jsx", ".js", ".css")):
         # don't clobber an explicit cache policy a route already set
         if "cache-control" not in (k.lower() for k in response.headers.keys()):
             response.headers["Cache-Control"] = "no-cache, must-revalidate"
