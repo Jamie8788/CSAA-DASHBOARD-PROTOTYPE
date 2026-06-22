@@ -418,13 +418,14 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.fillStyle = `rgba(6,4,2,${Math.max(0.85, shoreAlpha)})`;
     const folks = [[-27, 0.95], [-16, 1.08], [-4, 0.85], [13, 1.08], [25, 0.95], [6, 0.78]];
     for (const fk of folks) {
-      const px = fx + fk[0], s2 = fk[1], bh = 10 * s2;
+      const bob = Math.sin(tt * 1.5 + fk[0]) * 0.6;                                                                // gentle living sway
+      const px = fx + fk[0], s2 = fk[1], bh = 10 * s2, py = fy + bob;
       ctx.fillStyle = `rgba(6,4,2,${Math.max(0.85, shoreAlpha)})`;
-      ctx.beginPath(); ctx.ellipse(px, fy - bh * 0.32, 4 * s2, bh * 0.58, 0, Math.PI, 2 * Math.PI); ctx.fill();   // seated body
-      ctx.beginPath(); ctx.arc(px, fy - bh - 1, 2.7 * s2, 0, 6.283); ctx.fill();                                   // head
+      ctx.beginPath(); ctx.ellipse(px, py - bh * 0.32, 4 * s2, bh * 0.58, 0, Math.PI, 2 * Math.PI); ctx.fill();   // seated body
+      ctx.beginPath(); ctx.arc(px, py - bh - 1, 2.7 * s2, 0, 6.283); ctx.fill();                                   // head
       const inn = px < fx ? 1 : -1;                                                                                 // warm fire-glow rim on the side facing the fire
       ctx.strokeStyle = `rgba(255,150,70,${0.55 * fireA})`; ctx.lineWidth = 1.1;
-      ctx.beginPath(); ctx.arc(px, fy - bh - 1, 2.7 * s2, inn > 0 ? -1 : 2.1, inn > 0 ? 1 : 4.2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(px, py - bh - 1, 2.7 * s2, inn > 0 ? -1 : 2.1, inn > 0 ? 1 : 4.2); ctx.stroke();
     }
     // the fire — layered flickering flames (additive glow), now larger
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
@@ -461,18 +462,22 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.beginPath(); ctx.moveTo(rx, hY + 2); ctx.lineTo(rx, hY - 14); ctx.moveTo(rx + 30, hY + 2); ctx.lineTo(rx + 30, hY - 14); ctx.moveTo(rx - 3, hY - 14); ctx.lineTo(rx + 33, hY - 14); ctx.stroke();
     ctx.fillStyle = 'rgba(34,24,15,1)';
     for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.ellipse(rx + 3 + i * 5, hY - 8, 1.6, 3.4, 0, 0, 6.283); ctx.fill(); }
-    // a few people at work: standing and bending (bigger, clearer)
-    const person = (px, bend) => {
+    // a few people at work — now animated (working arm motion + gentle bob)
+    const person = (px, bend, ph) => {
       ctx.fillStyle = 'rgba(14,9,5,1)';
-      if (bend) {                                       // bent over a task
+      if (bend) {                                       // bent over a task, arm working
+        const work = Math.sin(tt * 3 + ph) * 2.2;
         ctx.beginPath(); ctx.ellipse(px, hY - 4.5, 3.4, 4.4, 0.5, 0, 6.283); ctx.fill();
         ctx.beginPath(); ctx.arc(px + 3.8, hY - 7.5, 2.1, 0, 6.283); ctx.fill();
-      } else {                                          // standing
-        ctx.beginPath(); ctx.ellipse(px, hY - 5, 3, 5.5, 0, Math.PI, 2 * Math.PI); ctx.fill();
-        ctx.beginPath(); ctx.arc(px, hY - 11, 2.3, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = 'rgba(14,9,5,1)'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(px + 2, hY - 6); ctx.lineTo(px + 7 + work, hY - 2 + Math.abs(work) * 0.4); ctx.stroke();
+      } else {                                          // standing, gentle sway
+        const bob = Math.sin(tt * 1.5 + ph) * 0.7;
+        ctx.beginPath(); ctx.ellipse(px, hY - 5 + bob, 3, 5.5, 0, Math.PI, 2 * Math.PI); ctx.fill();
+        ctx.beginPath(); ctx.arc(px, hY - 11 + bob, 2.3, 0, 6.283); ctx.fill();
       }
     };
-    person(vx - 14, false); person(vx + 7, true); person(vx + 40, false); person(rx + 15, true);
+    person(vx - 14, false, 0); person(vx + 7, true, 1); person(vx + 40, false, 2); person(rx + 15, true, 3.5);
     ctx.restore();
     // a thin wisp of cooking smoke rising from the village (day)
     ctx.save(); ctx.globalAlpha = dayA * 0.45; ctx.strokeStyle = 'rgba(184,178,168,1)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
@@ -756,24 +761,16 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.beginPath(); ctx.ellipse(cx + padSide * 22 * scl, cy + 6 * scl, 7 * scl, 2.6 * scl, 0, 0, 6.283); ctx.stroke();
   }
 
-  // ---- foreground cattails / bulrushes for depth (swaying, with seed heads) ----
-  const cattails = [[W * 0.03, 1.05], [W * 0.055, 0.82], [W * 0.085, 1.12], [W * 0.945, 0.92], [W * 0.97, 1.1], [W * 0.992, 0.78]];
-  cattails.forEach((r, i) => {
-    const sway = Math.sin(tt * 1.0 + i * 1.3) * 7;
-    const bx = r[0] + pxX * 40, s = r[1], topY = H - 150 * s;
-    const hx = bx + sway, hy = topY;
-    // a blade leaf behind
-    ctx.strokeStyle = 'rgba(24,30,16,0.62)'; ctx.lineWidth = 2.4 * s; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(bx - 3, H); ctx.quadraticCurveTo(bx - 16 + sway, H - 88 * s, bx - 7 + sway, H - 146 * s); ctx.stroke();
-    // stalk
-    ctx.strokeStyle = 'rgba(18,15,9,0.85)'; ctx.lineWidth = 2.6 * s;
-    ctx.beginPath(); ctx.moveTo(bx, H); ctx.quadraticCurveTo(bx + sway * 0.5, (H + topY) / 2, hx, topY); ctx.stroke();
-    // the brown cattail seed head (the iconic sausage)
-    ctx.strokeStyle = 'rgba(78,48,26,0.92)'; ctx.lineWidth = 5.4 * s; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(hx, hy + 19 * s); ctx.lineTo(hx + sway * 0.08, hy); ctx.stroke();
-    // a thin tip spike above the head
-    ctx.strokeStyle = 'rgba(18,15,9,0.78)'; ctx.lineWidth = 1.5 * s;
-    ctx.beginPath(); ctx.moveTo(hx + sway * 0.08, hy); ctx.lineTo(hx + sway * 0.12, hy - 13 * s); ctx.stroke();
+  // ---- foreground reeds for depth (restored — the simpler tapered grasses) ----
+  ctx.strokeStyle = 'rgba(15,12,9,0.8)'; ctx.lineCap = 'round';
+  const reeds = [[W * 0.04, 5], [W * 0.07, 4], [W * 0.95, 5], [W * 0.92, 4], [W * 0.98, 6]];
+  reeds.forEach((r, i) => {
+    const sway = Math.sin(tt * 1.2 + i) * 6;
+    const rx = r[0] + pxX * 40;                       // foreground parallax
+    ctx.lineWidth = r[1]; ctx.beginPath();
+    ctx.moveTo(rx, H);
+    ctx.quadraticCurveTo(rx + sway * 0.5, H - 70, rx + sway, H - 130);
+    ctx.stroke();
   });
 
   // ---- leaping fish: a body arcs out of the water now and then, with a splash ----
