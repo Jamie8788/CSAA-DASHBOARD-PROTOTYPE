@@ -245,6 +245,35 @@ function drawScene(ctx, W, H, p, tt, now) {
     // a soft warm doorway light at dusk/night
     if (fireA > 0.3) { ctx.fillStyle = `rgba(255,176,86,${0.5 * fireA})`; ctx.beginPath(); ctx.arc(lx, hY - 1, 1.2 * s, 0, 6.283); ctx.fill(); }
   }
+  // ---- a quiet memorial: small orange shirts on a line at the shore ----
+  //   "Every Child Matters" — remembering the children of the residential schools.
+  {
+    const x0 = W * 0.45, x1 = W * 0.605, mlY = hY - 11;
+    ctx.strokeStyle = `rgba(36,26,18,${shoreAlpha * 0.8})`; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x0 - 6, mlY - 1); ctx.lineTo(x1 + 6, mlY - 3); ctx.stroke();
+    const nsh = 6;
+    for (let i = 0; i < nsh; i++) {
+      const sx = x0 + (i + 0.5) * (x1 - x0) / nsh;
+      const sway = Math.sin(tt * 1.5 + i * 0.9) * 1.3;
+      ctx.save(); ctx.translate(sx + sway, mlY - 2); ctx.rotate(sway * 0.05);
+      ctx.fillStyle = `rgba(230,102,28,${0.9 * shoreAlpha})`;
+      ctx.fillRect(-3, 0, 6, 7);                 // shirt body
+      ctx.fillRect(-5, 0, 2.2, 3); ctx.fillRect(2.8, 0, 2.2, 3);   // sleeves
+      ctx.restore();
+    }
+  }
+  // gentle embers drifting up from the village fire (remembrance), at dusk & night
+  if (fireA > 0.25) {
+    for (let i = 0; i < 7; i++) {
+      const t2 = (tt * 0.28 + i * 0.31) % 1;
+      const ex = vx + Math.sin(i * 2.1 + tt * 0.8) * 11;
+      const ey = hY - 4 - t2 * 64;
+      ctx.globalAlpha = fireA * (1 - t2) * 0.8;
+      ctx.fillStyle = '#ffba6a';
+      ctx.beginPath(); ctx.arc(ex, ey, 1.1, 0, 6.283); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
 
   // ---- WATER: a darkened, rippling MIRROR of the sky (never a dead black slab) ----
   const _hz = _rampA(SKY_HORIZ, p);   // horizon colour (waterline)
@@ -551,15 +580,16 @@ function WelcomeView({ all, setView }) {
         let d = Math.abs(p - center);
         if (i === 0 && p < center) d = 0;          // hero stays solid at the very top
         if (i === N - 1 && p > center) d = 0;      // last chapter stays solid at the bottom
-        const op = 1 - _smooth(seg * 0.44, seg * 0.80, d);
+        // ONE chapter at a time: fully opaque in its core, faded right down to 0
+        // by the segment boundary so two chapters' text can never overlap/merge.
+        const op = 1 - _smooth(seg * 0.33, seg * 0.50, d);
         const opc = _clamp(op, 0, 1);
-        const scale = _lerp(1.04, 1, opc);          // settles into place as it arrives
         el.style.opacity = String(opc);
-        // translate + scale only — both GPU-composited, so scrolling stays smooth
-        el.style.transform = `translate3d(0, ${(p - center) * -90}px, 0) scale(${scale})`;
-        el.style.pointerEvents = op > 0.55 ? 'auto' : 'none';
+        // larger vertical hand-off (one slides up & out as the next rises in)
+        el.style.transform = `translate3d(0, ${(p - center) * -150}px, 0) scale(${_lerp(1.03, 1, opc)})`;
+        el.style.pointerEvents = opc > 0.6 ? 'auto' : 'none';
         // graceful staggered line-reveal: arm it once the chapter is on screen
-        if (opc > 0.5) el.classList.add('wv-in'); else if (opc < 0.12) el.classList.remove('wv-in');
+        if (opc > 0.55) el.classList.add('wv-in'); else if (opc < 0.05) el.classList.remove('wv-in');
       });
     }
     function onScroll() { if (!raf) raf = requestAnimationFrame(update); }
