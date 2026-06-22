@@ -96,16 +96,31 @@ function drawScene(ctx, W, H, p, tt) {
   const isMoon = p > 0.86;
   const sunR = isMoon ? 30 : _lerp(40, 60, _smooth(0.55, 1, p));
   const sc = _ramp(SUN_COL, p);
-  const halo = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, H * 0.46);
   const [hr, hg, hb] = _rampA(SUN_COL, p);
-  halo.addColorStop(0, `rgba(${hr},${hg},${hb},${isMoon ? 0.30 : 0.7})`);
-  halo.addColorStop(0.18, `rgba(${hr},${hg},${hb},0.22)`);
-  halo.addColorStop(0.55, `rgba(${hr},${hg},${hb},0.06)`);
-  halo.addColorStop(1, `rgba(${hr},${hg},${hb},0)`);
-  // keep the glow in the SKY only, so it never floods (washes out) the lake
-  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hY + 2); ctx.clip();
-  ctx.fillStyle = halo; ctx.fillRect(0, 0, W, hY + 2); ctx.restore();
-  ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, 6.283); ctx.fillStyle = sc; ctx.fill();
+  if (isMoon) {
+    // ---- MOON: pale and cool, with craters and a soft cool glow (clearly NOT the sun) ----
+    const mh = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 6);
+    mh.addColorStop(0, 'rgba(206,219,243,0.42)');
+    mh.addColorStop(0.4, 'rgba(206,219,243,0.10)');
+    mh.addColorStop(1, 'rgba(206,219,243,0)');
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hY + 2); ctx.clip();
+    ctx.fillStyle = mh; ctx.fillRect(0, 0, W, hY + 2); ctx.restore();
+    ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, 6.283); ctx.fillStyle = '#e9eef8'; ctx.fill();
+    ctx.fillStyle = 'rgba(150,165,198,0.55)';
+    for (const c of [[-8, -6, 5], [7, 3, 4], [-3, 9, 3], [11, -8, 2.6], [-13, 4, 2.2]]) {
+      ctx.beginPath(); ctx.arc(sunX + c[0], sunY + c[1], c[2], 0, 6.283); ctx.fill();
+    }
+  } else {
+    // ---- SUN: warm disc with a warm halo, kept in the SKY only so it never floods the lake ----
+    const halo = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, H * 0.46);
+    halo.addColorStop(0, `rgba(${hr},${hg},${hb},0.7)`);
+    halo.addColorStop(0.18, `rgba(${hr},${hg},${hb},0.22)`);
+    halo.addColorStop(0.55, `rgba(${hr},${hg},${hb},0.06)`);
+    halo.addColorStop(1, `rgba(${hr},${hg},${hb},0)`);
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hY + 2); ctx.clip();
+    ctx.fillStyle = halo; ctx.fillRect(0, 0, W, hY + 2); ctx.restore();
+    ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, 6.283); ctx.fillStyle = sc; ctx.fill();
+  }
 
   // ---- BIRDS — geese in V-formation, wings flapping, crossing the sky ----
   const birdA = _smooth(0.08, 0.24, p) * (1 - _smooth(0.60, 0.80, p));
@@ -160,20 +175,17 @@ function drawScene(ctx, W, H, p, tt) {
     ctx.beginPath(); ctx.moveTo(lx - lw * 0.45, hY - lh * 0.5); ctx.lineTo(lx + lw * 0.45, hY - lh * 0.5); ctx.stroke();
   }
 
-  // ---- WATER ----
+  // ---- WATER: a darkened, rippling MIRROR of the sky (never a dead black slab) ----
+  const _hz = _rampA(SKY_HORIZ, p);   // horizon colour (waterline)
+  const _tp = _rampA(SKY_TOP, p);     // zenith colour (deep water)
+  const _dim = (c, f) => `rgb(${Math.round(c[0] * f)},${Math.round(c[1] * f)},${Math.round(c[2] * f)})`;
+  // deep water ≈ a deeper version of the zenith, lifted so it never goes pure black
+  const _wb = [Math.max(Math.round(_tp[0] * 0.72), 16), Math.max(Math.round(_tp[1] * 0.72), 22), Math.max(Math.round(_tp[2] * 0.72), 34)];
   const water = ctx.createLinearGradient(0, hY, 0, H);
-  water.addColorStop(0, _ramp(WATER_TOP, p));
-  water.addColorStop(0.6, _mix(_ramp(WATER_TOP, p), _ramp(WATER_BOT, p), 0.5));
-  water.addColorStop(1, _ramp(WATER_BOT, p));
+  water.addColorStop(0, _dim(_hz, 0.92));
+  water.addColorStop(0.4, _dim(_hz, 0.62));
+  water.addColorStop(1, `rgb(${_wb.join(',')})`);
   ctx.fillStyle = water; ctx.fillRect(0, hY, W, H - hY);
-  // faint reflected sky keeps the whole lake luminous (never a black void)
-  const [sr, sg, sb] = _rampA(SKY_HORIZ, p);
-  const [tr2, tg2, tb2] = _rampA(SKY_TOP, p);
-  const refl = ctx.createLinearGradient(0, hY, 0, H);
-  refl.addColorStop(0, `rgba(${sr},${sg},${sb},0.30)`);
-  refl.addColorStop(0.5, `rgba(${sr},${sg},${sb},0.10)`);
-  refl.addColorStop(1, `rgba(${tr2},${tg2},${tb2},0.05)`);
-  ctx.fillStyle = refl; ctx.fillRect(0, hY, W, H - hY);
   // soft horizon mist where the sky meets the lake
   const [mr, mg, mb] = _rampA(SKY_HORIZ, p);
   const mist = ctx.createLinearGradient(0, hY - 16, 0, hY + 42);
@@ -209,7 +221,7 @@ function drawScene(ctx, W, H, p, tt) {
     if (a <= 0) continue;
     const w = 16 + 12 * Math.sin(i * 1.2 + tt);
     const dx = Math.sin(tt * 2 + i * 0.7) * 7;
-    ctx.fillStyle = `rgba(255,250,236,${a})`;
+    ctx.fillStyle = isMoon ? `rgba(208,221,246,${a})` : `rgba(255,250,236,${a})`;
     ctx.fillRect(sunX + dx - w / 2, ry, Math.max(4, w), 2);
   }
   ctx.restore();
@@ -223,7 +235,9 @@ function drawScene(ctx, W, H, p, tt) {
       const y = baseY + Math.sin(x * 0.013 + tt * (1 + L * 0.12) + L) * amp;
       x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = `rgba(228,234,226,${0.03 + L * 0.006})`; ctx.lineWidth = 1.2; ctx.stroke();
+    // ripples catch the bright horizon light → they read as light on water
+    ctx.strokeStyle = `rgba(${Math.min(255, _hz[0] + 60)},${Math.min(255, _hz[1] + 60)},${Math.min(255, _hz[2] + 60)},${0.05 + L * 0.008})`;
+    ctx.lineWidth = 1.2; ctx.stroke();
   }
 
   // ---- jumping-fish ripple rings expanding on the surface ----
@@ -242,9 +256,9 @@ function drawScene(ctx, W, H, p, tt) {
   }
 
   // ---- CANOE journeys across the lake by scroll progress (with a wake) ----
-  const cx = -80 + _clamp(p, 0, 1) * (W + 160);
-  const cy = hY + (H - hY) * 0.5 + Math.sin(tt * 1.4) * 3;
-  const scl = Math.max(0.95, Math.min(1.7, W / 1000));
+  const cx = 70 + _clamp(p, 0, 1) * (W - 140);
+  const cy = hY + (H - hY) * 0.15 + Math.sin(tt * 1.4) * 3;
+  const scl = Math.max(1.05, Math.min(1.9, W / 940));
   // V-shaped wake trailing behind the canoe, drawn on the water
   ctx.save();
   ctx.strokeStyle = 'rgba(245,238,222,0.16)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
@@ -359,8 +373,11 @@ function WelcomeView({ all, setView }) {
         if (i === 0 && p < center) d = 0;          // hero stays solid at the very top
         if (i === N - 1 && p > center) d = 0;      // last chapter stays solid at the bottom
         const op = 1 - _smooth(seg * 0.44, seg * 0.80, d);
-        el.style.opacity = String(_clamp(op, 0, 1));
-        el.style.transform = `translateY(${(p - center) * -70}px)`;
+        const opc = _clamp(op, 0, 1);
+        const scale = _lerp(1.05, 1, opc);          // settles into place as it arrives
+        el.style.opacity = String(opc);
+        el.style.transform = `translateY(${(p - center) * -96}px) scale(${scale})`;
+        el.style.filter = opc < 0.7 ? `blur(${(0.7 - opc) * 7}px)` : 'none';
         el.style.pointerEvents = op > 0.55 ? 'auto' : 'none';
       });
     }
