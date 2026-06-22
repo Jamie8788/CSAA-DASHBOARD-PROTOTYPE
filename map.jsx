@@ -190,7 +190,7 @@ function CanadaMap({ communities, allCommunities, selectedId, onSelect, onHover,
       }
 
       const html = `
-        <div class="marker-pin visible dir-${dir}" style="opacity:${opacity}">
+        <div class="marker-pin visible dir-${dir}" style="opacity:${opacity};animation-delay:${(markers.length % 30) * 0.02}s">
           <div class="pin-pulse" style="background:${dirInfo.color}"></div>
           <div class="pin-core" style="background:${coreColor};border-color:${ringColor}"></div>
           <span class="pin-mark" style="color:${glyphColor}">${c.mark || ''}</span>
@@ -350,33 +350,70 @@ function CanadaMap({ communities, allCommunities, selectedId, onSelect, onHover,
     mapRef.current.flyToBounds(bounds.pad(0.1), { duration: 0.8 });
   }
 
-  // ============= SKY TOUR =============
-  const tourRef = useRef({ running:false, idx:0, timer:null });
+  // ============= SKY TOUR — a guided, cinematic fly-between =============
+  const tourRef = useRef({ running:false, paused:false, idx:0, timer:null, list:[] });
   const [tourActive, setTourActive] = useState(false);
+  const [tourPaused, setTourPaused] = useState(false);
   const [tourCommunity, setTourCommunity] = useState(null);
+  const [tourPos, setTourPos] = useState({ i:0, n:0 });
 
-  function stopTour() {
+  function _clearFocus() {
+    markersRef.current.forEach(m => { const el = m.getElement && m.getElement(); if (el) el.classList.remove('tour-focus'); });
+  }
+  function _focusMarker(c) {
+    _clearFocus();
+    const m = c && markersRef.current.get(c.id);
+    const el = m && m.getElement && m.getElement();
+    if (el) el.classList.add('tour-focus');
+  }
+  function _flyTour(c) {
+    if (!mapRef.current || c.lat == null) return;
+    const z = 7.3 + (c.population ? Math.min(1.5, c.population / 8000) : 0);
+    mapRef.current.flyTo([c.lat, c.lng], z, { duration: 2.0 });
+  }
+  function _showTourAt(i) {
+    const list = tourRef.current.list;
+    if (!list.length) return;
+    const idx = ((i % list.length) + list.length) % list.length;
+    tourRef.current.idx = idx;
+    const c = list[idx];
+    setTourCommunity(c);
+    setTourPos({ i: idx + 1, n: list.length });
+    _flyTour(c);
+    setTimeout(() => _focusMarker(c), 650);
+  }
+  function _scheduleNext() {
     if (tourRef.current.timer) clearTimeout(tourRef.current.timer);
-    tourRef.current.running = false;
-    setTourActive(false);
-    setTourCommunity(null);
+    tourRef.current.timer = setTimeout(() => {
+      if (!tourRef.current.running || tourRef.current.paused) return;
+      _showTourAt(tourRef.current.idx + 1);
+      _scheduleNext();
+    }, 5400);
   }
   function startTour() {
     const list = communities.filter(c => c.lat != null && c.lng != null);
     if (!list.length) return;
+    tourRef.current.list = list;
     tourRef.current.running = true;
-    tourRef.current.idx = 0;
-    setTourActive(true);
-    function next() {
-      if (!tourRef.current.running) return;
-      const c = list[tourRef.current.idx % list.length];
-      setTourCommunity(c);
-      if (mapRef.current) mapRef.current.flyTo([c.lat, c.lng], 8, { duration: 2.2 });
-      tourRef.current.idx++;
-      tourRef.current.timer = setTimeout(next, 4200);
-    }
-    next();
+    tourRef.current.paused = false;
+    setTourActive(true); setTourPaused(false);
+    _showTourAt(0);
+    _scheduleNext();
   }
+  function stopTour() {
+    if (tourRef.current.timer) clearTimeout(tourRef.current.timer);
+    tourRef.current.running = false; tourRef.current.paused = false;
+    setTourActive(false); setTourPaused(false); setTourCommunity(null);
+    _clearFocus();
+  }
+  function tourTogglePause() {
+    tourRef.current.paused = !tourRef.current.paused;
+    setTourPaused(tourRef.current.paused);
+    if (tourRef.current.paused) { if (tourRef.current.timer) clearTimeout(tourRef.current.timer); }
+    else _scheduleNext();
+  }
+  function tourPrev() { _showTourAt(tourRef.current.idx - 1); if (tourRef.current.running && !tourRef.current.paused) _scheduleNext(); }
+  function tourNext() { _showTourAt(tourRef.current.idx + 1); if (tourRef.current.running && !tourRef.current.paused) _scheduleNext(); }
   useEffect(() => () => { if (tourRef.current.timer) clearTimeout(tourRef.current.timer); }, []);
 
   // ============= HEATMAP =============
@@ -481,13 +518,32 @@ function CanadaMap({ communities, allCommunities, selectedId, onSelect, onHover,
         </div>
       )}
       {tourCommunity && (
-        <div className="tour-banner">
-          <span className="tb-num">{tourRef.current.idx}</span>
-          <div className="tb-info">
-            <div className="tb-name">{tourCommunity.name.trim()}</div>
-            <div className="tb-meta">{tourCommunity.regionGroup}{tourCommunity.population ? ` · ${tourCommunity.population.toLocaleString()} members` : ''}</div>
+        <div className="tour-card" key={tourCommunity.id}>
+          <div className="tc-top">
+            <span className="tc-eyebrow">✦ Sky tour · {tourPos.i} / {tourPos.n}</span>
+            <button className="tc-x" onClick={stopTour} title="End tour">✕</button>
           </div>
-          <button className="tb-stop" onClick={stopTour}>Stop</button>
+          <div className="tc-name">{tourCommunity.name.trim()}</div>
+          <div className="tc-meta">
+            <span className="tc-chip">{DIRECTION[tourCommunity.direction || 'AllDirections'].label} · {DIRECTION[tourCommunity.direction || 'AllDirections'].season}</span>
+            {tourCommunity.orgType && tourCommunity.orgType !== 'Community' && <span className="tc-chip org">{tourCommunity.orgType}</span>}
+            {tourCommunity.population ? <span className="tc-chip">{tourCommunity.population.toLocaleString()} members</span> : null}
+          </div>
+          <div className="tc-pillars">
+            {[['hasPhysical', 'Physical', '#b8351e'], ['hasMental', 'Mental', '#5a4f40'], ['hasSpiritual', 'Spiritual', '#d4a017'], ['hasEmotional', 'Emotional', '#6b8d6b']].map(([k, lab, col]) => (
+              <span key={k} className={`tc-pill ${tourCommunity[k] ? 'on' : 'off'}`}>
+                <i style={{ background: tourCommunity[k] ? col : 'transparent', borderColor: col }}></i>{lab}
+              </span>
+            ))}
+          </div>
+          <div className="tc-cov"><div className="tc-cov-bar" style={{ width: `${Math.round((tourCommunity.completeness || 0) * 100)}%` }}></div></div>
+          <div className="tc-cov-lab">{Math.round((tourCommunity.completeness || 0) * 100)}% of the record on file</div>
+          <div className="tc-controls">
+            <button onClick={tourPrev} title="Previous community">‹</button>
+            <button onClick={tourTogglePause}>{tourPaused ? '▶ Play' : '❚❚ Pause'}</button>
+            <button onClick={tourNext} title="Next community">›</button>
+            <button className="tc-open" onClick={() => onSelect(tourCommunity.id)}>Open ↗</button>
+          </div>
         </div>
       )}
       {!showWheel && (
