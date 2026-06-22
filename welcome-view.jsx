@@ -421,6 +421,43 @@ function drawScene(ctx, W, H, p, tt, now) {
     // logs at the base
     ctx.strokeStyle = `rgba(28,16,9,${shoreAlpha})`; ctx.lineWidth = 2; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(fx - 5, fy + 1); ctx.lineTo(fx + 5, fy - 1); ctx.moveTo(fx - 5, fy - 1); ctx.lineTo(fx + 5, fy + 1); ctx.stroke();
+    // the fire's reflection on the water below
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const rgl = ctx.createLinearGradient(fx, hY + 2, fx, hY + 58);
+    rgl.addColorStop(0, `rgba(255,168,78,${0.2 * fireA})`); rgl.addColorStop(1, 'rgba(255,150,60,0)');
+    const wob = Math.sin(tt * 2) * 3;
+    ctx.fillStyle = rgl; ctx.beginPath();
+    ctx.moveTo(fx - 16, hY + 2); ctx.lineTo(fx + 16, hY + 2); ctx.lineTo(fx + 9 + wob, hY + 58); ctx.lineTo(fx - 9 + wob, hY + 58); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  // ---- DAY on the land: the community at work by the water (fades out toward dusk) ----
+  const dayA = (1 - _smooth(0.40, 0.66, p)) * shoreAlpha;
+  if (dayA > 0.03) {
+    ctx.save(); ctx.globalAlpha = dayA;
+    // a fish-drying rack (posts + crossbar + hanging fish) — shoreline work
+    const rx = vx - 50;
+    ctx.strokeStyle = 'rgba(30,22,13,1)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(rx, hY); ctx.lineTo(rx, hY - 9); ctx.moveTo(rx + 22, hY); ctx.lineTo(rx + 22, hY - 9); ctx.moveTo(rx - 2, hY - 9); ctx.lineTo(rx + 24, hY - 9); ctx.stroke();
+    ctx.fillStyle = 'rgba(34,24,15,1)';
+    for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.ellipse(rx + 2 + i * 4.6, hY - 5, 1.1, 2.4, 0, 0, 6.283); ctx.fill(); }
+    // a few people at work: standing and bending
+    const person = (px, bend) => {
+      ctx.fillStyle = 'rgba(15,10,6,1)';
+      if (bend) {
+        ctx.beginPath(); ctx.ellipse(px, hY - 3, 2.4, 3, 0.5, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(px + 2.6, hY - 5, 1.4, 0, 6.283); ctx.fill();
+      } else {
+        ctx.beginPath(); ctx.ellipse(px, hY - 3.2, 2.2, 3.6, 0, Math.PI, 2 * Math.PI); ctx.fill();
+        ctx.beginPath(); ctx.arc(px, hY - 7, 1.6, 0, 6.283); ctx.fill();
+      }
+    };
+    person(vx - 10, false); person(vx + 5, true); person(vx + 30, false); person(rx + 11, true);
+    ctx.restore();
+    // a thin wisp of cooking smoke rising from the village (day)
+    ctx.save(); ctx.globalAlpha = dayA * 0.45; ctx.strokeStyle = 'rgba(184,178,168,1)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let s = 0; s <= 13; s++) { const sy = hY - 2 - s * 4.5; const sx = vx + 16 + Math.sin(s * 0.6 + tt * 1.1) * (2.5 + s * 0.5); s === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy); }
+    ctx.stroke(); ctx.restore();
   }
   // ---- a memorial of orange shirts on a line at the shore ----
   //   "Every Child Matters" — remembering the children of the residential schools.
@@ -704,16 +741,24 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.beginPath(); ctx.ellipse(cx + padSide * 22 * scl, cy + 6 * scl, 7 * scl, 2.6 * scl, 0, 0, 6.283); ctx.stroke();
   }
 
-  // ---- foreground reeds for depth ----
-  ctx.strokeStyle = 'rgba(15,12,9,0.8)'; ctx.lineCap = 'round';
-  const reeds = [[W * 0.04, 5], [W * 0.07, 4], [W * 0.95, 5], [W * 0.92, 4], [W * 0.98, 6]];
-  reeds.forEach((r, i) => {
-    const sway = Math.sin(tt * 1.2 + i) * 6;
-    const rx = r[0] + pxX * 40;                 // foreground parallax: reeds move most
-    ctx.lineWidth = r[1]; ctx.beginPath();
-    ctx.moveTo(rx, H);
-    ctx.quadraticCurveTo(rx + sway * 0.5, H - 70, rx + sway, H - 130);
-    ctx.stroke();
+  // ---- foreground cattails / bulrushes for depth (swaying, with seed heads) ----
+  const cattails = [[W * 0.03, 1.05], [W * 0.055, 0.82], [W * 0.085, 1.12], [W * 0.945, 0.92], [W * 0.97, 1.1], [W * 0.992, 0.78]];
+  cattails.forEach((r, i) => {
+    const sway = Math.sin(tt * 1.0 + i * 1.3) * 7;
+    const bx = r[0] + pxX * 40, s = r[1], topY = H - 150 * s;
+    const hx = bx + sway, hy = topY;
+    // a blade leaf behind
+    ctx.strokeStyle = 'rgba(24,30,16,0.62)'; ctx.lineWidth = 2.4 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(bx - 3, H); ctx.quadraticCurveTo(bx - 16 + sway, H - 88 * s, bx - 7 + sway, H - 146 * s); ctx.stroke();
+    // stalk
+    ctx.strokeStyle = 'rgba(18,15,9,0.85)'; ctx.lineWidth = 2.6 * s;
+    ctx.beginPath(); ctx.moveTo(bx, H); ctx.quadraticCurveTo(bx + sway * 0.5, (H + topY) / 2, hx, topY); ctx.stroke();
+    // the brown cattail seed head (the iconic sausage)
+    ctx.strokeStyle = 'rgba(78,48,26,0.92)'; ctx.lineWidth = 5.4 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(hx, hy + 19 * s); ctx.lineTo(hx + sway * 0.08, hy); ctx.stroke();
+    // a thin tip spike above the head
+    ctx.strokeStyle = 'rgba(18,15,9,0.78)'; ctx.lineWidth = 1.5 * s;
+    ctx.beginPath(); ctx.moveTo(hx + sway * 0.08, hy); ctx.lineTo(hx + sway * 0.12, hy - 13 * s); ctx.stroke();
   });
 
   // ---- leaping fish: a body arcs out of the water now and then, with a splash ----
@@ -743,17 +788,17 @@ function drawScene(ctx, W, H, p, tt, now) {
       // gentle figure-8 wander, not a fixed dot
       const fx = f.x * W + Math.sin(tt * 0.4 * f.sp + f.ph) * 26 + Math.sin(tt * 0.17 + f.ph * 2) * 14 + pxX * 30;
       const fy = f.y * H + Math.cos(tt * 0.33 * f.sp + f.ph) * 15 + Math.sin(tt * 0.5 + f.ph) * 7;
-      // organic blink: mostly dark, brief warm pulses (cubed sine)
-      const s = Math.sin(tt * f.blink + f.ph);
-      const pulse = s > 0 ? s * s * s : 0;
-      const a = flyA * pulse;
-      if (a < 0.015) continue;
-      const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, 7);
-      g.addColorStop(0, `rgba(198,255,150,${a * 0.8})`);
-      g.addColorStop(0.4, `rgba(255,226,120,${a * 0.5})`);
-      g.addColorStop(1, 'rgba(255,210,90,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(fx, fy, 7, 0, 6.283); ctx.fill();
-      ctx.fillStyle = `rgba(222,255,176,${a})`; ctx.beginPath(); ctx.arc(fx, fy, 1.1, 0, 6.283); ctx.fill();
+      // organic blink: mostly dark, brief soft pulses (rarer, dimmer than before)
+      const s = Math.sin(tt * f.blink * 0.7 + f.ph);
+      const pulse = s > 0.35 ? Math.pow((s - 0.35) / 0.65, 2) : 0;
+      const a = flyA * pulse * 0.6;
+      if (a < 0.012) continue;
+      const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, 5.5);
+      g.addColorStop(0, `rgba(200,255,150,${a * 0.7})`);
+      g.addColorStop(0.45, `rgba(240,224,120,${a * 0.4})`);
+      g.addColorStop(1, 'rgba(220,210,90,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(fx, fy, 5.5, 0, 6.283); ctx.fill();
+      ctx.fillStyle = `rgba(224,255,180,${a * 0.9})`; ctx.beginPath(); ctx.arc(fx, fy, 0.9, 0, 6.283); ctx.fill();
     }
     ctx.restore();
   }
