@@ -76,71 +76,93 @@ const _VIGIL = [
   { x: 0.88, y: 0.30, sp: 0.0045, ph: 4.0 },
   { x: 0.60, y: 0.70, sp: 0.0030, ph: 5.1 },
 ];
+// fireflies that come out at dusk near the foreground reeds
+const _FLIES = Array.from({ length: 16 }, () => ({
+  x: Math.random(), y: 0.62 + Math.random() * 0.34, r: 0.8 + Math.random() * 1.2,
+  sp: 0.2 + Math.random() * 0.5, ph: Math.random() * 6.28, blink: 0.4 + Math.random() * 0.8,
+}));
+// leaping-fish events (a fish arcs out of the water now and then)
+const _FISH = [{ x: 0.34, yb: 0.34, period: 13, phase: 2 }, { x: 0.7, yb: 0.5, period: 17, phase: 9 }];
 // cursor position (-1..1 from centre), eased, for a parallax depth effect
 let _MX = 0, _MY = 0, _MXe = 0, _MYe = 0;
 
-// Calming ambient soundscape — fully SYNTHESIZED (no recordings): gentle lapping
-// water, occasional birdsong, and a soft slow heartbeat (the drum is the heartbeat
-// of the people and the land). Built with the Web Audio API; starts only on a user
-// gesture and fades in/out. Returns a handle with stop().
+// Calming ambient lake soundscape — fully SYNTHESIZED (no recordings): layered
+// water (deep rumble + stereo lapping wavelets), soft wind, occasional birdsong,
+// a lone loon call across the water, and a slow heartbeat drum (the heartbeat of
+// the people and the land). Web Audio; starts on a user gesture; fades in/out.
 function createAmbient() {
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) return null;
   const ctx = new AC();
   const master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
   const timers = [];
-
-  // --- water: brown noise through a gentle low-pass, with a slow wave LFO ---
-  const len = 2 * ctx.sampleRate;
-  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  let last = 0;
-  for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.2; }
-  const noise = ctx.createBufferSource(); noise.buffer = buf; noise.loop = true;
-  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500;
-  const waterGain = ctx.createGain(); waterGain.gain.value = 0.16;
-  noise.connect(lp); lp.connect(waterGain); waterGain.connect(master);
-  const lfo = ctx.createOscillator(); lfo.frequency.value = 0.11;
-  const lfoGain = ctx.createGain(); lfoGain.gain.value = 0.08;
-  lfo.connect(lfoGain); lfoGain.connect(waterGain.gain);
-  noise.start(); lfo.start();
-
-  // --- soft heartbeat drum (lub-dub) every ~1.7s ---
+  const T = () => ctx.currentTime;
+  const pan = (v) => { try { const p = ctx.createStereoPanner(); p.pan.value = v; return p; } catch (e) { return ctx.createGain(); } };
+  function brown() {
+    const len = 2 * ctx.sampleRate, b = ctx.createBuffer(1, len, ctx.sampleRate), d = b.getChannelData(0);
+    let last = 0; for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.2; }
+    return b;
+  }
+  // deep water rumble (centre)
+  const n1 = ctx.createBufferSource(); n1.buffer = brown(); n1.loop = true;
+  const lp1 = ctx.createBiquadFilter(); lp1.type = 'lowpass'; lp1.frequency.value = 320;
+  const g1 = ctx.createGain(); g1.gain.value = 0.13;
+  n1.connect(lp1); lp1.connect(g1); g1.connect(master);
+  const lfo1 = ctx.createOscillator(); lfo1.frequency.value = 0.09; const lg1 = ctx.createGain(); lg1.gain.value = 0.06;
+  lfo1.connect(lg1); lg1.connect(g1.gain); n1.start(); lfo1.start();
+  // lapping wavelets — stereo left/right, faster movement
+  [-0.55, 0.55].forEach((pp, idx) => {
+    const n = ctx.createBufferSource(); n.buffer = brown(); n.loop = true;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 600 + idx * 200; bp.Q.value = 0.8;
+    const g = ctx.createGain(); g.gain.value = 0.05; const p = pan(pp);
+    n.connect(bp); bp.connect(g); g.connect(p); p.connect(master);
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.28 + idx * 0.13; const lg = ctx.createGain(); lg.gain.value = 0.045;
+    lfo.connect(lg); lg.connect(g.gain); n.start(); lfo.start();
+  });
+  // soft wind swell
+  const wn = ctx.createBufferSource(); wn.buffer = brown(); wn.loop = true;
+  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 720;
+  const wg = ctx.createGain(); wg.gain.value = 0.014;
+  wn.connect(hp); hp.connect(wg); wg.connect(master);
+  const wlfo = ctx.createOscillator(); wlfo.frequency.value = 0.05; const wlg = ctx.createGain(); wlg.gain.value = 0.013;
+  wlfo.connect(wlg); wlg.connect(wg.gain); wn.start(); wlfo.start();
+  // heartbeat drum (soft, resonant)
   function thump(t, vol) {
-    const o = ctx.createOscillator(); o.type = 'sine';
-    o.frequency.setValueAtTime(92, t); o.frequency.exponentialRampToValueAtTime(54, t + 0.18);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.025);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
-    o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.45);
+    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(86, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.2);
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 160;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+    o.connect(lp); lp.connect(g); g.connect(master); o.start(t); o.stop(t + 0.6);
   }
-  function heart() {
-    const t = ctx.currentTime + 0.05; thump(t, 0.22); thump(t + 0.29, 0.14);
-    timers.push(setTimeout(heart, 1700));
-  }
-
-  // --- occasional birdsong (two quick chirps) ---
-  function chirp() {
-    const t = ctx.currentTime + 0.02; const n = 1 + (Math.random() < 0.5 ? 1 : 0);
-    for (let k = 0; k < n; k++) {
-      const t0 = t + k * 0.16, f0 = 1700 + Math.random() * 1500;
+  function heart() { const t = T() + 0.05; thump(t, 0.19); thump(t + 0.3, 0.11); timers.push(setTimeout(heart, 1850)); }
+  // varied birdsong
+  function bird() {
+    const t = T() + 0.02, p = pan((Math.random() * 2 - 1) * 0.7), base = 1500 + Math.random() * 1800;
+    const kind = Math.random(), notes = kind < 0.4 ? 3 : kind < 0.75 ? 2 : 1;
+    for (let k = 0; k < notes; k++) {
+      const t0 = t + k * (0.09 + Math.random() * 0.06), f = base * (1 + (Math.random() * 0.2 - 0.1));
       const o = ctx.createOscillator(); o.type = 'sine';
-      o.frequency.setValueAtTime(f0, t0); o.frequency.linearRampToValueAtTime(f0 * 1.28, t0 + 0.05);
-      o.frequency.linearRampToValueAtTime(f0 * 0.92, t0 + 0.12);
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.045, t0 + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
-      o.connect(g); g.connect(master); o.start(t0); o.stop(t0 + 0.2);
+      o.frequency.setValueAtTime(f, t0); o.frequency.linearRampToValueAtTime(f * 1.3, t0 + 0.04); o.frequency.linearRampToValueAtTime(f * 0.92, t0 + 0.1);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.04, t0 + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+      o.connect(g); g.connect(p); o.start(t0); o.stop(t0 + 0.16);
     }
-    timers.push(setTimeout(chirp, 2600 + Math.random() * 6000));
+    p.connect(master); timers.push(setTimeout(bird, 2200 + Math.random() * 5000));
   }
-
-  heart(); timers.push(setTimeout(chirp, 1400));
-  try { master.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 2.2); } catch (e) {}
+  // a lone loon call drifting across the lake
+  function loon() {
+    const t = T() + 0.1, p = pan((Math.random() * 2 - 1) * 0.4), f = 420 + Math.random() * 70;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(f * 0.8, t); o.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.5); o.frequency.exponentialRampToValueAtTime(f * 1.08, t + 1.4);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.06, t + 0.2); g.gain.linearRampToValueAtTime(0.05, t + 1.0); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400;
+    o.connect(lp); lp.connect(g); g.connect(p); p.connect(master); o.start(t); o.stop(t + 1.8);
+    timers.push(setTimeout(loon, 17000 + Math.random() * 22000));
+  }
+  heart(); timers.push(setTimeout(bird, 1200)); timers.push(setTimeout(loon, 6000));
+  try { master.gain.linearRampToValueAtTime(0.55, T() + 2.5); } catch (e) {}
   return {
     stop() {
       timers.forEach(clearTimeout);
-      try { master.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.5); } catch (e) {}
+      try { master.gain.linearRampToValueAtTime(0.0001, T() + 0.5); } catch (e) {}
       setTimeout(() => { try { ctx.close(); } catch (e) {} }, 700);
     },
   };
@@ -661,6 +683,43 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.stroke();
   });
 
+  // ---- leaping fish: a body arcs out of the water now and then, with a splash ----
+  for (const fi of _FISH) {
+    const loc = ((tt + fi.phase) % fi.period) / fi.period;
+    if (loc >= 0.10) continue;                       // brief leap
+    const k = loc / 0.10;                            // 0..1 through the arc
+    const fx = fi.x * W, baseY = hY + 14 + (H - hY) * fi.yb;
+    const arc = Math.sin(k * Math.PI) * 30;          // height of the leap
+    const fy = baseY - arc;
+    ctx.save(); ctx.translate(fx, fy); ctx.rotate((k - 0.5) * 1.1);
+    ctx.fillStyle = `rgba(190,180,165,${0.7 * (1 - Math.abs(k - 0.5) * 0.6)})`;
+    ctx.beginPath(); ctx.ellipse(0, 0, 7, 2.6, 0, 0, 6.283); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(11, -3); ctx.lineTo(11, 3); ctx.closePath(); ctx.fill();  // tail
+    ctx.restore();
+    if (k > 0.85) {                                  // splash on re-entry
+      ctx.strokeStyle = 'rgba(235,240,232,0.4)'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.ellipse(fx, baseY, 8, 2.6, 0, 0, 6.283); ctx.stroke();
+    }
+  }
+
+  // ---- fireflies emerging at dusk near the reeds (warm, blinking, drifting) ----
+  const flyA = _smooth(0.46, 0.66, p) * (1 - _smooth(0.9, 1, p));
+  if (flyA > 0.02) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const f of _FLIES) {
+      const fx = ((f.x + Math.sin(tt * 0.2 * f.sp + f.ph) * 0.05) % 1) * W + pxX * 30;
+      const fy = (f.y + Math.sin(tt * 0.5 + f.ph) * 0.02) * H;
+      const blink = Math.max(0, Math.sin(tt * f.blink + f.ph));
+      const a = flyA * blink * 0.9;
+      if (a < 0.02) continue;
+      const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, f.r * 5);
+      g.addColorStop(0, `rgba(255,224,130,${a})`); g.addColorStop(1, 'rgba(255,210,90,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(fx, fy, f.r * 5, 0, 6.283); ctx.fill();
+      ctx.fillStyle = `rgba(255,240,190,${a})`; ctx.beginPath(); ctx.arc(fx, fy, f.r, 0, 6.283); ctx.fill();
+    }
+    ctx.restore();
+  }
+
   // ---- top + bottom vignette to blend with page ----
   const vg = ctx.createLinearGradient(0, 0, 0, H);
   vg.addColorStop(0, 'rgba(10,8,6,0.30)'); vg.addColorStop(0.22, 'rgba(10,8,6,0)');
@@ -719,10 +778,19 @@ function WelcomeView({ all, setView }) {
   // smooth-scroll forward ~one screen each time the arrow is pressed (advances a chapter)
   const scrollNext = (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
-    const y = window.scrollY || document.documentElement.scrollTop || 0;
-    const step = (window.innerHeight || 800) * 1.08;
-    try { window.scrollTo({ top: y + step, behavior: 'smooth' }); }
-    catch (_) { window.scrollTo(0, y + step); }
+    const stage = stageRef.current;
+    const rect = stage && stage.getBoundingClientRect();
+    const total = rect ? rect.height - window.innerHeight : 0;
+    if (!stage || total <= 0) { window.scrollBy({ top: window.innerHeight, behavior: 'smooth' }); return; }
+    const top = window.scrollY + rect.top;                 // absolute top of the stage
+    const cur = _clamp((window.scrollY - top) / total, 0, 1);
+    const seg = 1 / 5;                                      // five chapters
+    // Land on the NEXT chapter's CENTRE (never a boundary, which is the blank gap).
+    const curIdx = _clamp(Math.floor(cur / seg + 0.0001), 0, 4);
+    const nextIdx = Math.min(4, curIdx + 1);
+    const targetP = (nextIdx + 0.5) * seg;
+    try { window.scrollTo({ top: top + targetP * total, behavior: 'smooth' }); }
+    catch (_) { window.scrollTo(0, top + targetP * total); }
   };
 
   // ---- canvas animation loop ----
