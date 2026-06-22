@@ -60,6 +60,16 @@ const _CLOUDS = [
   { x: 0.72, y: 0.40, r: 170, sp: 0.005, op: 0.55 },
   { x: 0.92, y: 0.28, r: 120, sp: 0.007, op: 0.4 },
 ];
+// candlelight-vigil lights drifting on the water at dusk/night (remembrance).
+// y = fraction down the water (0..1); x drifts slowly across.
+const _VIGIL = [
+  { x: 0.18, y: 0.26, sp: 0.0040, ph: 0.0 },
+  { x: 0.33, y: 0.52, sp: 0.0030, ph: 1.2 },
+  { x: 0.47, y: 0.36, sp: 0.0050, ph: 2.1 },
+  { x: 0.78, y: 0.60, sp: 0.0035, ph: 3.3 },
+  { x: 0.88, y: 0.30, sp: 0.0045, ph: 4.0 },
+  { x: 0.60, y: 0.70, sp: 0.0030, ph: 5.1 },
+];
 
 function drawScene(ctx, W, H, p, tt, now) {
   const hY = H * 0.5;
@@ -100,20 +110,26 @@ function drawScene(ctx, W, H, p, tt, now) {
     }
     ctx.globalAlpha = 1;
   }
-  // ---- AURORA (deep night) ----
-  const aurA = _smooth(0.74, 1, p);
+  // ---- AURORA — the northern lights, "the ancestors dancing" (deep dusk → night) ----
+  const aurA = _smooth(0.62, 0.92, p);
   if (aurA > 0.01) {
-    for (let b = 0; b < 3; b++) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';   // glows additively, more alive
+    const cols = ['80,212,150', '120,150,232', '156,92,204', '88,200,182'];
+    for (let b = 0; b < 4; b++) {
       ctx.beginPath();
-      const baseY = hY * (0.18 + b * 0.12);
-      for (let x = 0; x <= W; x += 16) {
-        const y = baseY + Math.sin(x * 0.006 + tt * 0.5 + b) * 18 + Math.sin(x * 0.018 + tt) * 8;
+      const baseY = hY * (0.12 + b * 0.10);
+      for (let x = 0; x <= W; x += 14) {
+        const y = baseY
+          + Math.sin(x * 0.005 + tt * 0.6 + b * 1.3) * 26
+          + Math.sin(x * 0.013 + tt * 0.9) * 12
+          + Math.sin(x * 0.026 + tt * 0.4 + b) * 6;
         x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
-      const col = b === 1 ? '150,90,200' : '90,200,150';
-      ctx.strokeStyle = `rgba(${col},${aurA * 0.28})`;
-      ctx.lineWidth = 22; ctx.lineCap = 'round'; ctx.stroke();
+      ctx.strokeStyle = `rgba(${cols[b]},${aurA * (0.2 + 0.06 * Math.sin(tt * 0.8 + b))})`;
+      ctx.lineWidth = 16 + 8 * Math.sin(tt * 0.7 + b); ctx.lineCap = 'round'; ctx.stroke();
     }
+    ctx.restore();
   }
 
   // ---- SUN & MOON (a smooth, believable hand-off at dusk) ----
@@ -245,20 +261,35 @@ function drawScene(ctx, W, H, p, tt, now) {
     // a soft warm doorway light at dusk/night
     if (fireA > 0.3) { ctx.fillStyle = `rgba(255,176,86,${0.5 * fireA})`; ctx.beginPath(); ctx.arc(lx, hY - 1, 1.2 * s, 0, 6.283); ctx.fill(); }
   }
-  // ---- a quiet memorial: small orange shirts on a line at the shore ----
+  // ---- a memorial of orange shirts on a line at the shore ----
   //   "Every Child Matters" — remembering the children of the residential schools.
   {
-    const x0 = W * 0.45, x1 = W * 0.605, mlY = hY - 11;
-    ctx.strokeStyle = `rgba(36,26,18,${shoreAlpha * 0.8})`; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x0 - 6, mlY - 1); ctx.lineTo(x1 + 6, mlY - 3); ctx.stroke();
-    const nsh = 6;
+    const x0 = W * 0.40, x1 = W * 0.55, mlY = hY - 16;
+    const sa = Math.max(0.72, shoreAlpha);
+    // two posts + a gently sagging line strung between them
+    ctx.strokeStyle = `rgba(38,28,18,${sa})`; ctx.lineCap = 'round';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(x0 - 8, mlY - 4); ctx.lineTo(x0 - 8, hY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x1 + 8, mlY - 4); ctx.lineTo(x1 + 8, hY); ctx.stroke();
+    ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.moveTo(x0 - 8, mlY - 3);
+    ctx.quadraticCurveTo((x0 + x1) / 2, mlY + 6, x1 + 8, mlY - 3); ctx.stroke();
+    const nsh = 7;
     for (let i = 0; i < nsh; i++) {
-      const sx = x0 + (i + 0.5) * (x1 - x0) / nsh;
-      const sway = Math.sin(tt * 1.5 + i * 0.9) * 1.3;
-      ctx.save(); ctx.translate(sx + sway, mlY - 2); ctx.rotate(sway * 0.05);
-      ctx.fillStyle = `rgba(230,102,28,${0.9 * shoreAlpha})`;
-      ctx.fillRect(-3, 0, 6, 7);                 // shirt body
-      ctx.fillRect(-5, 0, 2.2, 3); ctx.fillRect(2.8, 0, 2.2, 3);   // sleeves
+      const fx = (i + 0.5) / nsh, sx = x0 + fx * (x1 - x0);
+      const lineY = mlY - 3 + Math.sin(fx * Math.PI) * 9;   // hang along the sag
+      const sway = Math.sin(tt * 1.4 + i * 0.8) * 1.4;
+      ctx.save(); ctx.translate(sx + sway, lineY); ctx.rotate(sway * 0.05);
+      // a small vigil glow behind each shirt at dusk/night so the memorial is seen
+      if (fireA > 0.3) {
+        const gg = ctx.createRadialGradient(0, 7, 0, 0, 7, 13);
+        gg.addColorStop(0, `rgba(255,150,70,${0.38 * fireA})`); gg.addColorStop(1, 'rgba(255,150,70,0)');
+        ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(0, 7, 13, 0, 6.283); ctx.fill();
+      }
+      ctx.fillStyle = `rgba(233,104,28,${sa})`;
+      ctx.fillRect(-1.6, 0, 3.2, 2);                       // collar
+      ctx.fillRect(-3.5, 1.5, 7, 9);                       // body
+      ctx.fillRect(-6, 1.5, 2.6, 4); ctx.fillRect(3.4, 1.5, 2.6, 4);  // sleeves
       ctx.restore();
     }
   }
@@ -358,6 +389,26 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.strokeStyle = `rgba(232,238,230,${a * 0.6})`;
       ctx.beginPath(); ctx.ellipse(rx, ry, rad * 0.6, rad * 0.6 * 0.34, 0, 0, 6.283); ctx.stroke();
     }
+  }
+
+  // ---- a candlelight vigil drifting on the water (dusk → night): remembrance ----
+  const vigilA = _smooth(0.56, 0.86, p);
+  if (vigilA > 0.02) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const v of _VIGIL) {
+      const vxp = (((v.x + tt * v.sp) % 1.1) - 0.05) * W;
+      const vyp = hY + 16 + (H - hY) * v.y;
+      const fl = 0.72 + 0.28 * Math.sin(tt * 3 + v.ph);
+      const g = ctx.createRadialGradient(vxp, vyp, 0, vxp, vyp, 17);
+      g.addColorStop(0, `rgba(255,176,86,${0.5 * vigilA * fl})`);
+      g.addColorStop(1, 'rgba(255,150,60,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(vxp, vyp, 17, 0, 6.283); ctx.fill();
+      ctx.fillStyle = `rgba(255,226,170,${0.85 * vigilA * fl})`;
+      ctx.beginPath(); ctx.arc(vxp, vyp, 1.7, 0, 6.283); ctx.fill();          // flame core
+      ctx.fillStyle = `rgba(255,190,110,${0.28 * vigilA * fl})`;
+      ctx.fillRect(vxp - 0.8, vyp + 2, 1.6, 9);                                // reflection streak
+    }
+    ctx.restore();
   }
 
   // ---- INTERACTIVE: ripples where the visitor taps the lake ----
