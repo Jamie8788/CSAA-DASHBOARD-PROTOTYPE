@@ -190,13 +190,19 @@ function drawScene(ctx, W, H, p, tt, now) {
     fglow.addColorStop(1, 'rgba(255,170,70,0)');
     ctx.fillStyle = fglow; ctx.fillRect(fx - 84, fy - 84, 168, 120);
   }
-  ctx.beginPath(); ctx.moveTo(0, hY);
-  for (let x = 0; x <= W; x += 14) {
-    const t = hY - (6 + Math.abs(Math.sin(x * 0.05) * 10) + Math.sin(x * 0.13) * 5);
-    ctx.lineTo(x, t);
-  }
-  ctx.lineTo(W, hY); ctx.closePath();
-  ctx.fillStyle = `rgba(20,16,12,${shoreAlpha})`; ctx.fill();
+  // layered ridges of distant hills — rolling profiles (sum of sines) with depth
+  const ridge = (base, amp, freq, phase, col) => {
+    ctx.beginPath(); ctx.moveTo(0, hY);
+    for (let x = 0; x <= W; x += 12) {
+      const y = hY - base - amp * (0.62 * Math.sin(x * freq + phase)
+        + 0.26 * Math.sin(x * freq * 2.3 + phase * 1.7)
+        + 0.12 * Math.sin(x * freq * 0.5 + phase));
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(W, hY); ctx.closePath(); ctx.fillStyle = col; ctx.fill();
+  };
+  ridge(8, 13, 0.010, 1.3, `rgba(54,46,42,${shoreAlpha * 0.55})`);   // far ridge, hazy
+  ridge(2, 20, 0.014, 0.0, `rgba(20,16,12,${shoreAlpha})`);          // near ridge, dark
   // lodge / teepee silhouettes on the far shore — the community by the water
   for (const Lg of _LODGES) {
     const lx = Lg.x * W, lh = 16 * Lg.s, lw = 11 * Lg.s;
@@ -217,6 +223,11 @@ function drawScene(ctx, W, H, p, tt, now) {
   water.addColorStop(0.4, _dim(_hz, 0.62));
   water.addColorStop(1, `rgb(${_wb.join(',')})`);
   ctx.fillStyle = water; ctx.fillRect(0, hY, W, H - hY);
+  // bright specular sheen right at the waterline (where the sky reflects strongest)
+  const sheen = ctx.createLinearGradient(0, hY, 0, hY + 90);
+  sheen.addColorStop(0, `rgba(${Math.min(255, _hz[0] + 40)},${Math.min(255, _hz[1] + 40)},${Math.min(255, _hz[2] + 40)},0.32)`);
+  sheen.addColorStop(1, `rgba(${_hz[0]},${_hz[1]},${_hz[2]},0)`);
+  ctx.fillStyle = sheen; ctx.fillRect(0, hY, W, 90);
   // soft horizon mist where the sky meets the lake
   const [mr, mg, mb] = _rampA(SKY_HORIZ, p);
   const mist = ctx.createLinearGradient(0, hY - 16, 0, hY + 42);
@@ -362,14 +373,21 @@ function drawScene(ctx, W, H, p, tt, now) {
   // --- paddler: a real seated figure (shoulders, torso, two arms, paddle) ---
   const lean = padSide * 0.12 * Math.abs(strokeT);
   ctx.save(); ctx.translate(-2, 0); ctx.rotate(lean);
-  const skin = '#caa07a', cloth = '#6b4a8a';   // warm earthy clothing
+  // Orange shirt — honouring residential-school survivors & "Every Child Matters".
+  // A vivid orange with a dark outline so it never blends into the orange sunset.
+  const skin = '#caa07a', cloth = '#ef6a1c', clothLine = 'rgba(46,22,8,0.85)';
   // torso (trapezoid: wide hips → shoulders)
   ctx.fillStyle = cloth;
   ctx.beginPath();
   ctx.moveTo(-7, -2); ctx.lineTo(-6, -19); ctx.quadraticCurveTo(0, -23, 6, -19); ctx.lineTo(7, -2); ctx.closePath();
   ctx.fill();
+  ctx.strokeStyle = clothLine; ctx.lineWidth = 1; ctx.stroke();   // outline keeps it readable on any sky
   // shoulders
   ctx.lineWidth = 4.6; ctx.strokeStyle = cloth; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-7, -19); ctx.lineTo(7, -19); ctx.stroke();
+  ctx.lineWidth = 5.8; ctx.strokeStyle = clothLine; ctx.globalAlpha = 0.35;
+  ctx.beginPath(); ctx.moveTo(-7.4, -19); ctx.lineTo(7.4, -19); ctx.stroke(); ctx.globalAlpha = 1;
+  ctx.lineWidth = 4.6; ctx.strokeStyle = cloth;
   ctx.beginPath(); ctx.moveTo(-7, -19); ctx.lineTo(7, -19); ctx.stroke();
   // head + neck
   ctx.fillStyle = skin;
@@ -454,7 +472,7 @@ function WelcomeView({ all, setView }) {
     const canvas = canvasRef.current; if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let W, H, dpr, raf = null, t0 = null, last = 0;
-    function resize() { dpr = Math.min(2, window.devicePixelRatio || 1); W = canvas.clientWidth; H = canvas.clientHeight; canvas.width = Math.max(1, W * dpr); canvas.height = Math.max(1, H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+    function resize() { dpr = Math.min(1.5, window.devicePixelRatio || 1); W = canvas.clientWidth; H = canvas.clientHeight; canvas.width = Math.max(1, W * dpr); canvas.height = Math.max(1, H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
     resize();
     const ro = ('ResizeObserver' in window) ? new ResizeObserver(resize) : null;
     if (ro) ro.observe(canvas); else window.addEventListener('resize', resize);
@@ -462,12 +480,12 @@ function WelcomeView({ all, setView }) {
     else {
       const frame = (time) => {
         raf = requestAnimationFrame(frame);
-        if (time - last < 18) return; last = time; if (t0 == null) t0 = time;
+        if (time - last < 32) return; last = time; if (t0 == null) t0 = time;
         drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000, time);
       };
       raf = requestAnimationFrame(frame);
     }
-    function onVis() { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = null; } else if (!document.hidden && !raf && !reduce) { last = 0; raf = requestAnimationFrame((t) => { t0 = null; const f = (time) => { raf = requestAnimationFrame(f); if (time - last < 18) return; last = time; if (t0 == null) t0 = time; drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000, time); }; f(t); }); } }
+    function onVis() { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = null; } else if (!document.hidden && !raf && !reduce) { last = 0; raf = requestAnimationFrame((t) => { t0 = null; const f = (time) => { raf = requestAnimationFrame(f); if (time - last < 32) return; last = time; if (t0 == null) t0 = time; drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000, time); }; f(t); }); } }
     document.addEventListener('visibilitychange', onVis);
     return () => { if (raf) cancelAnimationFrame(raf); if (ro) ro.disconnect(); else window.removeEventListener('resize', resize); document.removeEventListener('visibilitychange', onVis); };
   }, [reduce]);
@@ -495,10 +513,10 @@ function WelcomeView({ all, setView }) {
         if (i === N - 1 && p > center) d = 0;      // last chapter stays solid at the bottom
         const op = 1 - _smooth(seg * 0.44, seg * 0.80, d);
         const opc = _clamp(op, 0, 1);
-        const scale = _lerp(1.05, 1, opc);          // settles into place as it arrives
+        const scale = _lerp(1.04, 1, opc);          // settles into place as it arrives
         el.style.opacity = String(opc);
-        el.style.transform = `translateY(${(p - center) * -96}px) scale(${scale})`;
-        el.style.filter = opc < 0.7 ? `blur(${(0.7 - opc) * 7}px)` : 'none';
+        // translate + scale only — both GPU-composited, so scrolling stays smooth
+        el.style.transform = `translate3d(0, ${(p - center) * -90}px, 0) scale(${scale})`;
         el.style.pointerEvents = op > 0.55 ? 'auto' : 'none';
       });
     }
