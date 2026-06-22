@@ -3362,6 +3362,25 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
   to   { transform: scale(2.2); opacity: 0; }
 }
 
+/* Ambient scenery layer over the map — decorative, never blocks interaction */
+.map-ambient {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 480; display: block;
+}
+/* Cinematic intro: the map's overlay panels ease in when the tab opens */
+.map-wrap .map-overlay,
+.map-wrap .map-fit-all,
+.map-wrap .map-3d-btn,
+.map-wrap .map-tour-btn,
+.map-wrap .map-heatmap-btn,
+.map-wrap .map-bubbles-btn,
+.map-wrap .map-ruler-btn {
+  animation: mapPanelIn .7s cubic-bezier(.16,.84,.3,1) both;
+}
+@keyframes mapPanelIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.reduce-motion .map-wrap .map-overlay,
+.reduce-motion .map-wrap [class*="map-"] { animation: none !important; }
+
 /* Guided Sky-tour card */
 .tour-card {
   position: absolute; left: 18px; bottom: 18px; z-index: 1200; width: 300px;

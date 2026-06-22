@@ -41,6 +41,99 @@ const TILE_LAYERS = {
   },
 };
 
+// Ambient scenery over the map — drifting "spirit lights" + a faint aurora ribbon.
+// Purely decorative (pointer-events: none) so the map stays fully usable.
+function MapAmbient() {
+  const cref = useRef(null);
+  useEffect(() => {
+    const cv = cref.current; if (!cv) return;
+    if ((window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+        || document.documentElement.classList.contains('reduce-motion')) return;
+    const ctx = cv.getContext('2d');
+    let W = 0, H = 0, dpr = 1, raf = null, t0 = null, last = 0;
+    const N = 26;
+    const motes = Array.from({ length: N }, () => ({
+      x: Math.random(), y: Math.random(), r: 0.8 + Math.random() * 2.2,
+      sp: 0.006 + Math.random() * 0.018, drift: 0.2 + Math.random() * 0.8,
+      ph: Math.random() * 6.28, warm: Math.random() > 0.35,
+    }));
+    function resize() {
+      dpr = Math.min(1.5, window.devicePixelRatio || 1);
+      W = cv.clientWidth; H = cv.clientHeight;
+      cv.width = Math.max(1, W * dpr); cv.height = Math.max(1, H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    const ro = ('ResizeObserver' in window) ? new ResizeObserver(resize) : null;
+    if (ro) ro.observe(cv); else window.addEventListener('resize', resize);
+    function frame(time) {
+      raf = requestAnimationFrame(frame);
+      if (time - last < 33) return; last = time;       // ~30fps, light
+      if (t0 == null) t0 = time; const tt = (time - t0) / 1000;
+      ctx.clearRect(0, 0, W, H);
+      // faint aurora ribbon drifting along the top
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (let b = 0; b < 2; b++) {
+        ctx.beginPath();
+        const baseY = 40 + b * 34;
+        for (let x = 0; x <= W; x += 20) {
+          const y = baseY + Math.sin(x * 0.004 + tt * 0.4 + b) * 16 + Math.sin(x * 0.011 + tt * 0.7) * 7;
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = b === 0 ? 'rgba(110,160,120,0.06)' : 'rgba(150,140,200,0.05)';
+        ctx.lineWidth = 26; ctx.lineCap = 'round'; ctx.stroke();
+      }
+      ctx.restore();
+      // drifting spirit-lights rising slowly
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (const m of motes) {
+        const y = ((m.y - tt * m.sp) % 1 + 1) % 1;
+        const x = (m.x + Math.sin(tt * 0.3 * m.drift + m.ph) * 0.02);
+        const px = x * W, py = y * H;
+        const tw = 0.5 + 0.5 * Math.sin(tt * 1.6 + m.ph);
+        const a = 0.06 + 0.10 * tw;
+        const col = m.warm ? '255,196,110' : '210,224,255';
+        const g = ctx.createRadialGradient(px, py, 0, px, py, m.r * 6);
+        g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`);
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, m.r * 6, 0, 6.283); ctx.fill();
+        ctx.fillStyle = `rgba(${col},${a * 1.6})`; ctx.beginPath(); ctx.arc(px, py, m.r, 0, 6.283); ctx.fill();
+      }
+      ctx.restore();
+
+      // a small flock of birds crossing the upper sky (ambient)
+      ctx.save(); ctx.globalAlpha = 0.32; ctx.strokeStyle = 'rgba(38,30,22,0.85)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+      const fxx = (((tt * 0.02 + 0.15) % 1.4) - 0.2) * W;
+      for (let i = 0; i < 5; i++) {
+        const bx = fxx - i * 16, by = H * 0.14 + Math.abs(i - 2) * 7 + Math.sin(tt + i) * 2;
+        const flap = Math.sin(tt * 7 + i) * 3;
+        ctx.beginPath(); ctx.moveTo(bx - 6, by + flap); ctx.lineTo(bx, by - 1); ctx.lineTo(bx + 6, by + flap); ctx.stroke();
+      }
+      ctx.restore();
+
+      // a canoe drifting slowly across (echoes the landing page), with the orange-shirt paddler
+      const cx = (((tt * 0.012) % 1.25) - 0.13) * W;
+      const cy = H * 0.84 + Math.sin(tt * 0.8) * 4;
+      const s = Math.max(0.7, Math.min(1.25, W / 1400));
+      ctx.save(); ctx.globalAlpha = 0.5; ctx.translate(cx, cy); ctx.scale(s, s);
+      ctx.strokeStyle = 'rgba(255,240,210,0.10)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-30, 0); ctx.quadraticCurveTo(-120, 8, -230, 30); ctx.stroke();   // wake
+      ctx.beginPath(); ctx.moveTo(-34, -1); ctx.quadraticCurveTo(0, 12, 34, -1); ctx.quadraticCurveTo(0, 5, -34, -1); ctx.closePath();
+      ctx.fillStyle = 'rgba(58,37,21,0.9)'; ctx.fill();                                              // hull
+      ctx.fillStyle = 'rgba(233,104,28,0.95)'; ctx.fillRect(-2.4, -10, 5, 8);                        // orange shirt
+      ctx.fillStyle = 'rgba(202,160,122,0.95)'; ctx.beginPath(); ctx.arc(0, -13, 2.6, 0, 6.283); ctx.fill();  // head
+      const pad = Math.sin(tt * 2.5) * 0.5;
+      ctx.strokeStyle = 'rgba(94,60,34,0.95)'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(13 * Math.cos(pad + 0.4), -7 + 13 * Math.sin(pad + 0.4)); ctx.stroke();  // paddle
+      ctx.restore();
+    }
+    raf = requestAnimationFrame(frame);
+    function onVis() { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = null; } else if (!document.hidden && !raf) { last = 0; t0 = null; raf = requestAnimationFrame(frame); } }
+    document.addEventListener('visibilitychange', onVis);
+    return () => { if (raf) cancelAnimationFrame(raf); if (ro) ro.disconnect(); else window.removeEventListener('resize', resize); document.removeEventListener('visibilitychange', onVis); };
+  }, []);
+  return <canvas ref={cref} className="map-ambient" aria-hidden="true"></canvas>;
+}
+
 function CanadaMap({ communities, allCommunities, selectedId, onSelect, onHover, hoveredId, directionFilter, onDirectionFilter, elderMode }) {
   const mapRef = useRef(null);
   const containerRef = useRef(null);
@@ -459,6 +552,7 @@ function CanadaMap({ communities, allCommunities, selectedId, onSelect, onHover,
   return (
     <div className={`map-wrap ${selectedId ? 'drawer-open' : ''}`}>
       <div ref={containerRef} className="leaflet-container-wrap"></div>
+      <MapAmbient />
 
       <div className="map-overlay map-eyebrow">
         <span className="sub">Atlas · 01</span>
