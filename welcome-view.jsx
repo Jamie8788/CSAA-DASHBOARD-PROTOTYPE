@@ -34,6 +34,12 @@ const SUN_COL   = ['#ffe2a0', '#fff3d0', '#fff6dd', '#ff9d5c', '#cdd8ee'];
 
 // precomputed star + bird seeds (stable across frames)
 const _STARS = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random() * 0.5, r: 0.4 + Math.random() * 1.3, ph: Math.random() * 6.28 }));
+// Seven brighter stars in a gentle ring that breathe together — a quiet honouring
+// of the Seven Grandfather Teachings (no labels, just seven lights watching over).
+const _SEVEN = Array.from({ length: 7 }, (_, i) => {
+  const a = (i / 7) * Math.PI * 2 - Math.PI / 2;
+  return { x: 0.5 + Math.cos(a) * 0.075, y: 0.2 + Math.sin(a) * 0.06, ph: i * 0.62 };
+});
 const _FLOCKS = [
   { baseX: 0.02, y: 0.20, n: 7, sp: 0.020, ph: 0, scale: 1.05 },
   { baseX: 0.38, y: 0.13, n: 5, sp: 0.015, ph: 1.6, scale: 0.78 },
@@ -112,6 +118,31 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.globalAlpha = starA * tw * 0.9;
       ctx.beginPath(); ctx.arc(s.x * W, s.y * hY, s.r, 0, 6.283);
       ctx.fillStyle = '#fdf6e8'; ctx.fill();
+    }
+    // the seven, breathing together (a collective glow over the gentle twinkle)
+    const breath = 0.62 + 0.38 * Math.sin(tt * 1.1);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const s of _SEVEN) {
+      const px = s.x * W, py = s.y * hY;
+      const tw = 0.55 + 0.45 * Math.sin(tt * 1.1 + s.ph);
+      const a = starA * breath * tw;
+      const g = ctx.createRadialGradient(px, py, 0, px, py, 9);
+      g.addColorStop(0, `rgba(255,244,214,${0.5 * a})`); g.addColorStop(1, 'rgba(255,244,214,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, 9, 0, 6.283); ctx.fill();
+      ctx.fillStyle = `rgba(255,250,232,${0.9 * a})`; ctx.beginPath(); ctx.arc(px, py, 1.6, 0, 6.283); ctx.fill();
+    }
+    ctx.restore();
+    // an occasional shooting star streaking through the night
+    const shoot = tt % 11;
+    if (starA > 0.3 && shoot < 0.7) {
+      const k = shoot / 0.7;
+      const sx = W * 0.24 + k * W * 0.46, sy = hY * 0.16 + k * hY * 0.26;
+      ctx.save(); ctx.globalAlpha = starA * (1 - k);
+      const tg = ctx.createLinearGradient(sx, sy, sx - 46, sy - 18);
+      tg.addColorStop(0, 'rgba(255,250,235,0.95)'); tg.addColorStop(1, 'rgba(255,250,235,0)');
+      ctx.strokeStyle = tg; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - 46, sy - 18); ctx.stroke();
+      ctx.restore();
     }
     ctx.globalAlpha = 1;
   }
@@ -668,8 +699,28 @@ function WelcomeView({ all, setView }) {
     function onScroll() { if (!raf) raf = requestAnimationFrame(update); }
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll, { passive: true });
+    // Run repeatedly across the load lifecycle so panels are never left hidden
+    // because layout/fonts weren't settled on the first pass (the "text sometimes
+    // disappears until you refresh" race).
     update();
-    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); if (raf) cancelAnimationFrame(raf); };
+    requestAnimationFrame(() => { update(); requestAnimationFrame(update); });
+    const t1 = setTimeout(update, 160);
+    const t2 = setTimeout(update, 550);
+    window.addEventListener('load', update);
+    if (document.fonts && document.fonts.ready) { document.fonts.ready.then(update).catch(() => {}); }
+    return () => {
+      window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll);
+      window.removeEventListener('load', update); clearTimeout(t1); clearTimeout(t2);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [reduce]);
+
+  // Safety net: reveal panel text shortly after mount (the scroll handler then
+  // manages per-chapter crossfade). Guarantees the hero copy is never stuck hidden.
+  useE_w(() => {
+    if (reduce) return;
+    const id = setTimeout(() => { panelRefs.current.forEach((el) => el && el.classList.add('wv-in')); }, 80);
+    return () => clearTimeout(id);
   }, [reduce]);
 
   const directions = [
