@@ -76,20 +76,20 @@ const _VIGIL = [
   { x: 0.88, y: 0.30, sp: 0.0045, ph: 4.0 },
   { x: 0.60, y: 0.70, sp: 0.0030, ph: 5.1 },
 ];
-// fireflies that come out at dusk near the foreground reeds
-const _FLIES = Array.from({ length: 16 }, () => ({
-  x: Math.random(), y: 0.62 + Math.random() * 0.34, r: 0.8 + Math.random() * 1.2,
-  sp: 0.2 + Math.random() * 0.5, ph: Math.random() * 6.28, blink: 0.4 + Math.random() * 0.8,
+// fireflies that come out at dusk near the foreground reeds (sparse, organic)
+const _FLIES = Array.from({ length: 9 }, () => ({
+  x: Math.random(), y: 0.66 + Math.random() * 0.3, r: 0.8 + Math.random() * 1.0,
+  sp: 0.2 + Math.random() * 0.5, ph: Math.random() * 6.28, blink: 0.3 + Math.random() * 0.6,
 }));
 // leaping-fish events (a fish arcs out of the water now and then)
 const _FISH = [{ x: 0.34, yb: 0.34, period: 13, phase: 2 }, { x: 0.7, yb: 0.5, period: 17, phase: 9 }];
 // cursor position (-1..1 from centre), eased, for a parallax depth effect
 let _MX = 0, _MY = 0, _MXe = 0, _MYe = 0;
 
-// Calming ambient lake soundscape — fully SYNTHESIZED (no recordings): layered
-// water (deep rumble + stereo lapping wavelets), soft wind, occasional birdsong,
-// a lone loon call across the water, and a slow heartbeat drum (the heartbeat of
-// the people and the land). Web Audio; starts on a user gesture; fades in/out.
+// Calming ambient lake soundscape — fully SYNTHESIZED (no recordings): soft layered
+// water, gentle wind, frequent quiet birdsong, a lone loon, a slow soft heartbeat,
+// and a sparse wooden-flute melody (pentatonic — evoking the Anishinaabe flute).
+// Web Audio; starts on a user gesture; fades in/out. Tuned to be relaxing, not busy.
 function createAmbient() {
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) return null;
@@ -103,62 +103,78 @@ function createAmbient() {
     let last = 0; for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.2; }
     return b;
   }
-  // deep water rumble (centre)
+  // deep water rumble
   const n1 = ctx.createBufferSource(); n1.buffer = brown(); n1.loop = true;
-  const lp1 = ctx.createBiquadFilter(); lp1.type = 'lowpass'; lp1.frequency.value = 320;
-  const g1 = ctx.createGain(); g1.gain.value = 0.13;
+  const lp1 = ctx.createBiquadFilter(); lp1.type = 'lowpass'; lp1.frequency.value = 300;
+  const g1 = ctx.createGain(); g1.gain.value = 0.1;
   n1.connect(lp1); lp1.connect(g1); g1.connect(master);
-  const lfo1 = ctx.createOscillator(); lfo1.frequency.value = 0.09; const lg1 = ctx.createGain(); lg1.gain.value = 0.06;
+  const lfo1 = ctx.createOscillator(); lfo1.frequency.value = 0.08; const lg1 = ctx.createGain(); lg1.gain.value = 0.05;
   lfo1.connect(lg1); lg1.connect(g1.gain); n1.start(); lfo1.start();
-  // lapping wavelets — stereo left/right, faster movement
-  [-0.55, 0.55].forEach((pp, idx) => {
+  // soft lapping wavelets (stereo)
+  [-0.5, 0.5].forEach((pp, idx) => {
     const n = ctx.createBufferSource(); n.buffer = brown(); n.loop = true;
-    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 600 + idx * 200; bp.Q.value = 0.8;
-    const g = ctx.createGain(); g.gain.value = 0.05; const p = pan(pp);
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 560 + idx * 180; bp.Q.value = 0.8;
+    const g = ctx.createGain(); g.gain.value = 0.038; const p = pan(pp);
     n.connect(bp); bp.connect(g); g.connect(p); p.connect(master);
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.28 + idx * 0.13; const lg = ctx.createGain(); lg.gain.value = 0.045;
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.24 + idx * 0.1; const lg = ctx.createGain(); lg.gain.value = 0.034;
     lfo.connect(lg); lg.connect(g.gain); n.start(); lfo.start();
   });
-  // soft wind swell
+  // very soft wind
   const wn = ctx.createBufferSource(); wn.buffer = brown(); wn.loop = true;
-  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 720;
-  const wg = ctx.createGain(); wg.gain.value = 0.014;
+  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 760;
+  const wg = ctx.createGain(); wg.gain.value = 0.008;
   wn.connect(hp); hp.connect(wg); wg.connect(master);
-  const wlfo = ctx.createOscillator(); wlfo.frequency.value = 0.05; const wlg = ctx.createGain(); wlg.gain.value = 0.013;
+  const wlfo = ctx.createOscillator(); wlfo.frequency.value = 0.045; const wlg = ctx.createGain(); wlg.gain.value = 0.008;
   wlfo.connect(wlg); wlg.connect(wg.gain); wn.start(); wlfo.start();
-  // heartbeat drum (soft, resonant)
+  // slow, soft heartbeat (quieter & calmer)
   function thump(t, vol) {
-    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(86, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.2);
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 160;
-    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-    o.connect(lp); lp.connect(g); g.connect(master); o.start(t); o.stop(t + 0.6);
+    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(82, t); o.frequency.exponentialRampToValueAtTime(46, t + 0.22);
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 150;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.035); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+    o.connect(lp); lp.connect(g); g.connect(master); o.start(t); o.stop(t + 0.65);
   }
-  function heart() { const t = T() + 0.05; thump(t, 0.19); thump(t + 0.3, 0.11); timers.push(setTimeout(heart, 1850)); }
-  // varied birdsong
+  function heart() { const t = T() + 0.05; thump(t, 0.12); thump(t + 0.32, 0.07); timers.push(setTimeout(heart, 2400)); }
+  // frequent, gentle birdsong
   function bird() {
-    const t = T() + 0.02, p = pan((Math.random() * 2 - 1) * 0.7), base = 1500 + Math.random() * 1800;
-    const kind = Math.random(), notes = kind < 0.4 ? 3 : kind < 0.75 ? 2 : 1;
+    const t = T() + 0.02, p = pan((Math.random() * 2 - 1) * 0.7), base = 1700 + Math.random() * 1700;
+    const kind = Math.random(), notes = kind < 0.45 ? 3 : kind < 0.8 ? 2 : 1;
     for (let k = 0; k < notes; k++) {
-      const t0 = t + k * (0.09 + Math.random() * 0.06), f = base * (1 + (Math.random() * 0.2 - 0.1));
+      const t0 = t + k * (0.085 + Math.random() * 0.05), f = base * (1 + (Math.random() * 0.18 - 0.09));
       const o = ctx.createOscillator(); o.type = 'sine';
-      o.frequency.setValueAtTime(f, t0); o.frequency.linearRampToValueAtTime(f * 1.3, t0 + 0.04); o.frequency.linearRampToValueAtTime(f * 0.92, t0 + 0.1);
-      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.04, t0 + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+      o.frequency.setValueAtTime(f, t0); o.frequency.linearRampToValueAtTime(f * 1.28, t0 + 0.04); o.frequency.linearRampToValueAtTime(f * 0.93, t0 + 0.1);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.038, t0 + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
       o.connect(g); g.connect(p); o.start(t0); o.stop(t0 + 0.16);
     }
-    p.connect(master); timers.push(setTimeout(bird, 2200 + Math.random() * 5000));
+    p.connect(master); timers.push(setTimeout(bird, 1500 + Math.random() * 3200));
   }
   // a lone loon call drifting across the lake
   function loon() {
     const t = T() + 0.1, p = pan((Math.random() * 2 - 1) * 0.4), f = 420 + Math.random() * 70;
     const o = ctx.createOscillator(); o.type = 'sine';
     o.frequency.setValueAtTime(f * 0.8, t); o.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.5); o.frequency.exponentialRampToValueAtTime(f * 1.08, t + 1.4);
-    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.06, t + 0.2); g.gain.linearRampToValueAtTime(0.05, t + 1.0); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.055, t + 0.2); g.gain.linearRampToValueAtTime(0.045, t + 1.0); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
     const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400;
     o.connect(lp); lp.connect(g); g.connect(p); p.connect(master); o.start(t); o.stop(t + 1.8);
-    timers.push(setTimeout(loon, 17000 + Math.random() * 22000));
+    timers.push(setTimeout(loon, 19000 + Math.random() * 22000));
   }
-  heart(); timers.push(setTimeout(bird, 1200)); timers.push(setTimeout(loon, 6000));
-  try { master.gain.linearRampToValueAtTime(0.55, T() + 2.5); } catch (e) {}
+  // a sparse, breathy wooden-flute melody (pentatonic) — the calming heart of it
+  const SCALE = [392.0, 440.0, 523.25, 587.33, 659.25];
+  function flute() {
+    const t = T() + 0.05;
+    const f = SCALE[Math.floor(Math.random() * SCALE.length)] * (Math.random() < 0.28 ? 0.5 : 1);
+    const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(f, t);
+    const vib = ctx.createOscillator(); vib.frequency.value = 5; const vibg = ctx.createGain(); vibg.gain.value = f * 0.006;
+    vib.connect(vibg); vibg.connect(o.frequency);
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1700;
+    const g = ctx.createGain(); const dur = 0.9 + Math.random() * 0.9;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.055, t + 0.25); g.gain.setValueAtTime(0.05, t + dur * 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    const p = pan((Math.random() * 2 - 1) * 0.22);
+    o.connect(lp); lp.connect(g); g.connect(p); p.connect(master);
+    vib.start(t); vib.stop(t + dur + 0.1); o.start(t); o.stop(t + dur + 0.1);
+    timers.push(setTimeout(flute, 4200 + Math.random() * 5200));
+  }
+  heart(); timers.push(setTimeout(bird, 900)); timers.push(setTimeout(loon, 7000)); timers.push(setTimeout(flute, 2500));
+  try { master.gain.linearRampToValueAtTime(0.46, T() + 2.6); } catch (e) {}
   return {
     stop() {
       timers.forEach(clearTimeout);
@@ -397,30 +413,35 @@ function drawScene(ctx, W, H, p, tt, now) {
   }
   // ---- the community gathered around the sacred fire (dusk → night) ----
   if (fireA > 0.32) {
-    const fx = vx + 2, fy = hY + 1;
-    // people seated/standing around the fire (dark silhouettes, facing in)
-    ctx.fillStyle = `rgba(7,5,3,${shoreAlpha})`;
-    for (const fk of [[-17, 0.9], [-10, 1.05], [-1, 0.8], [9, 1.05], [17, 0.92], [4, 0.75]]) {
-      const px = fx + fk[0], s2 = fk[1], bh = 7 * s2;
-      ctx.beginPath(); ctx.ellipse(px, fy - bh * 0.35, 2.5 * s2, bh * 0.55, 0, Math.PI, 2 * Math.PI); ctx.fill();
-      ctx.beginPath(); ctx.arc(px, fy - bh, 1.7 * s2, 0, 6.283); ctx.fill();
+    const fx = vx + 2, fy = hY + 3;
+    // people seated around the fire — larger so they read clearly, fire-lit on the inner side
+    ctx.fillStyle = `rgba(6,4,2,${Math.max(0.85, shoreAlpha)})`;
+    const folks = [[-27, 0.95], [-16, 1.08], [-4, 0.85], [13, 1.08], [25, 0.95], [6, 0.78]];
+    for (const fk of folks) {
+      const px = fx + fk[0], s2 = fk[1], bh = 10 * s2;
+      ctx.fillStyle = `rgba(6,4,2,${Math.max(0.85, shoreAlpha)})`;
+      ctx.beginPath(); ctx.ellipse(px, fy - bh * 0.32, 4 * s2, bh * 0.58, 0, Math.PI, 2 * Math.PI); ctx.fill();   // seated body
+      ctx.beginPath(); ctx.arc(px, fy - bh - 1, 2.7 * s2, 0, 6.283); ctx.fill();                                   // head
+      const inn = px < fx ? 1 : -1;                                                                                 // warm fire-glow rim on the side facing the fire
+      ctx.strokeStyle = `rgba(255,150,70,${0.55 * fireA})`; ctx.lineWidth = 1.1;
+      ctx.beginPath(); ctx.arc(px, fy - bh - 1, 2.7 * s2, inn > 0 ? -1 : 2.1, inn > 0 ? 1 : 4.2); ctx.stroke();
     }
-    // the fire — layered flickering flames (additive glow)
+    // the fire — layered flickering flames (additive glow), now larger
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    const cols = ['255,118,38', '255,168,60', '255,222,128'];
+    const cols = ['255,110,34', '255,165,58', '255,224,130'];
     for (let i = 0; i < 3; i++) {
-      const fw = 4.2 - i, fh = (9 - i * 1.7) * (0.8 + 0.35 * Math.sin(tt * (9 + i * 4) + i));
+      const fw = 9 - i * 2.2, fh = (22 - i * 4) * (0.8 + 0.35 * Math.sin(tt * (9 + i * 4) + i));
       ctx.fillStyle = `rgba(${cols[i]},${0.85 * fireA})`;
       ctx.beginPath();
       ctx.moveTo(fx - fw, fy);
-      ctx.quadraticCurveTo(fx - fw * 0.5 + Math.sin(tt * 8 + i) * 1.6, fy - fh * 0.6, fx, fy - fh);
-      ctx.quadraticCurveTo(fx + fw * 0.5 + Math.sin(tt * 8 + i + 2) * 1.6, fy - fh * 0.6, fx + fw, fy);
+      ctx.quadraticCurveTo(fx - fw * 0.5 + Math.sin(tt * 8 + i) * 3, fy - fh * 0.6, fx, fy - fh);
+      ctx.quadraticCurveTo(fx + fw * 0.5 + Math.sin(tt * 8 + i + 2) * 3, fy - fh * 0.6, fx + fw, fy);
       ctx.closePath(); ctx.fill();
     }
     ctx.restore();
     // logs at the base
-    ctx.strokeStyle = `rgba(28,16,9,${shoreAlpha})`; ctx.lineWidth = 2; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(fx - 5, fy + 1); ctx.lineTo(fx + 5, fy - 1); ctx.moveTo(fx - 5, fy - 1); ctx.lineTo(fx + 5, fy + 1); ctx.stroke();
+    ctx.strokeStyle = `rgba(26,15,8,${Math.max(0.85, shoreAlpha)})`; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(fx - 10, fy + 1); ctx.lineTo(fx + 10, fy - 2); ctx.moveTo(fx - 10, fy - 2); ctx.lineTo(fx + 10, fy + 1); ctx.stroke();
     // the fire's reflection on the water below
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     const rgl = ctx.createLinearGradient(fx, hY + 2, fx, hY + 58);
@@ -434,24 +455,24 @@ function drawScene(ctx, W, H, p, tt, now) {
   const dayA = (1 - _smooth(0.40, 0.66, p)) * shoreAlpha;
   if (dayA > 0.03) {
     ctx.save(); ctx.globalAlpha = dayA;
-    // a fish-drying rack (posts + crossbar + hanging fish) — shoreline work
-    const rx = vx - 50;
-    ctx.strokeStyle = 'rgba(30,22,13,1)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(rx, hY); ctx.lineTo(rx, hY - 9); ctx.moveTo(rx + 22, hY); ctx.lineTo(rx + 22, hY - 9); ctx.moveTo(rx - 2, hY - 9); ctx.lineTo(rx + 24, hY - 9); ctx.stroke();
+    // a fish-drying rack (posts + crossbar + hanging fish) — shoreline work, larger so it reads
+    const rx = vx - 62;
+    ctx.strokeStyle = 'rgba(30,22,13,1)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(rx, hY + 2); ctx.lineTo(rx, hY - 14); ctx.moveTo(rx + 30, hY + 2); ctx.lineTo(rx + 30, hY - 14); ctx.moveTo(rx - 3, hY - 14); ctx.lineTo(rx + 33, hY - 14); ctx.stroke();
     ctx.fillStyle = 'rgba(34,24,15,1)';
-    for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.ellipse(rx + 2 + i * 4.6, hY - 5, 1.1, 2.4, 0, 0, 6.283); ctx.fill(); }
-    // a few people at work: standing and bending
+    for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.ellipse(rx + 3 + i * 5, hY - 8, 1.6, 3.4, 0, 0, 6.283); ctx.fill(); }
+    // a few people at work: standing and bending (bigger, clearer)
     const person = (px, bend) => {
-      ctx.fillStyle = 'rgba(15,10,6,1)';
-      if (bend) {
-        ctx.beginPath(); ctx.ellipse(px, hY - 3, 2.4, 3, 0.5, 0, 6.283); ctx.fill();
-        ctx.beginPath(); ctx.arc(px + 2.6, hY - 5, 1.4, 0, 6.283); ctx.fill();
-      } else {
-        ctx.beginPath(); ctx.ellipse(px, hY - 3.2, 2.2, 3.6, 0, Math.PI, 2 * Math.PI); ctx.fill();
-        ctx.beginPath(); ctx.arc(px, hY - 7, 1.6, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(14,9,5,1)';
+      if (bend) {                                       // bent over a task
+        ctx.beginPath(); ctx.ellipse(px, hY - 4.5, 3.4, 4.4, 0.5, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(px + 3.8, hY - 7.5, 2.1, 0, 6.283); ctx.fill();
+      } else {                                          // standing
+        ctx.beginPath(); ctx.ellipse(px, hY - 5, 3, 5.5, 0, Math.PI, 2 * Math.PI); ctx.fill();
+        ctx.beginPath(); ctx.arc(px, hY - 11, 2.3, 0, 6.283); ctx.fill();
       }
     };
-    person(vx - 10, false); person(vx + 5, true); person(vx + 30, false); person(rx + 11, true);
+    person(vx - 14, false); person(vx + 7, true); person(vx + 40, false); person(rx + 15, true);
     ctx.restore();
     // a thin wisp of cooking smoke rising from the village (day)
     ctx.save(); ctx.globalAlpha = dayA * 0.45; ctx.strokeStyle = 'rgba(184,178,168,1)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
@@ -696,43 +717,37 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.beginPath(); ctx.moveTo(40, -6); ctx.lineTo(40, -18); ctx.stroke();
     ctx.fillStyle = '#ffce7a'; ctx.beginPath(); ctx.arc(40, -21, 3.4, 0, 6.283); ctx.fill();
   }
-  // --- paddler: a real seated figure (shoulders, torso, two arms, paddle) ---
-  const lean = padSide * 0.12 * Math.abs(strokeT);
-  ctx.save(); ctx.translate(-2, 0); ctx.rotate(lean);
-  // Orange shirt — honouring residential-school survivors & "Every Child Matters".
-  // A vivid orange with a dark outline so it never blends into the orange sunset.
+  // --- paddler: seated IN the canoe — only torso & up show above the gunwale ---
+  const lean = padSide * 0.09 * Math.abs(strokeT);
+  ctx.save(); ctx.translate(-1, 0); ctx.rotate(lean);
   const skin = '#caa07a', cloth = '#ef6a1c', clothLine = 'rgba(46,22,8,0.85)';
-  // torso (trapezoid: wide hips → shoulders)
+  const gun = -11;                                    // gunwale line — nothing of the body below this
+  // torso: gunwale up to the shoulders (no hips or legs visible)
   ctx.fillStyle = cloth;
   ctx.beginPath();
-  ctx.moveTo(-7, -2); ctx.lineTo(-6, -19); ctx.quadraticCurveTo(0, -23, 6, -19); ctx.lineTo(7, -2); ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = clothLine; ctx.lineWidth = 1; ctx.stroke();   // outline keeps it readable on any sky
+  ctx.moveTo(-6.5, gun); ctx.lineTo(-5.5, -19); ctx.quadraticCurveTo(0, -22.5, 5.5, -19); ctx.lineTo(6.5, gun);
+  ctx.quadraticCurveTo(0, gun + 2.5, -6.5, gun); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = clothLine; ctx.lineWidth = 0.8; ctx.stroke();
   // shoulders
-  ctx.lineWidth = 4.6; ctx.strokeStyle = cloth; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-7, -19); ctx.lineTo(7, -19); ctx.stroke();
-  ctx.lineWidth = 5.8; ctx.strokeStyle = clothLine; ctx.globalAlpha = 0.35;
-  ctx.beginPath(); ctx.moveTo(-7.4, -19); ctx.lineTo(7.4, -19); ctx.stroke(); ctx.globalAlpha = 1;
-  ctx.lineWidth = 4.6; ctx.strokeStyle = cloth;
-  ctx.beginPath(); ctx.moveTo(-7, -19); ctx.lineTo(7, -19); ctx.stroke();
-  // head + neck
+  ctx.lineCap = 'round'; ctx.lineWidth = 4.4; ctx.strokeStyle = cloth;
+  ctx.beginPath(); ctx.moveTo(-6.5, -19); ctx.lineTo(6.5, -19); ctx.stroke();
+  // neck + head
   ctx.fillStyle = skin;
-  ctx.beginPath(); ctx.arc(0, -27, 5, 0, 6.283); ctx.fill();
-  ctx.lineWidth = 3; ctx.strokeStyle = skin; ctx.beginPath(); ctx.moveTo(0, -22); ctx.lineTo(0, -19); ctx.stroke();
-  // warm rim light on head/shoulder facing the light
-  ctx.strokeStyle = 'rgba(255,210,150,0.5)'; ctx.lineWidth = 1.4;
-  ctx.beginPath(); ctx.arc(0, -27, 5, rim < 0 ? 1.9 : -1.2, rim < 0 ? 4.4 : 1.3); ctx.stroke();
-  // paddle + two arms
-  const grip1x = padSide * 4, grip1y = -17;            // upper hand near shoulder
-  const tipx = padSide * (20 + 6 * Math.abs(strokeT)), tipy = 8 + 8 * Math.abs(strokeT);
-  ctx.strokeStyle = '#6b4626'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(grip1x, grip1y); ctx.lineTo(tipx, tipy); ctx.stroke();   // shaft
-  ctx.lineWidth = 2.2; ctx.strokeStyle = skin;
-  ctx.beginPath(); ctx.moveTo(-2, -16); ctx.lineTo(grip1x, grip1y); ctx.stroke();      // top arm
-  ctx.beginPath(); ctx.moveTo(2, -12); ctx.lineTo(padSide * 11, -2); ctx.stroke();     // lower arm
-  // paddle blade
-  ctx.save(); ctx.translate(tipx, tipy); ctx.rotate(Math.atan2(tipy - grip1y, tipx - grip1x));
-  ctx.fillStyle = '#7a5230'; ctx.beginPath(); ctx.ellipse(5, 0, 7, 3, 0, 0, 6.283); ctx.fill(); ctx.restore();
+  ctx.beginPath(); ctx.moveTo(-1.8, -19); ctx.lineTo(1.8, -19); ctx.lineTo(1.4, -22.5); ctx.lineTo(-1.4, -22.5); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, -27, 4.8, 0, 6.283); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,210,150,0.5)'; ctx.lineWidth = 1.3;       // rim light on the lit side
+  ctx.beginPath(); ctx.arc(0, -27, 4.8, rim < 0 ? 1.9 : -1.2, rim < 0 ? 4.4 : 1.3); ctx.stroke();
+  // --- paddle held with BOTH hands, blade dipping in the water beside the canoe ---
+  const topGrip = [padSide * -2, -20];
+  const bladeTip = [padSide * (44 + 5 * Math.abs(strokeT)), 9 + 6 * Math.abs(strokeT)];
+  const lowGrip = [topGrip[0] + (bladeTip[0] - topGrip[0]) * 0.42, topGrip[1] + (bladeTip[1] - topGrip[1]) * 0.42];
+  ctx.strokeStyle = '#6b4626'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(topGrip[0], topGrip[1]); ctx.lineTo(bladeTip[0], bladeTip[1]); ctx.stroke();  // shaft
+  ctx.strokeStyle = skin; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(padSide * -5, -18); ctx.lineTo(topGrip[0], topGrip[1]); ctx.stroke();   // upper arm → top hand
+  ctx.beginPath(); ctx.moveTo(padSide * 5, -18); ctx.lineTo(lowGrip[0], lowGrip[1]); ctx.stroke();     // lower arm → mid-shaft hand
+  ctx.save(); ctx.translate(bladeTip[0], bladeTip[1]); ctx.rotate(Math.atan2(bladeTip[1] - topGrip[1], bladeTip[0] - topGrip[0]));
+  ctx.fillStyle = '#7a5230'; ctx.beginPath(); ctx.ellipse(4, 0, 6, 2.6, 0, 0, 6.283); ctx.fill(); ctx.restore();
   ctx.restore();
   ctx.restore();
   // ripple where the paddle dips
