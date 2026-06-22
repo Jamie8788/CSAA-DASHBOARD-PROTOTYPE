@@ -105,9 +105,9 @@ function drawScene(ctx, W, H, p, tt, now) {
   let lightX = sunX, lightCol = [255, 240, 210], lightA = 0.2;
 
   if (sunA > 0.01) {
-    const sunR = _lerp(70, 40, alt);                   // big near the horizon, small at noon
-    // colour: deep orange-red when low, warm white-gold when high
-    const sunC = [255, Math.round(_lerp(108, 244, alt)), Math.round(_lerp(50, 212, alt))];
+    const sunR = _lerp(86, 38, alt);                   // large & low at sunset, small at noon
+    // colour: deep red-orange when low, warm white-gold when high overhead
+    const sunC = [255, Math.round(_lerp(82, 246, alt)), Math.round(_lerp(40, 214, alt))];
     const halo = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 7);
     halo.addColorStop(0, `rgba(${sunC[0]},${sunC[1]},${sunC[2]},${0.55 * sunA})`);
     halo.addColorStop(0.22, `rgba(${sunC[0]},${sunC[1]},${sunC[2]},${0.2 * sunA})`);
@@ -126,7 +126,10 @@ function drawScene(ctx, W, H, p, tt, now) {
     }
     ctx.globalAlpha = 1; ctx.restore();
     ctx.globalAlpha = sunA;
-    ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, 6.283); ctx.fillStyle = `rgb(${sunC[0]},${sunC[1]},${sunC[2]})`; ctx.fill();
+    const disc = ctx.createRadialGradient(sunX - sunR * 0.25, sunY - sunR * 0.25, sunR * 0.1, sunX, sunY, sunR);
+    disc.addColorStop(0, `rgb(255,${Math.min(255, sunC[1] + 26)},${Math.min(255, sunC[2] + 40)})`);
+    disc.addColorStop(1, `rgb(${sunC[0]},${sunC[1]},${sunC[2]})`);
+    ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, 6.283); ctx.fillStyle = disc; ctx.fill();
     ctx.globalAlpha = 1;
     lightCol = sunC; lightA = sunA;
   }
@@ -302,8 +305,8 @@ function drawScene(ctx, W, H, p, tt, now) {
   const cx = 70 + _clamp(p, 0, 1) * (W - 140);
   const bob = Math.sin(tt * 1.3) * 3;
   const cy = hY + (H - hY) * 0.15 + bob;
-  const scl = Math.max(1.1, Math.min(2.0, W / 900));
-  const rock = Math.sin(tt * 1.3 + 0.5) * 0.03;
+  const scl = Math.max(1.3, Math.min(2.5, W / 780));
+  const rock = Math.sin(tt * 1.3 + 0.5) * 0.035;
   const strokeT = Math.sin(tt * 2.1);
   const padSide = strokeT >= 0 ? 1 : -1;
   const rim = lightX < cx ? -1 : 1;                    // warm rim-light from the sun/moon side
@@ -311,56 +314,82 @@ function drawScene(ctx, W, H, p, tt, now) {
 
   // soft reflection of the canoe on the water (flipped, faded)
   ctx.save();
-  ctx.translate(cx, cy + 15 * scl); ctx.scale(scl, -scl * 0.55); ctx.globalAlpha = 0.14;
-  ctx.beginPath(); ctx.moveTo(-44, 0); ctx.quadraticCurveTo(0, 15, 44, 0); ctx.quadraticCurveTo(0, 6, -44, 0);
+  ctx.translate(cx, cy + 16 * scl); ctx.scale(scl, -scl * 0.5); ctx.globalAlpha = 0.13;
+  ctx.beginPath(); ctx.moveTo(-48, 0); ctx.quadraticCurveTo(0, 16, 48, 0); ctx.quadraticCurveTo(0, 6, -48, 0);
   ctx.fillStyle = '#3a2515'; ctx.fill();
   ctx.restore();
 
   // V-wake trailing behind
   ctx.save();
-  ctx.strokeStyle = 'rgba(250,244,228,0.18)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(250,244,228,0.2)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
   for (let s = -1; s <= 1; s += 2) {
-    ctx.beginPath(); ctx.moveTo(cx - 36 * scl, cy);
-    ctx.quadraticCurveTo(cx - 150 * scl, cy + s * 9, cx - 300 * scl, cy + s * 44 * scl);
+    ctx.beginPath(); ctx.moveTo(cx - 40 * scl, cy);
+    ctx.quadraticCurveTo(cx - 160 * scl, cy + s * 10, cx - 320 * scl, cy + s * 48 * scl);
     ctx.stroke();
   }
   ctx.restore();
 
   ctx.save(); ctx.translate(cx, cy); ctx.rotate(rock); ctx.scale(scl, scl);
-  if (night) { // lantern glow
-    const g = ctx.createRadialGradient(0, -16, 0, 0, -16, 54);
-    g.addColorStop(0, 'rgba(255,185,90,0.5)'); g.addColorStop(1, 'rgba(255,185,90,0)');
-    ctx.fillStyle = g; ctx.fillRect(-54, -64, 108, 80);
+  if (night) { // lantern glow at the bow
+    const g = ctx.createRadialGradient(34, -18, 0, 34, -18, 64);
+    g.addColorStop(0, 'rgba(255,190,95,0.6)'); g.addColorStop(1, 'rgba(255,190,95,0)');
+    ctx.fillStyle = g; ctx.fillRect(-30, -82, 130, 100);
   }
-  // hull — a Canadian canoe with upturned ends and a wood-grain gradient
+  // hull — a canoe with upturned ends and a warm wood gradient (stays visible at dusk)
   ctx.beginPath();
-  ctx.moveTo(-46, -2);
-  ctx.quadraticCurveTo(-52, -10, -42, -10);
-  ctx.quadraticCurveTo(0, -3, 42, -10);
-  ctx.quadraticCurveTo(52, -10, 46, -2);
-  ctx.quadraticCurveTo(0, 17, -46, -2);
+  ctx.moveTo(-50, -2);
+  ctx.quadraticCurveTo(-58, -13, -46, -13);
+  ctx.quadraticCurveTo(0, -4, 46, -13);
+  ctx.quadraticCurveTo(58, -13, 50, -2);
+  ctx.quadraticCurveTo(0, 20, -50, -2);
   ctx.closePath();
-  const hullG = ctx.createLinearGradient(0, -10, 0, 16);
-  hullG.addColorStop(0, '#7a4d2c'); hullG.addColorStop(0.5, '#522f1a'); hullG.addColorStop(1, '#2b190d');
+  const hullG = ctx.createLinearGradient(0, -13, 0, 19);
+  hullG.addColorStop(0, '#9a6238'); hullG.addColorStop(0.5, '#653c20'); hullG.addColorStop(1, '#38220f');
   ctx.fillStyle = hullG; ctx.fill();
-  // gunwale + warm rim light on the lit side
-  ctx.strokeStyle = 'rgba(220,176,116,0.75)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-42, -9); ctx.quadraticCurveTo(0, -2.5, 42, -9); ctx.stroke();
-  ctx.strokeStyle = 'rgba(255,212,150,0.55)'; ctx.lineWidth = 1.3;
-  ctx.beginPath(); ctx.moveTo(rim * 6, -5); ctx.quadraticCurveTo(rim * 44, -9, rim * 47, -2); ctx.stroke();
-  // paddler — torso, head, arm + paddle with alternating strokes
-  const tipx = padSide * (15 + 7 * Math.abs(strokeT)), tipy = 5 + 7 * Math.abs(strokeT);
-  ctx.fillStyle = '#43291a';
-  ctx.beginPath(); ctx.moveTo(-4, -3); ctx.quadraticCurveTo(-7, -17, -1, -21); ctx.quadraticCurveTo(5, -22, 5, -15); ctx.quadraticCurveTo(5, -8, 4, -3); ctx.closePath(); ctx.fill();
-  ctx.beginPath(); ctx.arc(0, -25, 4.4, 0, 6.283); ctx.fillStyle = '#43291a'; ctx.fill();
-  ctx.strokeStyle = 'rgba(255,208,140,0.4)'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(0, -25, 4.4, rim < 0 ? 2 : -1.1, rim < 0 ? 4.2 : 1.1); ctx.stroke();
-  ctx.strokeStyle = '#5e3c22'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(0, -13); ctx.lineTo(tipx, tipy); ctx.stroke();       // shaft
-  ctx.lineWidth = 1.7;
-  ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(tipx * 0.5, -11); ctx.stroke();   // arm
-  ctx.save(); ctx.translate(tipx, tipy); ctx.rotate(Math.atan2(tipy + 13, tipx));
-  ctx.fillStyle = '#5e3c22'; ctx.beginPath(); ctx.ellipse(3, 0, 5, 2.4, 0, 0, 6.283); ctx.fill(); ctx.restore();
+  // gunwale strip + a ribbed pattern + warm rim light on the lit side
+  ctx.strokeStyle = 'rgba(228,184,124,0.85)'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-46, -11); ctx.quadraticCurveTo(0, -3.5, 46, -11); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,214,150,0.6)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(rim * 8, -6); ctx.quadraticCurveTo(rim * 48, -11, rim * 51, -2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(70,42,22,0.5)'; ctx.lineWidth = 1;
+  for (let rb = -34; rb <= 34; rb += 12) { ctx.beginPath(); ctx.moveTo(rb, -8); ctx.lineTo(rb, 9); ctx.stroke(); }
+  // bow lantern pole + lantern
+  if (night) {
+    ctx.strokeStyle = '#3a2412'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(40, -6); ctx.lineTo(40, -18); ctx.stroke();
+    ctx.fillStyle = '#ffce7a'; ctx.beginPath(); ctx.arc(40, -21, 3.4, 0, 6.283); ctx.fill();
+  }
+  // --- paddler: a real seated figure (shoulders, torso, two arms, paddle) ---
+  const lean = padSide * 0.12 * Math.abs(strokeT);
+  ctx.save(); ctx.translate(-2, 0); ctx.rotate(lean);
+  const skin = '#caa07a', cloth = '#6b4a8a';   // warm earthy clothing
+  // torso (trapezoid: wide hips → shoulders)
+  ctx.fillStyle = cloth;
+  ctx.beginPath();
+  ctx.moveTo(-7, -2); ctx.lineTo(-6, -19); ctx.quadraticCurveTo(0, -23, 6, -19); ctx.lineTo(7, -2); ctx.closePath();
+  ctx.fill();
+  // shoulders
+  ctx.lineWidth = 4.6; ctx.strokeStyle = cloth; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-7, -19); ctx.lineTo(7, -19); ctx.stroke();
+  // head + neck
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(0, -27, 5, 0, 6.283); ctx.fill();
+  ctx.lineWidth = 3; ctx.strokeStyle = skin; ctx.beginPath(); ctx.moveTo(0, -22); ctx.lineTo(0, -19); ctx.stroke();
+  // warm rim light on head/shoulder facing the light
+  ctx.strokeStyle = 'rgba(255,210,150,0.5)'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.arc(0, -27, 5, rim < 0 ? 1.9 : -1.2, rim < 0 ? 4.4 : 1.3); ctx.stroke();
+  // paddle + two arms
+  const grip1x = padSide * 4, grip1y = -17;            // upper hand near shoulder
+  const tipx = padSide * (20 + 6 * Math.abs(strokeT)), tipy = 8 + 8 * Math.abs(strokeT);
+  ctx.strokeStyle = '#6b4626'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(grip1x, grip1y); ctx.lineTo(tipx, tipy); ctx.stroke();   // shaft
+  ctx.lineWidth = 2.2; ctx.strokeStyle = skin;
+  ctx.beginPath(); ctx.moveTo(-2, -16); ctx.lineTo(grip1x, grip1y); ctx.stroke();      // top arm
+  ctx.beginPath(); ctx.moveTo(2, -12); ctx.lineTo(padSide * 11, -2); ctx.stroke();     // lower arm
+  // paddle blade
+  ctx.save(); ctx.translate(tipx, tipy); ctx.rotate(Math.atan2(tipy - grip1y, tipx - grip1x));
+  ctx.fillStyle = '#7a5230'; ctx.beginPath(); ctx.ellipse(5, 0, 7, 3, 0, 0, 6.283); ctx.fill(); ctx.restore();
+  ctx.restore();
   ctx.restore();
   // ripple where the paddle dips
   if (Math.abs(strokeT) > 0.9) {
@@ -411,17 +440,13 @@ function WelcomeView({ all, setView }) {
     _CLICKS.push({ x: e.clientX - r.left, y: e.clientY - r.top, t: performance.now() });
     if (_CLICKS.length > 24) _CLICKS.shift();
   };
-  // smooth-scroll the arrow to the next chapter
-  const scrollNext = () => {
-    const stage = stageRef.current;
-    if (!stage) { window.scrollBy({ top: window.innerHeight, behavior: 'smooth' }); return; }
-    const rect = stage.getBoundingClientRect();
-    const top = window.scrollY + rect.top;
-    const total = rect.height - window.innerHeight;
-    const cur = _clamp((window.scrollY - top) / (total || 1), 0, 1);
-    const seg = 1 / 5;
-    const next = Math.min(1, (Math.floor(cur / seg + 0.001) + 1.5) * seg);
-    window.scrollTo({ top: top + next * total, behavior: 'smooth' });
+  // smooth-scroll forward ~one screen each time the arrow is pressed (advances a chapter)
+  const scrollNext = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const y = window.scrollY || document.documentElement.scrollTop || 0;
+    const step = (window.innerHeight || 800) * 1.08;
+    try { window.scrollTo({ top: y + step, behavior: 'smooth' }); }
+    catch (_) { window.scrollTo(0, y + step); }
   };
 
   // ---- canvas animation loop ----
