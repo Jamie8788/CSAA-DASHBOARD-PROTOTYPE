@@ -79,6 +79,73 @@ const _VIGIL = [
 // cursor position (-1..1 from centre), eased, for a parallax depth effect
 let _MX = 0, _MY = 0, _MXe = 0, _MYe = 0;
 
+// Calming ambient soundscape — fully SYNTHESIZED (no recordings): gentle lapping
+// water, occasional birdsong, and a soft slow heartbeat (the drum is the heartbeat
+// of the people and the land). Built with the Web Audio API; starts only on a user
+// gesture and fades in/out. Returns a handle with stop().
+function createAmbient() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  const ctx = new AC();
+  const master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
+  const timers = [];
+
+  // --- water: brown noise through a gentle low-pass, with a slow wave LFO ---
+  const len = 2 * ctx.sampleRate;
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.2; }
+  const noise = ctx.createBufferSource(); noise.buffer = buf; noise.loop = true;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500;
+  const waterGain = ctx.createGain(); waterGain.gain.value = 0.16;
+  noise.connect(lp); lp.connect(waterGain); waterGain.connect(master);
+  const lfo = ctx.createOscillator(); lfo.frequency.value = 0.11;
+  const lfoGain = ctx.createGain(); lfoGain.gain.value = 0.08;
+  lfo.connect(lfoGain); lfoGain.connect(waterGain.gain);
+  noise.start(); lfo.start();
+
+  // --- soft heartbeat drum (lub-dub) every ~1.7s ---
+  function thump(t, vol) {
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(92, t); o.frequency.exponentialRampToValueAtTime(54, t + 0.18);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.025);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.45);
+  }
+  function heart() {
+    const t = ctx.currentTime + 0.05; thump(t, 0.22); thump(t + 0.29, 0.14);
+    timers.push(setTimeout(heart, 1700));
+  }
+
+  // --- occasional birdsong (two quick chirps) ---
+  function chirp() {
+    const t = ctx.currentTime + 0.02; const n = 1 + (Math.random() < 0.5 ? 1 : 0);
+    for (let k = 0; k < n; k++) {
+      const t0 = t + k * 0.16, f0 = 1700 + Math.random() * 1500;
+      const o = ctx.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(f0, t0); o.frequency.linearRampToValueAtTime(f0 * 1.28, t0 + 0.05);
+      o.frequency.linearRampToValueAtTime(f0 * 0.92, t0 + 0.12);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.045, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+      o.connect(g); g.connect(master); o.start(t0); o.stop(t0 + 0.2);
+    }
+    timers.push(setTimeout(chirp, 2600 + Math.random() * 6000));
+  }
+
+  heart(); timers.push(setTimeout(chirp, 1400));
+  try { master.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 2.2); } catch (e) {}
+  return {
+    stop() {
+      timers.forEach(clearTimeout);
+      try { master.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.5); } catch (e) {}
+      setTimeout(() => { try { ctx.close(); } catch (e) {} }, 700);
+    },
+  };
+}
+
 function drawScene(ctx, W, H, p, tt, now) {
   const hY = H * 0.5;
   // Begin the story in bright MORNING (not pre-dawn dark) and end at night, so
@@ -609,6 +676,24 @@ function WelcomeView({ all, setView }) {
   const setPanelRef = (i) => (el) => { panelRefs.current[i] = el; };
   const reduce = _motionOff();
 
+  // Always begin the landing page at the very top. Browsers restore the previous
+  // scroll position on reload, which could land the pinned story on a chapter
+  // boundary (the fade-through gap) and make the text look like it disappeared.
+  useE_w(() => {
+    try { if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual'; } catch (e) {}
+    window.scrollTo(0, 0);
+    progressRef.current = 0;
+  }, []);
+
+  // ambient soundscape (water, birds, soft heartbeat) — off by default
+  const [soundOn, setSoundOn] = useS_w(false);
+  const ambientRef = useR_w(null);
+  const toggleSound = () => {
+    if (soundOn) { if (ambientRef.current) { ambientRef.current.stop(); ambientRef.current = null; } setSoundOn(false); }
+    else { ambientRef.current = createAmbient(); if (ambientRef.current) setSoundOn(true); }
+  };
+  useE_w(() => () => { if (ambientRef.current) { ambientRef.current.stop(); ambientRef.current = null; } }, []);
+
   const data = useM_w(() => {
     const list = Array.isArray(all) ? all : [];
     const comms = list.filter((c) => c.orgType === 'Community');
@@ -813,6 +898,12 @@ function WelcomeView({ all, setView }) {
         <div className="wv-pin" onPointerDown={onTapLake} onPointerMove={onMoveScene}>
           <canvas ref={canvasRef} className="wv-canvas" aria-hidden="true"></canvas>
           <div className="wv-panels">{panels}</div>
+          <button type="button" className={`wv-sound ${soundOn ? 'on' : ''}`} onClick={toggleSound}
+                  aria-pressed={soundOn} title="Ambient sound — water, birds & a soft heartbeat drum">
+            <span className="wv-sound-ico" aria-hidden="true">{soundOn ? '♪' : '♪'}</span>
+            <span className="wv-sound-lab">{soundOn ? 'Sound on' : 'Sound off'}</span>
+            {soundOn && <span className="wv-sound-eq" aria-hidden="true"><i></i><i></i><i></i></span>}
+          </button>
           <button type="button" className="wv-scrollcue" onClick={scrollNext} aria-label="Scroll to the next chapter">
             <span>scroll to discover</span><i>↓</i>
           </button>
