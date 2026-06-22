@@ -2087,6 +2087,31 @@ mark.search-hit {
 }
 .marker-pin.muted .pin-pulse { display: none; }
 
+/* Cinematic marker entrance: pins settle onto the map, gently staggered */
+@keyframes pinDrop {
+  0%   { opacity: 0; transform: scale(0.1) translateY(-14px); }
+  60%  { opacity: 1; transform: scale(1.15) translateY(0); }
+  80%  { transform: scale(0.94); }
+  100% { opacity: 1; transform: none; }
+}
+.community-icon .marker-pin.visible { animation: pinDrop 0.55s cubic-bezier(.18,.7,.3,1) both; }
+.reduce-motion .community-icon .marker-pin.visible { animation: none !important; }
+
+/* Sky-tour focus: an expanding sonar ring on the community being visited */
+.community-icon.tour-focus { z-index: 4000 !important; }
+.community-icon.tour-focus .pin-core { box-shadow: 0 0 0 2px #ffd886, 0 0 14px rgba(255,216,134,.9); }
+.community-icon.tour-focus::before,
+.community-icon.tour-focus::after {
+  content: ''; position: absolute; left: 11px; top: 11px; width: 10px; height: 10px;
+  margin: -5px 0 0 -5px; border-radius: 50%; border: 2px solid #ffd886;
+  pointer-events: none; animation: tourPing 1.6s ease-out infinite;
+}
+.community-icon.tour-focus::after { animation-delay: .8s; }
+@keyframes tourPing {
+  0%   { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(5); opacity: 0; }
+}
+
 /* Clusters */
 .cluster-icon { background: transparent !important; border: none !important; }
 .cluster-bubble {
@@ -3336,6 +3361,39 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
   from { transform: scale(1); opacity: 0.6; }
   to   { transform: scale(2.2); opacity: 0; }
 }
+
+/* Guided Sky-tour card */
+.tour-card {
+  position: absolute; left: 18px; bottom: 18px; z-index: 1200; width: 300px;
+  background: rgba(20,17,13,.93); color: #fbf6ec;
+  border: 1px solid rgba(255,216,134,.28); border-radius: 14px;
+  padding: 13px 16px 14px; backdrop-filter: blur(8px);
+  box-shadow: 0 16px 44px rgba(0,0,0,.45);
+  font-family: var(--mono, monospace);
+  animation: tcIn .55s cubic-bezier(.16,.84,.3,1) both;
+}
+@keyframes tcIn { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
+.tc-top { display: flex; justify-content: space-between; align-items: center; }
+.tc-eyebrow { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #ffd886; }
+.tc-x { background: none; border: 0; color: rgba(251,246,236,.55); cursor: pointer; font-size: 13px; line-height: 1; }
+.tc-x:hover { color: #fbf6ec; }
+.tc-name { font-family: var(--serif, 'Newsreader', serif); font-size: 22px; line-height: 1.12; margin: 7px 0 9px; }
+.tc-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 11px; }
+.tc-chip { font-size: 10.5px; letter-spacing: .03em; padding: 3px 8px; border-radius: 999px; background: rgba(251,246,236,.1); color: rgba(251,246,236,.85); }
+.tc-chip.org { background: rgba(61,107,64,.42); color: #d2ead2; }
+.tc-pillars { display: flex; flex-wrap: wrap; gap: 7px 13px; margin-bottom: 11px; }
+.tc-pill { display: flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(251,246,236,.82); }
+.tc-pill.off { opacity: .38; }
+.tc-pill i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid; display: inline-block; box-sizing: border-box; }
+.tc-cov { height: 5px; border-radius: 3px; background: rgba(251,246,236,.14); overflow: hidden; }
+.tc-cov-bar { height: 100%; background: linear-gradient(90deg, #b8351e, #d4a017, #3d6b40); transition: width .6s cubic-bezier(.16,.84,.3,1); }
+.tc-cov-lab { font-size: 10px; color: rgba(251,246,236,.6); margin: 5px 0 12px; }
+.tc-controls { display: flex; gap: 6px; }
+.tc-controls button { background: rgba(251,246,236,.1); border: 1px solid rgba(251,246,236,.2); color: #fbf6ec; border-radius: 8px; padding: 7px 11px; cursor: pointer; font-size: 12px; transition: background .15s, transform .15s; }
+.tc-controls button:hover { background: rgba(255,216,134,.25); transform: translateY(-1px); }
+.tc-controls .tc-open { margin-left: auto; background: #ffd886; color: #1a1410; border-color: #ffd886; font-weight: 700; }
+.map-wrap.drawer-open .tour-card { left: auto; right: 18px; }
+@media (max-width: 640px) { .tour-card { width: calc(100vw - 36px); } }
 
 /* Tour banner overlay */
 .tour-banner {
