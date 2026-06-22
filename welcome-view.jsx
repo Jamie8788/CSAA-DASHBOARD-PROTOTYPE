@@ -761,6 +761,103 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.beginPath(); ctx.ellipse(cx + padSide * 22 * scl, cy + 6 * scl, 7 * scl, 2.6 * scl, 0, 0, 6.283); ctx.stroke();
   }
 
+  // ============================================================================
+  // FOREGROUND VILLAGE — a near shore on the lower-right where the lake meets the
+  //   land. The community works by day and gathers at the fire by night, crossfading
+  //   smoothly as the sun goes down. Self-contained block (easy to revert).
+  // ============================================================================
+  {
+    const nm = _smooth(0.52, 0.9, p);                 // nightness 0..1 — drives the crossfade
+    const lx0 = W * 0.70;                              // waterline meets the land here (lower-right)
+    const shoreY = (x) => { const t = _clamp((x - lx0) / (W - lx0), 0, 1); return H - 4 - Math.pow(t, 0.9) * H * 0.26; };
+    const ground = (x) => shoreY(x) + 8;
+    // --- land bank (earth tone, darkens at night) ---
+    const et = [Math.round(_lerp(70, 30, nm)), Math.round(_lerp(76, 38, nm)), Math.round(_lerp(46, 26, nm))];
+    const eb = [Math.round(_lerp(40, 17, nm)), Math.round(_lerp(44, 21, nm)), Math.round(_lerp(26, 14, nm))];
+    const lgr = ctx.createLinearGradient(0, H * 0.74, 0, H);
+    lgr.addColorStop(0, `rgb(${et.join(',')})`); lgr.addColorStop(1, `rgb(${eb.join(',')})`);
+    ctx.fillStyle = lgr;
+    ctx.beginPath(); ctx.moveTo(lx0, H);
+    for (let x = lx0; x <= W; x += 10) ctx.lineTo(x, shoreY(x));
+    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+    // soft lit waterline where land meets the lake (blends the edge)
+    const hzc = _rampA(SKY_HORIZ, p);
+    ctx.strokeStyle = `rgba(${hzc[0]},${hzc[1]},${hzc[2]},0.25)`; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let x = lx0; x <= W; x += 8) { const y = shoreY(x) + Math.sin(x * 0.05 + tt * 1.5) * 1.3; x === lx0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+    ctx.stroke();
+
+    // --- two homes (wigwam domes) with a warm doorway at night ---
+    [[W * 0.80, 1.0], [W * 0.875, 0.82]].forEach(([hx, s]) => {
+      const gy = ground(hx);
+      ctx.fillStyle = `rgb(${Math.round(_lerp(44, 18, nm))},${Math.round(_lerp(36, 16, nm))},${Math.round(_lerp(24, 12, nm))})`;
+      ctx.beginPath(); ctx.ellipse(hx, gy, 24 * s, 17 * s, 0, Math.PI, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = nm > 0.35 ? `rgba(255,170,86,${0.55 * nm})` : 'rgba(18,12,8,0.85)';
+      ctx.beginPath(); ctx.ellipse(hx, gy, 4 * s, 8 * s, 0, Math.PI, 2 * Math.PI); ctx.fill();
+    });
+    // --- garden plot (rows of plants gently swaying) ---
+    const gx = W * 0.95, gyy = ground(gx);
+    for (let r = 0; r < 4; r++) {
+      const ry = gyy + 3 + r * 5;
+      ctx.strokeStyle = 'rgba(38,48,26,0.8)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(gx - 26, ry); ctx.lineTo(gx + 26, ry); ctx.stroke();
+      ctx.strokeStyle = 'rgba(74,98,50,0.85)'; ctx.lineWidth = 1.4;
+      for (let c = 0; c < 6; c++) { const px = gx - 22 + c * 9; ctx.beginPath(); ctx.moveTo(px, ry); ctx.lineTo(px + Math.sin(tt * 1.4 + c + r) * 1.4, ry - 4.5); ctx.stroke(); }
+    }
+    // --- drying rack with fish ---
+    const dx = W * 0.90, dyy = ground(dx);
+    ctx.strokeStyle = 'rgba(34,24,14,1)'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(dx - 17, dyy); ctx.lineTo(dx - 17, dyy - 22); ctx.moveTo(dx + 17, dyy); ctx.lineTo(dx + 17, dyy - 22); ctx.moveTo(dx - 20, dyy - 22); ctx.lineTo(dx + 20, dyy - 22); ctx.stroke();
+    ctx.fillStyle = 'rgba(122,92,62,1)';
+    for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.ellipse(dx - 14 + i * 5.6, dyy - 14, 1.9, 4.2, 0, 0, 6.283); ctx.fill(); }
+    // --- the village fire: cooking by day → bonfire by night, always glowing a little ---
+    const fx = W * 0.785, fy = ground(fx) + 7, fa = 0.45 + 0.55 * nm;
+    const gl = ctx.createRadialGradient(fx, fy - 6, 0, fx, fy - 6, 60 * (0.6 + nm));
+    gl.addColorStop(0, `rgba(255,160,80,${0.32 * fa})`); gl.addColorStop(1, 'rgba(255,150,60,0)');
+    ctx.fillStyle = gl; ctx.fillRect(fx - 70, fy - 70, 140, 100);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const fcols = ['255,110,34', '255,165,58', '255,224,130'];
+    for (let i = 0; i < 3; i++) {
+      const fw = (7 - i * 1.8) * (0.7 + 0.6 * nm), fh = (16 - i * 3) * (0.7 + 0.6 * nm) * (0.8 + 0.3 * Math.sin(tt * (9 + i * 4) + i));
+      ctx.fillStyle = `rgba(${fcols[i]},${0.8 * fa})`;
+      ctx.beginPath(); ctx.moveTo(fx - fw, fy);
+      ctx.quadraticCurveTo(fx - fw * 0.5 + Math.sin(tt * 8 + i) * 2, fy - fh * 0.6, fx, fy - fh);
+      ctx.quadraticCurveTo(fx + fw * 0.5 + Math.sin(tt * 8 + i + 2) * 2, fy - fh * 0.6, fx + fw, fy);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+    // cooking smoke (day only)
+    if (nm < 0.85) {
+      ctx.save(); ctx.globalAlpha = (1 - nm) * 0.5; ctx.strokeStyle = 'rgba(190,184,174,1)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.beginPath();
+      for (let s = 0; s <= 12; s++) { const sy = fy - 8 - s * 6; const sx = fx + Math.sin(s * 0.5 + tt * 1.1) * (3 + s * 0.7); s === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy); }
+      ctx.stroke(); ctx.restore();
+    }
+    // --- PEOPLE (moderate size), animated; day: doing tasks, night: gathered at the fire ---
+    const fig = (px, py, sc, kind, ph) => {
+      ctx.fillStyle = 'rgba(12,8,5,1)';
+      const bh = 11 * sc;
+      ctx.beginPath(); ctx.ellipse(px, py - bh * 0.4, 3.1 * sc, bh * 0.5, 0, Math.PI, 2 * Math.PI); ctx.fill();   // body
+      ctx.beginPath(); ctx.arc(px, py - bh, 2.4 * sc, 0, 6.283); ctx.fill();                                       // head
+      ctx.strokeStyle = 'rgba(12,8,5,1)'; ctx.lineWidth = 2 * sc; ctx.lineCap = 'round';
+      if (kind === 'stir') { const a = Math.sin(tt * 3 + ph) * 0.5; ctx.beginPath(); ctx.moveTo(px, py - bh * 0.7); ctx.lineTo(px + 7 * sc * Math.cos(a - 0.3), py - bh * 0.45 + 7 * sc * Math.sin(a - 0.3)); ctx.stroke(); }
+      else if (kind === 'hang') { const a = Math.sin(tt * 1.6 + ph) * 0.3 - 1.05; ctx.beginPath(); ctx.moveTo(px, py - bh * 0.7); ctx.lineTo(px + 6 * sc * Math.cos(a), py - bh * 0.7 + 6 * sc * Math.sin(a)); ctx.stroke(); }
+      else if (kind === 'hoe') { const a = Math.abs(Math.sin(tt * 2.4 + ph)); ctx.beginPath(); ctx.moveTo(px, py - bh * 0.6); ctx.lineTo(px + 8 * sc, py - bh * 0.3 + 6 * sc * a); ctx.stroke(); }
+    };
+    // day workers (fade out as the sun sets)
+    if (nm < 0.98) {
+      ctx.save(); ctx.globalAlpha = 1 - nm;
+      fig(fx + 15, ground(fx + 15) + 7, 1.5, 'stir', 0);   // cooking at the fire
+      fig(dx - 1, dyy + 7, 1.45, 'hang', 1);               // hanging fish to dry
+      fig(gx + 4, gyy + 8, 1.45, 'hoe', 2);                // tending the garden
+      ctx.restore();
+    }
+    // night — the community gathered around the fire (fade in)
+    if (nm > 0.02) {
+      ctx.save(); ctx.globalAlpha = nm;
+      [[-19, 1.45], [-9, 1.55], [11, 1.55], [20, 1.45]].forEach(([dxx, sc], i) => { const bob = Math.sin(tt * 1.5 + i) * 0.7; fig(fx + dxx, fy + 8 + bob, sc, 'sit', i); });
+      ctx.restore();
+    }
+  }
+
   // ---- foreground reeds for depth (restored — the simpler tapered grasses) ----
   ctx.strokeStyle = 'rgba(15,12,9,0.8)'; ctx.lineCap = 'round';
   const reeds = [[W * 0.04, 5], [W * 0.07, 4], [W * 0.95, 5], [W * 0.92, 4], [W * 0.98, 6]];
