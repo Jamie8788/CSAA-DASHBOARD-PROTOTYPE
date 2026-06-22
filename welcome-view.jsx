@@ -395,6 +395,33 @@ function drawScene(ctx, W, H, p, tt, now) {
     // a soft warm doorway light at dusk/night
     if (fireA > 0.3) { ctx.fillStyle = `rgba(255,176,86,${0.5 * fireA})`; ctx.beginPath(); ctx.arc(lx, hY - 1, 1.2 * s, 0, 6.283); ctx.fill(); }
   }
+  // ---- the community gathered around the sacred fire (dusk → night) ----
+  if (fireA > 0.32) {
+    const fx = vx + 2, fy = hY + 1;
+    // people seated/standing around the fire (dark silhouettes, facing in)
+    ctx.fillStyle = `rgba(7,5,3,${shoreAlpha})`;
+    for (const fk of [[-17, 0.9], [-10, 1.05], [-1, 0.8], [9, 1.05], [17, 0.92], [4, 0.75]]) {
+      const px = fx + fk[0], s2 = fk[1], bh = 7 * s2;
+      ctx.beginPath(); ctx.ellipse(px, fy - bh * 0.35, 2.5 * s2, bh * 0.55, 0, Math.PI, 2 * Math.PI); ctx.fill();
+      ctx.beginPath(); ctx.arc(px, fy - bh, 1.7 * s2, 0, 6.283); ctx.fill();
+    }
+    // the fire — layered flickering flames (additive glow)
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const cols = ['255,118,38', '255,168,60', '255,222,128'];
+    for (let i = 0; i < 3; i++) {
+      const fw = 4.2 - i, fh = (9 - i * 1.7) * (0.8 + 0.35 * Math.sin(tt * (9 + i * 4) + i));
+      ctx.fillStyle = `rgba(${cols[i]},${0.85 * fireA})`;
+      ctx.beginPath();
+      ctx.moveTo(fx - fw, fy);
+      ctx.quadraticCurveTo(fx - fw * 0.5 + Math.sin(tt * 8 + i) * 1.6, fy - fh * 0.6, fx, fy - fh);
+      ctx.quadraticCurveTo(fx + fw * 0.5 + Math.sin(tt * 8 + i + 2) * 1.6, fy - fh * 0.6, fx + fw, fy);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+    // logs at the base
+    ctx.strokeStyle = `rgba(28,16,9,${shoreAlpha})`; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(fx - 5, fy + 1); ctx.lineTo(fx + 5, fy - 1); ctx.moveTo(fx - 5, fy - 1); ctx.lineTo(fx + 5, fy + 1); ctx.stroke();
+  }
   // ---- a memorial of orange shirts on a line at the shore ----
   //   "Every Child Matters" — remembering the children of the residential schools.
   {
@@ -535,14 +562,20 @@ function drawScene(ctx, W, H, p, tt, now) {
       const vxp = (((v.x + tt * v.sp) % 1.1) - 0.05) * W;
       const vyp = hY + 16 + (H - hY) * v.y;
       const fl = 0.72 + 0.28 * Math.sin(tt * 3 + v.ph);
-      const g = ctx.createRadialGradient(vxp, vyp, 0, vxp, vyp, 17);
-      g.addColorStop(0, `rgba(255,176,86,${0.5 * vigilA * fl})`);
+      const g = ctx.createRadialGradient(vxp, vyp, 0, vxp, vyp, 15);
+      g.addColorStop(0, `rgba(255,178,90,${0.45 * vigilA * fl})`);
       g.addColorStop(1, 'rgba(255,150,60,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(vxp, vyp, 17, 0, 6.283); ctx.fill();
-      ctx.fillStyle = `rgba(255,226,170,${0.85 * vigilA * fl})`;
-      ctx.beginPath(); ctx.arc(vxp, vyp, 1.7, 0, 6.283); ctx.fill();          // flame core
-      ctx.fillStyle = `rgba(255,190,110,${0.28 * vigilA * fl})`;
-      ctx.fillRect(vxp - 0.8, vyp + 2, 1.6, 9);                                // reflection streak
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(vxp, vyp, 15, 0, 6.283); ctx.fill();
+      ctx.fillStyle = `rgba(255,228,176,${0.8 * vigilA * fl})`;
+      ctx.beginPath(); ctx.arc(vxp, vyp, 1.5, 0, 6.283); ctx.fill();          // flame core
+      // soft shimmering reflection below (a fading gradient, not a hard line)
+      const rg = ctx.createLinearGradient(vxp, vyp + 2, vxp, vyp + 16);
+      rg.addColorStop(0, `rgba(255,190,110,${0.22 * vigilA * fl})`);
+      rg.addColorStop(1, 'rgba(255,170,90,0)');
+      const wob = Math.sin(tt * 2 + v.ph) * 1.5;
+      ctx.fillStyle = rg; ctx.beginPath();
+      ctx.moveTo(vxp - 2, vyp + 2); ctx.lineTo(vxp + 2, vyp + 2);
+      ctx.lineTo(vxp + wob, vyp + 16); ctx.lineTo(vxp + wob, vyp + 16); ctx.closePath(); ctx.fill();
     }
     ctx.restore();
   }
@@ -702,20 +735,25 @@ function drawScene(ctx, W, H, p, tt, now) {
     }
   }
 
-  // ---- fireflies emerging at dusk near the reeds (warm, blinking, drifting) ----
-  const flyA = _smooth(0.46, 0.66, p) * (1 - _smooth(0.9, 1, p));
+  // ---- fireflies near the reeds (dusk → night): wandering, soft, organic blink ----
+  const flyA = _smooth(0.44, 0.64, p);
   if (flyA > 0.02) {
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     for (const f of _FLIES) {
-      const fx = ((f.x + Math.sin(tt * 0.2 * f.sp + f.ph) * 0.05) % 1) * W + pxX * 30;
-      const fy = (f.y + Math.sin(tt * 0.5 + f.ph) * 0.02) * H;
-      const blink = Math.max(0, Math.sin(tt * f.blink + f.ph));
-      const a = flyA * blink * 0.9;
-      if (a < 0.02) continue;
-      const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, f.r * 5);
-      g.addColorStop(0, `rgba(255,224,130,${a})`); g.addColorStop(1, 'rgba(255,210,90,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(fx, fy, f.r * 5, 0, 6.283); ctx.fill();
-      ctx.fillStyle = `rgba(255,240,190,${a})`; ctx.beginPath(); ctx.arc(fx, fy, f.r, 0, 6.283); ctx.fill();
+      // gentle figure-8 wander, not a fixed dot
+      const fx = f.x * W + Math.sin(tt * 0.4 * f.sp + f.ph) * 26 + Math.sin(tt * 0.17 + f.ph * 2) * 14 + pxX * 30;
+      const fy = f.y * H + Math.cos(tt * 0.33 * f.sp + f.ph) * 15 + Math.sin(tt * 0.5 + f.ph) * 7;
+      // organic blink: mostly dark, brief warm pulses (cubed sine)
+      const s = Math.sin(tt * f.blink + f.ph);
+      const pulse = s > 0 ? s * s * s : 0;
+      const a = flyA * pulse;
+      if (a < 0.015) continue;
+      const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, 7);
+      g.addColorStop(0, `rgba(198,255,150,${a * 0.8})`);
+      g.addColorStop(0.4, `rgba(255,226,120,${a * 0.5})`);
+      g.addColorStop(1, 'rgba(255,210,90,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(fx, fy, 7, 0, 6.283); ctx.fill();
+      ctx.fillStyle = `rgba(222,255,176,${a})`; ctx.beginPath(); ctx.arc(fx, fy, 1.1, 0, 6.283); ctx.fill();
     }
     ctx.restore();
   }
