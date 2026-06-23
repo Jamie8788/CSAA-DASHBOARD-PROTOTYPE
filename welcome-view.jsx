@@ -124,33 +124,8 @@ function createAmbient(getP) {
     const lfo = ctx.createOscillator(); lfo.frequency.value = 0.24 + idx * 0.1; const lg = ctx.createGain(); lg.gain.value = 0.034;
     lfo.connect(lg); lg.connect(g.gain); n.start(); lfo.start();
   });
-  // ---- PHASE DRONE: a soft low pad whose pitch + brightness track the scroll
-  //   position, so the soundscape AUDIBLY changes as you move through the day.
-  //   morning = low warm, midday = brighter, night = deep + hollow. This is the
-  //   continuous element that makes "the sound changes with the day" obvious.
-  //   (Replaces the old constant high "whistle" wind Hassan kept hearing.) ----
-  const drone = ctx.createOscillator(); drone.type = 'sine';
-  const drone2 = ctx.createOscillator(); drone2.type = 'triangle';
-  const droneF = ctx.createBiquadFilter(); droneF.type = 'lowpass'; droneF.frequency.value = 600;
-  const droneG = ctx.createGain(); droneG.gain.value = 0.06;
-  drone.connect(droneF); drone2.connect(droneF); droneF.connect(droneG); droneG.connect(master);
-  drone.frequency.value = 110; drone2.frequency.value = 55;
-  drone.start(); drone2.start();
-  // gently retune the drone toward the current time-of-day a few times a second
-  const droneTimer = setInterval(() => {
-    const pp = P();
-    // morning ~ A2(110), midday ~ D3(146), evening ~ A2, night ~ low E2(82)
-    let target = 110;
-    if (pp < 0.30) target = 104 + pp * 80;            // morning, slowly rising
-    else if (pp < 0.66) target = 128 + (pp - 0.30) * 40;  // day, brighter
-    else target = 92 - (pp - 0.66) * 40;              // night, settling low
-    try {
-      drone.frequency.linearRampToValueAtTime(target, ctx.currentTime + 0.4);
-      drone2.frequency.linearRampToValueAtTime(target / 2, ctx.currentTime + 0.4);
-      droneF.frequency.linearRampToValueAtTime(pp < 0.66 ? 700 + pp * 500 : 420, ctx.currentTime + 0.4);
-    } catch (e) {}
-  }, 300);
-  timers.push({ __interval: droneTimer });
+  // (PHASE DRONE REMOVED — it sounded like an engine. No continuous tone now;
+  //  the soundscape is just soft water + gentle birds + the time-of-day voices.)
 
   // slow, soft heartbeat (REMOVED — Hassan flagged the existing pads as a
   // "trumpet" noise. Soundscape now: water/wind ambient + scroll-gated
@@ -158,14 +133,32 @@ function createAmbient(getP) {
   // constant birdsong.)
   function thump() {}
   function heart() {}
-  // birdsong (REMOVED — was constant and not time-of-day gated)
-  function bird() {}
-  // loon (REMOVED — was the "trumpet"-like tone)
   function loon() {}
-  // wooden flute (REMOVED — also read as "trumpet")
   function flute() {}
-  // (frequent birdsong / loon / wooden flute were removed above —
-  //  their function bodies became no-ops.)
+  // gentle, calming birdsong — soft 2-3 note chirps that play through the day
+  // (this is the pleasant "alive" layer Hassan wants back). Quiet, sparse.
+  function bird() {
+    const t = T() + 0.02, p = pan((Math.random() * 2 - 1) * 0.6);
+    const base = 1900 + Math.random() * 1500;
+    const notes = 2 + Math.floor(Math.random() * 2);
+    for (let k = 0; k < notes; k++) {
+      const t0 = t + k * (0.09 + Math.random() * 0.05);
+      const f = base * (1 + (Math.random() * 0.16 - 0.08));
+      const o = ctx.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(f, t0);
+      o.frequency.linearRampToValueAtTime(f * 1.2, t0 + 0.04);
+      o.frequency.linearRampToValueAtTime(f * 0.96, t0 + 0.1);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(0.026, t0 + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.13);
+      o.connect(g); g.connect(p); o.start(t0); o.stop(t0 + 0.15);
+    }
+    p.connect(master);
+    // birds quieten down at night
+    const gap = (P() > 0.7) ? (9000 + Math.random() * 8000) : (2600 + Math.random() * 3000);
+    timers.push(setTimeout(bird, gap));
+  }
 
   // ===========================================================================
   // TIME-OF-DAY VOICES — driven by the scroll position (P()):
@@ -180,34 +173,48 @@ function createAmbient(getP) {
   //   with body (lower bandpass + a touch of lowpassed thud). It plays a clear
   //   STEADY rhythm — shake-shake-shake — and repeats through the morning so
   //   the start of the day is unmistakably a rattle.
-  function oneShake(tk, vol) {
-    // seed/gourd hiss
-    const n = ctx.createBufferSource(); n.buffer = brown(); n.loop = false;
-    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2300; bp.Q.value = 1.1;
+  // A single very short PEBBLE CLICK (one pebble/seed striking the rawhide shell).
+  function pebbleClick(tk, vol, freq) {
+    const o = ctx.createOscillator(); o.type = 'triangle';
+    o.frequency.setValueAtTime(freq, tk);
+    o.frequency.exponentialRampToValueAtTime(freq * 0.5, tk + 0.012);
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = 2.2;
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, tk);
-    g.gain.linearRampToValueAtTime(vol, tk + 0.008);
-    g.gain.exponentialRampToValueAtTime(0.0001, tk + 0.085);
-    n.connect(bp); bp.connect(g); g.connect(master);
-    n.start(tk); n.stop(tk + 0.1);
-    // a little woody body underneath each shake
+    g.gain.linearRampToValueAtTime(vol, tk + 0.002);          // sharp click attack
+    g.gain.exponentialRampToValueAtTime(0.0001, tk + 0.02);   // very short
+    o.connect(bp); bp.connect(g); g.connect(master);
+    o.start(tk); o.stop(tk + 0.03);
+  }
+  // ONE SHAKE of the rattle = a dense cluster of pebble/seed clicks within ~45ms
+  // (many pebbles + red willow seeds hitting the hide shell at once), over a soft
+  // hide-body resonance. This is the dry "shrill rattle to mark the time" sound.
+  function oneShake(tk, vol) {
+    const pebbles = 10 + Math.floor(Math.random() * 8);       // 10-18 grains per shake
+    for (let i = 0; i < pebbles; i++) {
+      const jitter = Math.random() * 0.045;                   // spread across the shake
+      const f = 2600 + Math.random() * 3200;                  // bright pebble/seed pitches
+      pebbleClick(tk + jitter, vol * (0.5 + Math.random() * 0.5), f);
+    }
+    // soft hide-shell body resonance under the cluster
     const n2 = ctx.createBufferSource(); n2.buffer = brown(); n2.loop = false;
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
     const g2 = ctx.createGain();
     g2.gain.setValueAtTime(0.0001, tk);
-    g2.gain.linearRampToValueAtTime(vol * 0.7, tk + 0.006);
-    g2.gain.exponentialRampToValueAtTime(0.0001, tk + 0.06);
+    g2.gain.linearRampToValueAtTime(vol * 0.5, tk + 0.005);
+    g2.gain.exponentialRampToValueAtTime(0.0001, tk + 0.07);
     n2.connect(lp); lp.connect(g2); g2.connect(master);
-    n2.start(tk); n2.stop(tk + 0.08);
+    n2.start(tk); n2.stop(tk + 0.09);
   }
-  // one ceremonial phrase: a run of even shakes with a small accent pattern
+  // one ceremonial phrase: paired down-UP wrist shakes (loud forward shake +
+  // softer back shake) — the natural "ka-cha ka-cha" of a hand rattle.
   function rattle(strong) {
-    const t0 = T() + 0.05;
-    const shakes = strong ? 16 : 12;
-    const step = 0.16;                                  // steady ~3.75 shakes/sec
-    for (let k = 0; k < shakes; k++) {
-      const accent = (k % 4 === 0) ? 1.0 : 0.66;        // accent every 4th shake
-      oneShake(t0 + k * step, (strong ? 0.30 : 0.24) * accent);
+    let t = T() + 0.05;
+    const beats = strong ? 10 : 7;
+    for (let k = 0; k < beats; k++) {
+      oneShake(t, (strong ? 0.34 : 0.26));               // forward shake (accent)
+      oneShake(t + 0.11, (strong ? 0.20 : 0.16));        // back shake (softer)
+      t += 0.30;                                          // ~3.3 beats/sec, ceremonial pace
     }
   }
   // morning rattle loop — frequent, so the morning is clearly "rattle time"
@@ -373,9 +380,9 @@ function createAmbient(getP) {
     timers.push(setTimeout(fireCrackle, 700 + Math.random() * 900));
   }
 
-  // (heart/bird/loon/flute removed — they were the "trumpet"-like pads)
-  // OPEN THE DAY — a strong traditional rattle as the soundscape begins
+  // OPEN THE DAY — a traditional rattle, then gentle birds + the time-of-day voices
   rattle(true);
+  timers.push(setTimeout(bird, 1500));                 // calming birdsong layer
   timers.push(setTimeout(rattleLoop, 17000));
   timers.push(setTimeout(eagle, 4500));
   timers.push(setTimeout(fishLoop, 6500));
@@ -965,17 +972,19 @@ function drawScene(ctx, W, H, p, tt, now) {
   ctx.fillStyle = 'rgba(240,222,180,0.95)';
   ctx.beginPath(); ctx.arc(56, -17.5, 1.4, 0, 6.283); ctx.fill();
   ctx.beginPath(); ctx.arc(-56, -17.5, 1.4, 0, 6.283); ctx.fill();
-  // a horizontal BEADWORK-STYLE pattern band along the mid-hull: alternating
-  // cream + red diamonds, the kind of geometric trim seen on real Anishinaabe
-  // birch-bark canoes. Subtle but adds the colour Hassan wanted on the canoe itself.
+  // a horizontal painted pattern band along the mid-hull in the FOUR SACRED
+  // COLOURS of the medicine wheel — black, red, yellow, white — repeating.
+  // This is the "4 colours on the canoe" Hassan asked for, and it carries real
+  // Anishinaabe meaning (the four directions) rather than arbitrary decoration.
+  const FOUR = ['rgba(20,20,24,0.9)', 'rgba(190,46,30,0.9)', 'rgba(232,184,52,0.92)', 'rgba(244,240,230,0.92)'];
   const beadY = 4;
-  for (let bx2 = -50; bx2 <= 50; bx2 += 6) {
-    const isRed = ((bx2 + 50) / 6) % 2 < 1;
-    ctx.fillStyle = isRed ? 'rgba(176,52,30,0.85)' : 'rgba(240,222,180,0.85)';
+  let ci = 0;
+  for (let bx2 = -50; bx2 <= 50; bx2 += 6, ci++) {
+    ctx.fillStyle = FOUR[ci % 4];
     ctx.beginPath();
-    ctx.moveTo(bx2, beadY - 1.6);
+    ctx.moveTo(bx2, beadY - 1.8);
     ctx.lineTo(bx2 + 3, beadY);
-    ctx.lineTo(bx2, beadY + 1.6);
+    ctx.lineTo(bx2, beadY + 1.8);
     ctx.lineTo(bx2 - 3, beadY);
     ctx.closePath(); ctx.fill();
   }
@@ -1222,7 +1231,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     // ---- a WILD-RICE POUNDING MORTAR: a tall wooden bucket with a long pestle
     //   that someone strikes down into it (manoomin processing). The pestle
     //   animates up & down for life. ----
-    const wmx = W * 0.555, wmy = ground(wmx);
+    const wmx = W * 0.705, wmy = ground(wmx);   // moved right, clear of the bear's space
     ctx.fillStyle = `rgb(${Math.round(_lerp(96, 48, nm))},${Math.round(_lerp(64, 32, nm))},${Math.round(_lerp(34, 16, nm))})`;
     // mortar (tapered tall bucket)
     ctx.beginPath();
@@ -1246,7 +1255,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.beginPath(); ctx.ellipse(wmx, wmy - 14, 8, 2.4, 0, 0, 6.283); ctx.fill();
     }
     // ---- a ceremonial drum on a low stand near the fire (Anishinaabe day activity) ----
-    const drx = W * 0.595, dry = ground(drx) + 4;
+    const drx = W * 0.665, dry = ground(drx) + 4;   // moved right, clear of the bear
     ctx.fillStyle = `rgba(${Math.round(_lerp(108, 52, nm))},${Math.round(_lerp(68, 32, nm))},${Math.round(_lerp(34, 16, nm))},1)`;
     ctx.beginPath(); ctx.ellipse(drx, dry, 7, 4.4, 0, 0, 6.283); ctx.fill();
     ctx.fillStyle = `rgba(${Math.round(_lerp(192, 96, nm))},${Math.round(_lerp(172, 84, nm))},${Math.round(_lerp(132, 62, nm))},1)`;
@@ -1672,9 +1681,9 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   the hind legs, ONE front paw raised in a striking arc, big shoulder
       //   hump, round head with two round ears, short tan snout, dark nose, eye.
       ctx.save(); ctx.globalAlpha = (1 - nm);
-      const S = 5.0;                                            // significantly larger so it dominates the shore
-      const bx = W * 0.605;
-      const by = shoreY(bx) - 8 * S;                            // sit the bear up on the bank
+      const S = 4.6;                                            // big, but clear of the village now
+      const bx = W * 0.545;                                     // moved LEFT into open shore, away from the people
+      const by = shoreY(bx) - 4 * S;                            // at the water's edge (lower than the villagers up the bank)
       // strike rhythm: paw cocks up, then slams down
       const strikePhase = (Math.sin(tt * 1.5) + 1) / 2;          // 0=cocked high, 1=struck low
       ctx.translate(bx, by);
@@ -2064,28 +2073,28 @@ function drawScene(ctx, W, H, p, tt, now) {
     fishG2.addColorStop(0.5, `rgba(178,190,200,${bodyA})`);
     fishG2.addColorStop(1, `rgba(72,86,98,${bodyA})`);
     ctx.fillStyle = fishG2;
-    // curved body
+    // curved body — HEAD at +x (leads the direction of travel), TAIL at -x
     ctx.beginPath();
-    ctx.moveTo(-10, 0);
-    ctx.quadraticCurveTo(-5, -4 + curl * 2, 2, -3.6 + curl * 1.5);
-    ctx.quadraticCurveTo(9, -2, 12, 0);
-    ctx.quadraticCurveTo(9, 3 + curl * 1.5, 2, 3.6 + curl * 2);
-    ctx.quadraticCurveTo(-5, 4 + curl * 2, -10, 0);
+    ctx.moveTo(12, 0);                                       // nose
+    ctx.quadraticCurveTo(7, -4 + curl * 2, -2, -3.6 + curl * 1.5);
+    ctx.quadraticCurveTo(-9, -2, -12, 0);                    // back toward tail
+    ctx.quadraticCurveTo(-9, 3 + curl * 1.5, -2, 3.6 + curl * 2);
+    ctx.quadraticCurveTo(7, 4 + curl * 2, 12, 0);
     ctx.closePath(); ctx.fill();
-    // forked tail flicking
+    // forked tail flicking (at the BACK, -x)
     ctx.beginPath();
-    ctx.moveTo(12, 0); ctx.lineTo(17, -4 + curl * 3); ctx.lineTo(14, 0); ctx.lineTo(17, 4 + curl * 3);
+    ctx.moveTo(-12, 0); ctx.lineTo(-17, -4 + curl * 3); ctx.lineTo(-14, 0); ctx.lineTo(-17, 4 + curl * 3);
     ctx.closePath(); ctx.fill();
-    // dorsal fin
-    ctx.beginPath(); ctx.moveTo(0, -3.5); ctx.lineTo(3, -7); ctx.lineTo(6, -3.5); ctx.closePath(); ctx.fill();
-    // eye
+    // dorsal fin (points up)
+    ctx.beginPath(); ctx.moveTo(0, -3.5); ctx.lineTo(-3, -7); ctx.lineTo(-6, -3.5); ctx.closePath(); ctx.fill();
+    // eye (near the nose, +x)
     ctx.fillStyle = `rgba(20,20,22,${bodyA})`;
-    ctx.beginPath(); ctx.arc(-6, -0.8, 0.7, 0, 6.283); ctx.fill();
+    ctx.beginPath(); ctx.arc(6, -0.8, 0.7, 0, 6.283); ctx.fill();
     // water droplets sliding off the back
     if (k < 0.55) {
       ctx.fillStyle = `rgba(220,232,236,${bodyA * 0.85})`;
       for (let d = 0; d < 3; d++) {
-        ctx.beginPath(); ctx.arc(-4 + d * 4, -5 - d * 1.5 - k * 4, 0.7, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(4 - d * 4, -5 - d * 1.5 - k * 4, 0.7, 0, 6.283); ctx.fill();
       }
     }
     ctx.restore();
