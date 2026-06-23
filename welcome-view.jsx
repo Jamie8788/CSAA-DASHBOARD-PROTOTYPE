@@ -885,13 +885,13 @@ function drawScene(ctx, W, H, p, tt, now) {
   // contact shadow so the hull sits IN the water (not floating on top)
   ctx.save();
   ctx.fillStyle = 'rgba(8,10,12,0.22)';
-  ctx.beginPath(); ctx.ellipse(cx, cy + 9 * scl, 52 * scl, 7 * scl, 0, 0, 6.283); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx, cy + 9 * scl, 60 * scl, 7 * scl, 0, 0, 6.283); ctx.fill();
   ctx.restore();
 
   // soft reflection of the canoe on the water (flipped, faded)
   ctx.save();
   ctx.translate(cx, cy + 16 * scl); ctx.scale(scl, -scl * 0.5); ctx.globalAlpha = 0.13;
-  ctx.beginPath(); ctx.moveTo(-48, 0); ctx.quadraticCurveTo(0, 16, 48, 0); ctx.quadraticCurveTo(0, 6, -48, 0);
+  ctx.beginPath(); ctx.moveTo(-56, 0); ctx.quadraticCurveTo(0, 18, 56, 0); ctx.quadraticCurveTo(0, 6, -56, 0);
   ctx.fillStyle = '#3a2515'; ctx.fill();
   ctx.restore();
 
@@ -911,33 +911,44 @@ function drawScene(ctx, W, H, p, tt, now) {
     g.addColorStop(0, 'rgba(255,190,95,0.6)'); g.addColorStop(1, 'rgba(255,190,95,0)');
     ctx.fillStyle = g; ctx.fillRect(-30, -82, 130, 100);
   }
-  // ---- BIRCH-BARK ANISHINAABE CANOE ----
-  //   Longer hull, sharply upturned stem/stern, warm birch-bark tone with the
-  //   characteristic dark horizontal stripes, decorative red bow band, lashed
-  //   ribbing inside. Holds three paddlers.
+  // ---- BIRCH-BARK ANISHINAABE CANOE (wiigwaasi-jiimaan) ----
+  //   Tuned to match real birch-bark canoes in the reference photos: pale
+  //   cream/golden bark colour, dramatically upturned stem & stern that rise
+  //   well above the sheer line, dark horizontal seams running along the bark
+  //   sheets, lighter wooden gunwale, exposed cedar ribs inside.
   ctx.beginPath();
-  ctx.moveTo(-62, -2);
-  ctx.quadraticCurveTo(-74, -22, -56, -18);                                 // sharply upturned stern
-  ctx.quadraticCurveTo(0, -7, 56, -18);                                       // sweeping sheer line
-  ctx.quadraticCurveTo(74, -22, 62, -2);                                      // upturned bow
-  ctx.quadraticCurveTo(0, 22, -62, -2);                                       // bottom curve
+  ctx.moveTo(-58, -2);
+  ctx.bezierCurveTo(-78, -10, -82, -28, -58, -26);                            // sharply upturned STERN (left)
+  ctx.bezierCurveTo(-50, -22, -30, -14, 0, -12);                              // sweeping sheer down
+  ctx.bezierCurveTo(30, -14, 50, -22, 58, -26);
+  ctx.bezierCurveTo(82, -28, 78, -10, 58, -2);                                // sharply upturned BOW (right)
+  ctx.quadraticCurveTo(0, 20, -58, -2);                                       // smooth keel-line bottom
   ctx.closePath();
-  const hullG = ctx.createLinearGradient(0, -18, 0, 22);
-  hullG.addColorStop(0, '#e3b07a');                                           // warm birch bark
-  hullG.addColorStop(0.45, '#a5703e');
-  hullG.addColorStop(1, '#3e2410');
+  // pale birch-bark gradient (matches the reference)
+  const hullG = ctx.createLinearGradient(0, -24, 0, 22);
+  hullG.addColorStop(0,    '#f0d6a8');                                        // bright golden bark near the rim
+  hullG.addColorStop(0.35, '#d8a86c');
+  hullG.addColorStop(0.7,  '#a06a36');                                        // mid-tone
+  hullG.addColorStop(1,    '#4a2c14');                                        // shadow at the keel
   ctx.fillStyle = hullG; ctx.fill();
-  // dark birch-bark horizontal stripes — distinctive look of real birch bark
-  ctx.strokeStyle = 'rgba(60,36,20,0.45)'; ctx.lineWidth = 0.7;
-  for (let yb = -12; yb <= 14; yb += 3) {
+  // bark seams (horizontal lines characteristic of birch bark, more visible)
+  ctx.strokeStyle = 'rgba(58,32,16,0.55)'; ctx.lineWidth = 0.8;
+  for (let yb = -10; yb <= 16; yb += 3.2) {
     ctx.beginPath();
-    ctx.moveTo(-58, yb + Math.sin(yb * 0.4) * 0.5);
-    ctx.quadraticCurveTo(0, yb + 4, 58, yb + Math.sin(yb * 0.4) * 0.5);
+    ctx.moveTo(-54, yb + Math.sin(yb * 0.4) * 0.6);
+    ctx.quadraticCurveTo(0, yb + 4, 54, yb + Math.sin(yb * 0.4) * 0.6);
     ctx.stroke();
   }
-  // gunwale strip (lighter wood band along the rim)
-  ctx.strokeStyle = 'rgba(244,206,150,0.95)'; ctx.lineWidth = 2.0; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-56, -16); ctx.quadraticCurveTo(0, -5, 56, -16); ctx.stroke();
+  // a darker waterline shadow along the keel (where the hull sits in the lake)
+  ctx.strokeStyle = 'rgba(28,16,8,0.65)'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(-58, -1); ctx.quadraticCurveTo(0, 18, 58, -1); ctx.stroke();
+  // gunwale strip (lighter wood band along the rim, follows the rising stems)
+  ctx.strokeStyle = 'rgba(244,206,150,0.95)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-58, -24);
+  ctx.bezierCurveTo(-50, -20, -30, -14, 0, -12);
+  ctx.bezierCurveTo(30, -14, 50, -20, 58, -24);
+  ctx.stroke();
   // warm rim-light along the sun-side gunwale
   ctx.strokeStyle = 'rgba(255,222,166,0.7)'; ctx.lineWidth = 1.6;
   ctx.beginPath(); ctx.moveTo(rim * 10, -8); ctx.quadraticCurveTo(rim * 56, -14, rim * 60, -3); ctx.stroke();
@@ -1240,6 +1251,65 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.beginPath(); ctx.ellipse(drx, dry, 7, 4.4, 0, 0, 6.283); ctx.fill();
     ctx.fillStyle = `rgba(${Math.round(_lerp(192, 96, nm))},${Math.round(_lerp(172, 84, nm))},${Math.round(_lerp(132, 62, nm))},1)`;
     ctx.beginPath(); ctx.ellipse(drx, dry - 1, 6.4, 3.6, 0, 0, 6.283); ctx.fill();
+    // ---- a BEACHED birch-bark canoe pulled up on the shore (sign the village
+    //   uses the lake; matches the canoe out on the water). ----
+    {
+      const cxB = W * 0.71, cyB = ground(cxB) + 3;
+      ctx.save(); ctx.translate(cxB, cyB);
+      const bg = ctx.createLinearGradient(0, -7, 0, 6);
+      bg.addColorStop(0, `rgb(${Math.round(_lerp(220, 110, nm))},${Math.round(_lerp(160, 80, nm))},${Math.round(_lerp(112, 56, nm))})`);
+      bg.addColorStop(1, `rgb(${Math.round(_lerp(140, 60, nm))},${Math.round(_lerp(92, 44, nm))},${Math.round(_lerp(58, 28, nm))})`);
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.moveTo(-26, 0);
+      ctx.quadraticCurveTo(-32, -12, -22, -9);
+      ctx.quadraticCurveTo(0, -4, 22, -9);
+      ctx.quadraticCurveTo(32, -12, 26, 0);
+      ctx.quadraticCurveTo(0, 7, -26, 0);
+      ctx.closePath(); ctx.fill();
+      // bark stripes
+      ctx.strokeStyle = 'rgba(60,36,20,0.5)'; ctx.lineWidth = 0.6;
+      for (let yb = -5; yb <= 4; yb += 2) {
+        ctx.beginPath(); ctx.moveTo(-24, yb); ctx.quadraticCurveTo(0, yb + 2, 24, yb); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // ---- a WOODPILE: stacked split logs (shows the chopping has a purpose) ----
+    {
+      const lpx = W * 0.69, lpy = ground(lpx);
+      ctx.fillStyle = `rgb(${Math.round(_lerp(120, 56, nm))},${Math.round(_lerp(80, 38, nm))},${Math.round(_lerp(46, 22, nm))})`;
+      // two stacked rows of logs (end-grain circles)
+      for (let row = 0; row < 2; row++) {
+        for (let c = 0; c < 5 - row; c++) {
+          const ex = lpx - 8 + c * 4 + row * 2;
+          const ey = lpy - 2 - row * 4;
+          ctx.beginPath(); ctx.arc(ex, ey, 1.8, 0, 6.283); ctx.fill();
+          // growth rings
+          ctx.strokeStyle = 'rgba(40,22,10,0.6)'; ctx.lineWidth = 0.4;
+          ctx.beginPath(); ctx.arc(ex, ey, 0.9, 0, 6.283); ctx.stroke();
+        }
+      }
+    }
+    // ---- a SECOND, smaller smokehouse further down the bank ----
+    {
+      const sm2x = W * 0.97, sm2y = ground(sm2x);
+      ctx.fillStyle = `rgb(${Math.round(_lerp(82, 40, nm))},${Math.round(_lerp(56, 26, nm))},${Math.round(_lerp(32, 14, nm))})`;
+      ctx.beginPath();
+      ctx.moveTo(sm2x - 9, sm2y);
+      ctx.quadraticCurveTo(sm2x, sm2y - 20, sm2x + 9, sm2y);
+      ctx.closePath(); ctx.fill();
+      if (nm < 0.95) {
+        ctx.save(); ctx.globalAlpha = (1 - nm * 0.7) * 0.45;
+        ctx.strokeStyle = 'rgba(214,210,200,1)'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+        ctx.beginPath();
+        for (let s = 0; s <= 12; s++) {
+          const sy = sm2y - 20 - s * 4;
+          const sx = sm2x + Math.sin(s * 0.55 + tt * 1.1) * (1.6 + s * 0.5);
+          s === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
+        }
+        ctx.stroke(); ctx.restore();
+      }
+    }
     // village fire
     const fx = W * 0.625, fy = ground(fx) + 6, fa = 0.45 + 0.55 * nm;
     const gl = ctx.createRadialGradient(fx, fy - 6, 0, fx, fy - 6, 64 * (0.6 + nm));
@@ -1377,6 +1447,57 @@ function drawScene(ctx, W, H, p, tt, now) {
         const beat = Math.abs(Math.sin(tt * 4 + ph));
         rArmEndX = torsoX + 4 * sc; rArmEndY = sArmY + (5 - beat * 2.5) * sc;
         limb(torsoX - 3.4 * sc, sArmY, torsoX - 3 * sc, sArmY + (5 - Math.abs(Math.cos(tt * 4 + ph)) * 2.5) * sc, 2.4 * sc, skin);
+      } else if (kind === 'chop') {
+        // BOTH hands grip an axe handle, raised high then slammed down on a log
+        const chop = (Math.sin(tt * 2.4 + ph) + 1) / 2;             // 0..1, 0=raised, 1=down
+        const ax = torsoX + dir * 5 * sc;
+        const ay = sArmY + (chop * 6 - 8) * sc;                      // axe HEAD position
+        // both hands at top of the handle
+        const handX = ax + dir * 1 * sc, handY = ay + 6 * sc;
+        limb(torsoX - 3.4 * sc, sArmY, handX - 2 * sc, handY, 2.4 * sc, skin);
+        limb(torsoX + 3.4 * sc, sArmY, handX, handY, 2.4 * sc, skin);
+        // axe handle (wood)
+        ctx.strokeStyle = '#5a3a1c'; ctx.lineWidth = 1.8 * sc; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(handX, handY); ctx.lineTo(ax, ay); ctx.stroke();
+        // axe head (dark metal triangle)
+        ctx.fillStyle = '#2a2a2e';
+        ctx.beginPath();
+        ctx.moveTo(ax - 1.6 * sc, ay - 1.4 * sc);
+        ctx.lineTo(ax + dir * 3.2 * sc, ay - 0.4 * sc);
+        ctx.lineTo(ax + dir * 3.0 * sc, ay + 1.8 * sc);
+        ctx.lineTo(ax - 1.6 * sc, ay + 1.4 * sc);
+        ctx.closePath(); ctx.fill();
+        // a small chip of wood flying off on the down-stroke
+        if (chop > 0.85) {
+          ctx.fillStyle = '#9a6a3a';
+          ctx.beginPath(); ctx.arc(ax + dir * 5 * sc, ay + 4 * sc, 0.7 * sc, 0, 6.283); ctx.fill();
+        }
+        rArmEndX = handX; rArmEndY = handY;                          // disable default right arm
+      } else if (kind === 'scrape') {
+        // bent forward, both hands sliding a scraping stone back-and-forth along the hide
+        const slide = Math.sin(tt * 3 + ph);                          // -1..1 along the hide
+        const sx = torsoX + dir * (6 + slide * 4) * sc;
+        const sy = sArmY + 4 * sc;
+        limb(torsoX - 3.4 * sc, sArmY, sx - 1.5 * sc, sy, 2.4 * sc, skin);
+        limb(torsoX + 3.4 * sc, sArmY, sx + 1.5 * sc, sy, 2.4 * sc, skin);
+        // the stone scraper
+        ctx.fillStyle = '#7a7068';
+        ctx.beginPath(); ctx.ellipse(sx, sy, 2.2 * sc, 1.1 * sc, 0, 0, 6.283); ctx.fill();
+        rArmEndX = sx + 1.5 * sc; rArmEndY = sy;
+      } else if (kind === 'pound') {
+        // BOTH hands on a tall pestle, lifting and slamming straight down into a rice mortar
+        const phase = Math.sin(tt * 2.6 + ph);                        // -1..1
+        const lift = (phase + 1) / 2;                                  // 0=down, 1=up
+        const px2 = torsoX + dir * 2 * sc;
+        const peTop = sArmY - (2 + lift * 8) * sc;                     // top of the pestle
+        const peBot = sArmY + (10 - lift * 4) * sc;                    // bottom (strikes into mortar at lift=0)
+        // both hands gripping the pestle near the top
+        limb(torsoX - 3.4 * sc, sArmY, px2 - 1 * sc, peTop + 2 * sc, 2.4 * sc, skin);
+        limb(torsoX + 3.4 * sc, sArmY, px2 + 1 * sc, peTop + 4 * sc, 2.4 * sc, skin);
+        // pestle (long wooden pole)
+        ctx.strokeStyle = '#6b4626'; ctx.lineWidth = 1.8 * sc; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(px2, peTop); ctx.lineTo(px2, peBot); ctx.stroke();
+        rArmEndX = px2 + 1 * sc; rArmEndY = peTop + 4 * sc;
       }
       limb(torsoX + 3.4 * sc, sArmY, rArmEndX, rArmEndY, 2.4 * sc, skin);
 
@@ -1425,11 +1546,19 @@ function drawScene(ctx, W, H, p, tt, now) {
       fig(W * 0.92, ground(W * 0.92) + 7, 1.25, 'walk', 0.9, { shirt: '#5a7d3a', hairStyle: 'long', dir: -1 });
       fig(W * 0.94, ground(W * 0.94) + 7, 1.1, 'walk', 5.7, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 });
       // a person SCRAPING THE HIDE on the stretching frame (real activity)
-      fig(hfx - 22, hfy + 6, 1.35, 'stir', 2.3, { shirt: '#b04a2a', hairStyle: 'braid' });
+      fig(hfx - 18, hfy + 6, 1.4, 'scrape', 2.3, { shirt: '#b04a2a', hairStyle: 'braid', dir: 1 });
       // a person POUNDING WILD RICE at the mortar (manoomin processing)
-      fig(wmx + 6, wmy + 6, 1.35, 'stir', 4.4, { shirt: '#1f4e8f', hairStyle: 'long', dir: -1 });
+      fig(wmx - 8, wmy + 6, 1.4, 'pound', 4.4, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });
       // a person at the smokehouse tending the fire
-      fig(smx - 10, smy + 6, 1.25, 'stir', 0.8, { shirt: '#d68a1f', hairStyle: 'braid' });
+      fig(smx - 12, smy + 6, 1.3, 'stir', 0.8, { shirt: '#d68a1f', hairStyle: 'braid' });
+      // a WOODCUTTER chopping firewood (clear vertical chop motion)
+      const chopX = W * 0.66, chopY = ground(chopX) + 6;
+      fig(chopX, chopY, 1.4, 'chop', 1.7, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
+      // the log being chopped
+      ctx.fillStyle = `rgb(${Math.round(_lerp(120, 56, nm))},${Math.round(_lerp(80, 38, nm))},${Math.round(_lerp(46, 22, nm))})`;
+      ctx.beginPath(); ctx.ellipse(chopX + 7, chopY + 4, 6, 3, 0, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = 'rgba(20,12,6,0.6)'; ctx.lineWidth = 0.6;
+      ctx.beginPath(); ctx.arc(chopX + 7, chopY + 4, 2.4, 0, 6.283); ctx.stroke();
       // a drummer seated at the ceremonial drum (rhythm of the day)
       const drumPx = drx - 4, drumPy = ground(drumPx) + 6;
       fig(drumPx, drumPy, 1.4, 'drum', 7, { shirt: '#7c2f6b', hairStyle: 'braid' });
@@ -1514,125 +1643,117 @@ function drawScene(ctx, W, H, p, tt, now) {
       };
       drawHorse(W * 0.76, ground(W * 0.76) - 7, 1.8, 0.0, true);           // grazing — moved well clear of the heron
       drawHorse(W * 0.90, ground(W * 0.90) - 9, 2.0, 2.3, false);          // standing watch, further along the bank
-      // ---- a BROWN BEAR standing in profile at the water's edge, fishing ----
-      //   Rewritten as a clear, chunky bear silhouette (the old head-down pose
-      //   read as a crocodile). Now: tall barrel body, prominent shoulder hump,
-      //   four sturdy legs, short thick neck, a ROUND head with a short snout
-      //   and two round ears on top. One front paw reaches into the water where
-      //   a salmon flips. Sized big so it's unmistakable.
+      // ---- BLACK BEAR walking the shoreline in profile (facing LEFT toward
+      //   the water). Replaces the older slumped pose that read as a crocodile.
+      //   Drawn at huge scale with a clear silhouette: low arched back, big
+      //   shoulder hump, dropped head, ROUND ears on top, short snout, four
+      //   short stocky legs in an obvious walking gait. One front paw lifted.
       ctx.save(); ctx.globalAlpha = (1 - nm);
-      const S = 4.2;                                            // big & obvious
-      const bx = W * 0.60, by = shoreY(W * 0.60) - 6 * S;       // stand the bear UP on the bank
-      const sway = Math.sin(tt * 1.2) * 0.6;                    // gentle breathing/weight shift
-      const fur = ctx.createLinearGradient(bx, by - 9 * S, bx, by + 9 * S);
-      fur.addColorStop(0, 'rgba(96,64,38,1)');                  // sunlit brown back
-      fur.addColorStop(0.5, 'rgba(64,42,24,1)');
-      fur.addColorStop(1, 'rgba(34,22,12,1)');                  // shadowed belly
-      const furHi = 'rgba(128,92,56,1)';
-      // facing LEFT (head toward the water on the left). All coords in bear-space.
+      const S = 4.6;                                            // large
+      const bx = W * 0.605;
+      const by = shoreY(bx) - 9 * S;                            // stand the bear UP on the bank
+      const walk = Math.sin(tt * 2.0);                          // walking gait
       ctx.translate(bx, by);
 
-      // --- far legs (slightly darker, behind) ---
-      ctx.fillStyle = 'rgba(40,26,14,1)';
-      ctx.beginPath(); ctx.ellipse(-4 * S, 7 * S + sway, 2.0 * S, 4.2 * S, 0, 0, 6.283); ctx.fill();   // far front
-      ctx.beginPath(); ctx.ellipse(7.5 * S, 7 * S + sway, 2.2 * S, 4.2 * S, 0, 0, 6.283); ctx.fill();   // far hind
+      const furG = ctx.createLinearGradient(0, -10 * S, 0, 12 * S);
+      furG.addColorStop(0, 'rgba(46,30,18,1)');                 // sunlit back
+      furG.addColorStop(0.5, 'rgba(28,18,10,1)');
+      furG.addColorStop(1, 'rgba(14,10,6,1)');                  // shadowed belly
+      const furHi = 'rgba(72,48,28,1)';
 
-      // --- big barrel BODY with a clear shoulder hump on the (left) front ---
-      ctx.fillStyle = fur;
+      // -- far legs (drawn first, behind the body) --
+      ctx.fillStyle = 'rgba(10,6,4,1)';
+      // far front (slightly forward swing)
       ctx.beginPath();
-      ctx.moveTo(-9 * S, 4 * S);
-      ctx.quadraticCurveTo(-11 * S, -4 * S, -6 * S, -7 * S);    // rise to the shoulder hump (front/left)
-      ctx.quadraticCurveTo(-3 * S, -9 * S, 0 * S, -7 * S);      // top of hump
-      ctx.quadraticCurveTo(6 * S, -6 * S, 11 * S, -4 * S);      // back dips then rises to rump
-      ctx.quadraticCurveTo(13 * S, 0 * S, 11 * S, 5 * S);       // rump down
-      ctx.quadraticCurveTo(6 * S, 7 * S, 0 * S, 7 * S);         // belly
-      ctx.quadraticCurveTo(-6 * S, 7 * S, -9 * S, 4 * S);
+      ctx.moveTo(-8 * S, 3 * S); ctx.lineTo(-8 * S + walk * 1.5 * S, 11 * S);
+      ctx.lineTo(-5 * S + walk * 1.5 * S, 11 * S); ctx.lineTo(-5 * S, 3 * S);
       ctx.closePath(); ctx.fill();
-      // hump highlight
+      // far hind
+      ctx.beginPath();
+      ctx.moveTo(9 * S, 3 * S); ctx.lineTo(9 * S - walk * 1.5 * S, 11 * S);
+      ctx.lineTo(12 * S - walk * 1.5 * S, 11 * S); ctx.lineTo(12 * S, 3 * S);
+      ctx.closePath(); ctx.fill();
+
+      // -- BODY: low arched back, deep barrel chest, sloping rump --
+      ctx.fillStyle = furG;
+      ctx.beginPath();
+      ctx.moveTo(-12 * S, 2 * S);                                                // chest front
+      ctx.quadraticCurveTo(-13 * S, -3 * S, -8 * S, -5 * S);                      // up to shoulder
+      ctx.quadraticCurveTo(-4 * S, -8 * S, 0 * S, -7 * S);                        // SHOULDER HUMP (highest point)
+      ctx.quadraticCurveTo(6 * S, -5 * S, 12 * S, -3 * S);                        // back dips slightly
+      ctx.quadraticCurveTo(15 * S, 0 * S, 14 * S, 4 * S);                         // rump
+      ctx.quadraticCurveTo(10 * S, 5 * S, 5 * S, 4 * S);                          // belly under rump
+      ctx.quadraticCurveTo(-2 * S, 5 * S, -10 * S, 4 * S);                        // belly
+      ctx.quadraticCurveTo(-13 * S, 3 * S, -12 * S, 2 * S);
+      ctx.closePath(); ctx.fill();
+
+      // hump highlight (the bear silhouette tell)
       ctx.fillStyle = furHi;
-      ctx.beginPath(); ctx.ellipse(-5 * S, -6 * S, 3.4 * S, 1.8 * S, -0.2, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-2 * S, -6 * S, 5 * S, 2.2 * S, -0.2, 0, 6.283); ctx.fill();
+      // belly underline shading
+      ctx.fillStyle = 'rgba(8,5,3,0.5)';
+      ctx.beginPath(); ctx.ellipse(0, 5 * S, 11 * S, 1.4 * S, 0, 0, 6.283); ctx.fill();
 
-      // --- near legs (front + hind), sturdy ---
-      ctx.fillStyle = fur;
-      // near hind leg (right)
+      // -- near legs (in front, opposite gait) --
+      ctx.fillStyle = furG;
+      // near front — one lifted, walking forward
+      const liftF = Math.max(0, walk) * 1.8 * S;
       ctx.beginPath();
-      ctx.moveTo(8 * S, 3 * S); ctx.quadraticCurveTo(11 * S, 6 * S, 10 * S, 10 * S + sway);
-      ctx.lineTo(5.5 * S, 10 * S + sway); ctx.quadraticCurveTo(5 * S, 6 * S, 5 * S, 3 * S);
+      ctx.moveTo(-10 * S, 3 * S);
+      ctx.quadraticCurveTo(-12 * S, 7 * S, -11 * S - walk * 1.5 * S, 11 * S - liftF);
+      ctx.lineTo(-7 * S - walk * 1.5 * S, 11 * S - liftF);
+      ctx.quadraticCurveTo(-7 * S, 7 * S, -7 * S, 3 * S);
       ctx.closePath(); ctx.fill();
-      // near front leg (left) — planted
+      // near hind
+      const liftH = Math.max(0, -walk) * 1.8 * S;
       ctx.beginPath();
-      ctx.moveTo(-6 * S, 3 * S); ctx.quadraticCurveTo(-4 * S, 6 * S, -5 * S, 10 * S + sway);
-      ctx.lineTo(-9 * S, 10 * S + sway); ctx.quadraticCurveTo(-9.5 * S, 6 * S, -9 * S, 3 * S);
+      ctx.moveTo(7 * S, 3 * S);
+      ctx.quadraticCurveTo(7 * S, 7 * S, 7 * S + walk * 1.5 * S, 11 * S - liftH);
+      ctx.lineTo(11 * S + walk * 1.5 * S, 11 * S - liftH);
+      ctx.quadraticCurveTo(11 * S, 7 * S, 11 * S, 3 * S);
       ctx.closePath(); ctx.fill();
-      // paws
-      ctx.fillStyle = 'rgba(24,16,8,1)';
-      ctx.beginPath(); ctx.ellipse(-7 * S, 10.5 * S + sway, 2.4 * S, 1.2 * S, 0, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(7.5 * S, 10.5 * S + sway, 2.4 * S, 1.2 * S, 0, 0, 6.283); ctx.fill();
+      // paws (dark blobs at the bottom of the near legs)
+      ctx.fillStyle = 'rgba(6,4,2,1)';
+      ctx.beginPath(); ctx.ellipse(-9 * S - walk * 1.5 * S, 11.4 * S - liftF, 2.4 * S, 1.2 * S, 0, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(9 * S + walk * 1.5 * S, 11.4 * S - liftH, 2.4 * S, 1.2 * S, 0, 0, 6.283); ctx.fill();
 
-      // --- short thick NECK + ROUND HEAD reaching down-left toward the water ---
-      const dip = 0.5 + 0.5 * Math.sin(tt * 0.9);               // head bobs toward the water
-      const hX = -12 * S, hY2 = (-1 + dip * 3) * S;             // head centre
-      ctx.fillStyle = fur;
-      // neck
+      // -- NECK + HEAD (facing LEFT — toward the water) --
+      // Head sits LOWER than the hump (this is the key bear silhouette).
+      const hcX = -16 * S, hcY = -1 * S;                          // head centre
+      // thick short neck
+      ctx.fillStyle = furG;
       ctx.beginPath();
-      ctx.moveTo(-8 * S, -5 * S);
-      ctx.quadraticCurveTo(-12 * S, -4 * S, hX + 1 * S, hY2 - 2 * S);
-      ctx.quadraticCurveTo(hX + 2 * S, hY2 + 2 * S, -7 * S, 0 * S);
+      ctx.moveTo(-10 * S, -5 * S);
+      ctx.quadraticCurveTo(-14 * S, -4 * S, hcX + 1 * S, hcY - 2 * S);
+      ctx.quadraticCurveTo(hcX + 3 * S, hcY + 3 * S, -9 * S, 0 * S);
       ctx.closePath(); ctx.fill();
       // round head
-      ctx.beginPath(); ctx.arc(hX, hY2, 3.6 * S, 0, 6.283); ctx.fill();
-      // two round ears on TOP of the head (the key "this is a bear" tell)
-      ctx.beginPath(); ctx.arc(hX - 1.6 * S, hY2 - 3.4 * S, 1.5 * S, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(hX + 2.2 * S, hY2 - 3.0 * S, 1.5 * S, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(hcX, hcY, 3.8 * S, 0, 6.283); ctx.fill();
+      // ROUND ears on top (the signature bear feature)
+      ctx.beginPath(); ctx.arc(hcX - 2.0 * S, hcY - 3.4 * S, 1.6 * S, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(hcX + 2.4 * S, hcY - 3.2 * S, 1.6 * S, 0, 6.283); ctx.fill();
       // inner ears
       ctx.fillStyle = furHi;
-      ctx.beginPath(); ctx.arc(hX - 1.6 * S, hY2 - 3.4 * S, 0.7 * S, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(hX + 2.2 * S, hY2 - 3.0 * S, 0.7 * S, 0, 6.283); ctx.fill();
-      // short tan SNOUT pointing down-left toward the water
-      ctx.fillStyle = 'rgba(120,86,52,1)';
-      ctx.beginPath(); ctx.ellipse(hX - 3.4 * S, hY2 + 1.4 * S, 2.4 * S, 1.7 * S, -0.4, 0, 6.283); ctx.fill();
-      // nose
+      ctx.beginPath(); ctx.arc(hcX - 2.0 * S, hcY - 3.4 * S, 0.8 * S, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(hcX + 2.4 * S, hcY - 3.2 * S, 0.8 * S, 0, 6.283); ctx.fill();
+      // tan SNOUT (pointing forward-left) — short and blunt, characteristic of a bear
+      ctx.fillStyle = 'rgba(118,86,52,1)';
+      ctx.beginPath(); ctx.ellipse(hcX - 3.4 * S, hcY + 1.2 * S, 2.4 * S, 1.7 * S, -0.15, 0, 6.283); ctx.fill();
+      // black nose
       ctx.fillStyle = 'rgba(0,0,0,1)';
-      ctx.beginPath(); ctx.ellipse(hX - 5.0 * S, hY2 + 2.2 * S, 1.0 * S, 0.8 * S, 0, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(hcX - 5.0 * S, hcY + 1.8 * S, 1.1 * S, 0.9 * S, 0, 0, 6.283); ctx.fill();
       // eye + catchlight
       ctx.fillStyle = 'rgba(18,12,6,1)';
-      ctx.beginPath(); ctx.arc(hX - 1.4 * S, hY2 - 0.4 * S, 0.7 * S, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(hcX - 1.6 * S, hcY - 0.6 * S, 0.7 * S, 0, 6.283); ctx.fill();
       ctx.fillStyle = 'rgba(255,236,180,1)';
-      ctx.beginPath(); ctx.arc(hX - 1.2 * S, hY2 - 0.7 * S, 0.3 * S, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(hcX - 1.4 * S, hcY - 0.9 * S, 0.3 * S, 0, 6.283); ctx.fill();
+      // mouth line under the snout
+      ctx.strokeStyle = 'rgba(8,5,3,0.7)'; ctx.lineWidth = 0.6 * S;
+      ctx.beginPath(); ctx.moveTo(hcX - 4.5 * S, hcY + 2.4 * S); ctx.lineTo(hcX - 2.4 * S, hcY + 2.8 * S); ctx.stroke();
+      // tiny tail stub on the rump (real bears have a very short tail)
+      ctx.fillStyle = furG;
+      ctx.beginPath(); ctx.arc(15 * S, 0 * S, 1.2 * S, 0, 6.283); ctx.fill();
 
-      // --- a SALMON flipping in the water just below the snout ---
-      const wlY = 11 * S;                                       // approx waterline in bear-space
-      const flip = Math.sin(tt * 7);
-      ctx.save(); ctx.translate(hX - 6 * S, wlY - 1 * S); ctx.rotate(-0.5 + flip * 0.4);
-      const sg = ctx.createLinearGradient(0, -2 * S, 0, 2 * S);
-      sg.addColorStop(0, 'rgba(232,224,214,1)');
-      sg.addColorStop(0.5, 'rgba(206,150,132,1)');
-      sg.addColorStop(1, 'rgba(96,104,112,1)');
-      ctx.fillStyle = sg;
-      ctx.beginPath();
-      ctx.moveTo(-5 * S, 0);
-      ctx.quadraticCurveTo(-2 * S, -2.2 * S, 2 * S, -2 * S);
-      ctx.quadraticCurveTo(5 * S, -1 * S, 6 * S, 0);
-      ctx.quadraticCurveTo(5 * S, 1.6 * S, 2 * S, 2 * S);
-      ctx.quadraticCurveTo(-2 * S, 2.2 * S, -5 * S, 0);
-      ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(6 * S, 0); ctx.lineTo(9 * S, -2 * S + flip); ctx.lineTo(7.5 * S, 0); ctx.lineTo(9 * S, 2 * S + flip); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(20,18,18,1)'; ctx.beginPath(); ctx.arc(-3 * S, -0.4 * S, 0.4 * S, 0, 6.283); ctx.fill();
-      ctx.restore();
-
-      // --- water churn + ripples + spray where the bear works the shallows ---
-      ctx.strokeStyle = 'rgba(240,246,238,0.8)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.ellipse(hX - 4 * S, wlY, 8 * S, 1.8 * S, 0, 0, 6.283); ctx.stroke();
-      ctx.strokeStyle = 'rgba(240,246,238,0.4)';
-      ctx.beginPath(); ctx.ellipse(hX - 4 * S, wlY, 13 * S, 3 * S, 0, 0, 6.283); ctx.stroke();
-      ctx.fillStyle = 'rgba(245,250,242,0.9)';
-      for (let s = 0; s < 8; s++) {
-        const sang = -0.6 - s * 0.16 - Math.sin(tt * 4 + s) * 0.05;
-        const sr = (5 + Math.abs(Math.sin(tt * 3 + s)) * 5) * S;
-        ctx.beginPath();
-        ctx.arc(hX - 4 * S + Math.cos(sang) * sr, wlY + Math.sin(sang) * sr * 0.5, 1.0 * S, 0, 6.283);
-        ctx.fill();
-      }
       ctx.restore();
       // ---- a GREAT BLUE HERON wading: slate-blue, S-neck, dagger beak, sometimes
       //   stabbing for a fish. Anatomically tall and angular.
