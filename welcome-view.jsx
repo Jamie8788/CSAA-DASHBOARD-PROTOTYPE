@@ -82,7 +82,11 @@ const _FLIES = Array.from({ length: 9 }, () => ({
   sp: 0.2 + Math.random() * 0.5, ph: Math.random() * 6.28, blink: 0.3 + Math.random() * 0.6,
 }));
 // leaping-fish events (a fish arcs out of the water now and then)
-const _FISH = [{ x: 0.34, yb: 0.34, period: 13, phase: 2 }, { x: 0.7, yb: 0.5, period: 17, phase: 9 }];
+const _FISH = [
+  { x: 0.34, yb: 0.34, period: 13, phase: 2, dir: 1 },
+  { x: 0.70, yb: 0.50, period: 17, phase: 9, dir: -1 },
+  { x: 0.22, yb: 0.62, period: 21, phase: 4, dir: 1 },
+];
 // cursor position (-1..1 from centre), eased, for a parallax depth effect
 let _MX = 0, _MY = 0, _MXe = 0, _MYe = 0;
 
@@ -498,69 +502,100 @@ function drawScene(ctx, W, H, p, tt, now) {
   }
 
   // ---- BALD EAGLE soaring overhead (morning → afternoon) ----
-  //   Broad-winged silhouette circling slowly. Wing-tip "fingers" suggest a
-  //   real raptor, not a generic bird. White head & tail flash when close to noon.
+  //   Larger, more anatomically detailed: broad outstretched wings with
+  //   distinct primary feather fingers, dark chocolate body, snow-white
+  //   head and tail, hooked yellow beak. Circles slowly across the sky.
   const eagleA = _smooth(0.05, 0.20, p) * (1 - _smooth(0.55, 0.74, p));
   if (eagleA > 0.02) {
     const eT = tt * 0.06;
-    const eRX = W * 0.30, eRY = hY * 0.42;                     // centre of the slow circle
+    const eRX = W * 0.32, eRY = hY * 0.40;
     const ex = eRX + Math.cos(eT) * W * 0.22;
-    const ey = eRY + Math.sin(eT) * 16;
-    const heading = Math.cos(eT + Math.PI / 2);                 // -1..1 (turns the bird)
+    const ey = eRY + Math.sin(eT) * 22;
+    const heading = Math.cos(eT + Math.PI / 2);
     const dir = heading >= 0 ? 1 : -1;
-    const wingDip = Math.sin(tt * 0.9) * 0.18;                  // slow, deliberate flap
+    const wingDip = Math.sin(tt * 0.8) * 0.20;
+    const ES = 1.8;                                            // overall scale (was effectively 1.0)
     ctx.save(); ctx.globalAlpha = eagleA;
-    ctx.translate(ex, ey); ctx.scale(dir, 1);
-    // body
-    ctx.fillStyle = 'rgba(28,20,14,1)';
-    ctx.beginPath(); ctx.ellipse(0, 0, 8, 2.6, 0, 0, 6.283); ctx.fill();
-    // tail (fan, white when sun-lit)
-    ctx.fillStyle = 'rgba(232,228,218,0.95)';
+    ctx.translate(ex, ey); ctx.scale(dir * ES, ES);
+    // body (dark chocolate brown)
+    const bodG = ctx.createLinearGradient(0, -3, 0, 3);
+    bodG.addColorStop(0, 'rgba(58,38,22,1)');
+    bodG.addColorStop(1, 'rgba(22,14,8,1)');
+    ctx.fillStyle = bodG;
+    ctx.beginPath(); ctx.ellipse(0, 0, 10, 3.2, 0, 0, 6.283); ctx.fill();
+    // white tail fan (with feather divisions)
+    ctx.fillStyle = 'rgba(244,240,228,1)';
     ctx.beginPath();
-    ctx.moveTo(-7, -1.5); ctx.lineTo(-15, -3); ctx.lineTo(-15, 3); ctx.lineTo(-7, 1.5);
+    ctx.moveTo(-8, -2); ctx.lineTo(-20, -4); ctx.lineTo(-20, 4); ctx.lineTo(-8, 2);
     ctx.closePath(); ctx.fill();
-    // head (white)
-    ctx.fillStyle = 'rgba(238,234,224,1)';
-    ctx.beginPath(); ctx.ellipse(8, -0.5, 3.2, 2.2, 0, 0, 6.283); ctx.fill();
-    // yellow beak hooking forward
-    ctx.fillStyle = 'rgba(232,182,52,1)';
-    ctx.beginPath();
-    ctx.moveTo(11, -0.5); ctx.lineTo(14, 0); ctx.lineTo(11, 1.2); ctx.closePath(); ctx.fill();
-    // wings — broad, with separated primary "fingers" at the tips
-    ctx.fillStyle = 'rgba(22,16,10,1)';
-    // RIGHT wing (forward in flight)
-    ctx.beginPath();
-    ctx.moveTo(2, -1);
-    ctx.quadraticCurveTo(8, -10 - wingDip * 6, 22, -8 - wingDip * 8);        // leading edge
-    ctx.quadraticCurveTo(24, -7 - wingDip * 8, 25, -5 - wingDip * 8);         // wing tip
-    ctx.quadraticCurveTo(18, -4 - wingDip * 5, 12, -2);                       // trailing edge curling back
-    ctx.quadraticCurveTo(6, -1, 2, -1);
-    ctx.closePath(); ctx.fill();
-    // primary feather fingers — three short strokes off the wingtip
-    ctx.strokeStyle = 'rgba(22,16,10,1)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-    for (let fi = 0; fi < 3; fi++) {
-      ctx.beginPath();
-      ctx.moveTo(22 + fi, -7 - wingDip * 7 + fi * 1.4);
-      ctx.lineTo(26 + fi * 0.7, -3 - wingDip * 5 + fi * 1.6);
-      ctx.stroke();
+    ctx.strokeStyle = 'rgba(140,130,110,0.7)'; ctx.lineWidth = 0.4;
+    for (let tf = -3.5; tf <= 3.5; tf += 1) {
+      ctx.beginPath(); ctx.moveTo(-8, tf); ctx.lineTo(-20, tf * 1.2); ctx.stroke();
     }
-    // LEFT wing (mirror, slightly different dip)
+    // white head
+    ctx.fillStyle = 'rgba(248,244,232,1)';
+    ctx.beginPath(); ctx.ellipse(10, -0.6, 4.0, 2.8, 0, 0, 6.283); ctx.fill();
+    // head shading on the underside
+    ctx.fillStyle = 'rgba(200,196,184,0.6)';
+    ctx.beginPath(); ctx.ellipse(10, 1.0, 3.4, 1.2, 0, 0, 6.283); ctx.fill();
+    // dark eye
+    ctx.fillStyle = 'rgba(20,12,8,1)';
+    ctx.beginPath(); ctx.arc(11, -1.4, 0.7, 0, 6.283); ctx.fill();
+    // bright yellow hooked beak
+    ctx.fillStyle = 'rgba(248,196,52,1)';
     ctx.beginPath();
-    ctx.moveTo(-2, -1);
-    ctx.quadraticCurveTo(-8, -10 - wingDip * 6, -22, -8 - wingDip * 8);
-    ctx.quadraticCurveTo(-24, -7 - wingDip * 8, -25, -5 - wingDip * 8);
-    ctx.quadraticCurveTo(-18, -4 - wingDip * 5, -12, -2);
-    ctx.quadraticCurveTo(-6, -1, -2, -1);
+    ctx.moveTo(13, -1.0); ctx.lineTo(18, 0.2); ctx.lineTo(17, 1.0); ctx.lineTo(13, 0.6);
     ctx.closePath(); ctx.fill();
-    for (let fi = 0; fi < 3; fi++) {
+    ctx.strokeStyle = 'rgba(140,80,20,0.7)'; ctx.lineWidth = 0.4;
+    ctx.beginPath(); ctx.moveTo(15, 0.2); ctx.lineTo(17, 0.6); ctx.stroke();
+    // yellow talons tucked under
+    ctx.strokeStyle = 'rgba(248,196,52,1)'; ctx.lineWidth = 1.0; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(3, 3); ctx.lineTo(6, 5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-1, 3); ctx.lineTo(2, 5); ctx.stroke();
+
+    // wings — broad outstretched, two-tone (darker leading edge) with primary fingers
+    const drawWing = (sign) => {
+      const d = sign;
+      const lift = wingDip;
+      // wing membrane (large filled shape)
+      ctx.fillStyle = 'rgba(36,24,14,1)';
       ctx.beginPath();
-      ctx.moveTo(-22 - fi, -7 - wingDip * 7 + fi * 1.4);
-      ctx.lineTo(-26 - fi * 0.7, -3 - wingDip * 5 + fi * 1.6);
-      ctx.stroke();
-    }
+      ctx.moveTo(2 * d, -1);
+      ctx.quadraticCurveTo(8 * d, -11 - lift * 7, 22 * d, -10 - lift * 9);
+      ctx.quadraticCurveTo(28 * d, -9 - lift * 9, 32 * d, -6 - lift * 9);            // wingtip
+      ctx.quadraticCurveTo(28 * d, -5 - lift * 6, 22 * d, -4 - lift * 5);
+      ctx.quadraticCurveTo(14 * d, -2, 6 * d, -1);
+      ctx.closePath(); ctx.fill();
+      // lighter inner-wing coverts
+      ctx.fillStyle = 'rgba(80,56,34,1)';
+      ctx.beginPath();
+      ctx.moveTo(3 * d, -1);
+      ctx.quadraticCurveTo(8 * d, -7 - lift * 4, 16 * d, -7 - lift * 6);
+      ctx.quadraticCurveTo(14 * d, -3, 6 * d, -1);
+      ctx.closePath(); ctx.fill();
+      // primary feather "fingers" off the wingtip — 5 separated fingers
+      ctx.strokeStyle = 'rgba(22,14,8,1)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+      for (let fi = 0; fi < 5; fi++) {
+        const fAng = -0.2 + fi * 0.15;
+        const fLen = 7 - fi * 0.6;
+        const ox = (28 + fi * 1.2) * d, oy = -6 - lift * 8 + fi * 1.6;
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(ox + Math.cos(fAng) * fLen * d, oy + Math.sin(fAng) * fLen);
+        ctx.stroke();
+      }
+      // a couple of secondary-feather lines along the trailing edge
+      ctx.strokeStyle = 'rgba(14,10,6,0.7)'; ctx.lineWidth = 0.6;
+      for (let sf = 0; sf < 4; sf++) {
+        const sx0 = (10 + sf * 4) * d, sy0 = -2 - sf * 0.4;
+        const sx1 = (10 + sf * 4) * d, sy1 = -7 + sf * 0.5 - lift * 4;
+        ctx.beginPath(); ctx.moveTo(sx0, sy0); ctx.lineTo(sx1, sy1); ctx.stroke();
+      }
+    };
+    drawWing(1);
+    drawWing(-1);
     ctx.restore();
   }
-
   // ---- far shore: treeline + a small community gathering, with a fire glow ----
   const shoreAlpha = 0.6 + 0.28 * _smooth(0.6, 1, p);
   const vx = W * 0.66;                                 // the village gathering sits here on the shore
@@ -894,62 +929,125 @@ function drawScene(ctx, W, H, p, tt, now) {
     g.addColorStop(0, 'rgba(255,190,95,0.6)'); g.addColorStop(1, 'rgba(255,190,95,0)');
     ctx.fillStyle = g; ctx.fillRect(-30, -82, 130, 100);
   }
-  // hull — a canoe with upturned ends and a warm wood gradient (stays visible at dusk)
+  // ---- BIRCH-BARK ANISHINAABE CANOE ----
+  //   Longer hull, sharply upturned stem/stern, warm birch-bark tone with the
+  //   characteristic dark horizontal stripes, decorative red bow band, lashed
+  //   ribbing inside. Holds three paddlers.
   ctx.beginPath();
-  ctx.moveTo(-50, -2);
-  ctx.quadraticCurveTo(-58, -13, -46, -13);
-  ctx.quadraticCurveTo(0, -4, 46, -13);
-  ctx.quadraticCurveTo(58, -13, 50, -2);
-  ctx.quadraticCurveTo(0, 20, -50, -2);
+  ctx.moveTo(-62, -2);
+  ctx.quadraticCurveTo(-74, -22, -56, -18);                                 // sharply upturned stern
+  ctx.quadraticCurveTo(0, -7, 56, -18);                                       // sweeping sheer line
+  ctx.quadraticCurveTo(74, -22, 62, -2);                                      // upturned bow
+  ctx.quadraticCurveTo(0, 22, -62, -2);                                       // bottom curve
   ctx.closePath();
-  const hullG = ctx.createLinearGradient(0, -13, 0, 19);
-  hullG.addColorStop(0, '#9a6238'); hullG.addColorStop(0.5, '#653c20'); hullG.addColorStop(1, '#38220f');
+  const hullG = ctx.createLinearGradient(0, -18, 0, 22);
+  hullG.addColorStop(0, '#e3b07a');                                           // warm birch bark
+  hullG.addColorStop(0.45, '#a5703e');
+  hullG.addColorStop(1, '#3e2410');
   ctx.fillStyle = hullG; ctx.fill();
-  // gunwale strip + a ribbed pattern + warm rim light on the lit side
-  ctx.strokeStyle = 'rgba(228,184,124,0.85)'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-46, -11); ctx.quadraticCurveTo(0, -3.5, 46, -11); ctx.stroke();
-  ctx.strokeStyle = 'rgba(255,214,150,0.6)'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(rim * 8, -6); ctx.quadraticCurveTo(rim * 48, -11, rim * 51, -2); ctx.stroke();
-  ctx.strokeStyle = 'rgba(70,42,22,0.5)'; ctx.lineWidth = 1;
-  for (let rb = -34; rb <= 34; rb += 12) { ctx.beginPath(); ctx.moveTo(rb, -8); ctx.lineTo(rb, 9); ctx.stroke(); }
+  // dark birch-bark horizontal stripes — distinctive look of real birch bark
+  ctx.strokeStyle = 'rgba(60,36,20,0.45)'; ctx.lineWidth = 0.7;
+  for (let yb = -12; yb <= 14; yb += 3) {
+    ctx.beginPath();
+    ctx.moveTo(-58, yb + Math.sin(yb * 0.4) * 0.5);
+    ctx.quadraticCurveTo(0, yb + 4, 58, yb + Math.sin(yb * 0.4) * 0.5);
+    ctx.stroke();
+  }
+  // gunwale strip (lighter wood band along the rim)
+  ctx.strokeStyle = 'rgba(244,206,150,0.95)'; ctx.lineWidth = 2.0; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-56, -16); ctx.quadraticCurveTo(0, -5, 56, -16); ctx.stroke();
+  // warm rim-light along the sun-side gunwale
+  ctx.strokeStyle = 'rgba(255,222,166,0.7)'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(rim * 10, -8); ctx.quadraticCurveTo(rim * 56, -14, rim * 60, -3); ctx.stroke();
+  // ribs (inner cedar ribs visible above the gunwale)
+  ctx.strokeStyle = 'rgba(96,58,30,0.7)'; ctx.lineWidth = 0.9;
+  for (let rb = -44; rb <= 44; rb += 8) {
+    ctx.beginPath();
+    ctx.moveTo(rb, -10); ctx.quadraticCurveTo(rb * 0.4, 6, rb * 0.95, 12); ctx.stroke();
+  }
+  // decorative red band + simple medallion at the bow and stern (traditional ornament)
+  ctx.fillStyle = 'rgba(176,52,30,0.95)';
+  ctx.fillRect(48, -19, 14, 3);
+  ctx.fillRect(-62, -19, 14, 3);
+  ctx.fillStyle = 'rgba(240,222,180,0.9)';
+  ctx.beginPath(); ctx.arc(56, -17.5, 1.4, 0, 6.283); ctx.fill();
+  ctx.beginPath(); ctx.arc(-56, -17.5, 1.4, 0, 6.283); ctx.fill();
+  // stitched seam (faint dark line where bark sheets are sewn with spruce root)
+  ctx.strokeStyle = 'rgba(40,22,12,0.6)'; ctx.lineWidth = 0.6;
+  ctx.setLineDash([1.5, 1.8]);
+  ctx.beginPath(); ctx.moveTo(-58, -1); ctx.quadraticCurveTo(0, 6, 58, -1); ctx.stroke();
+  ctx.setLineDash([]);
   // bow lantern pole + lantern
   if (night) {
     ctx.strokeStyle = '#3a2412'; ctx.lineWidth = 1.8;
     ctx.beginPath(); ctx.moveTo(40, -6); ctx.lineTo(40, -18); ctx.stroke();
     ctx.fillStyle = '#ffce7a'; ctx.beginPath(); ctx.arc(40, -21, 3.4, 0, 6.283); ctx.fill();
   }
-  // --- paddler: seated IN the canoe — only torso & up show above the gunwale ---
-  const lean = padSide * 0.09 * Math.abs(strokeT);
-  ctx.save(); ctx.translate(-1, 0); ctx.rotate(lean);
-  const skin = '#caa07a', cloth = '#ef6a1c', clothLine = 'rgba(46,22,8,0.85)';
-  const gun = -11;                                    // gunwale line — nothing of the body below this
-  // torso: gunwale up to the shoulders (no hips or legs visible)
-  ctx.fillStyle = cloth;
-  ctx.beginPath();
-  ctx.moveTo(-6.5, gun); ctx.lineTo(-5.5, -19); ctx.quadraticCurveTo(0, -22.5, 5.5, -19); ctx.lineTo(6.5, gun);
-  ctx.quadraticCurveTo(0, gun + 2.5, -6.5, gun); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = clothLine; ctx.lineWidth = 0.8; ctx.stroke();
-  // shoulders
-  ctx.lineCap = 'round'; ctx.lineWidth = 4.4; ctx.strokeStyle = cloth;
-  ctx.beginPath(); ctx.moveTo(-6.5, -19); ctx.lineTo(6.5, -19); ctx.stroke();
-  // neck + head
-  ctx.fillStyle = skin;
-  ctx.beginPath(); ctx.moveTo(-1.8, -19); ctx.lineTo(1.8, -19); ctx.lineTo(1.4, -22.5); ctx.lineTo(-1.4, -22.5); ctx.closePath(); ctx.fill();
-  ctx.beginPath(); ctx.arc(0, -27, 4.8, 0, 6.283); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,210,150,0.5)'; ctx.lineWidth = 1.3;       // rim light on the lit side
-  ctx.beginPath(); ctx.arc(0, -27, 4.8, rim < 0 ? 1.9 : -1.2, rim < 0 ? 4.4 : 1.3); ctx.stroke();
-  // --- paddle held with BOTH hands, blade dipping in the water beside the canoe ---
-  const topGrip = [padSide * -2, -20];
-  const bladeTip = [padSide * (44 + 5 * Math.abs(strokeT)), 9 + 6 * Math.abs(strokeT)];
-  const lowGrip = [topGrip[0] + (bladeTip[0] - topGrip[0]) * 0.42, topGrip[1] + (bladeTip[1] - topGrip[1]) * 0.42];
-  ctx.strokeStyle = '#6b4626'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(topGrip[0], topGrip[1]); ctx.lineTo(bladeTip[0], bladeTip[1]); ctx.stroke();  // shaft
-  ctx.strokeStyle = skin; ctx.lineWidth = 2.4;
-  ctx.beginPath(); ctx.moveTo(padSide * -5, -18); ctx.lineTo(topGrip[0], topGrip[1]); ctx.stroke();   // upper arm → top hand
-  ctx.beginPath(); ctx.moveTo(padSide * 5, -18); ctx.lineTo(lowGrip[0], lowGrip[1]); ctx.stroke();     // lower arm → mid-shaft hand
-  ctx.save(); ctx.translate(bladeTip[0], bladeTip[1]); ctx.rotate(Math.atan2(bladeTip[1] - topGrip[1], bladeTip[0] - topGrip[0]));
-  ctx.fillStyle = '#7a5230'; ctx.beginPath(); ctx.ellipse(4, 0, 6, 2.6, 0, 0, 6.283); ctx.fill(); ctx.restore();
-  ctx.restore();
+  // --- THREE PADDLERS seated in the canoe — staggered along its length,
+  //     each in a different ribbon-shirt colour, paddling on alternating sides.
+  const skin = '#b7855a';
+  const crew = [
+    { x: -34, shirt: '#1f4e8f', hair: 'braid', side: -1, phase: 0.0 },     // stern paddler (left side)
+    { x:   0, shirt: '#c93a1e', hair: 'feather', side: 1, phase: 0.55 },   // middle (right side)
+    { x:  34, shirt: '#d68a1f', hair: 'long', side: -1, phase: 1.1 },      // bow paddler (left side)
+  ];
+  crew.forEach((pdl) => {
+    const stroke = Math.sin(tt * 2.1 + pdl.phase);
+    const localSide = stroke >= 0 ? pdl.side : -pdl.side;
+    const lean = localSide * 0.08 * Math.abs(stroke);
+    ctx.save(); ctx.translate(pdl.x, 0); ctx.rotate(lean);
+    const gun = -12;
+    // torso (ribbon shirt with cream stripe)
+    ctx.fillStyle = pdl.shirt;
+    ctx.beginPath();
+    ctx.moveTo(-6, gun); ctx.lineTo(-5, -19);
+    ctx.quadraticCurveTo(0, -22, 5, -19); ctx.lineTo(6, gun);
+    ctx.quadraticCurveTo(0, gun + 2, -6, gun); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(245,232,200,0.85)'; ctx.fillRect(-5.6, -16, 11.2, 0.9);
+    ctx.fillStyle = 'rgba(20,12,8,0.45)'; ctx.fillRect(-5.6, -14.8, 11.2, 0.5);
+    // shoulders
+    ctx.lineCap = 'round'; ctx.lineWidth = 4.2; ctx.strokeStyle = pdl.shirt;
+    ctx.beginPath(); ctx.moveTo(-6, -19); ctx.lineTo(6, -19); ctx.stroke();
+    // neck + head
+    ctx.fillStyle = skin;
+    ctx.beginPath(); ctx.moveTo(-1.6, -19); ctx.lineTo(1.6, -19); ctx.lineTo(1.3, -22); ctx.lineTo(-1.3, -22); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -26, 4.2, 0, 6.283); ctx.fill();
+    // hair
+    ctx.fillStyle = '#1a0e08';
+    ctx.beginPath(); ctx.arc(0, -26.4, 4.4, Math.PI + 0.25, 2 * Math.PI - 0.25); ctx.fill();
+    if (pdl.hair === 'braid') {
+      ctx.strokeStyle = '#1a0e08'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-2, -24); ctx.quadraticCurveTo(-4, -19, -3, -14); ctx.stroke();
+    } else if (pdl.hair === 'feather') {
+      ctx.strokeStyle = '#f4e6c2'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(-1, -30); ctx.lineTo(-2, -36); ctx.stroke();
+      ctx.fillStyle = '#cc8a3a'; ctx.fillRect(-4, -30.5, 8, 0.7);
+    } else if (pdl.hair === 'long') {
+      ctx.fillStyle = '#1a0e08';
+      ctx.beginPath();
+      ctx.moveTo(-4.2, -26); ctx.quadraticCurveTo(-5, -22, -3, -18); ctx.lineTo(3, -18);
+      ctx.quadraticCurveTo(5, -22, 4.2, -26); ctx.closePath(); ctx.fill();
+    }
+    // rim light on the lit side
+    ctx.strokeStyle = 'rgba(255,210,150,0.55)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(0, -26, 4.2, rim < 0 ? 1.9 : -1.2, rim < 0 ? 4.4 : 1.3); ctx.stroke();
+    // paddle — held in both hands, blade dipping on `localSide`
+    const topGrip = [localSide * -2, -20];
+    const bladeTip = [localSide * (40 + 4 * Math.abs(stroke)), 8 + 5 * Math.abs(stroke)];
+    const lowGrip = [topGrip[0] + (bladeTip[0] - topGrip[0]) * 0.42, topGrip[1] + (bladeTip[1] - topGrip[1]) * 0.42];
+    ctx.strokeStyle = '#6b4626'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(topGrip[0], topGrip[1]); ctx.lineTo(bladeTip[0], bladeTip[1]); ctx.stroke();
+    ctx.strokeStyle = skin; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(localSide * -5, -18); ctx.lineTo(topGrip[0], topGrip[1]); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(localSide * 5, -18); ctx.lineTo(lowGrip[0], lowGrip[1]); ctx.stroke();
+    ctx.save(); ctx.translate(bladeTip[0], bladeTip[1]); ctx.rotate(Math.atan2(bladeTip[1] - topGrip[1], bladeTip[0] - topGrip[0]));
+    ctx.fillStyle = '#7a5230'; ctx.beginPath(); ctx.ellipse(4, 0, 6.5, 2.8, 0, 0, 6.283); ctx.fill();
+    // dark grain stripe along the paddle blade
+    ctx.strokeStyle = 'rgba(40,22,12,0.7)'; ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.moveTo(-1, 0); ctx.lineTo(8, 0); ctx.stroke();
+    ctx.restore();
+    ctx.restore();
+  });
   ctx.restore();
   // ripple where the paddle dips
   if (Math.abs(strokeT) > 0.9) {
@@ -987,15 +1085,8 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.strokeStyle = `rgba(${hzc[0]},${hzc[1]},${hzc[2]},0.28)`; ctx.lineWidth = 1.6; ctx.beginPath();
     for (let x = lx0; x <= W; x += 8) { const y = shoreY(x) + Math.sin(x * 0.05 + tt * 1.5) * 1.2; x === lx0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
     ctx.stroke();
-    // sweetgrass / grass tufts on the bank (thicker, alive)
-    ctx.strokeStyle = `rgba(${Math.round(_lerp(92, 42, nm))},${Math.round(_lerp(116, 60, nm))},${Math.round(_lerp(58, 32, nm))},0.9)`;
-    for (let gx2 = lx0 + 26; gx2 < W; gx2 += 30) {
-      const gyt = ground(gx2);
-      for (let bld = -2; bld <= 2; bld++) {
-        const sway = Math.sin(tt * 1.6 + gx2 * 0.05 + bld) * 4;
-        ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(gx2 + bld * 2.2, gyt); ctx.quadraticCurveTo(gx2 + bld * 2.2 + sway * 0.4, gyt - 9, gx2 + bld * 2.2 + sway, gyt - 18); ctx.stroke();
-      }
-    }
+    // (Removed the tall blade/sweetgrass strokes — they read as seaweed.
+    //  The bank now has only the cattails + wild rice + low ground tone.)
     // ---- BULL RUSH (cattail) stand on the bank: tall stems with sausage-shaped
     //   brown seed-heads. A signature Anishinaabe-territory wetland plant. ----
     const cattailClumps = [[W * 0.68, 5], [W * 0.755, 4], [W * 0.86, 6]];
@@ -1095,145 +1186,368 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.restore();
     }
     // --- PEOPLE: more human (head, tapered torso, legs/arms), animated ---
-    const fig = (px, py, sc, kind, ph) => {
-      const col = 'rgba(13,8,5,1)'; ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineCap = 'round';
-      const bh = 14 * sc, sh = py - bh * 0.8;
+    // -------- VILLAGER (proper clothed person, not a black stick figure) -----
+    // Each villager has: skin head, hair (with options for braid / headband / feather),
+    // ribbon-shirt torso (varied colour), tan leggings, and animated arms+legs.
+    // `opt` carries per-person style so they don't all look identical.
+    const RIBBON = ['#c93a1e', '#1f4e8f', '#d68a1f', '#5a7d3a', '#7c2f6b', '#b04a2a'];
+    const fig = (px, py, sc, kind, ph, opt) => {
+      opt = opt || {};
+      const dir = opt.dir || 1;                                // facing 1=right, -1=left
+      const skin = opt.skin || '#a3704a';
+      const hair = opt.hair || '#1a0e08';
+      const shirt = opt.shirt || RIBBON[Math.abs(Math.floor(ph * 7)) % RIBBON.length];
+      const leg = opt.leg || '#6b4a2a';
+      const boot = '#2a1808';
+      const bh = 18 * sc;                                       // taller person (was 14)
+      const headR = 2.7 * sc;
+      const hipY = py - bh * 0.40;
+      const shoulderY = py - bh * 0.82;
+      const headCY = py - bh * 0.96 - headR * 1.0;
+
+      // walking gait: opposing legs, swinging arms
+      const gait = (kind === 'walk') ? Math.sin(tt * 3.6 + ph) : 0;
+      const armSwing = gait * 0.55;
+      const legL = gait * 3.2 * sc;
+      const legR = -legL;
+      const bodyBob = Math.sin(tt * 1.4 + ph) * 0.4 * sc + (kind === 'walk' ? Math.abs(gait) * 0.6 * sc : 0);
+
+      // helper to stroke a limb with width
+      const limb = (x0, y0, x1, y1, w, color) => {
+        ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      };
+
+      // ---- LEGS (tan leggings + dark moccasins) ----
       if (kind !== 'sit') {
-        const stride = kind === 'walk' ? Math.sin(tt * 4 + ph) * 3 * sc : 0;
-        ctx.lineWidth = 2.2 * sc;
-        ctx.beginPath(); ctx.moveTo(px - 1.6 * sc, py - bh * 0.42); ctx.lineTo(px - 1.6 * sc - stride, py); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(px + 1.6 * sc, py - bh * 0.42); ctx.lineTo(px + 1.6 * sc + stride, py); ctx.stroke();
+        limb(px - 1.6 * sc, hipY - bodyBob, px - 1.6 * sc + legL, py - bodyBob, 3.0 * sc, leg);
+        limb(px + 1.6 * sc, hipY - bodyBob, px + 1.6 * sc + legR, py - bodyBob, 3.0 * sc, leg);
+        // moccasins
+        ctx.fillStyle = boot;
+        ctx.beginPath(); ctx.ellipse(px - 1.6 * sc + legL, py - bodyBob, 1.7 * sc, 0.9 * sc, 0, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(px + 1.6 * sc + legR, py - bodyBob, 1.7 * sc, 0.9 * sc, 0, 0, 6.283); ctx.fill();
+      } else {
+        // cross-legged seated: knees pointing forward, feet tucked
+        ctx.fillStyle = leg;
+        ctx.beginPath(); ctx.ellipse(px - 2.4 * sc, hipY + 2 * sc, 3.4 * sc, 2 * sc, 0, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(px + 2.4 * sc, hipY + 2 * sc, 3.4 * sc, 2 * sc, 0, 0, 6.283); ctx.fill();
       }
+
+      // ---- TORSO: ribbon shirt with a contrast hem ----
+      const torsoX = px, torsoY = (kind === 'sit') ? hipY - 1 * sc : hipY - bodyBob;
+      ctx.fillStyle = shirt;
       ctx.beginPath();
-      ctx.moveTo(px - 3.2 * sc, py - bh * 0.42); ctx.lineTo(px - 2.6 * sc, py - bh * 0.84);
-      ctx.quadraticCurveTo(px, py - bh * 0.96, px + 2.6 * sc, py - bh * 0.84); ctx.lineTo(px + 3.2 * sc, py - bh * 0.42);
-      ctx.quadraticCurveTo(px, py - bh * (kind === 'sit' ? 0.30 : 0.36), px - 3.2 * sc, py - bh * 0.42); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.arc(px, py - bh * 0.96 - 2.3 * sc, 2.5 * sc, 0, 6.283); ctx.fill();
-      ctx.lineWidth = 2 * sc;
-      if (kind === 'stir') { const a = Math.sin(tt * 3 + ph) * 0.5; ctx.beginPath(); ctx.moveTo(px + 2 * sc, sh); ctx.lineTo(px + 8 * sc * Math.cos(a - 0.3), sh + 7 * sc + 6 * sc * Math.sin(a - 0.3)); ctx.stroke(); }
-      else if (kind === 'hang') { const a = Math.sin(tt * 1.6 + ph) * 0.3 - 1.05; ctx.beginPath(); ctx.moveTo(px, sh); ctx.lineTo(px + 7 * sc * Math.cos(a), sh + 7 * sc * Math.sin(a)); ctx.stroke(); }
-      else if (kind === 'hoe') { const a = Math.abs(Math.sin(tt * 2.4 + ph)); ctx.beginPath(); ctx.moveTo(px + 2 * sc, sh); ctx.lineTo(px + 9 * sc, py - bh * 0.2 + 5 * sc * a); ctx.stroke(); }
+      ctx.moveTo(torsoX - 4.0 * sc, torsoY);                                     // hip L
+      ctx.lineTo(torsoX - 3.4 * sc, shoulderY - bodyBob);                          // L side up to shoulder
+      ctx.quadraticCurveTo(torsoX, shoulderY - bodyBob - 1.2 * sc,
+                           torsoX + 3.4 * sc, shoulderY - bodyBob);                // shoulder top
+      ctx.lineTo(torsoX + 4.0 * sc, torsoY);                                       // hip R
+      ctx.quadraticCurveTo(torsoX, torsoY + 0.6 * sc, torsoX - 4.0 * sc, torsoY);   // hem curve
+      ctx.closePath(); ctx.fill();
+      // ribbon stripes — a thin contrasting band across the chest
+      ctx.fillStyle = 'rgba(245,232,200,0.85)';
+      ctx.fillRect(torsoX - 3.6 * sc, shoulderY - bodyBob + 3.2 * sc, 7.2 * sc, 0.7 * sc);
+      ctx.fillStyle = 'rgba(20,12,8,0.45)';
+      ctx.fillRect(torsoX - 3.6 * sc, shoulderY - bodyBob + 4.2 * sc, 7.2 * sc, 0.4 * sc);
+
+      // ---- ARMS (in skin tone) + activity hand ----
+      const sArmY = shoulderY - bodyBob + 1.2 * sc;
+      // base resting arm positions
+      const bArmAng = (kind === 'walk') ? armSwing : Math.sin(tt * 1.3 + ph) * 0.15;
+      // left arm (back-swing in walk)
+      limb(torsoX - 3.4 * sc, sArmY,
+           torsoX - 3.4 * sc - Math.sin(bArmAng) * 5 * sc,
+           sArmY + 6 * sc + Math.cos(bArmAng) * 1.5 * sc,
+           2.4 * sc, skin);
+      // right arm — driven by activity
+      let rArmEndX = torsoX + 3.4 * sc + Math.sin(-bArmAng) * 5 * sc;
+      let rArmEndY = sArmY + 6 * sc + Math.cos(-bArmAng) * 1.5 * sc;
+      if (kind === 'stir') {
+        const a = Math.sin(tt * 3 + ph) * 0.6 - 0.3;
+        rArmEndX = torsoX + (5 + Math.cos(a) * 4) * sc;
+        rArmEndY = sArmY + (3 + Math.sin(a) * 4) * sc;
+      } else if (kind === 'hang') {
+        const a = Math.sin(tt * 1.6 + ph) * 0.25 - 1.15;
+        rArmEndX = torsoX + 7 * sc * Math.cos(a);
+        rArmEndY = sArmY + 7 * sc * Math.sin(a);
+      } else if (kind === 'wave') {
+        const a = -1.3 + Math.sin(tt * 3 + ph) * 0.25;
+        rArmEndX = torsoX + 6 * sc * Math.cos(a);
+        rArmEndY = sArmY + 6 * sc * Math.sin(a);
+      } else if (kind === 'carry') {
+        rArmEndX = torsoX + 4 * sc; rArmEndY = sArmY + 2 * sc;
+        // a basket held in front
+        ctx.fillStyle = '#6b4824';
+        ctx.beginPath(); ctx.ellipse(torsoX + 5 * sc, sArmY + 4 * sc, 3.2 * sc, 2.2 * sc, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = '#3a2410'; ctx.lineWidth = 0.6;
+        for (let bw = -2.4; bw <= 2.4; bw += 0.8) {
+          ctx.beginPath(); ctx.moveTo(torsoX + 5 * sc + bw * sc, sArmY + 2 * sc); ctx.lineTo(torsoX + 5 * sc + bw * sc, sArmY + 6 * sc); ctx.stroke();
+        }
+      } else if (kind === 'drum') {
+        // both hands striking the drum
+        const beat = Math.abs(Math.sin(tt * 4 + ph));
+        rArmEndX = torsoX + 4 * sc; rArmEndY = sArmY + (5 - beat * 2.5) * sc;
+        limb(torsoX - 3.4 * sc, sArmY, torsoX - 3 * sc, sArmY + (5 - Math.abs(Math.cos(tt * 4 + ph)) * 2.5) * sc, 2.4 * sc, skin);
+      }
+      limb(torsoX + 3.4 * sc, sArmY, rArmEndX, rArmEndY, 2.4 * sc, skin);
+
+      // ---- HEAD ----
+      ctx.fillStyle = skin;
+      ctx.beginPath(); ctx.arc(px, headCY - bodyBob, headR, 0, 6.283); ctx.fill();
+      // jaw shading
+      ctx.fillStyle = 'rgba(80,46,24,0.35)';
+      ctx.beginPath(); ctx.arc(px - 0.4 * sc * dir, headCY - bodyBob + 0.7 * sc, headR * 0.92, 0.3, 2.9); ctx.fill();
+
+      // ---- HAIR (with options) ----
+      ctx.fillStyle = hair;
+      // crown / cap
+      ctx.beginPath(); ctx.arc(px, headCY - bodyBob - 0.4 * sc, headR * 1.05, Math.PI + 0.25, 2 * Math.PI - 0.25); ctx.fill();
+      if (opt.hairStyle === 'braid') {
+        // a single long braid down the back
+        ctx.strokeStyle = hair; ctx.lineWidth = 1.6 * sc; ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(px - dir * headR * 0.6, headCY - bodyBob + headR * 0.3);
+        ctx.quadraticCurveTo(px - dir * headR * 1.4, headCY - bodyBob + headR * 2.4, px - dir * headR * 1.2, headCY - bodyBob + headR * 4.0);
+        ctx.stroke();
+      } else if (opt.hairStyle === 'feather') {
+        // a single eagle feather rising from a headband
+        ctx.strokeStyle = '#f4e6c2'; ctx.lineWidth = 0.8 * sc;
+        ctx.beginPath(); ctx.moveTo(px - dir * 0.5 * sc, headCY - bodyBob - headR * 0.8);
+        ctx.lineTo(px - dir * 1.6 * sc, headCY - bodyBob - headR * 2.6); ctx.stroke();
+        ctx.fillStyle = '#cc8a3a';
+        ctx.fillRect(px - headR, headCY - bodyBob - headR * 0.9, headR * 2, 0.7 * sc);
+      } else if (opt.hairStyle === 'long') {
+        // long hair past the shoulders
+        ctx.fillStyle = hair;
+        ctx.beginPath();
+        ctx.moveTo(px - headR, headCY - bodyBob);
+        ctx.quadraticCurveTo(px - headR * 1.3, headCY - bodyBob + headR * 2, px - headR * 0.6, headCY - bodyBob + headR * 3.4);
+        ctx.lineTo(px + headR * 0.6, headCY - bodyBob + headR * 3.4);
+        ctx.quadraticCurveTo(px + headR * 1.3, headCY - bodyBob + headR * 2, px + headR, headCY - bodyBob);
+        ctx.closePath(); ctx.fill();
+      }
     };
     if (nm < 0.98) {
       ctx.save(); ctx.globalAlpha = 1 - nm;
-      // people busy with traditional day activities — no farm rows, just life by the water
-      fig(fx + 16, ground(fx + 16) + 6, 1.4, 'stir', 0);                            // stirring the pot at the fire
-      fig(dx - 2, dyy + 6, 1.35, 'hang', 1);                                         // hanging fish to dry
-      fig(W * 0.78, ground(W * 0.78) + 7, 1.3, 'walk', 2.4);                         // walking the shore
-      fig(W * 0.715, ground(W * 0.715) + 7, 1.35, 'walk', 5.1);                      // another walking
+      // ---- a LARGER, livelier village: more people, more variety, no lockstep ----
+      //   Each villager carries its own phase + style options so they don't move
+      //   in identical sync and don't all look the same.
+      fig(fx + 16, ground(fx + 16) + 6, 1.45, 'stir', 0.0, { shirt: '#c93a1e', hairStyle: 'long' });
+      fig(fx - 24, ground(fx - 24) + 6, 1.35, 'sit', 1.7, { shirt: '#1f4e8f', hairStyle: 'braid', dir: -1 });
+      fig(dx - 2, dyy + 6, 1.4, 'hang', 1.2, { shirt: '#d68a1f', hairStyle: 'braid' });
+      fig(dx + 18, dyy + 6, 1.3, 'hang', 4.0, { shirt: '#5a7d3a' });
+      fig(W * 0.78, ground(W * 0.78) + 7, 1.35, 'walk', 2.4, { shirt: '#b04a2a', hairStyle: 'long' });
+      fig(W * 0.715, ground(W * 0.715) + 7, 1.4, 'walk', 5.1, { shirt: '#7c2f6b', hairStyle: 'feather', dir: -1 });
+      fig(W * 0.81, ground(W * 0.81) + 7, 1.25, 'carry', 2.0, { shirt: '#1f4e8f', hairStyle: 'braid' });
+      fig(W * 0.66, ground(W * 0.66) + 6, 1.3, 'wave', 3.3, { shirt: '#d68a1f', hairStyle: 'feather' });
+      fig(W * 0.92, ground(W * 0.92) + 7, 1.25, 'walk', 0.9, { shirt: '#5a7d3a', hairStyle: 'long', dir: -1 });
+      fig(W * 0.94, ground(W * 0.94) + 7, 1.1, 'walk', 5.7, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 });
       // a drummer seated at the ceremonial drum (rhythm of the day)
       const drumPx = drx - 4, drumPy = ground(drumPx) + 6;
-      fig(drumPx, drumPy, 1.3, 'sit', 7);
+      fig(drumPx, drumPy, 1.4, 'drum', 7, { shirt: '#7c2f6b', hairStyle: 'feather' });
       // a person fishing from the shore with a long pole reaching over the water
       const fshX = W * 0.83, fshY = ground(fshX) + 6;
-      fig(fshX, fshY, 1.3, 'sit', 4);
-      ctx.strokeStyle = 'rgba(46,32,18,1)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+      fig(fshX, fshY, 1.3, 'sit', 4, { shirt: '#1f4e8f', hairStyle: 'braid' });
+      ctx.strokeStyle = 'rgba(46,32,18,1)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
       const rodSway = Math.sin(tt * 1.1) * 1.4;
-      ctx.beginPath(); ctx.moveTo(fshX + 2, fshY - 12); ctx.lineTo(fshX - 26 + rodSway, fshY - 4); ctx.stroke();   // pole reaching toward the lake
+      ctx.beginPath(); ctx.moveTo(fshX + 2, fshY - 16); ctx.lineTo(fshX - 32 + rodSway, fshY - 6); ctx.stroke();
       ctx.strokeStyle = 'rgba(220,214,200,0.6)'; ctx.lineWidth = 0.7;
-      ctx.beginPath(); ctx.moveTo(fshX - 26 + rodSway, fshY - 4); ctx.lineTo(fshX - 28 + rodSway, fshY + 6); ctx.stroke();   // line
+      ctx.beginPath(); ctx.moveTo(fshX - 32 + rodSway, fshY - 6); ctx.lineTo(fshX - 34 + rodSway, fshY + 6); ctx.stroke();
       ctx.restore();
-      // ---- a BLACK BEAR at the water's edge, head down grabbing a fish ----
-      //   Pose: standing in the shallows, characteristic shoulder hump high, head
-      //   plunged toward the water with a salmon thrashing in its jaws. Sized to
-      //   read as a real animal against the people nearby.
+      // ---- HORSES grazing on the bank (Anishinaabe communities have long
+      //   kept horses — adds a real sign of life Hassan asked for) ----
+      const drawHorse = (hx, hy, sc, ph, headDown) => {
+        ctx.save(); ctx.globalAlpha = (1 - nm);
+        const body = 'rgba(74,46,28,1)';
+        const mane = 'rgba(28,16,8,1)';
+        const sock = 'rgba(220,212,196,1)';
+        const t = headDown ? 0.5 + 0.5 * Math.sin(tt * 0.6 + ph) : 0;       // graze dip
+        const tail = Math.sin(tt * 1.8 + ph) * 1.2;
+        // body
+        ctx.fillStyle = body;
+        ctx.beginPath();
+        ctx.moveTo(hx - 12 * sc, hy - 5 * sc);
+        ctx.quadraticCurveTo(hx - 6 * sc, hy - 9 * sc, hx + 4 * sc, hy - 8 * sc);
+        ctx.quadraticCurveTo(hx + 12 * sc, hy - 7 * sc, hx + 14 * sc, hy - 3 * sc);
+        ctx.quadraticCurveTo(hx + 13 * sc, hy + 2 * sc, hx + 6 * sc, hy + 2 * sc);
+        ctx.quadraticCurveTo(hx - 4 * sc, hy + 2 * sc, hx - 12 * sc, hy - 5 * sc);
+        ctx.closePath(); ctx.fill();
+        // legs (four)
+        ctx.fillRect(hx - 9 * sc, hy + 1 * sc, 2.2 * sc, 9 * sc);
+        ctx.fillRect(hx - 5 * sc, hy + 1 * sc, 2.2 * sc, 9 * sc);
+        ctx.fillRect(hx + 6 * sc, hy + 1 * sc, 2.2 * sc, 9 * sc);
+        ctx.fillRect(hx + 10 * sc, hy + 1 * sc, 2.2 * sc, 9 * sc);
+        // white socks on the front legs
+        ctx.fillStyle = sock;
+        ctx.fillRect(hx + 6 * sc, hy + 7 * sc, 2.2 * sc, 3 * sc);
+        ctx.fillRect(hx + 10 * sc, hy + 7 * sc, 2.2 * sc, 3 * sc);
+        // tail
+        ctx.strokeStyle = mane; ctx.lineWidth = 2.4 * sc; ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(hx - 11 * sc, hy - 4 * sc);
+        ctx.quadraticCurveTo(hx - 16 * sc, hy - 2 * sc + tail, hx - 17 * sc, hy + 4 * sc + tail);
+        ctx.stroke();
+        // head + neck (dips when grazing)
+        ctx.fillStyle = body;
+        const hnx = hx + 14 * sc, hny = hy - 4 * sc + t * 8 * sc;
+        ctx.beginPath();
+        ctx.moveTo(hx + 12 * sc, hy - 7 * sc);
+        ctx.quadraticCurveTo(hnx + 4 * sc, hny - 4 * sc, hnx + 8 * sc, hny);
+        ctx.quadraticCurveTo(hnx + 10 * sc, hny + 3 * sc, hnx + 6 * sc, hny + 4 * sc);
+        ctx.quadraticCurveTo(hx + 13 * sc, hy - 3 * sc, hx + 12 * sc, hy - 7 * sc);
+        ctx.closePath(); ctx.fill();
+        // mane (along the neck)
+        ctx.strokeStyle = mane; ctx.lineWidth = 1.8 * sc;
+        ctx.beginPath();
+        ctx.moveTo(hx + 5 * sc, hy - 9 * sc);
+        ctx.quadraticCurveTo(hx + 10 * sc, hy - 8 * sc, hnx + 2 * sc, hny - 3 * sc);
+        ctx.stroke();
+        // ear, eye, nostril
+        ctx.fillStyle = body;
+        ctx.beginPath(); ctx.moveTo(hnx + 1 * sc, hny - 4 * sc); ctx.lineTo(hnx + 2 * sc, hny - 7 * sc); ctx.lineTo(hnx + 3 * sc, hny - 4 * sc); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,1)';
+        ctx.beginPath(); ctx.arc(hnx + 4 * sc, hny - 1.5 * sc, 0.5 * sc, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(hnx + 8.5 * sc, hny + 1.5 * sc, 0.5 * sc, 0, 6.283); ctx.fill();
+        ctx.restore();
+      };
+      drawHorse(W * 0.70, ground(W * 0.70) - 2, 0.85, 0.0, true);          // grazing
+      drawHorse(W * 0.62, ground(W * 0.62) - 2, 0.75, 2.3, false);         // standing watch
+      // ---- a LARGE BROWN/BLACK BEAR at the water's edge, fishing ----
+      //   Scaled up ~2.4x so it actually reads as a bear. Multi-tone fur with
+      //   highlight on the hump + belly shading, claws breaking the water,
+      //   a thrashing salmon caught in its jaws, and a real splash plume.
       ctx.save(); ctx.globalAlpha = (1 - nm);
-      const bx = W * 0.605, by = shoreY(bx) + 2;
-      const lunge = (0.5 + 0.5 * Math.sin(tt * 0.9)) * 3.5;            // gentle head-dip rhythm
-      const fur = 'rgba(22,15,10,1)';
-      const furL = 'rgba(40,28,20,1)';                                    // shoulder/hump highlight
-      ctx.fillStyle = fur;
-      // --- hind legs (planted in shallow water), more anatomical
-      ctx.beginPath(); ctx.ellipse(bx + 11, by + 8, 4.2, 7, 0, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(bx + 16, by + 9, 3.8, 6.5, 0.1, 0, 6.283); ctx.fill();
-      // --- belly + main body, leaning forward over the water
+      const bx = W * 0.595, by = shoreY(bx) - 4;                          // anchor higher so the body really shows
+      const S = 2.4;                                                       // scale up (was effectively 1.0)
+      const lunge = (0.5 + 0.5 * Math.sin(tt * 0.9)) * 3.5;
+      // rich brown-black fur with a warm undertone, so it doesn't blot black
+      const furG = ctx.createLinearGradient(bx, by - 14 * S, bx, by + 14 * S);
+      furG.addColorStop(0, 'rgba(70,46,28,1)');
+      furG.addColorStop(0.45, 'rgba(46,30,18,1)');
+      furG.addColorStop(1, 'rgba(22,14,8,1)');
+      const furHi  = 'rgba(110,82,52,1)';                                  // rim/highlight
+      const furMid = 'rgba(58,38,22,1)';
+      // --- hind legs (planted in shallow water)
+      ctx.fillStyle = furG;
+      ctx.beginPath(); ctx.ellipse(bx + 11 * S, by + 8 * S, 4.6 * S, 8 * S, 0, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(bx + 17 * S, by + 9 * S, 4.2 * S, 7.5 * S, 0.08, 0, 6.283); ctx.fill();
+      // --- main body: arched back, deep chest, low belly, sloping to rump
       ctx.beginPath();
-      ctx.moveTo(bx - 18, by + 2);
-      ctx.quadraticCurveTo(bx - 14, by - 5, bx - 4, by - 8);             // shoulder up to hump
-      ctx.quadraticCurveTo(bx + 4, by - 12, bx + 10, by - 7);             // top of the hump
-      ctx.quadraticCurveTo(bx + 20, by - 3, bx + 22, by + 4);             // rump
-      ctx.quadraticCurveTo(bx + 18, by + 10, bx + 6, by + 10);            // belly
-      ctx.quadraticCurveTo(bx - 8, by + 10, bx - 18, by + 2);             // back to front
+      ctx.moveTo(bx - 19 * S, by + 2 * S);
+      ctx.quadraticCurveTo(bx - 15 * S, by - 6 * S, bx - 4 * S, by - 9 * S);     // shoulder up to hump
+      ctx.quadraticCurveTo(bx + 4 * S, by - 13 * S, bx + 11 * S, by - 8 * S);    // top of hump
+      ctx.quadraticCurveTo(bx + 22 * S, by - 4 * S, bx + 23 * S, by + 5 * S);    // rump
+      ctx.quadraticCurveTo(bx + 19 * S, by + 11 * S, bx + 6 * S, by + 11 * S);   // belly
+      ctx.quadraticCurveTo(bx - 8 * S, by + 11 * S, bx - 19 * S, by + 2 * S);
       ctx.closePath(); ctx.fill();
-      // --- shoulder hump highlight (the unmistakable bear silhouette tell)
-      ctx.fillStyle = furL;
-      ctx.beginPath(); ctx.ellipse(bx + 4, by - 9, 7.5, 3.5, -0.15, 0, 6.283); ctx.fill();
-      ctx.fillStyle = fur;
+      // --- shoulder hump highlight (the bear silhouette tell)
+      ctx.fillStyle = furHi;
+      ctx.beginPath(); ctx.ellipse(bx + 4 * S, by - 10 * S, 8 * S, 3.6 * S, -0.15, 0, 6.283); ctx.fill();
+      // --- belly shading (lighter brown underbelly)
+      ctx.fillStyle = furMid;
+      ctx.beginPath(); ctx.ellipse(bx + 4 * S, by + 8 * S, 11 * S, 3.2 * S, 0, 0, 6.283); ctx.fill();
+      // soft fur texture: a few short dark strokes along the back
+      ctx.strokeStyle = 'rgba(8,5,3,0.55)'; ctx.lineWidth = 0.9;
+      for (let fx2 = -8; fx2 <= 18; fx2 += 3) {
+        const ty = by - 11 * S + Math.sin(fx2 * 0.4) * 0.5 * S;
+        ctx.beginPath(); ctx.moveTo(bx + fx2 * S, ty); ctx.lineTo(bx + fx2 * S - 0.6 * S, ty + 1.7 * S); ctx.stroke();
+      }
       // --- front legs reaching down into the water
+      ctx.fillStyle = furG;
       ctx.beginPath();
-      ctx.moveTo(bx - 14, by - 2);
-      ctx.quadraticCurveTo(bx - 18, by + 5, bx - 16 - lunge * 0.2, by + 11);
-      ctx.lineTo(bx - 11 - lunge * 0.2, by + 12);
-      ctx.quadraticCurveTo(bx - 10, by + 5, bx - 8, by - 1);
+      ctx.moveTo(bx - 14 * S, by - 2 * S);
+      ctx.quadraticCurveTo(bx - 18 * S, by + 5 * S, bx - 16 * S - lunge * 0.2, by + 12 * S);
+      ctx.lineTo(bx - 10 * S - lunge * 0.2, by + 12 * S);
+      ctx.quadraticCurveTo(bx - 10 * S, by + 5 * S, bx - 8 * S, by - 1 * S);
       ctx.closePath(); ctx.fill();
       ctx.beginPath();
-      ctx.moveTo(bx - 8, by);
-      ctx.quadraticCurveTo(bx - 6, by + 7, bx - 4 - lunge * 0.1, by + 12);
-      ctx.lineTo(bx + 1, by + 12);
-      ctx.quadraticCurveTo(bx + 1, by + 4, bx - 2, by);
+      ctx.moveTo(bx - 8 * S, by);
+      ctx.quadraticCurveTo(bx - 6 * S, by + 7 * S, bx - 4 * S - lunge * 0.1, by + 12 * S);
+      ctx.lineTo(bx + 1 * S, by + 12 * S);
+      ctx.quadraticCurveTo(bx + 1 * S, by + 4 * S, bx - 2 * S, by);
       ctx.closePath(); ctx.fill();
-      // claws (three tiny pale curves on the front paw under the surface)
-      ctx.strokeStyle = 'rgba(220,212,196,0.7)'; ctx.lineWidth = 0.7;
+      // claws breaking the water surface (visible cream-coloured curves)
+      ctx.strokeStyle = 'rgba(240,232,210,0.85)'; ctx.lineWidth = 1.0;
       for (let c = 0; c < 3; c++) {
         ctx.beginPath();
-        ctx.arc(bx - 14 - lunge * 0.2 + c * 1.6, by + 13, 0.7, 0.2, 2.9);
+        ctx.arc(bx + (-14 + c * 1.6) * S - lunge * 0.2, by + 13.4 * S, 1.1, 0.2, 2.9);
         ctx.stroke();
       }
-      // --- neck + head lunging down toward the water (lower than shoulder)
-      ctx.fillStyle = fur;
-      const hx3 = bx - 21 - lunge * 0.5;
-      const hy3 = by + 4 + lunge * 0.4;
+      // --- neck + head plunged low to the water (key salmon-grabbing pose)
+      ctx.fillStyle = furG;
+      const hx3 = bx + (-22) * S - lunge * 0.5;
+      const hy3 = by + 5 * S + lunge * 0.4;
       ctx.beginPath();
-      ctx.moveTo(bx - 12, by - 5);
-      ctx.quadraticCurveTo(bx - 18, by - 3, hx3 + 3, hy3 - 4);            // neck top
-      ctx.quadraticCurveTo(hx3 - 4, hy3 - 3, hx3 - 6, hy3 + 2);            // forehead → muzzle top
-      ctx.quadraticCurveTo(hx3 - 8, hy3 + 5, hx3 - 4, hy3 + 6);            // nose tip
-      ctx.quadraticCurveTo(hx3 + 2, hy3 + 5, hx3 + 4, hy3 + 3);            // jaw line
-      ctx.quadraticCurveTo(bx - 14, hy3 + 1, bx - 12, by);                  // back of jaw to body
+      ctx.moveTo(bx - 12 * S, by - 6 * S);
+      ctx.quadraticCurveTo(bx - 19 * S, by - 3 * S, hx3 + 3, hy3 - 5);
+      ctx.quadraticCurveTo(hx3 - 4, hy3 - 4, hx3 - 8, hy3 + 2);           // forehead
+      ctx.quadraticCurveTo(hx3 - 12, hy3 + 7, hx3 - 6, hy3 + 9);           // muzzle tip
+      ctx.quadraticCurveTo(hx3 + 2, hy3 + 7, hx3 + 5, hy3 + 4);            // jaw
+      ctx.quadraticCurveTo(bx - 14 * S, hy3 + 1, bx - 12 * S, by);
       ctx.closePath(); ctx.fill();
-      // a small rounded ear set well back on the head
-      ctx.beginPath(); ctx.ellipse(hx3 + 4, hy3 - 4, 1.7, 1.9, -0.2, 0, 6.283); ctx.fill();
-      // tiny eye (just a glint)
-      ctx.fillStyle = 'rgba(245,230,180,0.85)';
-      ctx.beginPath(); ctx.arc(hx3 - 1, hy3 - 0.5, 0.5, 0, 6.283); ctx.fill();
-      // nose tip (matte black)
+      // small rounded ear
+      ctx.beginPath(); ctx.ellipse(hx3 + 4, hy3 - 5, 2.4, 2.8, -0.2, 0, 6.283); ctx.fill();
+      // inner ear (slightly lighter)
+      ctx.fillStyle = furHi;
+      ctx.beginPath(); ctx.ellipse(hx3 + 4, hy3 - 5, 1.3, 1.6, -0.2, 0, 6.283); ctx.fill();
+      // muzzle tan colour wraps around the nose
+      ctx.fillStyle = 'rgba(126,92,58,1)';
+      ctx.beginPath(); ctx.ellipse(hx3 - 7, hy3 + 6, 4, 2.2, -0.2, 0, 6.283); ctx.fill();
+      // nose (matte black)
       ctx.fillStyle = 'rgba(0,0,0,1)';
-      ctx.beginPath(); ctx.ellipse(hx3 - 5, hy3 + 4.5, 1, 0.8, 0, 0, 6.283); ctx.fill();
-      // --- the FISH caught in the bear's jaws — silvery, body bent, thrashing
+      ctx.beginPath(); ctx.ellipse(hx3 - 9, hy3 + 6.5, 1.6, 1.2, 0, 0, 6.283); ctx.fill();
+      // eye (catchlight)
+      ctx.fillStyle = 'rgba(20,12,6,1)';
+      ctx.beginPath(); ctx.arc(hx3 - 1, hy3 - 0.5, 0.9, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(255,236,180,1)';
+      ctx.beginPath(); ctx.arc(hx3 - 0.7, hy3 - 0.8, 0.35, 0, 6.283); ctx.fill();
+      // --- the SALMON caught in the bear's jaws — pink-silver, body bent, thrashing
       const fishWag = Math.sin(tt * 9) * 0.35;
-      ctx.save(); ctx.translate(hx3 - 7, hy3 + 5); ctx.rotate(-0.3 + fishWag);
-      // body
-      const fishG = ctx.createLinearGradient(0, -3, 0, 3);
-      fishG.addColorStop(0, 'rgba(220,228,232,1)');
-      fishG.addColorStop(0.5, 'rgba(170,184,196,1)');
-      fishG.addColorStop(1, 'rgba(96,110,126,1)');
-      ctx.fillStyle = fishG;
+      ctx.save(); ctx.translate(hx3 - 13, hy3 + 7); ctx.rotate(-0.4 + fishWag);
+      const salmonG = ctx.createLinearGradient(0, -5, 0, 5);
+      salmonG.addColorStop(0, 'rgba(238,228,220,1)');
+      salmonG.addColorStop(0.45, 'rgba(220,160,140,1)');               // pink salmon stripe
+      salmonG.addColorStop(0.55, 'rgba(170,120,110,1)');
+      salmonG.addColorStop(1, 'rgba(80,90,100,1)');
+      ctx.fillStyle = salmonG;
+      // body (longer, fatter than before so it reads as a real salmon)
       ctx.beginPath();
-      ctx.moveTo(-6, 0);
-      ctx.quadraticCurveTo(-4, -3, 1, -2.6);
-      ctx.quadraticCurveTo(7, -1.6, 9, 0);
-      ctx.quadraticCurveTo(7, 2.0, 1, 2.4);
-      ctx.quadraticCurveTo(-4, 2.6, -6, 0);
+      ctx.moveTo(-11, 0);
+      ctx.quadraticCurveTo(-7, -5, 1, -4.6);
+      ctx.quadraticCurveTo(11, -3, 14, 0);
+      ctx.quadraticCurveTo(11, 3.6, 1, 4.4);
+      ctx.quadraticCurveTo(-7, 4.6, -11, 0);
       ctx.closePath(); ctx.fill();
-      // tail
-      ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(13, -3 + fishWag * 2); ctx.lineTo(13, 3 + fishWag * 2); ctx.closePath(); ctx.fill();
+      // forked tail
+      ctx.beginPath();
+      ctx.moveTo(14, 0); ctx.lineTo(20, -5 + fishWag * 3); ctx.lineTo(17, 0); ctx.lineTo(20, 5 + fishWag * 3);
+      ctx.closePath(); ctx.fill();
+      // dorsal fin
+      ctx.beginPath();
+      ctx.moveTo(0, -4); ctx.lineTo(4, -8); ctx.lineTo(7, -4);
+      ctx.closePath(); ctx.fill();
+      // pectoral fin
+      ctx.beginPath();
+      ctx.moveTo(-2, 3); ctx.lineTo(0, 7); ctx.lineTo(3, 4);
+      ctx.closePath(); ctx.fill();
       // gill mark + eye
-      ctx.strokeStyle = 'rgba(60,68,80,0.7)'; ctx.lineWidth = 0.6;
-      ctx.beginPath(); ctx.moveTo(-2, -2); ctx.lineTo(-2, 2); ctx.stroke();
-      ctx.fillStyle = 'rgba(20,18,18,1)'; ctx.beginPath(); ctx.arc(-4, -0.6, 0.5, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = 'rgba(60,30,30,0.7)'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(-3, -3); ctx.lineTo(-3, 3); ctx.stroke();
+      ctx.fillStyle = 'rgba(20,18,18,1)';
+      ctx.beginPath(); ctx.arc(-7, -1, 0.7, 0, 6.283); ctx.fill();
       ctx.restore();
-      // --- water disturbance: a churned splash + concentric ripples where paws/head meet the lake
-      ctx.strokeStyle = 'rgba(240,246,238,0.7)'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.ellipse(bx - 10, by + 13, 14, 2.6, 0, 0, 6.283); ctx.stroke();
-      ctx.strokeStyle = 'rgba(240,246,238,0.4)';
-      ctx.beginPath(); ctx.ellipse(bx - 10, by + 13, 22, 4, 0, 0, 6.283); ctx.stroke();
-      // a few flecks of spray flying off
-      ctx.fillStyle = 'rgba(245,250,242,0.85)';
-      for (let s = 0; s < 5; s++) {
-        const sang = -0.4 - s * 0.18 - Math.sin(tt * 4 + s) * 0.05;
-        const sr = 6 + Math.abs(Math.sin(tt * 3 + s)) * 4;
+      // --- water disturbance: ripples + tall spray plume
+      ctx.strokeStyle = 'rgba(240,246,238,0.8)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.ellipse(bx - 10 * S, by + 14 * S, 20 * S, 3.4 * S, 0, 0, 6.283); ctx.stroke();
+      ctx.strokeStyle = 'rgba(240,246,238,0.45)';
+      ctx.beginPath(); ctx.ellipse(bx - 10 * S, by + 14 * S, 32 * S, 5 * S, 0, 0, 6.283); ctx.stroke();
+      // spray flying off where head meets water
+      ctx.fillStyle = 'rgba(245,250,242,0.9)';
+      for (let s = 0; s < 9; s++) {
+        const sang = -0.55 - s * 0.14 - Math.sin(tt * 4 + s) * 0.05;
+        const sr = 10 + Math.abs(Math.sin(tt * 3 + s)) * 8;
         ctx.beginPath();
-        ctx.arc(hx3 - 4 + Math.cos(sang) * sr, hy3 + 4 + Math.sin(sang) * sr, 0.9, 0, 6.283);
+        ctx.arc(hx3 - 6 + Math.cos(sang) * sr, hy3 + 6 + Math.sin(sang) * sr, 1.1, 0, 6.283);
         ctx.fill();
       }
       ctx.restore();
@@ -1294,9 +1608,20 @@ function drawScene(ctx, W, H, p, tt, now) {
     }
     if (nm > 0.02) {
       ctx.save(); ctx.globalAlpha = nm;
-      [[-22, 1.35], [-11, 1.45], [12, 1.45], [23, 1.35], [-32, 1.2], [33, 1.2]].forEach(([dxx, sc], i) => {
+      // night: a fuller circle around the fire, varied dress + hair, gently breathing
+      const styles = [
+        { shirt: '#c93a1e', hairStyle: 'long' },
+        { shirt: '#1f4e8f', hairStyle: 'braid' },
+        { shirt: '#d68a1f', hairStyle: 'feather' },
+        { shirt: '#5a7d3a', hairStyle: 'long' },
+        { shirt: '#7c2f6b', hairStyle: 'braid' },
+        { shirt: '#b04a2a', hairStyle: 'feather' },
+        { shirt: '#1f4e8f', hairStyle: 'long' },
+        { shirt: '#d68a1f', hairStyle: 'braid' },
+      ];
+      [[-32, 1.25, -1], [-22, 1.35, -1], [-11, 1.4, -1], [12, 1.4, 1], [23, 1.35, 1], [33, 1.2, 1], [-42, 1.15, -1], [43, 1.15, 1]].forEach(([dxx, sc, dir], i) => {
         const bob = Math.sin(tt * 1.5 + i) * 0.7;
-        fig(fx + dxx, fy + 7 + bob, sc, 'sit', i);
+        fig(fx + dxx, fy + 7 + bob, sc, 'sit', i, Object.assign({ dir }, styles[i % styles.length]));
       });
       ctx.restore();
       // ---- WOLVES at night on the ridge: a proper lupine silhouette, one howling
@@ -1413,22 +1738,79 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.stroke();
   });
 
-  // ---- leaping fish: a body arcs out of the water now and then, with a splash ----
+  // ---- LEAPING FISH: a proper parabolic arc, the body curls/bends as it goes ----
   for (const fi of _FISH) {
     const loc = ((tt + fi.phase) % fi.period) / fi.period;
-    if (loc >= 0.10) continue;                       // brief leap
-    const k = loc / 0.10;                            // 0..1 through the arc
-    const fx = fi.x * W, baseY = hY + 14 + (H - hY) * fi.yb;
-    const arc = Math.sin(k * Math.PI) * 30;          // height of the leap
-    const fy = baseY - arc;
-    ctx.save(); ctx.translate(fx, fy); ctx.rotate((k - 0.5) * 1.1);
-    ctx.fillStyle = `rgba(190,180,165,${0.7 * (1 - Math.abs(k - 0.5) * 0.6)})`;
-    ctx.beginPath(); ctx.ellipse(0, 0, 7, 2.6, 0, 0, 6.283); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(11, -3); ctx.lineTo(11, 3); ctx.closePath(); ctx.fill();  // tail
+    if (loc >= 0.16) continue;                       // a slightly longer, more readable leap
+    const k = loc / 0.16;                            // 0..1 through the arc
+    const dir = fi.dir || 1;                          // direction of travel along the parabola
+    const span = 36;                                  // horizontal distance of the leap
+    const arcH = 32;                                  // peak height
+    const fx0 = fi.x * W;
+    const fx = fx0 + (k - 0.5) * span * dir;          // travel forward through the arc
+    const baseY = hY + 14 + (H - hY) * fi.yb;
+    const fy = baseY - Math.sin(k * Math.PI) * arcH;
+    // splash crown when LEAVING the water (k just above 0)
+    if (k < 0.18) {
+      ctx.fillStyle = 'rgba(240,246,238,0.85)';
+      for (let s = 0; s < 6; s++) {
+        const ang = -Math.PI / 2 + (s - 2.5) * 0.35;
+        const r = 8 + k * 30;
+        ctx.beginPath();
+        ctx.arc(fx0 - 10 * dir + Math.cos(ang) * r, baseY + Math.sin(ang) * r * 0.6, 1.0, 0, 6.283);
+        ctx.fill();
+      }
+      ctx.strokeStyle = 'rgba(235,240,232,0.5)'; ctx.lineWidth = 1.0;
+      ctx.beginPath(); ctx.ellipse(fx0 - 10 * dir, baseY, 9, 2.6, 0, 0, 6.283); ctx.stroke();
+    }
+    // body — orientation follows the tangent of the arc (not a stiff rotation)
+    const ang = Math.atan2(-Math.cos(k * Math.PI) * arcH * Math.PI, span * dir);
+    const bodyA = 0.85 * (1 - Math.abs(k - 0.5) * 0.5);
+    ctx.save(); ctx.translate(fx, fy); ctx.rotate(ang);
+    // curl: the fish bends slightly as if mid-flex
+    const curl = Math.sin(tt * 14) * 0.2;
+    const fishG2 = ctx.createLinearGradient(0, -4, 0, 4);
+    fishG2.addColorStop(0, `rgba(228,232,236,${bodyA})`);
+    fishG2.addColorStop(0.5, `rgba(178,190,200,${bodyA})`);
+    fishG2.addColorStop(1, `rgba(72,86,98,${bodyA})`);
+    ctx.fillStyle = fishG2;
+    // curved body
+    ctx.beginPath();
+    ctx.moveTo(-10, 0);
+    ctx.quadraticCurveTo(-5, -4 + curl * 2, 2, -3.6 + curl * 1.5);
+    ctx.quadraticCurveTo(9, -2, 12, 0);
+    ctx.quadraticCurveTo(9, 3 + curl * 1.5, 2, 3.6 + curl * 2);
+    ctx.quadraticCurveTo(-5, 4 + curl * 2, -10, 0);
+    ctx.closePath(); ctx.fill();
+    // forked tail flicking
+    ctx.beginPath();
+    ctx.moveTo(12, 0); ctx.lineTo(17, -4 + curl * 3); ctx.lineTo(14, 0); ctx.lineTo(17, 4 + curl * 3);
+    ctx.closePath(); ctx.fill();
+    // dorsal fin
+    ctx.beginPath(); ctx.moveTo(0, -3.5); ctx.lineTo(3, -7); ctx.lineTo(6, -3.5); ctx.closePath(); ctx.fill();
+    // eye
+    ctx.fillStyle = `rgba(20,20,22,${bodyA})`;
+    ctx.beginPath(); ctx.arc(-6, -0.8, 0.7, 0, 6.283); ctx.fill();
+    // water droplets sliding off the back
+    if (k < 0.55) {
+      ctx.fillStyle = `rgba(220,232,236,${bodyA * 0.85})`;
+      for (let d = 0; d < 3; d++) {
+        ctx.beginPath(); ctx.arc(-4 + d * 4, -5 - d * 1.5 - k * 4, 0.7, 0, 6.283); ctx.fill();
+      }
+    }
     ctx.restore();
-    if (k > 0.85) {                                  // splash on re-entry
-      ctx.strokeStyle = 'rgba(235,240,232,0.4)'; ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.ellipse(fx, baseY, 8, 2.6, 0, 0, 6.283); ctx.stroke();
+    // splash on re-entry
+    if (k > 0.82) {
+      ctx.fillStyle = 'rgba(240,246,238,0.9)';
+      for (let s = 0; s < 7; s++) {
+        const ang2 = -Math.PI / 2 + (s - 3) * 0.32;
+        const r = 6 + (k - 0.82) / 0.18 * 22;
+        ctx.beginPath();
+        ctx.arc(fx0 + 10 * dir + Math.cos(ang2) * r, baseY + Math.sin(ang2) * r * 0.55, 1.0, 0, 6.283);
+        ctx.fill();
+      }
+      ctx.strokeStyle = 'rgba(235,240,232,0.55)'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.ellipse(fx0 + 10 * dir, baseY, 11, 3, 0, 0, 6.283); ctx.stroke();
     }
   }
 
