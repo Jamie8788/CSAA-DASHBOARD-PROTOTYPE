@@ -111,7 +111,7 @@ function createAmbient(getP) {
   // deep water rumble
   const n1 = ctx.createBufferSource(); n1.buffer = brown(); n1.loop = true;
   const lp1 = ctx.createBiquadFilter(); lp1.type = 'lowpass'; lp1.frequency.value = 300;
-  const g1 = ctx.createGain(); g1.gain.value = 0.075;
+  const g1 = ctx.createGain(); g1.gain.value = 0.045;   // quieter bed so phase voices stand out
   n1.connect(lp1); lp1.connect(g1); g1.connect(master);
   const lfo1 = ctx.createOscillator(); lfo1.frequency.value = 0.08; const lg1 = ctx.createGain(); lg1.gain.value = 0.05;
   lfo1.connect(lg1); lg1.connect(g1.gain); n1.start(); lfo1.start();
@@ -119,7 +119,7 @@ function createAmbient(getP) {
   [-0.5, 0.5].forEach((pp, idx) => {
     const n = ctx.createBufferSource(); n.buffer = brown(); n.loop = true;
     const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 560 + idx * 180; bp.Q.value = 0.8;
-    const g = ctx.createGain(); g.gain.value = 0.028; const p = pan(pp);
+    const g = ctx.createGain(); g.gain.value = 0.018; const p = pan(pp);
     n.connect(bp); bp.connect(g); g.connect(p); p.connect(master);
     const lfo = ctx.createOscillator(); lfo.frequency.value = 0.24 + idx * 0.1; const lg = ctx.createGain(); lg.gain.value = 0.034;
     lfo.connect(lg); lg.connect(g.gain); n.start(); lfo.start();
@@ -175,58 +175,89 @@ function createAmbient(getP) {
   //   dusk/night (> 0.66)  → wolves howling on the ridge, the loon takes over
   // ===========================================================================
 
-  // --- Anishinaabe rattle (shaker): short bursts of softly-filtered noise pulses,
-  //   the rattle that opens the day. Plays once at start, then occasionally in morning.
+  // --- Anishinaabe RATTLE (ceremonial shaker that opens the day). A real
+  //   rattle is a woody/seed sound, so each "shake" is a short noise grain
+  //   with body (lower bandpass + a touch of lowpassed thud). It plays a clear
+  //   STEADY rhythm — shake-shake-shake — and repeats through the morning so
+  //   the start of the day is unmistakably a rattle.
+  function oneShake(tk, vol) {
+    // seed/gourd hiss
+    const n = ctx.createBufferSource(); n.buffer = brown(); n.loop = false;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2300; bp.Q.value = 1.1;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, tk);
+    g.gain.linearRampToValueAtTime(vol, tk + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, tk + 0.085);
+    n.connect(bp); bp.connect(g); g.connect(master);
+    n.start(tk); n.stop(tk + 0.1);
+    // a little woody body underneath each shake
+    const n2 = ctx.createBufferSource(); n2.buffer = brown(); n2.loop = false;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700;
+    const g2 = ctx.createGain();
+    g2.gain.setValueAtTime(0.0001, tk);
+    g2.gain.linearRampToValueAtTime(vol * 0.7, tk + 0.006);
+    g2.gain.exponentialRampToValueAtTime(0.0001, tk + 0.06);
+    n2.connect(lp); lp.connect(g2); g2.connect(master);
+    n2.start(tk); n2.stop(tk + 0.08);
+  }
+  // one ceremonial phrase: a run of even shakes with a small accent pattern
   function rattle(strong) {
     const t0 = T() + 0.05;
-    const shakes = strong ? 14 : 8;
-    const shaker = ctx.createGain(); shaker.gain.value = 1;
-    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3800; bp.Q.value = 1.6;
-    const out = ctx.createGain(); out.gain.value = 0;
-    shaker.connect(bp); bp.connect(out); out.connect(master);
+    const shakes = strong ? 16 : 12;
+    const step = 0.16;                                  // steady ~3.75 shakes/sec
     for (let k = 0; k < shakes; k++) {
-      const tk = t0 + k * (0.085 + (k % 2) * 0.02);
-      const n = ctx.createBufferSource(); n.buffer = brown(); n.loop = false;
-      const g = ctx.createGain();
-      const vol = (strong ? 0.22 : 0.14) * (1 - k / (shakes + 4));
-      g.gain.setValueAtTime(0.0001, tk);
-      g.gain.linearRampToValueAtTime(vol, tk + 0.012);
-      g.gain.exponentialRampToValueAtTime(0.0001, tk + 0.075);
-      n.connect(g); g.connect(shaker);
-      n.start(tk); n.stop(tk + 0.09);
+      const accent = (k % 4 === 0) ? 1.0 : 0.66;        // accent every 4th shake
+      oneShake(t0 + k * step, (strong ? 0.30 : 0.24) * accent);
     }
-    out.gain.setValueAtTime(0.0001, t0);
-    out.gain.linearRampToValueAtTime(1, t0 + 0.05);
-    out.gain.exponentialRampToValueAtTime(0.0001, t0 + shakes * 0.1 + 0.4);
   }
-  // schedule rattle: a strong opening rattle to start the day, then sparingly during morning
+  // morning rattle loop — frequent, so the morning is clearly "rattle time"
   function rattleLoop() {
-    if (P() < 0.32) rattle(false);
-    timers.push(setTimeout(rattleLoop, 16000 + Math.random() * 14000));
+    if (P() < 0.34) rattle(false);
+    timers.push(setTimeout(rattleLoop, 5000 + Math.random() * 4000));
   }
 
-  // --- bald eagle: a high descending screech (morning)
-  function eagle() {
-    if (P() >= 0.30 && P() <= 0.65) {     // moved to DAY/EVENING per Hassan
-      const t = T() + 0.05;
-      const p = pan((Math.random() * 2 - 1) * 0.5);
-      const cries = 2 + (Math.random() < 0.4 ? 1 : 0);
-      for (let c = 0; c < cries; c++) {
-        const tc = t + c * 0.22;
-        const o = ctx.createOscillator(); o.type = 'sawtooth';
-        o.frequency.setValueAtTime(2400, tc);
-        o.frequency.exponentialRampToValueAtTime(1100, tc + 0.18);
-        const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 4;
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(0.0001, tc);
-        g.gain.linearRampToValueAtTime(0.05, tc + 0.03);
-        g.gain.exponentialRampToValueAtTime(0.0001, tc + 0.22);
-        o.connect(bp); bp.connect(g); g.connect(p);
-        o.start(tc); o.stop(tc + 0.24);
-      }
-      p.connect(master);
+  // --- AFTERNOON BIRDS: gentle songbird chirps (2-3 quick notes), pitched and
+  //   soft — the daytime voice Hassan asked for. Plus an occasional distant
+  //   eagle cry (kept subtle, not a constant screech).
+  function songbird() {
+    const t = T() + 0.02, p = pan((Math.random() * 2 - 1) * 0.7);
+    const base = 2000 + Math.random() * 1600;
+    const notes = 2 + Math.floor(Math.random() * 2);
+    for (let k = 0; k < notes; k++) {
+      const t0 = t + k * (0.09 + Math.random() * 0.05);
+      const f = base * (1 + (Math.random() * 0.16 - 0.08));
+      const o = ctx.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(f, t0);
+      o.frequency.linearRampToValueAtTime(f * 1.22, t0 + 0.04);
+      o.frequency.linearRampToValueAtTime(f * 0.96, t0 + 0.1);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(0.03, t0 + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.13);
+      o.connect(g); g.connect(p); o.start(t0); o.stop(t0 + 0.15);
     }
-    timers.push(setTimeout(eagle, 11000 + Math.random() * 14000));
+    p.connect(master);
+  }
+  function eagle() {                                    // now: afternoon bird voice
+    const pp = P();
+    if (pp >= 0.30 && pp <= 0.66) {
+      songbird();
+      // sometimes a faint, distant eagle cry on top (soft)
+      if (Math.random() < 0.25) {
+        const t = T() + 0.3, p = pan((Math.random() * 2 - 1) * 0.4);
+        const o = ctx.createOscillator(); o.type = 'triangle';
+        o.frequency.setValueAtTime(1900, t);
+        o.frequency.exponentialRampToValueAtTime(1200, t + 0.25);
+        const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1500; bp.Q.value = 3;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(0.025, t + 0.04);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+        o.connect(bp); bp.connect(g); g.connect(p); p.connect(master);
+        o.start(t); o.stop(t + 0.32);
+      }
+    }
+    timers.push(setTimeout(eagle, 2600 + Math.random() * 3200));   // frequent in the afternoon
   }
 
   // --- fish splash (day): a quick noise burst with a downward filter
@@ -259,32 +290,52 @@ function createAmbient(getP) {
     timers.push(setTimeout(otterLoop, 9000 + Math.random() * 12000));
   }
 
-  // --- wolf howl (night): a slow rising-then-falling sine tone, faintly reverberant
-  function wolf() {
-    if (P() > 0.62) {
-      const t = T() + 0.05;
-      const p = pan((Math.random() * 2 - 1) * 0.55);
-      const f0 = 280 + Math.random() * 60;
+  // --- NIGHT: a SOFT, DISTANT lone wolf — gentle and far away, NOT a horror
+  //   howl (Hassan: "really light wolf, not horror movie"). Heavily lowpassed,
+  //   quiet, single voice, infrequent. Plus a calm owl hoot now and then.
+  function owl() {
+    const t = T() + 0.05, p = pan((Math.random() * 2 - 1) * 0.3);
+    // two soft low "hoo" notes
+    for (let k = 0; k < 2; k++) {
+      const t0 = t + k * 0.5;
       const o = ctx.createOscillator(); o.type = 'sine';
-      o.frequency.setValueAtTime(f0 * 0.6, t);
-      o.frequency.exponentialRampToValueAtTime(f0 * 1.45, t + 0.6);
-      o.frequency.exponentialRampToValueAtTime(f0 * 1.1, t + 2.6);
-      o.frequency.exponentialRampToValueAtTime(f0 * 0.55, t + 3.4);
-      // a quiet second voice answers a beat later (the pair on the ridge)
-      const o2 = ctx.createOscillator(); o2.type = 'sine';
-      o2.frequency.setValueAtTime(f0 * 0.55 * 1.18, t + 1.2);
-      o2.frequency.exponentialRampToValueAtTime(f0 * 1.32 * 1.18, t + 1.9);
-      o2.frequency.exponentialRampToValueAtTime(f0 * 0.55 * 1.18, t + 4.0);
-      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100;
+      o.frequency.setValueAtTime(360, t0);
+      o.frequency.linearRampToValueAtTime(330, t0 + 0.18);
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 600;
       const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(0.07, t + 0.6);
-      g.gain.linearRampToValueAtTime(0.06, t + 2.6);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 4.2);
-      o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(p); p.connect(master);
-      o.start(t); o.stop(t + 4.3); o2.start(t + 1.2); o2.stop(t + 4.3);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(0.035, t0 + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
+      o.connect(lp); lp.connect(g); g.connect(p); o.start(t0); o.stop(t0 + 0.34);
     }
-    timers.push(setTimeout(wolf, 14000 + Math.random() * 16000));
+    p.connect(master);
+  }
+  function wolf() {
+    const pp = P();
+    if (pp > 0.66) {
+      if (Math.random() < 0.5) {
+        // a single soft, distant howl
+        const t = T() + 0.05;
+        const p = pan((Math.random() * 2 - 1) * 0.4);
+        const f0 = 250 + Math.random() * 40;
+        const o = ctx.createOscillator(); o.type = 'sine';
+        o.frequency.setValueAtTime(f0 * 0.7, t);
+        o.frequency.exponentialRampToValueAtTime(f0 * 1.3, t + 0.8);
+        o.frequency.exponentialRampToValueAtTime(f0 * 1.0, t + 2.4);
+        o.frequency.exponentialRampToValueAtTime(f0 * 0.6, t + 3.4);
+        const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 650;  // far away
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(0.032, t + 0.8);   // much quieter than before
+        g.gain.linearRampToValueAtTime(0.026, t + 2.4);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 3.6);
+        o.connect(lp); lp.connect(g); g.connect(p); p.connect(master);
+        o.start(t); o.stop(t + 3.7);
+      } else {
+        owl();
+      }
+    }
+    timers.push(setTimeout(wolf, 20000 + Math.random() * 18000));   // infrequent
   }
 
   // --- CAMPFIRE crackle (NIGHT): sparse short noise pops + a soft warm bed,
@@ -525,96 +576,8 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.globalAlpha = 1;
   }
 
-  // ---- BALD EAGLE soaring overhead (morning → afternoon) ----
-  //   Larger, more anatomically detailed: broad outstretched wings with
-  //   distinct primary feather fingers, dark chocolate body, snow-white
-  //   head and tail, hooked yellow beak. Circles slowly across the sky.
-  const eagleA = _smooth(0.05, 0.20, p) * (1 - _smooth(0.55, 0.74, p));
-  if (eagleA > 0.02) {
-    // Clean, iconic bald-eagle silhouette. The previous version had too
-    // many tiny feather strokes that read as noise on a small canvas — this
-    // version uses bigger shapes and a clear flight pose.
-    const eT = tt * 0.07;
-    const eRX = W * 0.32, eRY = hY * 0.36;
-    const ex = eRX + Math.cos(eT) * W * 0.24;
-    const ey = eRY + Math.sin(eT) * 30;
-    const heading = Math.cos(eT + Math.PI / 2);
-    const dir = heading >= 0 ? 1 : -1;
-    const wingPhase = Math.sin(tt * 1.1);                       // strong, deliberate flap
-    const ES = 2.2;                                              // big enough to read
-    ctx.save(); ctx.globalAlpha = eagleA;
-    ctx.translate(ex, ey); ctx.scale(dir * ES, ES);
-
-    // ---- WINGS (drawn first so body sits on top) ----
-    //   A single, clean swept wing on each side. The shape itself reads as
-    //   "soaring eagle" — no fiddly feather strokes.
-    const drawWing = (sign) => {
-      const d = sign;
-      const lift = wingPhase * 0.25;
-      ctx.fillStyle = 'rgba(28,18,10,1)';
-      ctx.beginPath();
-      ctx.moveTo(2 * d, -1.5);
-      // leading edge sweeps outward & slightly up
-      ctx.bezierCurveTo(10 * d, -6 - lift * 8,
-                        24 * d, -8 - lift * 10,
-                        36 * d, -5 - lift * 10);
-      // wingtip notch (the iconic "fingers" shown as one rounded notch)
-      ctx.lineTo(34 * d, -2 - lift * 6);
-      ctx.lineTo(36 * d, -1 - lift * 5);
-      ctx.lineTo(33 * d, 1 - lift * 3);
-      // trailing edge curves back to the body
-      ctx.bezierCurveTo(22 * d, 2,
-                        12 * d, 2,
-                        4 * d, 0);
-      ctx.closePath(); ctx.fill();
-      // a lighter brown band along the inner wing for depth
-      ctx.fillStyle = 'rgba(72,50,28,1)';
-      ctx.beginPath();
-      ctx.moveTo(4 * d, -1);
-      ctx.bezierCurveTo(12 * d, -4 - lift * 4, 22 * d, -5 - lift * 6, 24 * d, -3 - lift * 5);
-      ctx.bezierCurveTo(18 * d, 0, 10 * d, 0, 4 * d, 0);
-      ctx.closePath(); ctx.fill();
-    };
-    drawWing(1);
-    drawWing(-1);
-
-    // ---- BODY (dark chocolate, simple ellipse) ----
-    const bodG = ctx.createLinearGradient(0, -3, 0, 4);
-    bodG.addColorStop(0, 'rgba(58,38,22,1)');
-    bodG.addColorStop(1, 'rgba(22,14,8,1)');
-    ctx.fillStyle = bodG;
-    ctx.beginPath(); ctx.ellipse(0, 0, 9, 3.4, 0, 0, 6.283); ctx.fill();
-
-    // ---- WHITE TAIL FAN (short, fanned) ----
-    ctx.fillStyle = 'rgba(248,244,232,1)';
-    ctx.beginPath();
-    ctx.moveTo(-7, -2); ctx.lineTo(-16, -4); ctx.lineTo(-16, 4); ctx.lineTo(-7, 2);
-    ctx.closePath(); ctx.fill();
-    // a single dark feather division so it doesn't look like a flat block
-    ctx.strokeStyle = 'rgba(140,130,110,0.6)'; ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(-7, 0); ctx.lineTo(-16, 0); ctx.stroke();
-
-    // ---- WHITE HEAD ----
-    ctx.fillStyle = 'rgba(248,244,232,1)';
-    ctx.beginPath(); ctx.ellipse(9, -0.4, 3.4, 2.6, 0, 0, 6.283); ctx.fill();
-    // dark eye + brow line
-    ctx.fillStyle = 'rgba(20,12,8,1)';
-    ctx.beginPath(); ctx.arc(10.4, -1.0, 0.65, 0, 6.283); ctx.fill();
-
-    // ---- BRIGHT YELLOW HOOKED BEAK ----
-    ctx.fillStyle = 'rgba(248,196,52,1)';
-    ctx.beginPath();
-    ctx.moveTo(12, -0.8);
-    ctx.lineTo(15.5, 0.6);
-    ctx.lineTo(14.5, 1.2);
-    ctx.lineTo(12, 0.6);
-    ctx.closePath(); ctx.fill();
-    // hooked tip
-    ctx.strokeStyle = 'rgba(140,80,20,0.7)'; ctx.lineWidth = 0.4;
-    ctx.beginPath(); ctx.moveTo(14.5, 0.6); ctx.lineTo(15.5, 1.4); ctx.stroke();
-
-    ctx.restore();
-  }
+  // (Visual bald eagle removed at Hassan's request — the flapping read as
+  //  fake. The eagle now lives only in the AFTERNOON soundscape.)
   // ---- far shore: treeline + a small community gathering, with a fire glow ----
   const shoreAlpha = 0.6 + 0.28 * _smooth(0.6, 1, p);
   const vx = W * 0.66;                                 // the village gathering sits here on the shore
@@ -1019,22 +982,20 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.beginPath(); ctx.moveTo(40, -6); ctx.lineTo(40, -18); ctx.stroke();
     ctx.fillStyle = '#ffce7a'; ctx.beginPath(); ctx.arc(40, -21, 3.4, 0, 6.283); ctx.fill();
   }
-  // --- THREE PADDLERS seated in the canoe — staggered along its length,
-  //     each in a different ribbon-shirt colour, paddling on alternating sides.
+  // --- TWO PADDLERS (Hassan: max two). One in the bow, one in the stern,
+  //     paddling on FIXED OPPOSITE sides like a real canoe (bow-right,
+  //     stern-left) so their paddles & hands can never collide. They stroke
+  //     in unison; the stroke drives the blade fore→aft, not across the hull.
   const skin = '#b7855a';
-  // Three paddlers in matched dark-red ribbon shirts (Hassan: the canoe
-  // itself can carry the colour; the paddlers should look unified, not
-  // dressed in three different bright shirts). Hair varies subtly only.
   const PADDLER_SHIRT = '#7d1f15';
   const crew = [
-    { x: -34, shirt: PADDLER_SHIRT, hair: 'braid', side: -1, phase: 0.0 },
-    { x:   0, shirt: PADDLER_SHIRT, hair: 'feather', side: 1, phase: 0.55 },
-    { x:  34, shirt: PADDLER_SHIRT, hair: 'long', side: -1, phase: 1.1 },
+    { x: -30, shirt: PADDLER_SHIRT, hair: 'braid', side: -1, phase: 0.0 },  // stern, paddles left
+    { x:  30, shirt: PADDLER_SHIRT, hair: 'long',  side:  1, phase: 0.0 },  // bow, paddles right
   ];
   crew.forEach((pdl) => {
-    const stroke = Math.sin(tt * 2.1 + pdl.phase);
-    const localSide = stroke >= 0 ? pdl.side : -pdl.side;
-    const lean = localSide * 0.08 * Math.abs(stroke);
+    const stroke = Math.sin(tt * 2.0 + pdl.phase);
+    const localSide = pdl.side;                       // FIXED — never crosses the hull
+    const lean = localSide * 0.06 * Math.abs(stroke);
     ctx.save(); ctx.translate(pdl.x, 0); ctx.rotate(lean);
     const gun = -12;
     // torso (ribbon shirt with cream stripe)
@@ -1058,10 +1019,6 @@ function drawScene(ctx, W, H, p, tt, now) {
     if (pdl.hair === 'braid') {
       ctx.strokeStyle = '#1a0e08'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(-2, -24); ctx.quadraticCurveTo(-4, -19, -3, -14); ctx.stroke();
-    } else if (pdl.hair === 'feather') {
-      ctx.strokeStyle = '#f4e6c2'; ctx.lineWidth = 0.8;
-      ctx.beginPath(); ctx.moveTo(-1, -30); ctx.lineTo(-2, -36); ctx.stroke();
-      ctx.fillStyle = '#cc8a3a'; ctx.fillRect(-4, -30.5, 8, 0.7);
     } else if (pdl.hair === 'long') {
       ctx.fillStyle = '#1a0e08';
       ctx.beginPath();
@@ -1071,10 +1028,13 @@ function drawScene(ctx, W, H, p, tt, now) {
     // rim light on the lit side
     ctx.strokeStyle = 'rgba(255,210,150,0.55)'; ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.arc(0, -26, 4.2, rim < 0 ? 1.9 : -1.2, rim < 0 ? 4.4 : 1.3); ctx.stroke();
-    // paddle — held in both hands, blade dipping on `localSide`
-    const topGrip = [localSide * -2, -20];
-    const bladeTip = [localSide * (40 + 4 * Math.abs(stroke)), 8 + 5 * Math.abs(stroke)];
-    const lowGrip = [topGrip[0] + (bladeTip[0] - topGrip[0]) * 0.42, topGrip[1] + (bladeTip[1] - topGrip[1]) * 0.42];
+    // paddle — held in both hands, blade fixed to `localSide`. The stroke
+    // moves the blade FORE→AFT (forward catch → back pull), never across the
+    // hull, so two paddlers on opposite sides can't clash.
+    const reach = stroke * 10;                         // fore(+) to aft(-) sweep along the hull
+    const topGrip = [localSide * 3, -20];
+    const bladeTip = [localSide * 26, 9 + reach];
+    const lowGrip = [topGrip[0] + (bladeTip[0] - topGrip[0]) * 0.45, topGrip[1] + (bladeTip[1] - topGrip[1]) * 0.45];
     ctx.strokeStyle = '#6b4626'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(topGrip[0], topGrip[1]); ctx.lineTo(bladeTip[0], bladeTip[1]); ctx.stroke();
     ctx.strokeStyle = skin; ctx.lineWidth = 2.2;
@@ -1438,13 +1398,6 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.moveTo(px - dir * headR * 0.6, headCY - bodyBob + headR * 0.3);
         ctx.quadraticCurveTo(px - dir * headR * 1.4, headCY - bodyBob + headR * 2.4, px - dir * headR * 1.2, headCY - bodyBob + headR * 4.0);
         ctx.stroke();
-      } else if (opt.hairStyle === 'feather') {
-        // a single eagle feather rising from a headband
-        ctx.strokeStyle = '#f4e6c2'; ctx.lineWidth = 0.8 * sc;
-        ctx.beginPath(); ctx.moveTo(px - dir * 0.5 * sc, headCY - bodyBob - headR * 0.8);
-        ctx.lineTo(px - dir * 1.6 * sc, headCY - bodyBob - headR * 2.6); ctx.stroke();
-        ctx.fillStyle = '#cc8a3a';
-        ctx.fillRect(px - headR, headCY - bodyBob - headR * 0.9, headR * 2, 0.7 * sc);
       } else if (opt.hairStyle === 'long') {
         // long hair past the shoulders
         ctx.fillStyle = hair;
@@ -1466,9 +1419,9 @@ function drawScene(ctx, W, H, p, tt, now) {
       fig(dx - 2, dyy + 6, 1.4, 'hang', 1.2, { shirt: '#d68a1f', hairStyle: 'braid' });
       fig(dx + 18, dyy + 6, 1.3, 'hang', 4.0, { shirt: '#5a7d3a' });
       fig(W * 0.78, ground(W * 0.78) + 7, 1.35, 'walk', 2.4, { shirt: '#b04a2a', hairStyle: 'long' });
-      fig(W * 0.715, ground(W * 0.715) + 7, 1.4, 'walk', 5.1, { shirt: '#7c2f6b', hairStyle: 'feather', dir: -1 });
+      fig(W * 0.715, ground(W * 0.715) + 7, 1.4, 'walk', 5.1, { shirt: '#7c2f6b', hairStyle: 'braid', dir: -1 });
       fig(W * 0.81, ground(W * 0.81) + 7, 1.25, 'carry', 2.0, { shirt: '#1f4e8f', hairStyle: 'braid' });
-      fig(W * 0.66, ground(W * 0.66) + 6, 1.3, 'wave', 3.3, { shirt: '#d68a1f', hairStyle: 'feather' });
+      fig(W * 0.66, ground(W * 0.66) + 6, 1.3, 'wave', 3.3, { shirt: '#d68a1f', hairStyle: 'braid' });
       fig(W * 0.92, ground(W * 0.92) + 7, 1.25, 'walk', 0.9, { shirt: '#5a7d3a', hairStyle: 'long', dir: -1 });
       fig(W * 0.94, ground(W * 0.94) + 7, 1.1, 'walk', 5.7, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 });
       // a person SCRAPING THE HIDE on the stretching frame (real activity)
@@ -1479,7 +1432,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       fig(smx - 10, smy + 6, 1.25, 'stir', 0.8, { shirt: '#d68a1f', hairStyle: 'braid' });
       // a drummer seated at the ceremonial drum (rhythm of the day)
       const drumPx = drx - 4, drumPy = ground(drumPx) + 6;
-      fig(drumPx, drumPy, 1.4, 'drum', 7, { shirt: '#7c2f6b', hairStyle: 'feather' });
+      fig(drumPx, drumPy, 1.4, 'drum', 7, { shirt: '#7c2f6b', hairStyle: 'braid' });
       // a person fishing from the shore with a long pole reaching over the water
       const fshX = W * 0.83, fshY = ground(fshX) + 6;
       fig(fshX, fshY, 1.3, 'sit', 4, { shirt: '#1f4e8f', hairStyle: 'braid' });
@@ -1493,60 +1446,74 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   kept horses — adds a real sign of life Hassan asked for) ----
       const drawHorse = (hx, hy, sc, ph, headDown) => {
         ctx.save(); ctx.globalAlpha = (1 - nm);
-        const body = 'rgba(74,46,28,1)';
-        const mane = 'rgba(28,16,8,1)';
-        const sock = 'rgba(220,212,196,1)';
-        const t = headDown ? 0.5 + 0.5 * Math.sin(tt * 0.6 + ph) : 0;       // graze dip
-        const tail = Math.sin(tt * 1.8 + ph) * 1.2;
-        // body
-        ctx.fillStyle = body;
+        // colours
+        const coat = ctx.createLinearGradient(hx, hy - 16 * sc, hx, hy + 12 * sc);
+        coat.addColorStop(0, 'rgba(96,62,36,1)');
+        coat.addColorStop(1, 'rgba(58,36,20,1)');
+        const mane = 'rgba(26,15,8,1)';
+        const t = headDown ? 0.5 + 0.5 * Math.sin(tt * 0.6 + ph) : 0;       // graze dip 0..1
+        const tailSwish = Math.sin(tt * 1.6 + ph) * 2.2 * sc;
+        const step = Math.sin(tt * 2 + ph) * 1.4 * sc;                       // subtle weight shift
+        // facing RIGHT. Body is a smooth rounded barrel.
+        ctx.fillStyle = coat;
         ctx.beginPath();
-        ctx.moveTo(hx - 12 * sc, hy - 5 * sc);
-        ctx.quadraticCurveTo(hx - 6 * sc, hy - 9 * sc, hx + 4 * sc, hy - 8 * sc);
-        ctx.quadraticCurveTo(hx + 12 * sc, hy - 7 * sc, hx + 14 * sc, hy - 3 * sc);
-        ctx.quadraticCurveTo(hx + 13 * sc, hy + 2 * sc, hx + 6 * sc, hy + 2 * sc);
-        ctx.quadraticCurveTo(hx - 4 * sc, hy + 2 * sc, hx - 12 * sc, hy - 5 * sc);
+        ctx.moveTo(hx - 15 * sc, hy - 6 * sc);                               // chest/shoulder
+        ctx.quadraticCurveTo(hx - 16 * sc, hy - 11 * sc, hx - 10 * sc, hy - 11 * sc);  // withers
+        ctx.quadraticCurveTo(hx + 2 * sc, hy - 12 * sc, hx + 12 * sc, hy - 10 * sc);   // back
+        ctx.quadraticCurveTo(hx + 18 * sc, hy - 9 * sc, hx + 18 * sc, hy - 3 * sc);    // croup/rump
+        ctx.quadraticCurveTo(hx + 17 * sc, hy + 3 * sc, hx + 12 * sc, hy + 3 * sc);    // hindquarter down
+        ctx.quadraticCurveTo(hx + 2 * sc, hy + 4 * sc, hx - 12 * sc, hy + 3 * sc);     // belly
+        ctx.quadraticCurveTo(hx - 16 * sc, hy + 2 * sc, hx - 15 * sc, hy - 6 * sc);    // back to chest
         ctx.closePath(); ctx.fill();
-        // legs (four)
-        ctx.fillRect(hx - 9 * sc, hy + 1 * sc, 2.2 * sc, 9 * sc);
-        ctx.fillRect(hx - 5 * sc, hy + 1 * sc, 2.2 * sc, 9 * sc);
-        ctx.fillRect(hx + 6 * sc, hy + 1 * sc, 2.2 * sc, 9 * sc);
-        ctx.fillRect(hx + 10 * sc, hy + 1 * sc, 2.2 * sc, 9 * sc);
-        // white socks on the front legs
-        ctx.fillStyle = sock;
-        ctx.fillRect(hx + 6 * sc, hy + 7 * sc, 2.2 * sc, 3 * sc);
-        ctx.fillRect(hx + 10 * sc, hy + 7 * sc, 2.2 * sc, 3 * sc);
-        // tail
-        ctx.strokeStyle = mane; ctx.lineWidth = 2.4 * sc; ctx.lineCap = 'round';
+        // legs — two front, two back, with a knee bend; thinner at the hoof
+        const leg = (lx, swing) => {
+          ctx.strokeStyle = coat; ctx.lineWidth = 2.8 * sc; ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(lx, hy + 2 * sc);
+          ctx.quadraticCurveTo(lx + swing * 0.4, hy + 6 * sc, lx + swing, hy + 12 * sc);
+          ctx.stroke();
+          // hoof
+          ctx.strokeStyle = 'rgba(20,14,8,1)'; ctx.lineWidth = 2.8 * sc;
+          ctx.beginPath(); ctx.moveTo(lx + swing, hy + 11.5 * sc); ctx.lineTo(lx + swing, hy + 13 * sc); ctx.stroke();
+        };
+        leg(hx + 12 * sc, step);          // near hind
+        leg(hx - 11 * sc, -step);         // near front
+        leg(hx + 9 * sc, -step * 0.6);    // far hind
+        leg(hx - 8 * sc, step * 0.6);     // far front
+        // tail — a flowing dark tail off the rump
+        ctx.strokeStyle = mane; ctx.lineWidth = 3.2 * sc; ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(hx - 11 * sc, hy - 4 * sc);
-        ctx.quadraticCurveTo(hx - 16 * sc, hy - 2 * sc + tail, hx - 17 * sc, hy + 4 * sc + tail);
+        ctx.moveTo(hx + 17 * sc, hy - 4 * sc);
+        ctx.quadraticCurveTo(hx + 23 * sc, hy + 1 * sc + tailSwish, hx + 20 * sc, hy + 8 * sc + tailSwish);
         ctx.stroke();
-        // head + neck (dips when grazing)
-        ctx.fillStyle = body;
-        const hnx = hx + 14 * sc, hny = hy - 4 * sc + t * 8 * sc;
+        // NECK + HEAD (arched neck sweeping down-forward; dips further when grazing)
+        const neckBaseX = hx - 13 * sc, neckBaseY = hy - 9 * sc;
+        const headX = hx - 22 * sc, headY = hy - 10 * sc + t * 13 * sc;      // muzzle drops to graze
+        ctx.fillStyle = coat;
         ctx.beginPath();
-        ctx.moveTo(hx + 12 * sc, hy - 7 * sc);
-        ctx.quadraticCurveTo(hnx + 4 * sc, hny - 4 * sc, hnx + 8 * sc, hny);
-        ctx.quadraticCurveTo(hnx + 10 * sc, hny + 3 * sc, hnx + 6 * sc, hny + 4 * sc);
-        ctx.quadraticCurveTo(hx + 13 * sc, hy - 3 * sc, hx + 12 * sc, hy - 7 * sc);
+        ctx.moveTo(neckBaseX + 2 * sc, neckBaseY + 1 * sc);
+        ctx.quadraticCurveTo(headX + 4 * sc, headY - 4 * sc, headX - 3 * sc, headY - 2 * sc);  // top of neck → poll
+        ctx.quadraticCurveTo(headX - 6 * sc, headY + 1 * sc, headX - 4 * sc, headY + 4 * sc);  // face → muzzle
+        ctx.quadraticCurveTo(headX, headY + 5 * sc, headX + 3 * sc, headY + 3 * sc);            // jaw
+        ctx.quadraticCurveTo(neckBaseX - 1 * sc, headY - 1 * sc, neckBaseX, neckBaseY + 4 * sc); // throat back to chest
         ctx.closePath(); ctx.fill();
-        // mane (along the neck)
-        ctx.strokeStyle = mane; ctx.lineWidth = 1.8 * sc;
+        // mane along the crest of the neck
+        ctx.strokeStyle = mane; ctx.lineWidth = 2.2 * sc; ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(hx + 5 * sc, hy - 9 * sc);
-        ctx.quadraticCurveTo(hx + 10 * sc, hy - 8 * sc, hnx + 2 * sc, hny - 3 * sc);
+        ctx.moveTo(neckBaseX + 1 * sc, neckBaseY - 1 * sc);
+        ctx.quadraticCurveTo(headX + 5 * sc, headY - 5 * sc, headX - 1 * sc, headY - 2 * sc);
         ctx.stroke();
-        // ear, eye, nostril
-        ctx.fillStyle = body;
-        ctx.beginPath(); ctx.moveTo(hnx + 1 * sc, hny - 4 * sc); ctx.lineTo(hnx + 2 * sc, hny - 7 * sc); ctx.lineTo(hnx + 3 * sc, hny - 4 * sc); ctx.closePath(); ctx.fill();
+        // forelock + ears
+        ctx.fillStyle = coat;
+        ctx.beginPath(); ctx.moveTo(headX - 2 * sc, headY - 3 * sc); ctx.lineTo(headX - 1 * sc, headY - 6 * sc); ctx.lineTo(headX + 1 * sc, headY - 3 * sc); ctx.closePath(); ctx.fill();
+        // eye + nostril
         ctx.fillStyle = 'rgba(0,0,0,1)';
-        ctx.beginPath(); ctx.arc(hnx + 4 * sc, hny - 1.5 * sc, 0.5 * sc, 0, 6.283); ctx.fill();
-        ctx.beginPath(); ctx.arc(hnx + 8.5 * sc, hny + 1.5 * sc, 0.5 * sc, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(headX - 1 * sc, headY - 1 * sc, 0.7 * sc, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(headX - 4 * sc, headY + 3 * sc, 0.5 * sc, 0, 6.283); ctx.fill();
         ctx.restore();
       };
-      drawHorse(W * 0.70, ground(W * 0.70) - 6, 1.7, 0.0, true);           // grazing (much bigger — a horse should dwarf the heron)
-      drawHorse(W * 0.815, ground(W * 0.815) - 8, 1.9, 2.3, false);        // standing watch
+      drawHorse(W * 0.76, ground(W * 0.76) - 7, 1.8, 0.0, true);           // grazing — moved well clear of the heron
+      drawHorse(W * 0.90, ground(W * 0.90) - 9, 2.0, 2.3, false);          // standing watch, further along the bank
       // ---- a BROWN BEAR standing in profile at the water's edge, fishing ----
       //   Rewritten as a clear, chunky bear silhouette (the old head-down pose
       //   read as a crocodile). Now: tall barrel body, prominent shoulder hump,
@@ -1731,10 +1698,10 @@ function drawScene(ctx, W, H, p, tt, now) {
       const styles = [
         { shirt: '#c93a1e', hairStyle: 'long' },
         { shirt: '#1f4e8f', hairStyle: 'braid' },
-        { shirt: '#d68a1f', hairStyle: 'feather' },
+        { shirt: '#d68a1f', hairStyle: 'braid' },
         { shirt: '#5a7d3a', hairStyle: 'long' },
         { shirt: '#7c2f6b', hairStyle: 'braid' },
-        { shirt: '#b04a2a', hairStyle: 'feather' },
+        { shirt: '#b04a2a', hairStyle: 'braid' },
         { shirt: '#1f4e8f', hairStyle: 'long' },
         { shirt: '#d68a1f', hairStyle: 'braid' },
       ];
@@ -1865,11 +1832,11 @@ function drawScene(ctx, W, H, p, tt, now) {
   // ---- LEAPING FISH: a proper parabolic arc, the body curls/bends as it goes ----
   for (const fi of _FISH) {
     const loc = ((tt + fi.phase) % fi.period) / fi.period;
-    if (loc >= 0.16) continue;                       // a slightly longer, more readable leap
-    const k = loc / 0.16;                            // 0..1 through the arc
+    if (loc >= 0.22) continue;                       // a longer, slower, more readable leap
+    const k = loc / 0.22;                            // 0..1 through the arc
     const dir = fi.dir || 1;                          // direction of travel along the parabola
-    const span = 36;                                  // horizontal distance of the leap
-    const arcH = 32;                                  // peak height
+    const span = 90;                                  // WIDE horizontal travel → a real projectile arc, not a vertical pop
+    const arcH = 26;                                  // lower peak so the arc is long & shallow like a real leap
     const fx0 = fi.x * W;
     const fx = fx0 + (k - 0.5) * span * dir;          // travel forward through the arc
     const baseY = hY + 14 + (H - hY) * fi.yb;
