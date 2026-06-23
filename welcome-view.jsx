@@ -204,14 +204,38 @@ function createAmbient(getP) {
   }
   // one ceremonial phrase: paired down-UP wrist shakes (loud forward shake +
   // softer back shake) — the natural "ka-cha ka-cha" of a hand rattle.
-  function rattle(strong) {
+  function synthRattle(strong) {
     let t = T() + 0.05;
     const beats = strong ? 10 : 7;
     for (let k = 0; k < beats; k++) {
-      oneShake(t, (strong ? 0.34 : 0.26));               // forward shake (accent)
-      oneShake(t + 0.11, (strong ? 0.20 : 0.16));        // back shake (softer)
-      t += 0.30;                                          // ~3.3 beats/sec, ceremonial pace
+      oneShake(t, (strong ? 0.34 : 0.26));
+      oneShake(t + 0.11, (strong ? 0.20 : 0.16));
+      t += 0.30;
     }
+  }
+  // REAL HAND-RATTLE RECORDING (Hassan supplied audio/rattle.mp4). We try to play
+  // the recorded rattle through Web Audio; if loading fails for any reason we
+  // silently fall back to the synthesized rattle so the soundscape never breaks.
+  let rattleBuffer = null, rattleLoading = false, rattleFailed = false;
+  function loadRattle() {
+    if (rattleBuffer || rattleLoading || rattleFailed) return;
+    rattleLoading = true;
+    fetch('audio/rattle.mp4', { cache: 'force-cache' })
+      .then(r => r.ok ? r.arrayBuffer() : Promise.reject('http ' + r.status))
+      .then(ab => ctx.decodeAudioData(ab))
+      .then(buf => { rattleBuffer = buf; rattleLoading = false; })
+      .catch(_ => { rattleFailed = true; rattleLoading = false; });
+  }
+  loadRattle();
+  function rattle(strong) {
+    if (rattleBuffer) {
+      const src = ctx.createBufferSource(); src.buffer = rattleBuffer;
+      const g = ctx.createGain(); g.gain.value = strong ? 0.62 : 0.42;
+      src.connect(g); g.connect(master);
+      src.start(T() + 0.02);
+      return;
+    }
+    synthRattle(strong);
   }
   // morning rattle loop — frequent, so the morning is clearly "rattle time"
   function rattleLoop() {
@@ -1597,30 +1621,55 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   forth along the bank, following the slope), so they aren't "walking
       //   on the spot". x is driven by time; dir flips with travel direction. ---
       {
-        // walker A paces between W*0.74 and W*0.86
-        const aT = Math.sin(tt * 0.35);                 // -1..1
-        const ax = W * (0.80 + aT * 0.06);
+        // walker A paces along an open stretch between the smokehouse and the kids' ring
+        const aT = Math.sin(tt * 0.35);
+        const ax = W * (0.85 + aT * 0.025);
         fig(ax, ground(ax) + 7, 1.45, 'walk', 2.4, { shirt: '#b04a2a', hairStyle: 'long', dir: (Math.cos(tt * 0.35) >= 0 ? 1 : -1) });
-        // walker B paces between W*0.70 and W*0.80, opposite phase
+        // walker B paces a narrow stretch between the wood-chop and the fishing spot
         const bT = Math.sin(tt * 0.3 + 2.1);
-        const bxw = W * (0.745 + bT * 0.05);
+        const bxw = W * (0.755 + bT * 0.02);
         fig(bxw, ground(bxw) + 7, 1.50, 'walk', 5.1, { shirt: '#3a4658', hairStyle: 'braid', dir: (Math.cos(tt * 0.3 + 2.1) >= 0 ? 1 : -1) });
       }
-      // --- CHILDREN PLAYING: three kids running in a ring (a chasing game) ---
+      // --- CHILDREN PLAYING (well clear of the shoreline walkers) ---
+      //   Tucked up the bank at the far right, in their own play area.
       {
-        const ringX = W * 0.84, ringY = ground(ringX) + 4, ringR = 22;
+        const ringX = W * 0.905, ringY = ground(ringX) - 6, ringR = 16;
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(70, 38, nm))},${Math.round(_lerp(52, 26, nm))},${Math.round(_lerp(30, 14, nm))},0.5)`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.ellipse(ringX, ringY + 4, ringR, ringR * 0.35, 0, 0, 6.283); ctx.stroke();
         for (let c = 0; c < 3; c++) {
           const a = tt * 1.4 + c * (Math.PI * 2 / 3);
           const kx = ringX + Math.cos(a) * ringR;
-          const ky = ringY + Math.sin(a) * ringR * 0.4;   // flattened ellipse (perspective)
-          const kdir = Math.sin(a) >= 0 ? 1 : -1;          // face running direction
-          // small child = a scaled-down running figure
-          fig(kx, ky, 0.85, 'walk', c * 2, { shirt: ['#d68a1f', '#5a7d3a', '#c93a1e'][c], hairStyle: 'long', dir: kdir });
+          const ky = ringY + 4 + Math.sin(a) * ringR * 0.35;
+          const kdir = Math.sin(a) >= 0 ? 1 : -1;
+          fig(kx, ky, 0.75, 'walk', c * 2, { shirt: ['#d68a1f', '#5a7d3a', '#c93a1e'][c], hairStyle: 'long', dir: kdir });
         }
-        // faint trodden ring where they run
-        ctx.strokeStyle = `rgba(${Math.round(_lerp(70, 38, nm))},${Math.round(_lerp(52, 26, nm))},${Math.round(_lerp(30, 14, nm))},0.4)`;
-        ctx.lineWidth = 1.4;
-        ctx.beginPath(); ctx.ellipse(ringX, ringY, ringR, ringR * 0.4, 0, 0, 6.283); ctx.stroke();
+      }
+      // --- NEW VIGNETTE: BIRCH-BARK BASKET WEAVING (a classic Anishinaabe craft) ---
+      //   A seated weaver up the bank with a small pile of bark strips and a
+      //   finished basket beside them.
+      {
+        const wvX = W * 0.83, wvY = ground(wvX) + 6;
+        earth(wvX, wvY + 6, 24);
+        // pile of bark strips (cream/tan)
+        ctx.fillStyle = `rgba(${Math.round(_lerp(220, 120, nm))},${Math.round(_lerp(190, 100, nm))},${Math.round(_lerp(140, 70, nm))},0.95)`;
+        ctx.beginPath(); ctx.ellipse(wvX - 12, wvY + 4, 5, 1.6, 0.2, 0, 6.283); ctx.fill();
+        // finished basket
+        ctx.fillStyle = '#7a4e22';
+        ctx.beginPath(); ctx.ellipse(wvX + 12, wvY + 4, 4, 2.6, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = '#3a2410'; ctx.lineWidth = 0.5;
+        for (let bw = -3; bw <= 3; bw += 1) {
+          ctx.beginPath(); ctx.moveTo(wvX + 12 + bw, wvY + 1.4); ctx.lineTo(wvX + 12 + bw, wvY + 6); ctx.stroke();
+        }
+        fig(wvX, wvY + 4, 1.35, 'sit', 2.6, { shirt: '#7c2f6b', hairStyle: 'braid' });
+      }
+      // --- NEW VIGNETTE: AN ELDER STORYTELLER (kneeling, gesturing, with a
+      //   small child sitting attentively in front) — left of the fire circle.
+      {
+        const stX = fx - 56, stY = ground(stX) + 6;
+        earth(stX + 4, stY + 6, 26);
+        fig(stX, stY, 1.45, 'wave', 1.1, { shirt: '#5a7d3a', hairStyle: 'long', dir: 1 });   // elder gestures
+        fig(stX + 18, stY + 2, 0.85, 'sit', 0.4, { shirt: '#d68a1f', hairStyle: 'long', dir: -1 });   // listening child
       }
       // a drummer seated at the ceremonial drum (rhythm of the day)
       const drumPx = drx - 4, drumPy = ground(drumPx) + 6;
@@ -1716,7 +1765,31 @@ function drawScene(ctx, W, H, p, tt, now) {
       const bx = W * 0.545;                                     // moved LEFT into open shore, away from the people
       const by = shoreY(bx) - 4 * S;                            // at the water's edge (lower than the villagers up the bank)
       // strike rhythm: paw cocks up, then slams down
-      const strikePhase = (Math.sin(tt * 1.5) + 1) / 2;          // 0=cocked high, 1=struck low
+      // ---- HUNT CYCLE: a full 6-second loop with phases
+      //   0.00-0.45  WATCH   — bear is still, fish swims past underwater
+      //   0.45-0.62  LUNGE   — paw cocks high, leans forward
+      //   0.62-0.72  STRIKE  — paw slams down, catches the fish, big splash
+      //   0.72-1.00  HOLD    — bear lifts the caught fish toward its mouth, then resets
+      const huntT = (tt % 6) / 6;
+      const watchEnd = 0.45, lungeEnd = 0.62, strikeEnd = 0.72;
+      let phase, strikePhase;
+      if (huntT < watchEnd) {
+        phase = 'watch';
+        strikePhase = 0;
+      } else if (huntT < lungeEnd) {
+        phase = 'lunge';
+        const u = (huntT - watchEnd) / (lungeEnd - watchEnd);
+        strikePhase = 0.15 * u;                                   // cocks slightly
+      } else if (huntT < strikeEnd) {
+        phase = 'strike';
+        const u = (huntT - lungeEnd) / (strikeEnd - lungeEnd);
+        strikePhase = 0.15 + 0.85 * (u * u);                       // accelerate down
+      } else {
+        phase = 'hold';
+        const u = (huntT - strikeEnd) / (1 - strikeEnd);
+        strikePhase = 1 - 0.85 * u;                                // paw rises back up holding the fish
+      }
+      const fishCaught = phase === 'hold';
       ctx.translate(bx, by);
 
       const furG = ctx.createLinearGradient(0, -10 * S, 0, 12 * S);
@@ -1831,28 +1904,43 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.fillStyle = furG;
       ctx.beginPath(); ctx.arc(17 * S, 1 * S, 1.3 * S, 0, 6.283); ctx.fill();
 
-      // -- THE SALMON in the water just under the strike --
-      const fwag = Math.sin(tt * 8) * 0.4;
-      ctx.save(); ctx.translate(pawX - 2 * S, pawY + 4 * S); ctx.rotate(-0.4 + fwag);
-      const sg = ctx.createLinearGradient(0, -2.4 * S, 0, 2.4 * S);
-      sg.addColorStop(0, 'rgba(238,228,218,1)');
-      sg.addColorStop(0.5, 'rgba(210,150,134,1)');
-      sg.addColorStop(1, 'rgba(96,104,112,1)');
-      ctx.fillStyle = sg;
-      ctx.beginPath();
-      ctx.moveTo(-5.5 * S, 0);
-      ctx.quadraticCurveTo(-2 * S, -2.4 * S, 2 * S, -2.2 * S);
-      ctx.quadraticCurveTo(5.5 * S, -1.4 * S, 6.5 * S, 0);
-      ctx.quadraticCurveTo(5.5 * S, 1.8 * S, 2 * S, 2.2 * S);
-      ctx.quadraticCurveTo(-2 * S, 2.4 * S, -5.5 * S, 0);
-      ctx.closePath(); ctx.fill();
-      // tail
-      ctx.beginPath();
-      ctx.moveTo(6.5 * S, 0); ctx.lineTo(9.5 * S, -2.4 * S + fwag); ctx.lineTo(8 * S, 0); ctx.lineTo(9.5 * S, 2.4 * S + fwag);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(20,18,18,1)';
-      ctx.beginPath(); ctx.arc(-3 * S, -0.5 * S, 0.45 * S, 0, 6.283); ctx.fill();
-      ctx.restore();
+      // -- THE SALMON: SMALL (about head-size). Swims past under the bear during
+      //   WATCH, is caught in the paw during HOLD. Body uses local units that
+      //   are NOT multiplied by the bear scale S, so it's a realistic small fish.
+      const drawSalmon = (cx, cy, ang, alpha) => {
+        const FS = 1.8;                                          // small — was ~6 before
+        const fwag = Math.sin(tt * 10) * 0.35;
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang + fwag * 0.1);
+        ctx.globalAlpha = alpha;
+        const sg = ctx.createLinearGradient(0, -2 * FS, 0, 2 * FS);
+        sg.addColorStop(0, 'rgba(238,228,218,1)');
+        sg.addColorStop(0.5, 'rgba(210,150,134,1)');
+        sg.addColorStop(1, 'rgba(96,104,112,1)');
+        ctx.fillStyle = sg;
+        ctx.beginPath();
+        ctx.moveTo(4 * FS, 0);
+        ctx.quadraticCurveTo(2 * FS, -2 * FS, -2 * FS, -1.8 * FS);
+        ctx.quadraticCurveTo(-5 * FS, -1 * FS, -6 * FS, 0);
+        ctx.quadraticCurveTo(-5 * FS, 1.4 * FS, -2 * FS, 1.8 * FS);
+        ctx.quadraticCurveTo(2 * FS, 2 * FS, 4 * FS, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-6 * FS, 0); ctx.lineTo(-9 * FS, -2 * FS + fwag); ctx.lineTo(-7.5 * FS, 0); ctx.lineTo(-9 * FS, 2 * FS + fwag);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(20,18,18,1)';
+        ctx.beginPath(); ctx.arc(2 * FS, -0.4 * FS, 0.45 * FS, 0, 6.283); ctx.fill();
+        ctx.restore();
+      };
+      if (phase === 'watch' || phase === 'lunge') {
+        // fish swims left-to-right past the bear, just below the waterline
+        const swimU = (huntT / lungeEnd);                        // 0..1 across watch+lunge
+        const sx = -28 * S + swimU * 50 * S;                     // travels through the strike zone
+        const sy = 12 * S + Math.sin(tt * 2) * 0.6;
+        drawSalmon(sx, sy, 0, 0.9);
+      } else if (phase === 'hold') {
+        // fish is now in the bear's paw, lifted toward the mouth
+        drawSalmon(pawX + 1.2 * S, pawY - 0.5 * S, -0.6, 1.0);
+      }
 
       // -- water disturbance: ripples + spray under the paw strike --
       const wlY = 12 * S;
