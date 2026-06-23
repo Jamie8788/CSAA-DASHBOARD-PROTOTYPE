@@ -108,20 +108,16 @@ function createAmbient(getP) {
     let last = 0; for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.2; }
     return b;
   }
-  // deep water rumble
-  const n1 = ctx.createBufferSource(); n1.buffer = brown(); n1.loop = true;
-  const lp1 = ctx.createBiquadFilter(); lp1.type = 'lowpass'; lp1.frequency.value = 300;
-  const g1 = ctx.createGain(); g1.gain.value = 0.045;   // quieter bed so phase voices stand out
-  n1.connect(lp1); lp1.connect(g1); g1.connect(master);
-  const lfo1 = ctx.createOscillator(); lfo1.frequency.value = 0.08; const lg1 = ctx.createGain(); lg1.gain.value = 0.05;
-  lfo1.connect(lg1); lg1.connect(g1.gain); n1.start(); lfo1.start();
-  // soft lapping wavelets (stereo)
+  // (DEEP WATER RUMBLE REMOVED — the low 300Hz noise bed was the "car engine"
+  //  Hassan kept hearing. Water is now ONLY the soft higher-frequency lapping.)
+  // soft lapping wavelets (stereo) — bright, airy, clearly water (no low rumble)
   [-0.5, 0.5].forEach((pp, idx) => {
     const n = ctx.createBufferSource(); n.buffer = brown(); n.loop = true;
-    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 560 + idx * 180; bp.Q.value = 0.8;
-    const g = ctx.createGain(); g.gain.value = 0.018; const p = pan(pp);
-    n.connect(bp); bp.connect(g); g.connect(p); p.connect(master);
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.24 + idx * 0.1; const lg = ctx.createGain(); lg.gain.value = 0.034;
+    const hpw = ctx.createBiquadFilter(); hpw.type = 'highpass'; hpw.frequency.value = 700;  // cut all the low rumble
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1100 + idx * 300; bp.Q.value = 0.7;
+    const g = ctx.createGain(); g.gain.value = 0.014; const p = pan(pp);
+    n.connect(hpw); hpw.connect(bp); bp.connect(g); g.connect(p); p.connect(master);
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.2 + idx * 0.12; const lg = ctx.createGain(); lg.gain.value = 0.02;
     lfo.connect(lg); lg.connect(g.gain); n.start(); lfo.start();
   });
   // (PHASE DRONE REMOVED — it sounded like an engine. No continuous tone now;
@@ -1457,31 +1453,45 @@ function drawScene(ctx, W, H, p, tt, now) {
         rArmEndX = torsoX + 4 * sc; rArmEndY = sArmY + (5 - beat * 2.5) * sc;
         limb(torsoX - 3.4 * sc, sArmY, torsoX - 3 * sc, sArmY + (5 - Math.abs(Math.cos(tt * 4 + ph)) * 2.5) * sc, 2.4 * sc, skin);
       } else if (kind === 'chop') {
-        // BOTH hands grip an axe handle, raised high then slammed down on a log
-        const chop = (Math.sin(tt * 2.4 + ph) + 1) / 2;             // 0..1, 0=raised, 1=down
-        const ax = torsoX + dir * 5 * sc;
-        const ay = sArmY + (chop * 6 - 8) * sc;                      // axe HEAD position
-        // both hands at top of the handle
-        const handX = ax + dir * 1 * sc, handY = ay + 6 * sc;
-        limb(torsoX - 3.4 * sc, sArmY, handX - 2 * sc, handY, 2.4 * sc, skin);
-        limb(torsoX + 3.4 * sc, sArmY, handX, handY, 2.4 * sc, skin);
-        // axe handle (wood)
+        // BOTH hands grip an axe; it arcs from UP-HIGH (cocked) down to the LOG
+        // on the ground in front of the feet, so it actually strikes wood.
+        const chop = (Math.sin(tt * 2.4 + ph) + 1) / 2;             // 0=raised, 1=struck
+        // the chopping block / log sits just in front of the figure at foot level
+        const logX = px + dir * 7 * sc, logY = py - 1.5 * sc;
+        // axe-head travels along an arc from high-back to the log
+        const upX = px + dir * 1 * sc, upY = sArmY - 12 * sc;        // cocked high above the shoulder
+        const ax = upX + (logX - upX) * chop;
+        const ay = upY + (logY - upY) * (chop * chop);              // accelerate down onto the log
+        // hands grip near the top of the handle, between shoulder and axe-head
+        const handX = torsoX + dir * 2 * sc + (ax - torsoX) * 0.35;
+        const handY = sArmY + (ay - sArmY) * 0.35;
+        limb(torsoX - 3.4 * sc, sArmY, handX - 1.5 * sc, handY, 2.4 * sc, skin);
+        limb(torsoX + 3.4 * sc, sArmY, handX + 1.5 * sc, handY, 2.4 * sc, skin);
+        // axe handle from the hands to the head
         ctx.strokeStyle = '#5a3a1c'; ctx.lineWidth = 1.8 * sc; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(handX, handY); ctx.lineTo(ax, ay); ctx.stroke();
-        // axe head (dark metal triangle)
-        ctx.fillStyle = '#2a2a2e';
+        // axe head
+        ctx.fillStyle = '#3a3a40';
         ctx.beginPath();
-        ctx.moveTo(ax - 1.6 * sc, ay - 1.4 * sc);
-        ctx.lineTo(ax + dir * 3.2 * sc, ay - 0.4 * sc);
-        ctx.lineTo(ax + dir * 3.0 * sc, ay + 1.8 * sc);
-        ctx.lineTo(ax - 1.6 * sc, ay + 1.4 * sc);
+        ctx.moveTo(ax - dir * 1.0 * sc, ay - 1.6 * sc);
+        ctx.lineTo(ax + dir * 3.4 * sc, ay - 0.6 * sc);
+        ctx.lineTo(ax + dir * 3.2 * sc, ay + 1.8 * sc);
+        ctx.lineTo(ax - dir * 1.0 * sc, ay + 1.6 * sc);
         ctx.closePath(); ctx.fill();
-        // a small chip of wood flying off on the down-stroke
-        if (chop > 0.85) {
-          ctx.fillStyle = '#9a6a3a';
-          ctx.beginPath(); ctx.arc(ax + dir * 5 * sc, ay + 4 * sc, 0.7 * sc, 0, 6.283); ctx.fill();
+        // the LOG on its chopping block (always drawn so there is wood to cut)
+        ctx.fillStyle = '#7a4e28';
+        ctx.beginPath(); ctx.ellipse(logX, logY, 4.2 * sc, 2.2 * sc, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = 'rgba(40,24,10,0.7)'; ctx.lineWidth = 0.5 * sc;
+        ctx.beginPath(); ctx.arc(logX, logY, 1.8 * sc, 0, 6.283); ctx.stroke();
+        // wood chips fly when the axe lands
+        if (chop > 0.82) {
+          ctx.fillStyle = '#b98a52';
+          for (let cc = 0; cc < 3; cc++) {
+            const a2 = -0.6 - cc * 0.5;
+            ctx.beginPath(); ctx.arc(logX + Math.cos(a2) * 5 * sc, logY + Math.sin(a2) * 5 * sc, 0.8 * sc, 0, 6.283); ctx.fill();
+          }
         }
-        rArmEndX = handX; rArmEndY = handY;                          // disable default right arm
+        rArmEndX = handX; rArmEndY = handY;                          // suppress default right arm
       } else if (kind === 'scrape') {
         // bent forward, both hands sliding a scraping stone back-and-forth along the hide
         const slide = Math.sin(tt * 3 + ph);                          // -1..1 along the hide
@@ -1565,16 +1575,11 @@ function drawScene(ctx, W, H, p, tt, now) {
       fig(wmx - 8, wmy + 6, 1.55, 'pound', 4.4, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });
       fig(wmx + 18, wmy + 6, 1.30, 'stir', 0.6, { shirt: '#d68a1f', hairStyle: 'braid', dir: -1 });
 
-      // --- VIGNETTE 3: WOOD-CHOPPING (woodcutter + log + a helper stacking) ---
-      const chopX = W * 0.66, chopY = ground(chopX) + 6;
-      earth(chopX + 4, chopY + 6, 36);
-      // the log being chopped
-      ctx.fillStyle = `rgb(${Math.round(_lerp(120, 56, nm))},${Math.round(_lerp(80, 38, nm))},${Math.round(_lerp(46, 22, nm))})`;
-      ctx.beginPath(); ctx.ellipse(chopX + 8, chopY + 4, 7, 3.4, 0, 0, 6.283); ctx.fill();
-      ctx.strokeStyle = 'rgba(20,12,6,0.6)'; ctx.lineWidth = 0.6;
-      ctx.beginPath(); ctx.arc(chopX + 8, chopY + 4, 2.8, 0, 6.283); ctx.stroke();
+      // --- VIGNETTE 3: WOOD-CHOPPING (woodcutter strikes a log + a helper stacking) ---
+      const chopX = W * 0.63, chopY = ground(chopX) + 6;        // its own clear spot
+      earth(chopX + 4, chopY + 6, 34);
       fig(chopX, chopY, 1.55, 'chop', 1.7, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
-      fig(chopX + 22, chopY, 1.35, 'carry', 3.5, { shirt: '#c93a1e', hairStyle: 'long', dir: -1 });
+      fig(chopX + 26, chopY, 1.35, 'carry', 3.5, { shirt: '#c93a1e', hairStyle: 'long', dir: -1 });
 
       // --- VIGNETTE 4: SMOKEHOUSE / FISH-DRYING (tender + a hanger) ---
       earth(smx, smy + 8, 30);
@@ -1588,9 +1593,35 @@ function drawScene(ctx, W, H, p, tt, now) {
       fig(fx + 16, ground(fx + 16) + 6, 1.55, 'stir', 0.0, { shirt: '#c93a1e', hairStyle: 'long' });
       fig(fx - 24, ground(fx - 24) + 6, 1.40, 'sit', 1.7, { shirt: '#1f4e8f', hairStyle: 'braid', dir: -1 });
 
-      // --- VIGNETTE 6: SHORELINE (a couple walking back from the lake) ---
-      fig(W * 0.78, ground(W * 0.78) + 7, 1.45, 'walk', 2.4, { shirt: '#b04a2a', hairStyle: 'long' });
-      fig(W * 0.715, ground(W * 0.715) + 7, 1.50, 'walk', 5.1, { shirt: '#3a4658', hairStyle: 'braid', dir: -1 });
+      // --- VIGNETTE 6: SHORELINE — figures that ACTUALLY MOVE (pace back and
+      //   forth along the bank, following the slope), so they aren't "walking
+      //   on the spot". x is driven by time; dir flips with travel direction. ---
+      {
+        // walker A paces between W*0.74 and W*0.86
+        const aT = Math.sin(tt * 0.35);                 // -1..1
+        const ax = W * (0.80 + aT * 0.06);
+        fig(ax, ground(ax) + 7, 1.45, 'walk', 2.4, { shirt: '#b04a2a', hairStyle: 'long', dir: (Math.cos(tt * 0.35) >= 0 ? 1 : -1) });
+        // walker B paces between W*0.70 and W*0.80, opposite phase
+        const bT = Math.sin(tt * 0.3 + 2.1);
+        const bxw = W * (0.745 + bT * 0.05);
+        fig(bxw, ground(bxw) + 7, 1.50, 'walk', 5.1, { shirt: '#3a4658', hairStyle: 'braid', dir: (Math.cos(tt * 0.3 + 2.1) >= 0 ? 1 : -1) });
+      }
+      // --- CHILDREN PLAYING: three kids running in a ring (a chasing game) ---
+      {
+        const ringX = W * 0.84, ringY = ground(ringX) + 4, ringR = 22;
+        for (let c = 0; c < 3; c++) {
+          const a = tt * 1.4 + c * (Math.PI * 2 / 3);
+          const kx = ringX + Math.cos(a) * ringR;
+          const ky = ringY + Math.sin(a) * ringR * 0.4;   // flattened ellipse (perspective)
+          const kdir = Math.sin(a) >= 0 ? 1 : -1;          // face running direction
+          // small child = a scaled-down running figure
+          fig(kx, ky, 0.85, 'walk', c * 2, { shirt: ['#d68a1f', '#5a7d3a', '#c93a1e'][c], hairStyle: 'long', dir: kdir });
+        }
+        // faint trodden ring where they run
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(70, 38, nm))},${Math.round(_lerp(52, 26, nm))},${Math.round(_lerp(30, 14, nm))},0.4)`;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.ellipse(ringX, ringY, ringR, ringR * 0.4, 0, 0, 6.283); ctx.stroke();
+      }
       // a drummer seated at the ceremonial drum (rhythm of the day)
       const drumPx = drx - 4, drumPy = ground(drumPx) + 6;
       fig(drumPx, drumPy, 1.4, 'drum', 7, { shirt: '#7c2f6b', hairStyle: 'braid' });
