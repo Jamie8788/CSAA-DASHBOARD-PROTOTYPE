@@ -131,53 +131,20 @@ function createAmbient(getP) {
   wn.connect(hp); hp.connect(wg); wg.connect(master);
   const wlfo = ctx.createOscillator(); wlfo.frequency.value = 0.045; const wlg = ctx.createGain(); wlg.gain.value = 0.008;
   wlfo.connect(wlg); wlg.connect(wg.gain); wn.start(); wlfo.start();
-  // slow, soft heartbeat (quieter & calmer)
-  function thump(t, vol) {
-    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(82, t); o.frequency.exponentialRampToValueAtTime(46, t + 0.22);
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 150;
-    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.035); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
-    o.connect(lp); lp.connect(g); g.connect(master); o.start(t); o.stop(t + 0.65);
-  }
-  function heart() { const t = T() + 0.05; thump(t, 0.12); thump(t + 0.32, 0.07); timers.push(setTimeout(heart, 2400)); }
-  // frequent, gentle birdsong
-  function bird() {
-    const t = T() + 0.02, p = pan((Math.random() * 2 - 1) * 0.7), base = 1700 + Math.random() * 1700;
-    const kind = Math.random(), notes = kind < 0.45 ? 3 : kind < 0.8 ? 2 : 1;
-    for (let k = 0; k < notes; k++) {
-      const t0 = t + k * (0.085 + Math.random() * 0.05), f = base * (1 + (Math.random() * 0.18 - 0.09));
-      const o = ctx.createOscillator(); o.type = 'sine';
-      o.frequency.setValueAtTime(f, t0); o.frequency.linearRampToValueAtTime(f * 1.28, t0 + 0.04); o.frequency.linearRampToValueAtTime(f * 0.93, t0 + 0.1);
-      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.038, t0 + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
-      o.connect(g); g.connect(p); o.start(t0); o.stop(t0 + 0.16);
-    }
-    p.connect(master); timers.push(setTimeout(bird, 1100 + Math.random() * 2600));
-  }
-  // a lone loon call drifting across the lake
-  function loon() {
-    const t = T() + 0.1, p = pan((Math.random() * 2 - 1) * 0.4), f = 420 + Math.random() * 70;
-    const o = ctx.createOscillator(); o.type = 'sine';
-    o.frequency.setValueAtTime(f * 0.8, t); o.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.5); o.frequency.exponentialRampToValueAtTime(f * 1.08, t + 1.4);
-    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.055, t + 0.2); g.gain.linearRampToValueAtTime(0.045, t + 1.0); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1400;
-    o.connect(lp); lp.connect(g); g.connect(p); p.connect(master); o.start(t); o.stop(t + 1.8);
-    timers.push(setTimeout(loon, 19000 + Math.random() * 22000));
-  }
-  // a sparse, breathy wooden-flute melody (pentatonic) — the calming heart of it
-  const SCALE = [392.0, 440.0, 523.25, 587.33, 659.25];
-  function flute() {
-    const t = T() + 0.05;
-    const f = SCALE[Math.floor(Math.random() * SCALE.length)] * (Math.random() < 0.28 ? 0.5 : 1);
-    const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(f, t);
-    const vib = ctx.createOscillator(); vib.frequency.value = 5; const vibg = ctx.createGain(); vibg.gain.value = f * 0.006;
-    vib.connect(vibg); vibg.connect(o.frequency);
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1700;
-    const g = ctx.createGain(); const dur = 0.9 + Math.random() * 0.9;
-    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.055, t + 0.25); g.gain.setValueAtTime(0.05, t + dur * 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    const p = pan((Math.random() * 2 - 1) * 0.22);
-    o.connect(lp); lp.connect(g); g.connect(p); p.connect(master);
-    vib.start(t); vib.stop(t + dur + 0.1); o.start(t); o.stop(t + dur + 0.1);
-    timers.push(setTimeout(flute, 4200 + Math.random() * 5200));
-  }
+  // slow, soft heartbeat (REMOVED — Hassan flagged the existing pads as a
+  // "trumpet" noise. Soundscape now: water/wind ambient + scroll-gated
+  // rattle/eagle/fish/wolves only. No flute, no loon, no heartbeat, no
+  // constant birdsong.)
+  function thump() {}
+  function heart() {}
+  // birdsong (REMOVED — was constant and not time-of-day gated)
+  function bird() {}
+  // loon (REMOVED — was the "trumpet"-like tone)
+  function loon() {}
+  // wooden flute (REMOVED — also read as "trumpet")
+  function flute() {}
+  // (frequent birdsong / loon / wooden flute were removed above —
+  //  their function bodies became no-ops.)
 
   // ===========================================================================
   // TIME-OF-DAY VOICES — driven by the scroll position (P()):
@@ -219,7 +186,7 @@ function createAmbient(getP) {
 
   // --- bald eagle: a high descending screech (morning)
   function eagle() {
-    if (P() < 0.36) {
+    if (P() >= 0.30 && P() <= 0.65) {     // moved to DAY/EVENING per Hassan
       const t = T() + 0.05;
       const p = pan((Math.random() * 2 - 1) * 0.5);
       const cries = 2 + (Math.random() < 0.4 ? 1 : 0);
@@ -258,7 +225,7 @@ function createAmbient(getP) {
   }
   function fishLoop() {
     const pp = P();
-    if (pp >= 0.28 && pp <= 0.72) splash(Math.random() < 0.3);
+    if (pp >= 0.30 && pp <= 0.65) splash(Math.random() < 0.3);          // DAY/EVENING only
     timers.push(setTimeout(fishLoop, 5500 + Math.random() * 7000));
   }
   function otterLoop() {
@@ -299,7 +266,7 @@ function createAmbient(getP) {
     timers.push(setTimeout(wolf, 14000 + Math.random() * 16000));
   }
 
-  heart(); timers.push(setTimeout(bird, 900)); timers.push(setTimeout(loon, 7000)); timers.push(setTimeout(flute, 2500));
+  // (heart/bird/loon/flute removed — they were the "trumpet"-like pads)
   // OPEN THE DAY — a strong traditional rattle as the soundscape begins
   rattle(true);
   timers.push(setTimeout(rattleLoop, 17000));
@@ -507,93 +474,88 @@ function drawScene(ctx, W, H, p, tt, now) {
   //   head and tail, hooked yellow beak. Circles slowly across the sky.
   const eagleA = _smooth(0.05, 0.20, p) * (1 - _smooth(0.55, 0.74, p));
   if (eagleA > 0.02) {
-    const eT = tt * 0.06;
-    const eRX = W * 0.32, eRY = hY * 0.40;
-    const ex = eRX + Math.cos(eT) * W * 0.22;
-    const ey = eRY + Math.sin(eT) * 22;
+    // Clean, iconic bald-eagle silhouette. The previous version had too
+    // many tiny feather strokes that read as noise on a small canvas — this
+    // version uses bigger shapes and a clear flight pose.
+    const eT = tt * 0.07;
+    const eRX = W * 0.32, eRY = hY * 0.36;
+    const ex = eRX + Math.cos(eT) * W * 0.24;
+    const ey = eRY + Math.sin(eT) * 30;
     const heading = Math.cos(eT + Math.PI / 2);
     const dir = heading >= 0 ? 1 : -1;
-    const wingDip = Math.sin(tt * 0.8) * 0.20;
-    const ES = 1.8;                                            // overall scale (was effectively 1.0)
+    const wingPhase = Math.sin(tt * 1.1);                       // strong, deliberate flap
+    const ES = 2.2;                                              // big enough to read
     ctx.save(); ctx.globalAlpha = eagleA;
     ctx.translate(ex, ey); ctx.scale(dir * ES, ES);
-    // body (dark chocolate brown)
-    const bodG = ctx.createLinearGradient(0, -3, 0, 3);
-    bodG.addColorStop(0, 'rgba(58,38,22,1)');
-    bodG.addColorStop(1, 'rgba(22,14,8,1)');
-    ctx.fillStyle = bodG;
-    ctx.beginPath(); ctx.ellipse(0, 0, 10, 3.2, 0, 0, 6.283); ctx.fill();
-    // white tail fan (with feather divisions)
-    ctx.fillStyle = 'rgba(244,240,228,1)';
-    ctx.beginPath();
-    ctx.moveTo(-8, -2); ctx.lineTo(-20, -4); ctx.lineTo(-20, 4); ctx.lineTo(-8, 2);
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(140,130,110,0.7)'; ctx.lineWidth = 0.4;
-    for (let tf = -3.5; tf <= 3.5; tf += 1) {
-      ctx.beginPath(); ctx.moveTo(-8, tf); ctx.lineTo(-20, tf * 1.2); ctx.stroke();
-    }
-    // white head
-    ctx.fillStyle = 'rgba(248,244,232,1)';
-    ctx.beginPath(); ctx.ellipse(10, -0.6, 4.0, 2.8, 0, 0, 6.283); ctx.fill();
-    // head shading on the underside
-    ctx.fillStyle = 'rgba(200,196,184,0.6)';
-    ctx.beginPath(); ctx.ellipse(10, 1.0, 3.4, 1.2, 0, 0, 6.283); ctx.fill();
-    // dark eye
-    ctx.fillStyle = 'rgba(20,12,8,1)';
-    ctx.beginPath(); ctx.arc(11, -1.4, 0.7, 0, 6.283); ctx.fill();
-    // bright yellow hooked beak
-    ctx.fillStyle = 'rgba(248,196,52,1)';
-    ctx.beginPath();
-    ctx.moveTo(13, -1.0); ctx.lineTo(18, 0.2); ctx.lineTo(17, 1.0); ctx.lineTo(13, 0.6);
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(140,80,20,0.7)'; ctx.lineWidth = 0.4;
-    ctx.beginPath(); ctx.moveTo(15, 0.2); ctx.lineTo(17, 0.6); ctx.stroke();
-    // yellow talons tucked under
-    ctx.strokeStyle = 'rgba(248,196,52,1)'; ctx.lineWidth = 1.0; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(3, 3); ctx.lineTo(6, 5); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-1, 3); ctx.lineTo(2, 5); ctx.stroke();
 
-    // wings — broad outstretched, two-tone (darker leading edge) with primary fingers
+    // ---- WINGS (drawn first so body sits on top) ----
+    //   A single, clean swept wing on each side. The shape itself reads as
+    //   "soaring eagle" — no fiddly feather strokes.
     const drawWing = (sign) => {
       const d = sign;
-      const lift = wingDip;
-      // wing membrane (large filled shape)
-      ctx.fillStyle = 'rgba(36,24,14,1)';
+      const lift = wingPhase * 0.25;
+      ctx.fillStyle = 'rgba(28,18,10,1)';
       ctx.beginPath();
-      ctx.moveTo(2 * d, -1);
-      ctx.quadraticCurveTo(8 * d, -11 - lift * 7, 22 * d, -10 - lift * 9);
-      ctx.quadraticCurveTo(28 * d, -9 - lift * 9, 32 * d, -6 - lift * 9);            // wingtip
-      ctx.quadraticCurveTo(28 * d, -5 - lift * 6, 22 * d, -4 - lift * 5);
-      ctx.quadraticCurveTo(14 * d, -2, 6 * d, -1);
+      ctx.moveTo(2 * d, -1.5);
+      // leading edge sweeps outward & slightly up
+      ctx.bezierCurveTo(10 * d, -6 - lift * 8,
+                        24 * d, -8 - lift * 10,
+                        36 * d, -5 - lift * 10);
+      // wingtip notch (the iconic "fingers" shown as one rounded notch)
+      ctx.lineTo(34 * d, -2 - lift * 6);
+      ctx.lineTo(36 * d, -1 - lift * 5);
+      ctx.lineTo(33 * d, 1 - lift * 3);
+      // trailing edge curves back to the body
+      ctx.bezierCurveTo(22 * d, 2,
+                        12 * d, 2,
+                        4 * d, 0);
       ctx.closePath(); ctx.fill();
-      // lighter inner-wing coverts
-      ctx.fillStyle = 'rgba(80,56,34,1)';
+      // a lighter brown band along the inner wing for depth
+      ctx.fillStyle = 'rgba(72,50,28,1)';
       ctx.beginPath();
-      ctx.moveTo(3 * d, -1);
-      ctx.quadraticCurveTo(8 * d, -7 - lift * 4, 16 * d, -7 - lift * 6);
-      ctx.quadraticCurveTo(14 * d, -3, 6 * d, -1);
+      ctx.moveTo(4 * d, -1);
+      ctx.bezierCurveTo(12 * d, -4 - lift * 4, 22 * d, -5 - lift * 6, 24 * d, -3 - lift * 5);
+      ctx.bezierCurveTo(18 * d, 0, 10 * d, 0, 4 * d, 0);
       ctx.closePath(); ctx.fill();
-      // primary feather "fingers" off the wingtip — 5 separated fingers
-      ctx.strokeStyle = 'rgba(22,14,8,1)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
-      for (let fi = 0; fi < 5; fi++) {
-        const fAng = -0.2 + fi * 0.15;
-        const fLen = 7 - fi * 0.6;
-        const ox = (28 + fi * 1.2) * d, oy = -6 - lift * 8 + fi * 1.6;
-        ctx.beginPath();
-        ctx.moveTo(ox, oy);
-        ctx.lineTo(ox + Math.cos(fAng) * fLen * d, oy + Math.sin(fAng) * fLen);
-        ctx.stroke();
-      }
-      // a couple of secondary-feather lines along the trailing edge
-      ctx.strokeStyle = 'rgba(14,10,6,0.7)'; ctx.lineWidth = 0.6;
-      for (let sf = 0; sf < 4; sf++) {
-        const sx0 = (10 + sf * 4) * d, sy0 = -2 - sf * 0.4;
-        const sx1 = (10 + sf * 4) * d, sy1 = -7 + sf * 0.5 - lift * 4;
-        ctx.beginPath(); ctx.moveTo(sx0, sy0); ctx.lineTo(sx1, sy1); ctx.stroke();
-      }
     };
     drawWing(1);
     drawWing(-1);
+
+    // ---- BODY (dark chocolate, simple ellipse) ----
+    const bodG = ctx.createLinearGradient(0, -3, 0, 4);
+    bodG.addColorStop(0, 'rgba(58,38,22,1)');
+    bodG.addColorStop(1, 'rgba(22,14,8,1)');
+    ctx.fillStyle = bodG;
+    ctx.beginPath(); ctx.ellipse(0, 0, 9, 3.4, 0, 0, 6.283); ctx.fill();
+
+    // ---- WHITE TAIL FAN (short, fanned) ----
+    ctx.fillStyle = 'rgba(248,244,232,1)';
+    ctx.beginPath();
+    ctx.moveTo(-7, -2); ctx.lineTo(-16, -4); ctx.lineTo(-16, 4); ctx.lineTo(-7, 2);
+    ctx.closePath(); ctx.fill();
+    // a single dark feather division so it doesn't look like a flat block
+    ctx.strokeStyle = 'rgba(140,130,110,0.6)'; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(-7, 0); ctx.lineTo(-16, 0); ctx.stroke();
+
+    // ---- WHITE HEAD ----
+    ctx.fillStyle = 'rgba(248,244,232,1)';
+    ctx.beginPath(); ctx.ellipse(9, -0.4, 3.4, 2.6, 0, 0, 6.283); ctx.fill();
+    // dark eye + brow line
+    ctx.fillStyle = 'rgba(20,12,8,1)';
+    ctx.beginPath(); ctx.arc(10.4, -1.0, 0.65, 0, 6.283); ctx.fill();
+
+    // ---- BRIGHT YELLOW HOOKED BEAK ----
+    ctx.fillStyle = 'rgba(248,196,52,1)';
+    ctx.beginPath();
+    ctx.moveTo(12, -0.8);
+    ctx.lineTo(15.5, 0.6);
+    ctx.lineTo(14.5, 1.2);
+    ctx.lineTo(12, 0.6);
+    ctx.closePath(); ctx.fill();
+    // hooked tip
+    ctx.strokeStyle = 'rgba(140,80,20,0.7)'; ctx.lineWidth = 0.4;
+    ctx.beginPath(); ctx.moveTo(14.5, 0.6); ctx.lineTo(15.5, 1.4); ctx.stroke();
+
     ctx.restore();
   }
   // ---- far shore: treeline + a small community gathering, with a fire glow ----
@@ -965,13 +927,30 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.beginPath();
     ctx.moveTo(rb, -10); ctx.quadraticCurveTo(rb * 0.4, 6, rb * 0.95, 12); ctx.stroke();
   }
-  // decorative red band + simple medallion at the bow and stern (traditional ornament)
+  // decorative red bands at bow and stern + a centred medallion (traditional)
   ctx.fillStyle = 'rgba(176,52,30,0.95)';
   ctx.fillRect(48, -19, 14, 3);
   ctx.fillRect(-62, -19, 14, 3);
-  ctx.fillStyle = 'rgba(240,222,180,0.9)';
+  ctx.fillStyle = 'rgba(240,222,180,0.95)';
   ctx.beginPath(); ctx.arc(56, -17.5, 1.4, 0, 6.283); ctx.fill();
   ctx.beginPath(); ctx.arc(-56, -17.5, 1.4, 0, 6.283); ctx.fill();
+  // a horizontal BEADWORK-STYLE pattern band along the mid-hull: alternating
+  // cream + red diamonds, the kind of geometric trim seen on real Anishinaabe
+  // birch-bark canoes. Subtle but adds the colour Hassan wanted on the canoe itself.
+  const beadY = 4;
+  for (let bx2 = -50; bx2 <= 50; bx2 += 6) {
+    const isRed = ((bx2 + 50) / 6) % 2 < 1;
+    ctx.fillStyle = isRed ? 'rgba(176,52,30,0.85)' : 'rgba(240,222,180,0.85)';
+    ctx.beginPath();
+    ctx.moveTo(bx2, beadY - 1.6);
+    ctx.lineTo(bx2 + 3, beadY);
+    ctx.lineTo(bx2, beadY + 1.6);
+    ctx.lineTo(bx2 - 3, beadY);
+    ctx.closePath(); ctx.fill();
+  }
+  // thin dark line beneath the bead band so it reads as trim, not noise
+  ctx.strokeStyle = 'rgba(40,22,12,0.55)'; ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(-52, beadY + 2.4); ctx.quadraticCurveTo(0, beadY + 3.6, 52, beadY + 2.4); ctx.stroke();
   // stitched seam (faint dark line where bark sheets are sewn with spruce root)
   ctx.strokeStyle = 'rgba(40,22,12,0.6)'; ctx.lineWidth = 0.6;
   ctx.setLineDash([1.5, 1.8]);
@@ -986,10 +965,14 @@ function drawScene(ctx, W, H, p, tt, now) {
   // --- THREE PADDLERS seated in the canoe — staggered along its length,
   //     each in a different ribbon-shirt colour, paddling on alternating sides.
   const skin = '#b7855a';
+  // Three paddlers in matched dark-red ribbon shirts (Hassan: the canoe
+  // itself can carry the colour; the paddlers should look unified, not
+  // dressed in three different bright shirts). Hair varies subtly only.
+  const PADDLER_SHIRT = '#7d1f15';
   const crew = [
-    { x: -34, shirt: '#1f4e8f', hair: 'braid', side: -1, phase: 0.0 },     // stern paddler (left side)
-    { x:   0, shirt: '#c93a1e', hair: 'feather', side: 1, phase: 0.55 },   // middle (right side)
-    { x:  34, shirt: '#d68a1f', hair: 'long', side: -1, phase: 1.1 },      // bow paddler (left side)
+    { x: -34, shirt: PADDLER_SHIRT, hair: 'braid', side: -1, phase: 0.0 },
+    { x:   0, shirt: PADDLER_SHIRT, hair: 'feather', side: 1, phase: 0.55 },
+    { x:  34, shirt: PADDLER_SHIRT, hair: 'long', side: -1, phase: 1.1 },
   ];
   crew.forEach((pdl) => {
     const stroke = Math.sin(tt * 2.1 + pdl.phase);
@@ -1062,8 +1045,8 @@ function drawScene(ctx, W, H, p, tt, now) {
   // ============================================================================
   {
     const nm = _smooth(0.52, 0.9, p);                     // nightness 0..1
-    const lx0 = W * 0.56;                                  // the near shore begins here
-    const RISE = H * 0.16;
+    const lx0 = W * 0.52;                                  // shore begins earlier so there is more village land
+    const RISE = H * 0.22;                                  // taller bank (was 0.16) — more room for activity
     const shoreY = (x) => { const t = _clamp((x - lx0) / (W - lx0), 0, 1); return H - 6 - RISE * (t * 0.6 + t * t * 0.4); };
     const ground = (x) => shoreY(x) + 9;
     // land bank
@@ -1145,6 +1128,95 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.beginPath(); ctx.moveTo(dx - 18, dyy); ctx.lineTo(dx - 18, dyy - 22); ctx.moveTo(dx + 18, dyy); ctx.lineTo(dx + 18, dyy - 22); ctx.moveTo(dx - 21, dyy - 22); ctx.lineTo(dx + 21, dyy - 22); ctx.stroke();
     ctx.fillStyle = 'rgba(122,92,62,1)';
     for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.ellipse(dx - 15 + i * 6, dyy - 14, 2, 4.4, 0, 0, 6.283); ctx.fill(); }
+    // ---- a HIDE-STRETCHING FRAME with a moose/deer hide tied to it ----
+    //   Traditional Anishinaabe day work: scraping & tanning a hide on a square
+    //   wooden frame planted on the ground. A person works it (in the day block below).
+    const hfx = W * 0.79, hfy = ground(hfx);
+    ctx.strokeStyle = 'rgba(34,24,14,1)'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+    // four-poster frame
+    ctx.beginPath();
+    ctx.moveTo(hfx - 16, hfy); ctx.lineTo(hfx - 16, hfy - 28);
+    ctx.moveTo(hfx + 16, hfy); ctx.lineTo(hfx + 16, hfy - 28);
+    ctx.moveTo(hfx - 19, hfy - 28); ctx.lineTo(hfx + 19, hfy - 28);
+    ctx.moveTo(hfx - 19, hfy - 4); ctx.lineTo(hfx + 19, hfy - 4);
+    ctx.stroke();
+    // the hide stretched across (warm tan / cream)
+    const hideG = ctx.createLinearGradient(hfx, hfy - 28, hfx, hfy - 4);
+    hideG.addColorStop(0, `rgb(${Math.round(_lerp(214, 110, nm))},${Math.round(_lerp(184, 96, nm))},${Math.round(_lerp(140, 70, nm))})`);
+    hideG.addColorStop(1, `rgb(${Math.round(_lerp(170, 84, nm))},${Math.round(_lerp(138, 70, nm))},${Math.round(_lerp(96, 48, nm))})`);
+    ctx.fillStyle = hideG;
+    ctx.beginPath();
+    ctx.moveTo(hfx - 14, hfy - 26);
+    ctx.quadraticCurveTo(hfx, hfy - 28, hfx + 14, hfy - 26);
+    ctx.quadraticCurveTo(hfx + 16, hfy - 16, hfx + 12, hfy - 6);
+    ctx.quadraticCurveTo(hfx, hfy - 4, hfx - 12, hfy - 6);
+    ctx.quadraticCurveTo(hfx - 16, hfy - 16, hfx - 14, hfy - 26);
+    ctx.closePath(); ctx.fill();
+    // sinew lashings around the edge (small ticks)
+    ctx.strokeStyle = 'rgba(40,24,12,0.7)'; ctx.lineWidth = 0.6;
+    for (let ti = 0; ti < 6; ti++) {
+      const tx = hfx - 13 + ti * 5;
+      ctx.beginPath(); ctx.moveTo(tx, hfy - 27); ctx.lineTo(tx, hfy - 29); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(tx, hfy - 3); ctx.lineTo(tx, hfy - 5); ctx.stroke();
+    }
+    // ---- a SMOKEHOUSE: low conical bark structure with smoke rising from the top
+    //   (used to smoke fish — a signature Anishinaabe activity on the lake) ----
+    const smx = W * 0.88, smy = ground(smx);
+    // bark cone
+    ctx.fillStyle = `rgb(${Math.round(_lerp(86, 42, nm))},${Math.round(_lerp(58, 28, nm))},${Math.round(_lerp(34, 16, nm))})`;
+    ctx.beginPath();
+    ctx.moveTo(smx - 12, smy);
+    ctx.quadraticCurveTo(smx, smy - 26, smx + 12, smy);
+    ctx.closePath(); ctx.fill();
+    // horizontal bark seams
+    ctx.strokeStyle = 'rgba(20,12,6,0.4)'; ctx.lineWidth = 0.7;
+    for (let bs = -22; bs <= -6; bs += 5) {
+      ctx.beginPath();
+      ctx.moveTo(smx - 11 * (1 + bs / 30), smy + bs * 0.5);
+      ctx.quadraticCurveTo(smx, smy + bs * 0.4, smx + 11 * (1 + bs / 30), smy + bs * 0.5);
+      ctx.stroke();
+    }
+    // a small dark opening at the front
+    ctx.fillStyle = 'rgba(8,6,4,1)';
+    ctx.beginPath(); ctx.ellipse(smx, smy - 1, 3.4, 2.0, 0, Math.PI, 2 * Math.PI); ctx.fill();
+    // smoke billowing up from the apex
+    if (nm < 0.95) {
+      ctx.save(); ctx.globalAlpha = (1 - nm * 0.7) * 0.55;
+      ctx.strokeStyle = 'rgba(214,210,200,1)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let s = 0; s <= 15; s++) {
+        const sy = smy - 26 - s * 5;
+        const sx = smx + Math.sin(s * 0.55 + tt * 1.0) * (2 + s * 0.7);
+        s === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
+      }
+      ctx.stroke(); ctx.restore();
+    }
+    // ---- a WILD-RICE POUNDING MORTAR: a tall wooden bucket with a long pestle
+    //   that someone strikes down into it (manoomin processing). The pestle
+    //   animates up & down for life. ----
+    const wmx = W * 0.555, wmy = ground(wmx);
+    ctx.fillStyle = `rgb(${Math.round(_lerp(96, 48, nm))},${Math.round(_lerp(64, 32, nm))},${Math.round(_lerp(34, 16, nm))})`;
+    // mortar (tapered tall bucket)
+    ctx.beginPath();
+    ctx.moveTo(wmx - 5, wmy);
+    ctx.lineTo(wmx - 6, wmy - 14);
+    ctx.lineTo(wmx + 6, wmy - 14);
+    ctx.lineTo(wmx + 5, wmy);
+    ctx.closePath(); ctx.fill();
+    // dark mouth
+    ctx.fillStyle = 'rgba(10,6,4,1)';
+    ctx.beginPath(); ctx.ellipse(wmx, wmy - 14, 6, 1.4, 0, 0, 6.283); ctx.fill();
+    // pestle (long pole, strikes down rhythmically)
+    const pound = Math.abs(Math.sin(tt * 2.6));
+    const peY = wmy - 28 + pound * 12;                                  // up/down stroke
+    ctx.strokeStyle = `rgb(${Math.round(_lerp(80, 40, nm))},${Math.round(_lerp(50, 24, nm))},${Math.round(_lerp(26, 12, nm))})`;
+    ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(wmx, peY); ctx.lineTo(wmx, peY - 32); ctx.stroke();
+    // little puff of rice dust on each strike
+    if (pound > 0.85) {
+      ctx.fillStyle = `rgba(220,206,168,${(pound - 0.85) * 4 * (1 - nm * 0.6)})`;
+      ctx.beginPath(); ctx.ellipse(wmx, wmy - 14, 8, 2.4, 0, 0, 6.283); ctx.fill();
+    }
     // ---- a ceremonial drum on a low stand near the fire (Anishinaabe day activity) ----
     const drx = W * 0.595, dry = ground(drx) + 4;
     ctx.fillStyle = `rgba(${Math.round(_lerp(108, 52, nm))},${Math.round(_lerp(68, 32, nm))},${Math.round(_lerp(34, 16, nm))},1)`;
@@ -1342,6 +1414,12 @@ function drawScene(ctx, W, H, p, tt, now) {
       fig(W * 0.66, ground(W * 0.66) + 6, 1.3, 'wave', 3.3, { shirt: '#d68a1f', hairStyle: 'feather' });
       fig(W * 0.92, ground(W * 0.92) + 7, 1.25, 'walk', 0.9, { shirt: '#5a7d3a', hairStyle: 'long', dir: -1 });
       fig(W * 0.94, ground(W * 0.94) + 7, 1.1, 'walk', 5.7, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 });
+      // a person SCRAPING THE HIDE on the stretching frame (real activity)
+      fig(hfx - 22, hfy + 6, 1.35, 'stir', 2.3, { shirt: '#b04a2a', hairStyle: 'braid' });
+      // a person POUNDING WILD RICE at the mortar (manoomin processing)
+      fig(wmx + 6, wmy + 6, 1.35, 'stir', 4.4, { shirt: '#1f4e8f', hairStyle: 'long', dir: -1 });
+      // a person at the smokehouse tending the fire
+      fig(smx - 10, smy + 6, 1.25, 'stir', 0.8, { shirt: '#d68a1f', hairStyle: 'braid' });
       // a drummer seated at the ceremonial drum (rhythm of the day)
       const drumPx = drx - 4, drumPy = ground(drumPx) + 6;
       fig(drumPx, drumPy, 1.4, 'drum', 7, { shirt: '#7c2f6b', hairStyle: 'feather' });
@@ -1417,8 +1495,8 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   highlight on the hump + belly shading, claws breaking the water,
       //   a thrashing salmon caught in its jaws, and a real splash plume.
       ctx.save(); ctx.globalAlpha = (1 - nm);
-      const bx = W * 0.595, by = shoreY(bx) - 4;                          // anchor higher so the body really shows
-      const S = 2.4;                                                       // scale up (was effectively 1.0)
+      const bx = W * 0.585, by = shoreY(bx) - 8;                          // moved further inland & up so the bear is unmissable
+      const S = 3.6;                                                       // scale up dramatically (Hassan: still not visible)
       const lunge = (0.5 + 0.5 * Math.sin(tt * 0.9)) * 3.5;
       // rich brown-black fur with a warm undertone, so it doesn't blot black
       const furG = ctx.createLinearGradient(bx, by - 14 * S, bx, by + 14 * S);
@@ -1628,15 +1706,20 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   with muzzle raised to the moon. Pose lifted from photo references —
       //   long sloping back, deep chest, low-set tail, pointed ears.
       ctx.save(); ctx.globalAlpha = nm * 0.95;
-      const wRidgeX = W * 0.40, wRidgeY = hY - 22;
+      const wRidgeX = W * 0.42, wRidgeY = hY - 32;
+      // Wolves were too small / not animated enough. Wrap in a 2.2x scale and
+      // do everything in local (0, 0) coordinates so we don't have to rewrite
+      // every offset by hand.
+      ctx.translate(wRidgeX, wRidgeY); ctx.scale(2.2, 2.2);
       const wolfBody = 'rgba(8,6,4,1)';
       const wolfRim  = `rgba(180,196,224,${0.18 * nm})`;
       ctx.fillStyle = wolfBody;
-      // breathing motion synced to the howl
+      // breathing motion + visible chest rise during the howl
       const howl = 0.5 + 0.5 * Math.sin(tt * 0.55);
+      const breath = Math.sin(tt * 1.3) * 0.5;       // chest expands/contracts
 
       // --- wolf 1: HOWLING at the moon (the classic silhouette) ---
-      const wx = wRidgeX, wy = wRidgeY;
+      const wx = 0, wy = 0 + breath * 0.4;
       ctx.beginPath();
       // hindquarters → sloping back → chest (left = head end facing left toward moon)
       ctx.moveTo(wx + 11, wy + 3);                                          // tail base
