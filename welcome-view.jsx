@@ -90,13 +90,14 @@ let _MX = 0, _MY = 0, _MXe = 0, _MYe = 0;
 // water, gentle wind, frequent quiet birdsong, a lone loon, a slow soft heartbeat,
 // and a sparse wooden-flute melody (pentatonic — evoking the Anishinaabe flute).
 // Web Audio; starts on a user gesture; fades in/out. Tuned to be relaxing, not busy.
-function createAmbient() {
+function createAmbient(getP) {
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) return null;
   const ctx = new AC();
   const master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
   const timers = [];
   const T = () => ctx.currentTime;
+  const P = () => { try { return Math.max(0, Math.min(1, getP ? getP() : 0)); } catch (e) { return 0; } };
   const pan = (v) => { try { const p = ctx.createStereoPanner(); p.pan.value = v; return p; } catch (e) { return ctx.createGain(); } };
   function brown() {
     const len = 2 * ctx.sampleRate, b = ctx.createBuffer(1, len, ctx.sampleRate), d = b.getChannelData(0);
@@ -173,7 +174,135 @@ function createAmbient() {
     vib.start(t); vib.stop(t + dur + 0.1); o.start(t); o.stop(t + dur + 0.1);
     timers.push(setTimeout(flute, 4200 + Math.random() * 5200));
   }
+
+  // ===========================================================================
+  // TIME-OF-DAY VOICES — driven by the scroll position (P()):
+  //   morning  (P < 0.30) → traditional Anishinaabe RATTLE that starts the day,
+  //                          and a bald eagle's high cry overhead
+  //   day      (0.30..0.66) → fish splashing on the lake, an otter slipping in
+  //   dusk/night (> 0.66)  → wolves howling on the ridge, the loon takes over
+  // ===========================================================================
+
+  // --- Anishinaabe rattle (shaker): short bursts of softly-filtered noise pulses,
+  //   the rattle that opens the day. Plays once at start, then occasionally in morning.
+  function rattle(strong) {
+    const t0 = T() + 0.05;
+    const shakes = strong ? 14 : 8;
+    const shaker = ctx.createGain(); shaker.gain.value = 1;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3800; bp.Q.value = 1.6;
+    const out = ctx.createGain(); out.gain.value = 0;
+    shaker.connect(bp); bp.connect(out); out.connect(master);
+    for (let k = 0; k < shakes; k++) {
+      const tk = t0 + k * (0.085 + (k % 2) * 0.02);
+      const n = ctx.createBufferSource(); n.buffer = brown(); n.loop = false;
+      const g = ctx.createGain();
+      const vol = (strong ? 0.22 : 0.14) * (1 - k / (shakes + 4));
+      g.gain.setValueAtTime(0.0001, tk);
+      g.gain.linearRampToValueAtTime(vol, tk + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, tk + 0.075);
+      n.connect(g); g.connect(shaker);
+      n.start(tk); n.stop(tk + 0.09);
+    }
+    out.gain.setValueAtTime(0.0001, t0);
+    out.gain.linearRampToValueAtTime(1, t0 + 0.05);
+    out.gain.exponentialRampToValueAtTime(0.0001, t0 + shakes * 0.1 + 0.4);
+  }
+  // schedule rattle: a strong opening rattle to start the day, then sparingly during morning
+  function rattleLoop() {
+    if (P() < 0.32) rattle(false);
+    timers.push(setTimeout(rattleLoop, 16000 + Math.random() * 14000));
+  }
+
+  // --- bald eagle: a high descending screech (morning)
+  function eagle() {
+    if (P() < 0.36) {
+      const t = T() + 0.05;
+      const p = pan((Math.random() * 2 - 1) * 0.5);
+      const cries = 2 + (Math.random() < 0.4 ? 1 : 0);
+      for (let c = 0; c < cries; c++) {
+        const tc = t + c * 0.22;
+        const o = ctx.createOscillator(); o.type = 'sawtooth';
+        o.frequency.setValueAtTime(2400, tc);
+        o.frequency.exponentialRampToValueAtTime(1100, tc + 0.18);
+        const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 4;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, tc);
+        g.gain.linearRampToValueAtTime(0.05, tc + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, tc + 0.22);
+        o.connect(bp); bp.connect(g); g.connect(p);
+        o.start(tc); o.stop(tc + 0.24);
+      }
+      p.connect(master);
+    }
+    timers.push(setTimeout(eagle, 11000 + Math.random() * 14000));
+  }
+
+  // --- fish splash (day): a quick noise burst with a downward filter
+  function splash(big) {
+    const t = T() + 0.02;
+    const p = pan((Math.random() * 2 - 1) * 0.7);
+    const n = ctx.createBufferSource(); n.buffer = brown(); n.loop = false;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(big ? 2400 : 1600, t);
+    lp.frequency.exponentialRampToValueAtTime(380, t + 0.5);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(big ? 0.20 : 0.12, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (big ? 0.7 : 0.45));
+    n.connect(lp); lp.connect(g); g.connect(p); p.connect(master);
+    n.start(t); n.stop(t + 0.8);
+  }
+  function fishLoop() {
+    const pp = P();
+    if (pp >= 0.28 && pp <= 0.72) splash(Math.random() < 0.3);
+    timers.push(setTimeout(fishLoop, 5500 + Math.random() * 7000));
+  }
+  function otterLoop() {
+    const pp = P();
+    if (pp >= 0.30 && pp <= 0.65 && Math.random() < 0.6) {
+      // a quick double-splash (otter slipping in)
+      splash(false);
+      timers.push(setTimeout(() => splash(false), 220 + Math.random() * 120));
+    }
+    timers.push(setTimeout(otterLoop, 9000 + Math.random() * 12000));
+  }
+
+  // --- wolf howl (night): a slow rising-then-falling sine tone, faintly reverberant
+  function wolf() {
+    if (P() > 0.62) {
+      const t = T() + 0.05;
+      const p = pan((Math.random() * 2 - 1) * 0.55);
+      const f0 = 280 + Math.random() * 60;
+      const o = ctx.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(f0 * 0.6, t);
+      o.frequency.exponentialRampToValueAtTime(f0 * 1.45, t + 0.6);
+      o.frequency.exponentialRampToValueAtTime(f0 * 1.1, t + 2.6);
+      o.frequency.exponentialRampToValueAtTime(f0 * 0.55, t + 3.4);
+      // a quiet second voice answers a beat later (the pair on the ridge)
+      const o2 = ctx.createOscillator(); o2.type = 'sine';
+      o2.frequency.setValueAtTime(f0 * 0.55 * 1.18, t + 1.2);
+      o2.frequency.exponentialRampToValueAtTime(f0 * 1.32 * 1.18, t + 1.9);
+      o2.frequency.exponentialRampToValueAtTime(f0 * 0.55 * 1.18, t + 4.0);
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.07, t + 0.6);
+      g.gain.linearRampToValueAtTime(0.06, t + 2.6);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 4.2);
+      o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(p); p.connect(master);
+      o.start(t); o.stop(t + 4.3); o2.start(t + 1.2); o2.stop(t + 4.3);
+    }
+    timers.push(setTimeout(wolf, 14000 + Math.random() * 16000));
+  }
+
   heart(); timers.push(setTimeout(bird, 900)); timers.push(setTimeout(loon, 7000)); timers.push(setTimeout(flute, 2500));
+  // OPEN THE DAY — a strong traditional rattle as the soundscape begins
+  rattle(true);
+  timers.push(setTimeout(rattleLoop, 17000));
+  timers.push(setTimeout(eagle, 4500));
+  timers.push(setTimeout(fishLoop, 6500));
+  timers.push(setTimeout(otterLoop, 12000));
+  timers.push(setTimeout(wolf, 9000));
   try { master.gain.linearRampToValueAtTime(0.46, T() + 2.6); } catch (e) {}
   return {
     stop() {
@@ -368,9 +497,73 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.globalAlpha = 1;
   }
 
-  // ---- far shore: treeline + a small community of lodges, with a fire glow ----
+  // ---- BALD EAGLE soaring overhead (morning → afternoon) ----
+  //   Broad-winged silhouette circling slowly. Wing-tip "fingers" suggest a
+  //   real raptor, not a generic bird. White head & tail flash when close to noon.
+  const eagleA = _smooth(0.05, 0.20, p) * (1 - _smooth(0.55, 0.74, p));
+  if (eagleA > 0.02) {
+    const eT = tt * 0.06;
+    const eRX = W * 0.30, eRY = hY * 0.42;                     // centre of the slow circle
+    const ex = eRX + Math.cos(eT) * W * 0.22;
+    const ey = eRY + Math.sin(eT) * 16;
+    const heading = Math.cos(eT + Math.PI / 2);                 // -1..1 (turns the bird)
+    const dir = heading >= 0 ? 1 : -1;
+    const wingDip = Math.sin(tt * 0.9) * 0.18;                  // slow, deliberate flap
+    ctx.save(); ctx.globalAlpha = eagleA;
+    ctx.translate(ex, ey); ctx.scale(dir, 1);
+    // body
+    ctx.fillStyle = 'rgba(28,20,14,1)';
+    ctx.beginPath(); ctx.ellipse(0, 0, 8, 2.6, 0, 0, 6.283); ctx.fill();
+    // tail (fan, white when sun-lit)
+    ctx.fillStyle = 'rgba(232,228,218,0.95)';
+    ctx.beginPath();
+    ctx.moveTo(-7, -1.5); ctx.lineTo(-15, -3); ctx.lineTo(-15, 3); ctx.lineTo(-7, 1.5);
+    ctx.closePath(); ctx.fill();
+    // head (white)
+    ctx.fillStyle = 'rgba(238,234,224,1)';
+    ctx.beginPath(); ctx.ellipse(8, -0.5, 3.2, 2.2, 0, 0, 6.283); ctx.fill();
+    // yellow beak hooking forward
+    ctx.fillStyle = 'rgba(232,182,52,1)';
+    ctx.beginPath();
+    ctx.moveTo(11, -0.5); ctx.lineTo(14, 0); ctx.lineTo(11, 1.2); ctx.closePath(); ctx.fill();
+    // wings — broad, with separated primary "fingers" at the tips
+    ctx.fillStyle = 'rgba(22,16,10,1)';
+    // RIGHT wing (forward in flight)
+    ctx.beginPath();
+    ctx.moveTo(2, -1);
+    ctx.quadraticCurveTo(8, -10 - wingDip * 6, 22, -8 - wingDip * 8);        // leading edge
+    ctx.quadraticCurveTo(24, -7 - wingDip * 8, 25, -5 - wingDip * 8);         // wing tip
+    ctx.quadraticCurveTo(18, -4 - wingDip * 5, 12, -2);                       // trailing edge curling back
+    ctx.quadraticCurveTo(6, -1, 2, -1);
+    ctx.closePath(); ctx.fill();
+    // primary feather fingers — three short strokes off the wingtip
+    ctx.strokeStyle = 'rgba(22,16,10,1)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+    for (let fi = 0; fi < 3; fi++) {
+      ctx.beginPath();
+      ctx.moveTo(22 + fi, -7 - wingDip * 7 + fi * 1.4);
+      ctx.lineTo(26 + fi * 0.7, -3 - wingDip * 5 + fi * 1.6);
+      ctx.stroke();
+    }
+    // LEFT wing (mirror, slightly different dip)
+    ctx.beginPath();
+    ctx.moveTo(-2, -1);
+    ctx.quadraticCurveTo(-8, -10 - wingDip * 6, -22, -8 - wingDip * 8);
+    ctx.quadraticCurveTo(-24, -7 - wingDip * 8, -25, -5 - wingDip * 8);
+    ctx.quadraticCurveTo(-18, -4 - wingDip * 5, -12, -2);
+    ctx.quadraticCurveTo(-6, -1, -2, -1);
+    ctx.closePath(); ctx.fill();
+    for (let fi = 0; fi < 3; fi++) {
+      ctx.beginPath();
+      ctx.moveTo(-22 - fi, -7 - wingDip * 7 + fi * 1.4);
+      ctx.lineTo(-26 - fi * 0.7, -3 - wingDip * 5 + fi * 1.6);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // ---- far shore: treeline + a small community gathering, with a fire glow ----
   const shoreAlpha = 0.6 + 0.28 * _smooth(0.6, 1, p);
-  const vx = W * 0.66;                                 // the village sits here on the shore
+  const vx = W * 0.66;                                 // the village gathering sits here on the shore
   // warm campfire glow at the village, warming toward dusk & night (flickering)
   const fireA = _smooth(0.45, 0.95, p);
   if (fireA > 0.02) {
@@ -403,13 +596,16 @@ function drawScene(ctx, W, H, p, tt, now) {
     const tw = th * 0.34;
     ctx.beginPath(); ctx.moveTo(x, crest - th); ctx.lineTo(x - tw, crest + 1); ctx.lineTo(x + tw, crest + 1); ctx.closePath(); ctx.fill();
   }
-  // ---- a small Anishinaabe village (wigwam domes) nestled at the shore ----
+  // ---- a small Anishinaabe gathering circle at the shore (no houses — the
+  //   community is here in person: standing, sitting, working together) ----
   for (const Lg of [[-30, 0.85], [-12, 1.05], [6, 0.8], [22, 1.0], [38, 0.7]]) {
-    const lx = vx + Lg[0] * 1.25, s = Lg[1], lw = 9 * s, lh = 7 * s;
-    ctx.fillStyle = `rgba(11,8,5,${shoreAlpha})`;
-    ctx.beginPath(); ctx.ellipse(lx, hY, lw, lh, 0, Math.PI, 2 * Math.PI); ctx.fill();
-    // a soft warm doorway light at dusk/night
-    if (fireA > 0.3) { ctx.fillStyle = `rgba(255,176,86,${0.5 * fireA})`; ctx.beginPath(); ctx.arc(lx, hY - 1, 1.2 * s, 0, 6.283); ctx.fill(); }
+    const lx = vx + Lg[0] * 1.25, s = Lg[1];
+    const bob = Math.sin(tt * 1.4 + Lg[0]) * 0.5;
+    ctx.fillStyle = `rgba(8,5,3,${Math.max(0.75, shoreAlpha)})`;
+    ctx.beginPath(); ctx.ellipse(lx, hY - 1 + bob, 1.6 * s, 4 * s, 0, Math.PI, 2 * Math.PI); ctx.fill();   // body
+    ctx.beginPath(); ctx.arc(lx, hY - 5.5 * s + bob, 1.4 * s, 0, 6.283); ctx.fill();                       // head
+    // a faint warm fire-glow rim on the side facing the fire
+    if (fireA > 0.3) { ctx.fillStyle = `rgba(255,176,86,${0.35 * fireA})`; ctx.beginPath(); ctx.arc(lx + (lx < vx ? 1 : -1), hY - 5.5 * s + bob, 1.4 * s, 0, 6.283); ctx.fill(); }
   }
   // ---- the community gathered around the sacred fire (dusk → night) ----
   if (fireA > 0.32) {
@@ -800,30 +996,70 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(gx2 + bld * 2.2, gyt); ctx.quadraticCurveTo(gx2 + bld * 2.2 + sway * 0.4, gyt - 9, gx2 + bld * 2.2 + sway, gyt - 18); ctx.stroke();
       }
     }
-    // homes (wigwams, with bark texture)
-    [[W * 0.68, 1.0], [W * 0.755, 0.82]].forEach(([hx, s]) => {
-      const gy = ground(hx);
-      ctx.fillStyle = `rgb(${Math.round(_lerp(46, 18, nm))},${Math.round(_lerp(38, 16, nm))},${Math.round(_lerp(26, 12, nm))})`;
-      ctx.beginPath(); ctx.ellipse(hx, gy, 26 * s, 18 * s, 0, Math.PI, 2 * Math.PI); ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.16)'; ctx.lineWidth = 1;
-      for (let a = -0.9; a <= 0.9; a += 0.45) { ctx.beginPath(); ctx.ellipse(hx, gy, 26 * s * Math.cos(a), 18 * s, 0, Math.PI, 2 * Math.PI); ctx.stroke(); }
-      ctx.fillStyle = nm > 0.35 ? `rgba(255,172,88,${0.6 * nm})` : 'rgba(16,11,7,0.85)';
-      ctx.beginPath(); ctx.ellipse(hx, gy, 4.5 * s, 9 * s, 0, Math.PI, 2 * Math.PI); ctx.fill();
+    // ---- BULL RUSH (cattail) stand on the bank: tall stems with sausage-shaped
+    //   brown seed-heads. A signature Anishinaabe-territory wetland plant. ----
+    const cattailClumps = [[W * 0.68, 5], [W * 0.755, 4], [W * 0.86, 6]];
+    cattailClumps.forEach(([cxC, n], ci) => {
+      for (let k = 0; k < n; k++) {
+        const sx0 = cxC + (k - n / 2) * 6 + Math.sin(ci + k) * 2;
+        const gy = ground(sx0);
+        const tall = 28 + (k % 3) * 5;
+        const sway = Math.sin(tt * 1.3 + k * 0.7 + ci) * 3;
+        // stem
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(78, 38, nm))},${Math.round(_lerp(104, 52, nm))},${Math.round(_lerp(44, 22, nm))},0.95)`;
+        ctx.lineWidth = 1.4; ctx.lineCap = 'round'; ctx.beginPath();
+        ctx.moveTo(sx0, gy); ctx.quadraticCurveTo(sx0 + sway * 0.4, gy - tall * 0.6, sx0 + sway, gy - tall); ctx.stroke();
+        // brown sausage seed-head
+        ctx.fillStyle = `rgb(${Math.round(_lerp(96, 48, nm))},${Math.round(_lerp(58, 30, nm))},${Math.round(_lerp(24, 14, nm))})`;
+        ctx.beginPath(); ctx.ellipse(sx0 + sway, gy - tall + 4, 1.7, 6, 0, 0, 6.283); ctx.fill();
+        // tip spike
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(78, 38, nm))},${Math.round(_lerp(104, 52, nm))},${Math.round(_lerp(44, 22, nm))},0.95)`;
+        ctx.lineWidth = 1; ctx.beginPath();
+        ctx.moveTo(sx0 + sway, gy - tall + 2); ctx.lineTo(sx0 + sway, gy - tall - 4); ctx.stroke();
+        // a long thin leaf curving up alongside
+        if (k % 2 === 0) {
+          ctx.strokeStyle = `rgba(${Math.round(_lerp(86, 40, nm))},${Math.round(_lerp(118, 58, nm))},${Math.round(_lerp(52, 26, nm))},0.9)`;
+          ctx.lineWidth = 1.3; ctx.beginPath();
+          ctx.moveTo(sx0 - 1, gy); ctx.quadraticCurveTo(sx0 - 6 + sway * 0.3, gy - tall * 0.5, sx0 - 2 + sway, gy - tall * 0.9); ctx.stroke();
+        }
+      }
     });
-    // drying rack with fish
-    const dx = W * 0.90, dyy = ground(dx);
+    // ---- WILD RICE (manoomin) growing along the water's edge: clusters of
+    //   tall slender stems with feathery seed-heads. Traditional Anishinaabe food. ----
+    const ricePatches = [[W * 0.80, 8], [W * 0.88, 7], [W * 0.93, 6]];
+    ricePatches.forEach(([cxR, n], ri) => {
+      for (let k = 0; k < n; k++) {
+        const sx0 = cxR + (k - n / 2) * 4.5 + Math.sin(ri * 2 + k) * 1.6;
+        const gy = ground(sx0);
+        const tall = 18 + (k % 4) * 4;
+        const sway = Math.sin(tt * 1.7 + k * 0.55 + ri * 1.3) * 2.4;
+        // slender stem
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(110, 48, nm))},${Math.round(_lerp(126, 64, nm))},${Math.round(_lerp(58, 28, nm))},0.85)`;
+        ctx.lineWidth = 0.9; ctx.lineCap = 'round'; ctx.beginPath();
+        ctx.moveTo(sx0, gy); ctx.quadraticCurveTo(sx0 + sway * 0.5, gy - tall * 0.6, sx0 + sway, gy - tall); ctx.stroke();
+        // feathery seed-head — a soft fan of fine lines
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(178, 96, nm))},${Math.round(_lerp(156, 80, nm))},${Math.round(_lerp(86, 44, nm))},0.85)`;
+        ctx.lineWidth = 0.7;
+        for (let f = -2; f <= 2; f++) {
+          ctx.beginPath();
+          ctx.moveTo(sx0 + sway, gy - tall);
+          ctx.lineTo(sx0 + sway + f * 1.4, gy - tall - 5 - Math.abs(f) * 0.5);
+          ctx.stroke();
+        }
+      }
+    });
+    // ---- a fish-drying rack with fish strung up (shoreline work) ----
+    const dx = W * 0.74, dyy = ground(dx);
     ctx.strokeStyle = 'rgba(34,24,14,1)'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(dx - 18, dyy); ctx.lineTo(dx - 18, dyy - 22); ctx.moveTo(dx + 18, dyy); ctx.lineTo(dx + 18, dyy - 22); ctx.moveTo(dx - 21, dyy - 22); ctx.lineTo(dx + 21, dyy - 22); ctx.stroke();
     ctx.fillStyle = 'rgba(122,92,62,1)';
     for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.ellipse(dx - 15 + i * 6, dyy - 14, 2, 4.4, 0, 0, 6.283); ctx.fill(); }
-    // garden
-    const gx = W * 0.84, gyy = ground(gx);
-    for (let r = 0; r < 4; r++) {
-      const ry = gyy + 3 + r * 5;
-      ctx.strokeStyle = 'rgba(38,48,26,0.8)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(gx - 26, ry); ctx.lineTo(gx + 26, ry); ctx.stroke();
-      ctx.strokeStyle = 'rgba(84,108,56,0.9)'; ctx.lineWidth = 1.6;
-      for (let c = 0; c < 6; c++) { const px = gx - 22 + c * 9; ctx.beginPath(); ctx.moveTo(px, ry); ctx.lineTo(px + Math.sin(tt * 1.4 + c + r) * 1.6, ry - 5); ctx.stroke(); }
-    }
+    // ---- a ceremonial drum on a low stand near the fire (Anishinaabe day activity) ----
+    const drx = W * 0.595, dry = ground(drx) + 4;
+    ctx.fillStyle = `rgba(${Math.round(_lerp(108, 52, nm))},${Math.round(_lerp(68, 32, nm))},${Math.round(_lerp(34, 16, nm))},1)`;
+    ctx.beginPath(); ctx.ellipse(drx, dry, 7, 4.4, 0, 0, 6.283); ctx.fill();
+    ctx.fillStyle = `rgba(${Math.round(_lerp(192, 96, nm))},${Math.round(_lerp(172, 84, nm))},${Math.round(_lerp(132, 62, nm))},1)`;
+    ctx.beginPath(); ctx.ellipse(drx, dry - 1, 6.4, 3.6, 0, 0, 6.283); ctx.fill();
     // village fire
     const fx = W * 0.625, fy = ground(fx) + 6, fa = 0.45 + 0.55 * nm;
     const gl = ctx.createRadialGradient(fx, fy - 6, 0, fx, fy - 6, 64 * (0.6 + nm));
@@ -840,10 +1076,23 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.closePath(); ctx.fill();
     }
     ctx.restore();
-    if (nm < 0.85) {
-      ctx.save(); ctx.globalAlpha = (1 - nm) * 0.5; ctx.strokeStyle = 'rgba(190,184,174,1)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.beginPath();
-      for (let s = 0; s <= 12; s++) { const sy = fy - 9 - s * 6; const sx = fx + Math.sin(s * 0.5 + tt * 1.1) * (3 + s * 0.7); s === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy); }
-      ctx.stroke(); ctx.restore();
+    if (nm < 0.95) {
+      // a wispier, longer string of smoke curling up from the fire — translucent, layered
+      ctx.save();
+      const smokeA = (1 - nm * 0.6) * 0.7;
+      for (let pass = 0; pass < 3; pass++) {
+        ctx.globalAlpha = smokeA * (0.55 - pass * 0.13);
+        ctx.strokeStyle = `rgba(${210 - pass * 8},${204 - pass * 8},${192 - pass * 8},1)`;
+        ctx.lineWidth = 4 - pass * 0.9; ctx.lineCap = 'round'; ctx.beginPath();
+        for (let s = 0; s <= 22; s++) {
+          const sy = fy - 9 - s * 6.5 - pass * 2;
+          const drift = Math.sin(s * 0.42 + tt * 0.9 + pass * 0.6) * (3 + s * 0.95);
+          const sx = fx + drift + s * 0.7;
+          s === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
     }
     // --- PEOPLE: more human (head, tapered torso, legs/arms), animated ---
     const fig = (px, py, sc, kind, ph) => {
@@ -867,15 +1116,287 @@ function drawScene(ctx, W, H, p, tt, now) {
     };
     if (nm < 0.98) {
       ctx.save(); ctx.globalAlpha = 1 - nm;
-      fig(fx + 16, ground(fx + 16) + 6, 1.4, 'stir', 0);
-      fig(dx - 2, dyy + 6, 1.35, 'hang', 1);
-      fig(gx + 4, gyy + 7, 1.35, 'hoe', 2);
-      fig(W * 0.72, ground(W * 0.72) + 6, 1.3, 'walk', 3);
+      // people busy with traditional day activities — no farm rows, just life by the water
+      fig(fx + 16, ground(fx + 16) + 6, 1.4, 'stir', 0);                            // stirring the pot at the fire
+      fig(dx - 2, dyy + 6, 1.35, 'hang', 1);                                         // hanging fish to dry
+      fig(W * 0.78, ground(W * 0.78) + 7, 1.3, 'walk', 2.4);                         // walking the shore
+      fig(W * 0.715, ground(W * 0.715) + 7, 1.35, 'walk', 5.1);                      // another walking
+      // a drummer seated at the ceremonial drum (rhythm of the day)
+      const drumPx = drx - 4, drumPy = ground(drumPx) + 6;
+      fig(drumPx, drumPy, 1.3, 'sit', 7);
+      // a person fishing from the shore with a long pole reaching over the water
+      const fshX = W * 0.83, fshY = ground(fshX) + 6;
+      fig(fshX, fshY, 1.3, 'sit', 4);
+      ctx.strokeStyle = 'rgba(46,32,18,1)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+      const rodSway = Math.sin(tt * 1.1) * 1.4;
+      ctx.beginPath(); ctx.moveTo(fshX + 2, fshY - 12); ctx.lineTo(fshX - 26 + rodSway, fshY - 4); ctx.stroke();   // pole reaching toward the lake
+      ctx.strokeStyle = 'rgba(220,214,200,0.6)'; ctx.lineWidth = 0.7;
+      ctx.beginPath(); ctx.moveTo(fshX - 26 + rodSway, fshY - 4); ctx.lineTo(fshX - 28 + rodSway, fshY + 6); ctx.stroke();   // line
+      ctx.restore();
+      // ---- a BLACK BEAR at the water's edge, head down grabbing a fish ----
+      //   Pose: standing in the shallows, characteristic shoulder hump high, head
+      //   plunged toward the water with a salmon thrashing in its jaws. Sized to
+      //   read as a real animal against the people nearby.
+      ctx.save(); ctx.globalAlpha = (1 - nm);
+      const bx = W * 0.605, by = shoreY(bx) + 2;
+      const lunge = (0.5 + 0.5 * Math.sin(tt * 0.9)) * 3.5;            // gentle head-dip rhythm
+      const fur = 'rgba(22,15,10,1)';
+      const furL = 'rgba(40,28,20,1)';                                    // shoulder/hump highlight
+      ctx.fillStyle = fur;
+      // --- hind legs (planted in shallow water), more anatomical
+      ctx.beginPath(); ctx.ellipse(bx + 11, by + 8, 4.2, 7, 0, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(bx + 16, by + 9, 3.8, 6.5, 0.1, 0, 6.283); ctx.fill();
+      // --- belly + main body, leaning forward over the water
+      ctx.beginPath();
+      ctx.moveTo(bx - 18, by + 2);
+      ctx.quadraticCurveTo(bx - 14, by - 5, bx - 4, by - 8);             // shoulder up to hump
+      ctx.quadraticCurveTo(bx + 4, by - 12, bx + 10, by - 7);             // top of the hump
+      ctx.quadraticCurveTo(bx + 20, by - 3, bx + 22, by + 4);             // rump
+      ctx.quadraticCurveTo(bx + 18, by + 10, bx + 6, by + 10);            // belly
+      ctx.quadraticCurveTo(bx - 8, by + 10, bx - 18, by + 2);             // back to front
+      ctx.closePath(); ctx.fill();
+      // --- shoulder hump highlight (the unmistakable bear silhouette tell)
+      ctx.fillStyle = furL;
+      ctx.beginPath(); ctx.ellipse(bx + 4, by - 9, 7.5, 3.5, -0.15, 0, 6.283); ctx.fill();
+      ctx.fillStyle = fur;
+      // --- front legs reaching down into the water
+      ctx.beginPath();
+      ctx.moveTo(bx - 14, by - 2);
+      ctx.quadraticCurveTo(bx - 18, by + 5, bx - 16 - lunge * 0.2, by + 11);
+      ctx.lineTo(bx - 11 - lunge * 0.2, by + 12);
+      ctx.quadraticCurveTo(bx - 10, by + 5, bx - 8, by - 1);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(bx - 8, by);
+      ctx.quadraticCurveTo(bx - 6, by + 7, bx - 4 - lunge * 0.1, by + 12);
+      ctx.lineTo(bx + 1, by + 12);
+      ctx.quadraticCurveTo(bx + 1, by + 4, bx - 2, by);
+      ctx.closePath(); ctx.fill();
+      // claws (three tiny pale curves on the front paw under the surface)
+      ctx.strokeStyle = 'rgba(220,212,196,0.7)'; ctx.lineWidth = 0.7;
+      for (let c = 0; c < 3; c++) {
+        ctx.beginPath();
+        ctx.arc(bx - 14 - lunge * 0.2 + c * 1.6, by + 13, 0.7, 0.2, 2.9);
+        ctx.stroke();
+      }
+      // --- neck + head lunging down toward the water (lower than shoulder)
+      ctx.fillStyle = fur;
+      const hx3 = bx - 21 - lunge * 0.5;
+      const hy3 = by + 4 + lunge * 0.4;
+      ctx.beginPath();
+      ctx.moveTo(bx - 12, by - 5);
+      ctx.quadraticCurveTo(bx - 18, by - 3, hx3 + 3, hy3 - 4);            // neck top
+      ctx.quadraticCurveTo(hx3 - 4, hy3 - 3, hx3 - 6, hy3 + 2);            // forehead → muzzle top
+      ctx.quadraticCurveTo(hx3 - 8, hy3 + 5, hx3 - 4, hy3 + 6);            // nose tip
+      ctx.quadraticCurveTo(hx3 + 2, hy3 + 5, hx3 + 4, hy3 + 3);            // jaw line
+      ctx.quadraticCurveTo(bx - 14, hy3 + 1, bx - 12, by);                  // back of jaw to body
+      ctx.closePath(); ctx.fill();
+      // a small rounded ear set well back on the head
+      ctx.beginPath(); ctx.ellipse(hx3 + 4, hy3 - 4, 1.7, 1.9, -0.2, 0, 6.283); ctx.fill();
+      // tiny eye (just a glint)
+      ctx.fillStyle = 'rgba(245,230,180,0.85)';
+      ctx.beginPath(); ctx.arc(hx3 - 1, hy3 - 0.5, 0.5, 0, 6.283); ctx.fill();
+      // nose tip (matte black)
+      ctx.fillStyle = 'rgba(0,0,0,1)';
+      ctx.beginPath(); ctx.ellipse(hx3 - 5, hy3 + 4.5, 1, 0.8, 0, 0, 6.283); ctx.fill();
+      // --- the FISH caught in the bear's jaws — silvery, body bent, thrashing
+      const fishWag = Math.sin(tt * 9) * 0.35;
+      ctx.save(); ctx.translate(hx3 - 7, hy3 + 5); ctx.rotate(-0.3 + fishWag);
+      // body
+      const fishG = ctx.createLinearGradient(0, -3, 0, 3);
+      fishG.addColorStop(0, 'rgba(220,228,232,1)');
+      fishG.addColorStop(0.5, 'rgba(170,184,196,1)');
+      fishG.addColorStop(1, 'rgba(96,110,126,1)');
+      ctx.fillStyle = fishG;
+      ctx.beginPath();
+      ctx.moveTo(-6, 0);
+      ctx.quadraticCurveTo(-4, -3, 1, -2.6);
+      ctx.quadraticCurveTo(7, -1.6, 9, 0);
+      ctx.quadraticCurveTo(7, 2.0, 1, 2.4);
+      ctx.quadraticCurveTo(-4, 2.6, -6, 0);
+      ctx.closePath(); ctx.fill();
+      // tail
+      ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(13, -3 + fishWag * 2); ctx.lineTo(13, 3 + fishWag * 2); ctx.closePath(); ctx.fill();
+      // gill mark + eye
+      ctx.strokeStyle = 'rgba(60,68,80,0.7)'; ctx.lineWidth = 0.6;
+      ctx.beginPath(); ctx.moveTo(-2, -2); ctx.lineTo(-2, 2); ctx.stroke();
+      ctx.fillStyle = 'rgba(20,18,18,1)'; ctx.beginPath(); ctx.arc(-4, -0.6, 0.5, 0, 6.283); ctx.fill();
+      ctx.restore();
+      // --- water disturbance: a churned splash + concentric ripples where paws/head meet the lake
+      ctx.strokeStyle = 'rgba(240,246,238,0.7)'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.ellipse(bx - 10, by + 13, 14, 2.6, 0, 0, 6.283); ctx.stroke();
+      ctx.strokeStyle = 'rgba(240,246,238,0.4)';
+      ctx.beginPath(); ctx.ellipse(bx - 10, by + 13, 22, 4, 0, 0, 6.283); ctx.stroke();
+      // a few flecks of spray flying off
+      ctx.fillStyle = 'rgba(245,250,242,0.85)';
+      for (let s = 0; s < 5; s++) {
+        const sang = -0.4 - s * 0.18 - Math.sin(tt * 4 + s) * 0.05;
+        const sr = 6 + Math.abs(Math.sin(tt * 3 + s)) * 4;
+        ctx.beginPath();
+        ctx.arc(hx3 - 4 + Math.cos(sang) * sr, hy3 + 4 + Math.sin(sang) * sr, 0.9, 0, 6.283);
+        ctx.fill();
+      }
+      ctx.restore();
+      // ---- a GREAT BLUE HERON wading: slate-blue, S-neck, dagger beak, sometimes
+      //   stabbing for a fish. Anatomically tall and angular.
+      ctx.save(); ctx.globalAlpha = (1 - nm) * 0.95;
+      const hx2 = W * 0.695, hy2 = shoreY(hx2) + 7;
+      const heronBlue = 'rgba(96,118,142,1)';
+      const heronLight = 'rgba(150,168,188,1)';
+      const stab = Math.sin(tt * 0.6) > 0.85 ? 1 : 0;                     // occasional rapid stab
+      // long thin legs standing in the shallows
+      ctx.strokeStyle = 'rgba(58,46,38,1)'; ctx.lineWidth = 1.0; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(hx2 - 1, hy2 - 6); ctx.lineTo(hx2 - 3, hy2 + 9); ctx.lineTo(hx2 - 6, hy2 + 10); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(hx2 + 2, hy2 - 6); ctx.lineTo(hx2 + 4, hy2 + 9); ctx.lineTo(hx2 + 7, hy2 + 10); ctx.stroke();
+      // teardrop body (chest forward, tail flicking back)
+      ctx.fillStyle = heronBlue;
+      ctx.beginPath();
+      ctx.moveTo(hx2 - 9, hy2 - 7);
+      ctx.quadraticCurveTo(hx2 - 3, hy2 - 11, hx2 + 4, hy2 - 8);
+      ctx.quadraticCurveTo(hx2 + 12, hy2 - 5, hx2 + 14, hy2 - 1);          // tail tip
+      ctx.quadraticCurveTo(hx2 + 8, hy2, hx2 + 2, hy2 - 2);
+      ctx.quadraticCurveTo(hx2 - 6, hy2 - 3, hx2 - 9, hy2 - 7);
+      ctx.closePath(); ctx.fill();
+      // wing markings (a pale primary feather edge)
+      ctx.fillStyle = heronLight;
+      ctx.beginPath(); ctx.ellipse(hx2 + 3, hy2 - 6, 4.5, 1.3, -0.1, 0, 6.283); ctx.fill();
+      // S-curved neck — characteristic of herons, tucked when alert
+      ctx.strokeStyle = heronBlue; ctx.lineWidth = 2.0; ctx.lineCap = 'round';
+      const neckTopY = hy2 - 20 + stab * 8;                                 // dips when stabbing
+      ctx.beginPath();
+      ctx.moveTo(hx2 - 4, hy2 - 9);
+      ctx.quadraticCurveTo(hx2 - 8, hy2 - 14, hx2 - 3, hy2 - 17);
+      ctx.quadraticCurveTo(hx2, hy2 - 19, hx2 - 1, neckTopY);
+      ctx.stroke();
+      // head + black plume + long yellow dagger beak
+      ctx.fillStyle = heronBlue;
+      ctx.beginPath(); ctx.ellipse(hx2 - 1, neckTopY, 2.2, 1.6, 0, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = 'rgba(20,22,26,1)'; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(hx2, neckTopY - 1); ctx.lineTo(hx2 + 3, neckTopY - 4); ctx.stroke();     // plume
+      ctx.strokeStyle = 'rgba(220,184,84,1)'; ctx.lineWidth = 1.1;
+      ctx.beginPath(); ctx.moveTo(hx2 + 1, neckTopY); ctx.lineTo(hx2 + 10 + stab * 4, neckTopY + stab * 3); ctx.stroke();
+      // tiny eye
+      ctx.fillStyle = 'rgba(245,225,150,1)';
+      ctx.beginPath(); ctx.arc(hx2, neckTopY - 0.3, 0.4, 0, 6.283); ctx.fill();
+      ctx.restore();
+      // ---- an OTTER slipping into the water near the bank (day) ----
+      ctx.save(); ctx.globalAlpha = (1 - nm) * 0.9;
+      const otCycle = (tt * 0.7) % 6;
+      const otX = W * 0.535 + otCycle * 8;
+      const otY = shoreY(otX) + 8;
+      ctx.fillStyle = 'rgba(48,30,18,1)';
+      ctx.beginPath(); ctx.ellipse(otX, otY, 7, 2.4, 0.1, 0, 6.283); ctx.fill();        // body
+      ctx.beginPath(); ctx.arc(otX - 5, otY - 1, 1.7, 0, 6.283); ctx.fill();              // head
+      // splash trail behind
+      ctx.strokeStyle = 'rgba(232,238,232,0.45)'; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.ellipse(otX + 4, otY + 1, 4, 1.2, 0, 0, 6.283); ctx.stroke();
       ctx.restore();
     }
     if (nm > 0.02) {
       ctx.save(); ctx.globalAlpha = nm;
-      [[-20, 1.35], [-10, 1.45], [11, 1.45], [21, 1.35]].forEach(([dxx, sc], i) => { const bob = Math.sin(tt * 1.5 + i) * 0.7; fig(fx + dxx, fy + 7 + bob, sc, 'sit', i); });
+      [[-22, 1.35], [-11, 1.45], [12, 1.45], [23, 1.35], [-32, 1.2], [33, 1.2]].forEach(([dxx, sc], i) => {
+        const bob = Math.sin(tt * 1.5 + i) * 0.7;
+        fig(fx + dxx, fy + 7 + bob, sc, 'sit', i);
+      });
+      ctx.restore();
+      // ---- WOLVES at night on the ridge: a proper lupine silhouette, one howling
+      //   with muzzle raised to the moon. Pose lifted from photo references —
+      //   long sloping back, deep chest, low-set tail, pointed ears.
+      ctx.save(); ctx.globalAlpha = nm * 0.95;
+      const wRidgeX = W * 0.40, wRidgeY = hY - 22;
+      const wolfBody = 'rgba(8,6,4,1)';
+      const wolfRim  = `rgba(180,196,224,${0.18 * nm})`;
+      ctx.fillStyle = wolfBody;
+      // breathing motion synced to the howl
+      const howl = 0.5 + 0.5 * Math.sin(tt * 0.55);
+
+      // --- wolf 1: HOWLING at the moon (the classic silhouette) ---
+      const wx = wRidgeX, wy = wRidgeY;
+      ctx.beginPath();
+      // hindquarters → sloping back → chest (left = head end facing left toward moon)
+      ctx.moveTo(wx + 11, wy + 3);                                          // tail base
+      ctx.quadraticCurveTo(wx + 16, wy + 1, wx + 18, wy - 3);                // rump
+      ctx.quadraticCurveTo(wx + 14, wy - 6, wx + 4, wy - 5);                 // back sloping forward
+      ctx.quadraticCurveTo(wx - 4, wy - 4, wx - 8, wy - 3);                  // shoulder
+      ctx.quadraticCurveTo(wx - 10, wy + 1, wx - 4, wy + 3);                 // chest under
+      ctx.quadraticCurveTo(wx + 4, wy + 4, wx + 11, wy + 3);                 // belly
+      ctx.closePath(); ctx.fill();
+      // hind legs
+      ctx.beginPath();
+      ctx.moveTo(wx + 12, wy + 3); ctx.quadraticCurveTo(wx + 14, wy + 7, wx + 13, wy + 10);
+      ctx.lineTo(wx + 17, wy + 10); ctx.quadraticCurveTo(wx + 18, wy + 6, wx + 17, wy + 3);
+      ctx.closePath(); ctx.fill();
+      // front legs (slightly apart, planted on the ridge)
+      ctx.beginPath();
+      ctx.moveTo(wx - 6, wy + 3); ctx.quadraticCurveTo(wx - 7, wy + 7, wx - 8, wy + 10);
+      ctx.lineTo(wx - 4, wy + 10); ctx.quadraticCurveTo(wx - 3, wy + 6, wx - 3, wy + 3);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(wx - 2, wy + 3); ctx.quadraticCurveTo(wx - 2, wy + 7, wx - 1, wy + 10);
+      ctx.lineTo(wx + 2, wy + 10); ctx.quadraticCurveTo(wx + 3, wy + 6, wx + 2, wy + 3);
+      ctx.closePath(); ctx.fill();
+      // long bushy tail, low and out behind (wolves don't curl tails up like dogs)
+      ctx.strokeStyle = wolfBody; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(wx + 16, wy - 1);
+      ctx.quadraticCurveTo(wx + 22, wy + 2, wx + 24, wy + 5);
+      ctx.stroke();
+      // neck stretched up — head raised to howl
+      const headTipX = wx - 12, headTipY = wy - 14 - howl * 2;
+      ctx.fillStyle = wolfBody;
+      ctx.beginPath();
+      ctx.moveTo(wx - 8, wy - 3);
+      ctx.quadraticCurveTo(wx - 11, wy - 9, headTipX + 2, headTipY + 3);
+      ctx.quadraticCurveTo(headTipX - 2, headTipY + 1, headTipX - 3, headTipY - 1);    // crown
+      ctx.quadraticCurveTo(headTipX, headTipY - 3, headTipX + 1, headTipY + 1);         // forehead → muzzle start
+      ctx.quadraticCurveTo(headTipX + 6, headTipY + 2, headTipX + 9, headTipY + 5);     // muzzle pointed up-left
+      ctx.quadraticCurveTo(headTipX + 5, headTipY + 6, headTipX, headTipY + 5);
+      ctx.quadraticCurveTo(wx - 6, wy - 4, wx - 4, wy - 2);
+      ctx.closePath(); ctx.fill();
+      // open mouth (small triangular gap mid-howl)
+      if (howl > 0.55) {
+        ctx.fillStyle = 'rgba(36,18,14,1)';
+        ctx.beginPath();
+        ctx.moveTo(headTipX + 3, headTipY + 4);
+        ctx.lineTo(headTipX + 7, headTipY + 5.5);
+        ctx.lineTo(headTipX + 4, headTipY + 6);
+        ctx.closePath(); ctx.fill();
+      }
+      // pointed ears laid back along the skull (howling posture)
+      ctx.fillStyle = wolfBody;
+      ctx.beginPath();
+      ctx.moveTo(headTipX - 2, headTipY - 1); ctx.lineTo(headTipX - 1, headTipY - 5); ctx.lineTo(headTipX + 2, headTipY - 1);
+      ctx.closePath(); ctx.fill();
+      // faint moonlit rim along the back (just barely visible)
+      ctx.strokeStyle = wolfRim; ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.moveTo(wx + 18, wy - 3); ctx.quadraticCurveTo(wx + 4, wy - 6, headTipX - 2, headTipY - 1);
+      ctx.stroke();
+
+      // --- wolf 2: a companion alongside, standing watch (smaller, profile)
+      const w2x = wx - 22, w2y = wy + 2;
+      ctx.fillStyle = wolfBody;
+      ctx.beginPath();
+      ctx.moveTo(w2x + 7, w2y);
+      ctx.quadraticCurveTo(w2x + 10, w2y - 3, w2x + 6, w2y - 4);
+      ctx.quadraticCurveTo(w2x - 2, w2y - 4, w2x - 6, w2y - 2);
+      ctx.quadraticCurveTo(w2x - 7, w2y + 1, w2x - 3, w2y + 2);
+      ctx.quadraticCurveTo(w2x + 4, w2y + 3, w2x + 7, w2y);
+      ctx.closePath(); ctx.fill();
+      // legs
+      ctx.fillRect(w2x - 5, w2y + 2, 1.8, 5);
+      ctx.fillRect(w2x - 1, w2y + 2, 1.8, 5);
+      ctx.fillRect(w2x + 4, w2y + 1, 1.8, 5);
+      // tail
+      ctx.strokeStyle = wolfBody; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(w2x + 9, w2y - 1); ctx.quadraticCurveTo(w2x + 13, w2y, w2x + 14, w2y + 3); ctx.stroke();
+      // head looking left (profile)
+      ctx.fillStyle = wolfBody;
+      ctx.beginPath();
+      ctx.moveTo(w2x - 6, w2y - 3); ctx.lineTo(w2x - 10, w2y - 2); ctx.lineTo(w2x - 11, w2y); ctx.lineTo(w2x - 6, w2y);
+      ctx.closePath(); ctx.fill();
+      // ears
+      ctx.beginPath(); ctx.moveTo(w2x - 6, w2y - 3); ctx.lineTo(w2x - 5, w2y - 6); ctx.lineTo(w2x - 4, w2y - 3); ctx.closePath(); ctx.fill();
       ctx.restore();
     }
   }
@@ -963,7 +1484,7 @@ function WelcomeView({ all, setView }) {
   const ambientRef = useR_w(null);
   const toggleSound = () => {
     if (soundOn) { if (ambientRef.current) { ambientRef.current.stop(); ambientRef.current = null; } setSoundOn(false); }
-    else { ambientRef.current = createAmbient(); if (ambientRef.current) setSoundOn(true); }
+    else { ambientRef.current = createAmbient(() => progressRef.current); if (ambientRef.current) setSoundOn(true); }
   };
   useE_w(() => () => { if (ambientRef.current) { ambientRef.current.stop(); ambientRef.current = null; } }, []);
 
