@@ -83,9 +83,13 @@ const _FLIES = Array.from({ length: 9 }, () => ({
 }));
 // leaping-fish events (a fish arcs out of the water now and then)
 const _FISH = [
-  { x: 0.34, yb: 0.34, period: 13, phase: 2, dir: 1 },
-  { x: 0.70, yb: 0.50, period: 17, phase: 9, dir: -1 },
-  { x: 0.22, yb: 0.62, period: 21, phase: 4, dir: 1 },
+  { x: 0.34, yb: 0.34, period: 8,  phase: 2,   dir: 1 },
+  { x: 0.70, yb: 0.50, period: 10, phase: 9,   dir: -1 },
+  { x: 0.22, yb: 0.62, period: 9,  phase: 4,   dir: 1 },
+  { x: 0.52, yb: 0.42, period: 7,  phase: 5.5, dir: 1 },
+  { x: 0.80, yb: 0.36, period: 11, phase: 1.2, dir: -1 },
+  { x: 0.44, yb: 0.58, period: 8.5,phase: 7.1, dir: -1 },
+  { x: 0.62, yb: 0.66, period: 9.5,phase: 3.3, dir: 1 },
 ];
 // cursor position (-1..1 from centre), eased, for a parallax depth effect
 let _MX = 0, _MY = 0, _MXe = 0, _MYe = 0;
@@ -603,6 +607,52 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.globalAlpha = 1;
   }
 
+  // ---- GULLS / CRANES gliding LOW over the lake (Hassan wanted lake birds).
+  //   They cross just above the water; now and then one dips to the surface to
+  //   snatch a fish, sending up a tiny splash. Visible through the lit part of
+  //   the day, fading at night. ----
+  const gullA = _smooth(0.05, 0.22, p) * (1 - _smooth(0.62, 0.84, p));
+  if (gullA > 0.02) {
+    ctx.lineCap = 'round';
+    const gulls = [
+      { bx: 0.20, y: 0.50, sp: 0.045, ph: 0.0, sc: 1.0, dip: 0.0 },
+      { bx: 0.55, y: 0.44, sp: 0.038, ph: 1.7, sc: 0.85, dip: 0.5 },
+      { bx: 0.78, y: 0.55, sp: 0.052, ph: 3.1, sc: 1.1, dip: 0.0 },
+      { bx: 0.40, y: 0.60, sp: 0.041, ph: 4.6, sc: 0.7, dip: 0.0 },
+    ];
+    for (const g of gulls) {
+      const prog = (g.bx + tt * g.sp) % 1.25 - 0.12;       // glide L→R across the lake
+      const gx = prog * W;
+      const waterY = hY + 10 + (H - hY) * g.y;
+      // occasional swoop: dip toward the water mid-crossing, then climb
+      const swoop = g.dip > 0 ? Math.max(0, Math.sin((prog - 0.45) * 6)) * 26 * g.dip : 0;
+      const gy = waterY - 16 * g.sc + swoop;
+      const flap = Math.sin(tt * 5.5 + g.ph);
+      const wing = (9 + 4 * Math.abs(flap)) * g.sc;
+      ctx.globalAlpha = gullA * 0.9;
+      ctx.strokeStyle = `rgba(${Math.round(_lerp(238,150,p))},${Math.round(_lerp(240,150,p))},${Math.round(_lerp(244,156,p))},1)`;
+      ctx.lineWidth = 1.6 * g.sc;
+      // a relaxed gull "M": two shallow wing-arcs
+      ctx.beginPath();
+      ctx.moveTo(gx - wing, gy + flap * 2.4);
+      ctx.quadraticCurveTo(gx - wing * 0.4, gy - wing * 0.5, gx, gy);
+      ctx.quadraticCurveTo(gx + wing * 0.4, gy - wing * 0.5, gx + wing, gy + flap * 2.4);
+      ctx.stroke();
+      // splash if the gull is at the bottom of a swoop touching the water
+      if (g.dip > 0 && swoop > 22) {
+        ctx.globalAlpha = gullA * 0.7;
+        ctx.fillStyle = 'rgba(244,250,244,0.9)';
+        for (let s = 0; s < 4; s++) {
+          ctx.beginPath();
+          ctx.arc(gx + (s - 1.5) * 3, waterY + 8, 1.1, 0, 6.283); ctx.fill();
+        }
+        ctx.strokeStyle = 'rgba(244,250,244,0.5)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(gx, waterY + 8, 7, 2.2, 0, 0, 6.283); ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
   // (Visual bald eagle removed at Hassan's request — the flapping read as
   //  fake. The eagle now lives only in the AFTERNOON soundscape.)
   // ---- far shore: treeline + a small community gathering, with a fire glow ----
@@ -951,13 +1001,29 @@ function drawScene(ctx, W, H, p, tt, now) {
   ctx.bezierCurveTo(82, -28, 78, -10, 58, -2);                                // sharply upturned BOW (right)
   ctx.quadraticCurveTo(0, 20, -58, -2);                                       // smooth keel-line bottom
   ctx.closePath();
-  // pale birch-bark gradient (matches the reference)
-  const hullG = ctx.createLinearGradient(0, -24, 0, 22);
-  hullG.addColorStop(0,    '#f0d6a8');                                        // bright golden bark near the rim
-  hullG.addColorStop(0.35, '#d8a86c');
-  hullG.addColorStop(0.7,  '#a06a36');                                        // mid-tone
-  hullG.addColorStop(1,    '#4a2c14');                                        // shadow at the keel
-  ctx.fillStyle = hullG; ctx.fill();
+  // FOUR-COLOURED HULL BODY (Hassan: the canoe BODY itself in 4 colours, not
+  // brown). The four sacred / four-direction colours painted as four panels
+  // along the length — black (stern), red, yellow, white (bow) — each shaded
+  // top-to-keel so it still reads as a rounded hull, not flat blocks.
+  ctx.save();
+  ctx.clip();                                                                  // clip to the hull silhouette
+  const panelCols = [
+    [60, 60, 66],     // black-ish (stern)
+    [196, 52, 32],    // red
+    [232, 184, 52],   // yellow
+    [238, 234, 224],  // white (bow)
+  ];
+  for (let pi = 0; pi < 4; pi++) {
+    const x0 = -84 + pi * 42, x1 = x0 + 42;                                   // four bands across the hull width
+    const [r, g, b] = panelCols[pi];
+    const pg = ctx.createLinearGradient(0, -26, 0, 22);
+    pg.addColorStop(0,    `rgb(${Math.min(255,r+40)},${Math.min(255,g+40)},${Math.min(255,b+40)})`);  // lit rim
+    pg.addColorStop(0.55, `rgb(${r},${g},${b})`);
+    pg.addColorStop(1,    `rgb(${Math.round(r*0.42)},${Math.round(g*0.42)},${Math.round(b*0.42)})`);   // shadow at keel
+    ctx.fillStyle = pg;
+    ctx.fillRect(x0, -30, x1 - x0, 56);
+  }
+  ctx.restore();
   // bark seams (horizontal lines characteristic of birch bark, more visible)
   ctx.strokeStyle = 'rgba(58,32,16,0.55)'; ctx.lineWidth = 0.8;
   for (let yb = -10; yb <= 16; yb += 3.2) {
@@ -1102,14 +1168,39 @@ function drawScene(ctx, W, H, p, tt, now) {
   // ============================================================================
   {
     const nm = _smooth(0.52, 0.9, p);                     // nightness 0..1
-    const lx0 = W * 0.52;                                  // shore begins earlier so there is more village land
-    const RISE = H * 0.22;                                  // taller bank (was 0.16) — more room for activity
+    const lx0 = W * 0.45;                                  // shore starts much earlier — bigger village land (Hassan)
+    const RISE = H * 0.30;                                  // taller, deeper bank — far more room for activity
     const shoreY = (x) => { const t = _clamp((x - lx0) / (W - lx0), 0, 1); return H - 6 - RISE * (t * 0.6 + t * t * 0.4); };
     const ground = (x) => shoreY(x) + 9;
+    // ---- REALISTIC SMOKE: a column of soft puffs that rise, expand, drift on a
+    //   light breeze and fade out. baseScale sets the column height; alpha scales
+    //   the whole plume. Replaces the old single wavy line. ----
+    const puffSmoke = (px, py, baseScale, alpha) => {
+      ctx.save();
+      const N = 9;                                          // number of puffs in the column
+      const rise = 13 * baseScale;                          // vertical spacing
+      for (let i = 0; i < N; i++) {
+        // each puff cycles 0..1 on its own offset so the column is continuous
+        const life = ((tt * 0.5 + i / N) % 1);
+        const yy = py - life * rise * N;                    // travels up over its life
+        const drift = Math.sin(life * 3 + i) * (4 + life * 18) + life * 10;   // wind drift, more as it rises
+        const xx = px + drift;
+        const rad = (2 + life * 9) * baseScale;             // expands as it rises
+        const a = alpha * 0.4 * (1 - life) * Math.min(1, life * 4);   // fade in then out
+        if (a <= 0.01) continue;
+        const tone = Math.round(_lerp(216, 150, nm));
+        const gpf = ctx.createRadialGradient(xx, yy, 0, xx, yy, rad);
+        gpf.addColorStop(0, `rgba(${tone},${tone - 4},${tone - 12},${a})`);
+        gpf.addColorStop(1, `rgba(${tone},${tone - 4},${tone - 12},0)`);
+        ctx.fillStyle = gpf;
+        ctx.beginPath(); ctx.arc(xx, yy, rad, 0, 6.283); ctx.fill();
+      }
+      ctx.restore();
+    };
     // land bank
     const et = [Math.round(_lerp(74, 32, nm)), Math.round(_lerp(82, 40, nm)), Math.round(_lerp(50, 28, nm))];
     const eb = [Math.round(_lerp(42, 17, nm)), Math.round(_lerp(48, 22, nm)), Math.round(_lerp(28, 14, nm))];
-    const lgr = ctx.createLinearGradient(0, H * 0.78, 0, H);
+    const lgr = ctx.createLinearGradient(0, H * 0.66, 0, H);
     lgr.addColorStop(0, `rgb(${et.join(',')})`); lgr.addColorStop(1, `rgb(${eb.join(',')})`);
     ctx.fillStyle = lgr;
     ctx.beginPath(); ctx.moveTo(lx0, H);
@@ -1236,18 +1327,9 @@ function drawScene(ctx, W, H, p, tt, now) {
     // a small dark opening at the front
     ctx.fillStyle = 'rgba(8,6,4,1)';
     ctx.beginPath(); ctx.ellipse(smx, smy - 1, 3.4, 2.0, 0, Math.PI, 2 * Math.PI); ctx.fill();
-    // smoke billowing up from the apex
-    if (nm < 0.95) {
-      ctx.save(); ctx.globalAlpha = (1 - nm * 0.7) * 0.55;
-      ctx.strokeStyle = 'rgba(214,210,200,1)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-      ctx.beginPath();
-      for (let s = 0; s <= 15; s++) {
-        const sy = smy - 26 - s * 5;
-        const sx = smx + Math.sin(s * 0.55 + tt * 1.0) * (2 + s * 0.7);
-        s === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
-      }
-      ctx.stroke(); ctx.restore();
-    }
+    // smoke billowing up from the apex — soft expanding puffs that rise, drift
+    // and fade (realistic volume rather than a single wavy line)
+    if (nm < 0.95) puffSmoke(smx, smy - 26, 1.0, (1 - nm * 0.7));
     // ---- a WILD-RICE POUNDING MORTAR: a tall wooden bucket with a long pestle
     //   that someone strikes down into it (manoomin processing). The pestle
     //   animates up & down for life. ----
@@ -1327,17 +1409,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.moveTo(sm2x - 9, sm2y);
       ctx.quadraticCurveTo(sm2x, sm2y - 20, sm2x + 9, sm2y);
       ctx.closePath(); ctx.fill();
-      if (nm < 0.95) {
-        ctx.save(); ctx.globalAlpha = (1 - nm * 0.7) * 0.45;
-        ctx.strokeStyle = 'rgba(214,210,200,1)'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-        ctx.beginPath();
-        for (let s = 0; s <= 12; s++) {
-          const sy = sm2y - 20 - s * 4;
-          const sx = sm2x + Math.sin(s * 0.55 + tt * 1.1) * (1.6 + s * 0.5);
-          s === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
-        }
-        ctx.stroke(); ctx.restore();
-      }
+      if (nm < 0.95) puffSmoke(sm2x, sm2y - 18, 0.8, (1 - nm * 0.7));
     }
     // village fire
     const fx = W * 0.625, fy = ground(fx) + 6, fa = 0.45 + 0.55 * nm;
@@ -1355,24 +1427,8 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.closePath(); ctx.fill();
     }
     ctx.restore();
-    if (nm < 0.95) {
-      // a wispier, longer string of smoke curling up from the fire — translucent, layered
-      ctx.save();
-      const smokeA = (1 - nm * 0.6) * 0.7;
-      for (let pass = 0; pass < 3; pass++) {
-        ctx.globalAlpha = smokeA * (0.55 - pass * 0.13);
-        ctx.strokeStyle = `rgba(${210 - pass * 8},${204 - pass * 8},${192 - pass * 8},1)`;
-        ctx.lineWidth = 4 - pass * 0.9; ctx.lineCap = 'round'; ctx.beginPath();
-        for (let s = 0; s <= 22; s++) {
-          const sy = fy - 9 - s * 6.5 - pass * 2;
-          const drift = Math.sin(s * 0.42 + tt * 0.9 + pass * 0.6) * (3 + s * 0.95);
-          const sx = fx + drift + s * 0.7;
-          s === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
-        }
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
+    // realistic rising smoke from the fire (taller column)
+    if (nm < 0.95) puffSmoke(fx, fy - 9, 1.25, (1 - nm * 0.6));
     // --- PEOPLE: more human (head, tapered torso, legs/arms), animated ---
     // -------- VILLAGER (proper clothed person, not a black stick figure) -----
     // Each villager has: skin head, hair (with options for braid / headband / feather),
@@ -1599,6 +1655,39 @@ function drawScene(ctx, W, H, p, tt, now) {
       fig(wmx - 8, wmy + 6, 1.55, 'pound', 4.4, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });
       fig(wmx + 18, wmy + 6, 1.30, 'stir', 0.6, { shirt: '#d68a1f', hairStyle: 'braid', dir: -1 });
 
+      // --- VIGNETTE 2b: THREE SISTERS GARDEN (corn, beans, squash — farming) ---
+      //   A row of tall corn stalks with low squash mounds, tended by a person
+      //   with a digging stick. Placed in the open stretch past the smokehouse.
+      {
+        const gx0 = W * 0.915, gy0 = ground(gx0) + 4;
+        earth(gx0, gy0 + 6, 30);
+        const grn = `rgb(${Math.round(_lerp(70, 36, nm))},${Math.round(_lerp(120, 60, nm))},${Math.round(_lerp(48, 26, nm))})`;
+        // squash mounds (low, broad leaves)
+        ctx.fillStyle = grn;
+        for (let m = -1; m <= 1; m++) {
+          ctx.beginPath(); ctx.ellipse(gx0 + m * 11, gy0 + 3, 5, 2.2, 0, 0, 6.283); ctx.fill();
+        }
+        // corn stalks — tall stems with a sway and a few leaves
+        for (let cstk = 0; cstk < 5; cstk++) {
+          const sx = gx0 - 16 + cstk * 8;
+          const sway = Math.sin(tt * 0.9 + cstk) * 1.4;
+          const topY = gy0 - 26 - (cstk % 2) * 3;
+          ctx.strokeStyle = grn; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(sx, gy0 + 2); ctx.quadraticCurveTo(sx + sway * 0.5, (gy0 + topY) / 2, sx + sway, topY); ctx.stroke();
+          // leaves
+          ctx.lineWidth = 1.1;
+          ctx.beginPath(); ctx.moveTo(sx + sway * 0.4, gy0 - 10); ctx.quadraticCurveTo(sx + 6, gy0 - 12, sx + 8, gy0 - 8); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(sx + sway * 0.6, gy0 - 16); ctx.quadraticCurveTo(sx - 6, gy0 - 18, sx - 8, gy0 - 14); ctx.stroke();
+          // a corn cob (golden) on alternate stalks
+          if (cstk % 2 === 0) {
+            ctx.fillStyle = `rgb(${Math.round(_lerp(228, 120, nm))},${Math.round(_lerp(190, 96, nm))},${Math.round(_lerp(70, 40, nm))})`;
+            ctx.beginPath(); ctx.ellipse(sx + sway * 0.7 + 2, gy0 - 13, 1.4, 3, -0.3, 0, 6.283); ctx.fill();
+          }
+        }
+        // a gardener tending with a digging stick (scraping motion at the soil)
+        fig(gx0 - 22, gy0 + 4, 1.35, 'scrape', 1.5, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });
+      }
+
       // --- VIGNETTE 3: WOOD-CHOPPING (woodcutter strikes a log + a helper stacking) ---
       const chopX = W * 0.63, chopY = ground(chopX) + 6;        // its own clear spot
       earth(chopX + 4, chopY + 6, 34);
@@ -1630,10 +1719,10 @@ function drawScene(ctx, W, H, p, tt, now) {
         const bxw = W * (0.755 + bT * 0.02);
         fig(bxw, ground(bxw) + 7, 1.50, 'walk', 5.1, { shirt: '#3a4658', hairStyle: 'braid', dir: (Math.cos(tt * 0.3 + 2.1) >= 0 ? 1 : -1) });
       }
-      // --- CHILDREN PLAYING (well clear of the shoreline walkers) ---
-      //   Tucked up the bank at the far right, in their own play area.
+      // --- CHILDREN PLAYING (in the OPEN foreground, nothing in front of them) ---
+      //   Lower down the bank, centre-left, in their own clear play area.
       {
-        const ringX = W * 0.905, ringY = ground(ringX) - 6, ringR = 16;
+        const ringX = W * 0.59, ringY = ground(ringX) + 20, ringR = 18;
         ctx.strokeStyle = `rgba(${Math.round(_lerp(70, 38, nm))},${Math.round(_lerp(52, 26, nm))},${Math.round(_lerp(30, 14, nm))},0.5)`;
         ctx.lineWidth = 1.2;
         ctx.beginPath(); ctx.ellipse(ringX, ringY + 4, ringR, ringR * 0.35, 0, 0, 6.283); ctx.stroke();
@@ -1753,8 +1842,8 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.beginPath(); ctx.arc(headX - 4 * sc, headY + 3 * sc, 0.5 * sc, 0, 6.283); ctx.fill();
         ctx.restore();
       };
-      drawHorse(W * 0.76, ground(W * 0.76) - 7, 1.8, 0.0, true);           // grazing — moved well clear of the heron
-      drawHorse(W * 0.90, ground(W * 0.90) - 9, 2.0, 2.3, false);          // standing watch, further along the bank
+      drawHorse(W * 0.78, ground(W * 0.78) - 7, 1.8, 0.0, true);           // grazing
+      drawHorse(W * 0.95, ground(W * 0.95) - 9, 2.0, 2.3, false);          // standing watch, far end of the bank
       // ---- BROWN BEAR CROUCHED AT THE WATER, paw raised mid-strike at a salmon.
       //   The iconic Anishinaabe/Pacific Northwest "bear fishing" silhouette.
       //   Facing LEFT (head & paw over the water). Body crouched low, weight on
@@ -1791,6 +1880,26 @@ function drawScene(ctx, W, H, p, tt, now) {
       }
       const fishCaught = phase === 'hold';
       ctx.translate(bx, by);
+
+      // ---- WATER INLET at the bear's feet: the shallows it is fishing in, so it
+      //   reads as a bear hunting IN water (Nat-Geo), not standing on grass. Drawn
+      //   first, behind the bear. Colour tracks day→night like the lake. ----
+      {
+        const wr = Math.round(_lerp(74, 30, nm)), wg = Math.round(_lerp(98, 44, nm)), wb = Math.round(_lerp(104, 52, nm));
+        const poolCx = -13 * S, poolCy = 12.5 * S, poolRX = 26 * S, poolRY = 8 * S;
+        const poolG = ctx.createRadialGradient(poolCx, poolCy, 0, poolCx, poolCy, poolRX);
+        poolG.addColorStop(0, `rgba(${wr},${wg},${wb},0.95)`);
+        poolG.addColorStop(0.7, `rgba(${wr},${wg},${wb},0.7)`);
+        poolG.addColorStop(1, `rgba(${wr},${wg},${wb},0)`);
+        ctx.fillStyle = poolG;
+        ctx.beginPath(); ctx.ellipse(poolCx, poolCy, poolRX, poolRY, 0, 0, 6.283); ctx.fill();
+        // a couple of concentric surface ripples in the pool
+        ctx.strokeStyle = `rgba(${wr + 40},${wg + 40},${wb + 36},0.4)`; ctx.lineWidth = 1;
+        for (let rr = 0; rr < 2; rr++) {
+          const rad = (6 + rr * 7 + (tt * 4) % 7) * S;
+          ctx.beginPath(); ctx.ellipse(poolCx, poolCy, rad, rad * 0.32, 0, 0, 6.283); ctx.stroke();
+        }
+      }
 
       const furG = ctx.createLinearGradient(0, -10 * S, 0, 12 * S);
       furG.addColorStop(0, 'rgba(80,50,28,1)');                 // sunlit caramel back
