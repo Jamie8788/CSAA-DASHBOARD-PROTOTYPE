@@ -1363,16 +1363,23 @@ function drawScene(ctx, W, H, p, tt, now) {
     // dark mouth
     ctx.fillStyle = 'rgba(10,6,4,1)';
     ctx.beginPath(); ctx.ellipse(wmx, wmy - 14, 6, 1.4, 0, 0, 6.283); ctx.fill();
-    // pestle (long pole, strikes down rhythmically)
-    const pound = Math.abs(Math.sin(tt * 2.6));
-    const peY = wmy - 28 + pound * 12;                                  // up/down stroke
+    // pestle — only STRIKES while the pounder is present (day). When the
+    // village winds down (night) it RESTS leaning in the mortar, instead of
+    // bobbing on its own (Hassan: "that stick is moving on its own" at night).
+    const pounding = nm < 0.5;                                          // someone is at the mortar
     ctx.strokeStyle = `rgb(${Math.round(_lerp(80, 40, nm))},${Math.round(_lerp(50, 24, nm))},${Math.round(_lerp(26, 12, nm))})`;
     ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(wmx, peY); ctx.lineTo(wmx, peY - 32); ctx.stroke();
-    // little puff of rice dust on each strike
-    if (pound > 0.85) {
-      ctx.fillStyle = `rgba(220,206,168,${(pound - 0.85) * 4 * (1 - nm * 0.6)})`;
-      ctx.beginPath(); ctx.ellipse(wmx, wmy - 14, 8, 2.4, 0, 0, 6.283); ctx.fill();
+    if (pounding) {
+      const pound = Math.abs(Math.sin(tt * 2.6));
+      const peY = wmy - 28 + pound * 12;                               // up/down stroke
+      ctx.beginPath(); ctx.moveTo(wmx, peY); ctx.lineTo(wmx, peY - 32); ctx.stroke();
+      if (pound > 0.85) {
+        ctx.fillStyle = `rgba(220,206,168,${(pound - 0.85) * 4 * (1 - nm * 0.6)})`;
+        ctx.beginPath(); ctx.ellipse(wmx, wmy - 14, 8, 2.4, 0, 0, 6.283); ctx.fill();
+      }
+    } else {
+      // resting: leaned against the rim of the mortar, static
+      ctx.beginPath(); ctx.moveTo(wmx + 4, wmy - 16); ctx.lineTo(wmx + 12, wmy - 44); ctx.stroke();
     }
     // ---- a ceremonial drum on a low stand near the fire (Anishinaabe day activity) ----
     const drx = W * 0.665, dry = ground(drx) + 4;   // moved right, clear of the bear
@@ -1419,66 +1426,8 @@ function drawScene(ctx, W, H, p, tt, now) {
         }
       }
     }
-    // ---- a real ANISHINAABE WIGWAM at the far end of the bank — a domed
-    //   sapling-frame dwelling skinned in birch-bark sheets. Replaces the
-    //   earlier brown blob ("taco/cow-shit" shape) with a proper structure:
-    //   wide dome silhouette, vertical/horizontal lashing lines for the
-    //   bark seams, a low arched doorway, and smoke from the central
-    //   smoke-hole. Used for both far-end and a foreground dwelling below.
-    const drawWigwam = (wx, wy, wScale) => {
-      const ww = 22 * wScale, wh = 18 * wScale;
-      // dome silhouette — wider than tall, like a real wigwam
-      const dome = ctx.createLinearGradient(wx, wy - wh, wx, wy);
-      dome.addColorStop(0, `rgb(${Math.round(_lerp(170, 80, nm))},${Math.round(_lerp(126, 56, nm))},${Math.round(_lerp(74, 30, nm))})`);
-      dome.addColorStop(0.6, `rgb(${Math.round(_lerp(122, 56, nm))},${Math.round(_lerp(80, 36, nm))},${Math.round(_lerp(46, 18, nm))})`);
-      dome.addColorStop(1, `rgb(${Math.round(_lerp(72, 32, nm))},${Math.round(_lerp(46, 20, nm))},${Math.round(_lerp(28, 10, nm))})`);
-      ctx.fillStyle = dome;
-      ctx.beginPath();
-      ctx.moveTo(wx - ww, wy);
-      ctx.bezierCurveTo(wx - ww, wy - wh * 1.05, wx + ww, wy - wh * 1.05, wx + ww, wy);
-      ctx.closePath(); ctx.fill();
-      // horizontal bark-seam bands
-      ctx.strokeStyle = `rgba(${Math.round(_lerp(58, 24, nm))},${Math.round(_lerp(40, 16, nm))},${Math.round(_lerp(22, 8, nm))},0.7)`;
-      ctx.lineWidth = 0.6;
-      for (let yb = 0.25; yb < 1; yb += 0.22) {
-        const wbY = wy - wh * yb;
-        const wbW = ww * Math.sqrt(Math.max(0, 1 - (yb - 0) * (yb - 0)));
-        ctx.beginPath(); ctx.moveTo(wx - wbW, wbY); ctx.quadraticCurveTo(wx, wbY - 1.5, wx + wbW, wbY); ctx.stroke();
-      }
-      // vertical sapling-frame lines (4-5 ribs showing through)
-      for (let rb = -3; rb <= 3; rb++) {
-        const rx = wx + (rb / 3) * ww * 0.85;
-        ctx.beginPath();
-        ctx.moveTo(rx, wy);
-        ctx.quadraticCurveTo(rx * 0.5 + wx * 0.5, wy - wh * 1.02, wx, wy - wh * 1.02);
-        ctx.stroke();
-      }
-      // low arched doorway with a dark interior
-      ctx.fillStyle = `rgba(${Math.round(_lerp(24, 8, nm))},${Math.round(_lerp(16, 6, nm))},${Math.round(_lerp(10, 4, nm))},0.95)`;
-      ctx.beginPath();
-      ctx.moveTo(wx - 4 * wScale, wy);
-      ctx.quadraticCurveTo(wx, wy - 8 * wScale, wx + 4 * wScale, wy);
-      ctx.closePath(); ctx.fill();
-      // a hide-flap rolled up to one side of the door
-      ctx.fillStyle = `rgb(${Math.round(_lerp(196, 100, nm))},${Math.round(_lerp(160, 80, nm))},${Math.round(_lerp(110, 56, nm))})`;
-      ctx.beginPath(); ctx.ellipse(wx + 3.5 * wScale, wy - 4 * wScale, 1.2 * wScale, 3 * wScale, 0.3, 0, 6.283); ctx.fill();
-      // warm interior glow at night spilling through the door
-      if (nm > 0.4) {
-        const gg = ctx.createRadialGradient(wx, wy - 4 * wScale, 0, wx, wy - 4 * wScale, 10 * wScale);
-        gg.addColorStop(0, `rgba(255,176,84,${0.6 * nm})`);
-        gg.addColorStop(1, 'rgba(255,176,84,0)');
-        ctx.fillStyle = gg;
-        ctx.beginPath(); ctx.ellipse(wx, wy - 1, 12 * wScale, 4 * wScale, 0, 0, 6.283); ctx.fill();
-      }
-      // smoke from the central smoke-hole
-      if (nm < 0.95) puffSmoke(wx, wy - wh * 1.0, 0.7 * wScale, (1 - nm * 0.65));
-    };
-    // far-end wigwam (replaces the old taco/cowpat second smokehouse)
-    drawWigwam(W * 0.97, ground(W * 0.97), 1.0);
-    // a SECOND larger wigwam mid-bank — real dwelling for the village (the
-    // village had no actual house). Placed in an open spot between the rice
-    // and basket-weaving stations.
-    drawWigwam(W * 0.86, ground(W * 0.86) + 2, 1.25);
+    // (No dwellings/houses in this scene — Hassan: houses are not allowed here.
+    //  The bank shows only outdoor work + activity, water, animals and plants.)
     // village fire
     const fx = W * 0.625, fy = ground(fx) + 6, fa = 0.45 + 0.55 * nm;
     const gl = ctx.createRadialGradient(fx, fy - 6, 0, fx, fy - 6, 64 * (0.6 + nm));
@@ -1517,12 +1466,15 @@ function drawScene(ctx, W, H, p, tt, now) {
       const shoulderY = py - bh * 0.82;
       const headCY = py - bh * 0.96 - headR * 1.0;
 
-      // walking gait: opposing legs, swinging arms
-      const gait = (kind === 'walk') ? Math.sin(tt * 3.6 + ph) : 0;
-      const armSwing = gait * 0.55;
+      // walking gait: opposing legs, swinging arms. 'dance' also steps (the
+      // children's feet move in the friendship dance), but its arms are held
+      // OUT to the sides holding hands, not swinging.
+      const steps = (kind === 'walk' || kind === 'dance');
+      const gait = steps ? Math.sin(tt * 3.6 + ph) : 0;
+      const armSwing = (kind === 'walk') ? gait * 0.55 : 0;
       const legL = gait * 3.2 * sc;
       const legR = -legL;
-      const bodyBob = Math.sin(tt * 1.4 + ph) * 0.4 * sc + (kind === 'walk' ? Math.abs(gait) * 0.6 * sc : 0);
+      const bodyBob = Math.sin(tt * 1.4 + ph) * 0.4 * sc + (steps ? Math.abs(gait) * 0.6 * sc : 0);
 
       // helper to stroke a limb with width
       const limb = (x0, y0, x1, y1, w, color) => {
@@ -1566,15 +1518,21 @@ function drawScene(ctx, W, H, p, tt, now) {
       const sArmY = shoulderY - bodyBob + 1.2 * sc;
       // base resting arm positions
       const bArmAng = (kind === 'walk') ? armSwing : Math.sin(tt * 1.3 + ph) * 0.15;
-      // left arm (back-swing in walk)
-      limb(torsoX - 3.4 * sc, sArmY,
-           torsoX - 3.4 * sc - Math.sin(bArmAng) * 5 * sc,
-           sArmY + 6 * sc + Math.cos(bArmAng) * 1.5 * sc,
-           2.4 * sc, skin);
+      // left arm (back-swing in walk; reaches OUT to hold a neighbour in dance)
+      if (kind === 'dance') {
+        limb(torsoX - 3.4 * sc, sArmY, torsoX - 8 * sc, sArmY - 3 * sc, 2.0 * sc, skin);  // reach out-left & up
+      } else {
+        limb(torsoX - 3.4 * sc, sArmY,
+             torsoX - 3.4 * sc - Math.sin(bArmAng) * 5 * sc,
+             sArmY + 6 * sc + Math.cos(bArmAng) * 1.5 * sc,
+             2.4 * sc, skin);
+      }
       // right arm — driven by activity
       let rArmEndX = torsoX + 3.4 * sc + Math.sin(-bArmAng) * 5 * sc;
       let rArmEndY = sArmY + 6 * sc + Math.cos(-bArmAng) * 1.5 * sc;
-      if (kind === 'stir') {
+      if (kind === 'dance') {
+        rArmEndX = torsoX + 8 * sc; rArmEndY = sArmY - 3 * sc;                              // reach out-right & up
+      } else if (kind === 'stir') {
         const a = Math.sin(tt * 3 + ph) * 0.6 - 0.3;
         rArmEndX = torsoX + (5 + Math.cos(a) * 4) * sc;
         rArmEndY = sArmY + (3 + Math.sin(a) * 4) * sc;
@@ -1731,20 +1689,15 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.beginPath(); ctx.ellipse(ex, ey, w, w * 0.42, 0, 0, 6.283); ctx.fill();
       };
 
-      // --- VIGNETTE 1: HIDE-WORKING (scraper + a helper folding hides) ---
-      //   morning + midday: full pair. evening: scraper has gone home, just the
-      //   helper folds the day's hides.
+      // --- VIGNETTE 1: HIDE-WORKING — always staffed (scraper + helper). ---
       earth(hfx - 4, hfy + 10, 38);
-      if (!isEvening) fig(hfx - 16, hfy + 6, 1.55, 'scrape', 2.3, { shirt: '#b04a2a', hairStyle: 'braid', dir: 1 });
+      fig(hfx - 16, hfy + 6, 1.55, 'scrape', 2.3, { shirt: '#b04a2a', hairStyle: 'braid', dir: 1 });
       fig(hfx + 22, hfy + 6, 1.35, 'carry', 1.8, { shirt: '#5a7d3a', hairStyle: 'long', dir: -1 });
 
-      // --- VIGNETTE 2: WILD-RICE POUNDING (pounder + a winnower nearby) ---
-      //   absent in morning (no rice yet); starts midday; peak in evening.
-      if (!isMorning) {
-        earth(wmx + 4, wmy + 10, 32);
-        fig(wmx - 8, wmy + 6, 1.55, 'pound', 4.4, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });
-        fig(wmx + 18, wmy + 6, 1.30, 'stir', 0.6, { shirt: '#d68a1f', hairStyle: 'braid', dir: -1 });
-      }
+      // --- VIGNETTE 2: WILD-RICE POUNDING — always staffed (pounder + winnower) ---
+      earth(wmx + 4, wmy + 10, 32);
+      fig(wmx - 8, wmy + 6, 1.55, 'pound', 4.4, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });
+      fig(wmx + 18, wmy + 6, 1.30, 'stir', 0.6, { shirt: '#d68a1f', hairStyle: 'braid', dir: -1 });
 
       // --- VIGNETTE 2b: THREE SISTERS GARDEN (corn, beans, squash — farming) ---
       //   A row of tall corn stalks with low squash mounds, tended by a person
@@ -1775,9 +1728,11 @@ function drawScene(ctx, W, H, p, tt, now) {
             ctx.beginPath(); ctx.ellipse(sx + sway * 0.7 + 2, gy0 - 13, 1.4, 3, -0.3, 0, 6.283); ctx.fill();
           }
         }
-        // a gardener tending with a digging stick — only present in the morning,
-        // when garden work is done before the heat. Garden itself stays visible.
-        if (isMorning) fig(gx0 - 22, gy0 + 4, 1.35, 'scrape', 1.5, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });
+        // gardeners — present morning + midday (garden work eases by evening).
+        if (!isEvening) {
+          fig(gx0 - 22, gy0 + 4, 1.35, 'scrape', 1.5, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });
+          fig(gx0 + 20, gy0 + 4, 1.25, 'carry', 3.1, { shirt: '#1f4e8f', hairStyle: 'long', dir: -1 });
+        }
       }
 
       // --- VIGNETTE 3: WOOD-CHOPPING ---
@@ -1785,8 +1740,8 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   the helper carrying the day's wood to the fire.
       const chopX = W * 0.63, chopY = ground(chopX) + 6;        // its own clear spot
       earth(chopX + 4, chopY + 6, 34);
-      if (!isEvening) fig(chopX, chopY, 1.55, 'chop', 1.7, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
-      if (!isMorning) fig(chopX + 26, chopY, 1.35, 'carry', 3.5, { shirt: '#c93a1e', hairStyle: 'long', dir: -1 });
+      fig(chopX, chopY, 1.55, 'chop', 1.7, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
+      fig(chopX + 26, chopY, 1.35, 'carry', 3.5, { shirt: '#c93a1e', hairStyle: 'long', dir: -1 });
 
       // --- VIGNETTE 4: SMOKEHOUSE / FISH-DRYING (tender + a hanger) ---
       earth(smx, smy + 8, 30);
@@ -1813,42 +1768,55 @@ function drawScene(ctx, W, H, p, tt, now) {
         const bxw = W * (0.755 + bT * 0.02);
         fig(bxw, ground(bxw) + 7, 1.50, 'walk', 5.1, { shirt: '#3a4658', hairStyle: 'braid', dir: (Math.cos(tt * 0.3 + 2.1) >= 0 ? 1 : -1) });
       }
-      // --- CHILDREN PLAYING RING-OF-ROSES (foreground attraction, prominent) ---
-      //   Active in MIDDAY only — peak play time. In the morning they're
-      //   helping with chores; in the evening they're listening to the
-      //   storyteller (see above). Sat on its own grass clearing.
-      if (isMidday) {
-        // Forward of the work-line on the closer grass — visually dominant, no
-        // other vignette occupies this zone so nothing merges with the kids.
-        const ringX = W * 0.66, ringY = H - 28, ringR = 36;
-        // a clearly trodden grass ring
+      // --- MI'KMAQ FRIENDSHIP DANCE (foreground attraction, prominent) ---
+      //   Five children HOLD HANDS in a circle and move CLOCKWISE, taking
+      //   THREE STEPS FORWARD and ONE STEP BACK in time with the drum — the
+      //   real Friendship Dance, not random hand-waving. Plays through MIDDAY
+      //   and EVENING (Hassan: they disappeared too soon, they can play longer).
+      if (isMidday || isEvening) {
+        const ringX = W * 0.66, ringY = H - 30, ringR = 40;
+        // trodden grass ring
         ctx.fillStyle = `rgba(${Math.round(_lerp(150, 70, nm))},${Math.round(_lerp(132, 60, nm))},${Math.round(_lerp(86, 36, nm))},0.45)`;
-        ctx.beginPath(); ctx.ellipse(ringX, ringY + 6, ringR + 4, (ringR + 4) * 0.4, 0, 0, 6.283); ctx.fill();
-        ctx.strokeStyle = `rgba(${Math.round(_lerp(58, 28, nm))},${Math.round(_lerp(40, 18, nm))},${Math.round(_lerp(22, 10, nm))},0.65)`;
+        ctx.beginPath(); ctx.ellipse(ringX, ringY + 6, ringR + 5, (ringR + 5) * 0.4, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(58, 28, nm))},${Math.round(_lerp(40, 18, nm))},${Math.round(_lerp(22, 10, nm))},0.6)`;
         ctx.lineWidth = 1.4;
         ctx.beginPath(); ctx.ellipse(ringX, ringY + 6, ringR, ringR * 0.4, 0, 0, 6.283); ctx.stroke();
-        // four kids holding hands, running in a circle (clearly larger now)
-        const kidShirts = ['#d68a1f', '#5a7d3a', '#c93a1e', '#1f4e8f'];
-        const kidPos = [];
-        for (let c = 0; c < 4; c++) {
-          const a = tt * 1.3 + c * (Math.PI * 2 / 4);
-          const kx = ringX + Math.cos(a) * ringR;
-          const ky = ringY + 6 + Math.sin(a) * ringR * 0.4;
-          kidPos.push({ kx, ky, a });
+
+        // 3-steps-forward-1-back rotation, locked to a steady drum beat
+        const stepSize = 0.32;                        // radians advanced per step
+        const beat = tt * 1.6;                        // ~1.6 steps/sec (drum tempo)
+        const idx = Math.floor(beat), frac = beat - idx;
+        const pattern = [1, 1, 1, -1];                // forward, forward, forward, back
+        let steps = Math.floor(idx / 4) * 2;          // each 4-beat measure nets +2 steps clockwise
+        for (let b = 0; b < idx % 4; b++) steps += pattern[b];
+        const rot = (steps + pattern[idx % 4] * frac) * stepSize;
+        const stepBob = Math.abs(Math.sin(beat * Math.PI)) * 2.5;   // little hop on each step
+
+        const N = 5;
+        const kidShirts = ['#d68a1f', '#5a7d3a', '#c93a1e', '#1f4e8f', '#7c2f6b'];
+        const kp = [];
+        for (let c = 0; c < N; c++) {
+          const a = rot + c * (Math.PI * 2 / N);
+          kp.push({
+            x: ringX + Math.cos(a) * ringR,
+            y: ringY + 6 + Math.sin(a) * ringR * 0.4 - (Math.sin(a) > 0 ? stepBob : stepBob * 0.5),
+            a,
+          });
         }
-        // draw a thin "holding hands" arc between successive kids
-        ctx.strokeStyle = `rgba(${Math.round(_lerp(230, 140, nm))},${Math.round(_lerp(190, 110, nm))},${Math.round(_lerp(160, 90, nm))},0.85)`;
-        ctx.lineWidth = 1.2;
-        for (let c = 0; c < 4; c++) {
-          const k1 = kidPos[c], k2 = kidPos[(c + 1) % 4];
-          const midX = (k1.kx + k2.kx) / 2;
-          const midY = (k1.ky + k2.ky) / 2 - 4;
-          ctx.beginPath(); ctx.moveTo(k1.kx, k1.ky - 6); ctx.quadraticCurveTo(midX, midY, k2.kx, k2.ky - 6); ctx.stroke();
+        // HOLDING HANDS: a continuous linked arm-line joining every child's
+        // hands around the ring (drawn behind the bodies).
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(228, 150, nm))},${Math.round(_lerp(190, 120, nm))},${Math.round(_lerp(150, 96, nm))},0.9)`;
+        ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+        for (let c = 0; c < N; c++) {
+          const k1 = kp[c], k2 = kp[(c + 1) % N];
+          const midX = (k1.x + k2.x) / 2, midY = (k1.y + k2.y) / 2 + 2;   // arms dip slightly
+          ctx.beginPath(); ctx.moveTo(k1.x, k1.y - 5); ctx.quadraticCurveTo(midX, midY - 3, k2.x, k2.y - 5); ctx.stroke();
         }
-        for (let c = 0; c < 4; c++) {
-          const { kx, ky, a } = kidPos[c];
-          const kdir = Math.sin(a) >= 0 ? 1 : -1;
-          fig(kx, ky, 1.05, 'walk', c * 1.7, { shirt: kidShirts[c], hairStyle: c % 2 ? 'long' : 'braid', dir: kdir });
+        // the children, facing their clockwise direction of travel
+        for (let c = 0; c < N; c++) {
+          const { x, y, a } = kp[c];
+          const kdir = Math.cos(a) >= 0 ? 1 : -1;       // tangential facing (clockwise)
+          fig(x, y, 1.05, 'dance', c * 1.3, { shirt: kidShirts[c], hairStyle: c % 2 ? 'long' : 'braid', dir: kdir });
         }
       }
       // --- NEW VIGNETTE: BIRCH-BARK BASKET WEAVING (a classic Anishinaabe craft) ---
@@ -1872,12 +1840,43 @@ function drawScene(ctx, W, H, p, tt, now) {
       // --- ELDER STORYTELLER + listening child — appears in the EVENING when
       //   work winds down. Replaces day-bustle with quieter gathering energy.
       if (isEvening) {
-        const stX = fx - 56, stY = ground(stX) + 6;
+        const stX = fx - 50, stY = ground(stX) + 6;
         earth(stX + 4, stY + 6, 26);
         fig(stX, stY, 1.45, 'wave', 1.1, { shirt: '#5a7d3a', hairStyle: 'long', dir: 1 });
         fig(stX + 18, stY + 2, 0.85, 'sit', 0.4, { shirt: '#d68a1f', hairStyle: 'long', dir: -1 });
-        // a couple more kids drift over from the play ring to listen
         fig(stX + 26, stY + 2, 0.85, 'sit', 1.9, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 });
+      }
+      // --- TALKING CIRCLE (Mi'kmaq) — EVENING: people sit in a circle and a
+      //   TALKING STICK passes clockwise; only the holder "speaks" (gestures).
+      //   Placed on the open left of the bank, its own clear space.
+      if (isMidday || isEvening) {
+        const tcX = W * 0.515, tcY = ground(W * 0.515) + 12, tcR = 24;
+        earth(tcX, tcY + 4, tcR + 6);
+        const M = 6;                                            // six seated participants
+        const holder = Math.floor(tt / 3) % M;                  // talking stick advances every 3s
+        const tcShirts = ['#b04a2a', '#1f4e8f', '#d68a1f', '#5a7d3a', '#7c2f6b', '#3a4658'];
+        // build seat positions (ellipse), draw far seats first for depth
+        const seats = [];
+        for (let s = 0; s < M; s++) {
+          const a = s * (Math.PI * 2 / M) - Math.PI / 2;
+          seats.push({ x: tcX + Math.cos(a) * tcR, y: tcY + Math.sin(a) * tcR * 0.45, s });
+        }
+        seats.sort((p1, p2) => p1.y - p2.y);
+        for (const seat of seats) {
+          const speaking = seat.s === holder;
+          // the speaker gestures (wave), the rest sit and listen
+          fig(seat.x, seat.y, 1.15, speaking ? 'wave' : 'sit', seat.s * 1.4,
+              { shirt: tcShirts[seat.s], hairStyle: seat.s % 2 ? 'braid' : 'long', dir: seat.x < tcX ? 1 : -1 });
+          // the talking stick: a small decorated stick the speaker holds up
+          if (speaking) {
+            ctx.strokeStyle = '#6b4421'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(seat.x + 3, seat.y - 6); ctx.lineTo(seat.x + 6, seat.y - 18); ctx.stroke();
+            // a feather tied to the top
+            ctx.strokeStyle = `rgba(${Math.round(_lerp(220,120,nm))},${Math.round(_lerp(180,96,nm))},${Math.round(_lerp(120,64,nm))},0.95)`;
+            ctx.lineWidth = 1.1;
+            ctx.beginPath(); ctx.moveTo(seat.x + 6, seat.y - 18); ctx.lineTo(seat.x + 9, seat.y - 23); ctx.stroke();
+          }
+        }
       }
       // a drummer seated at the ceremonial drum (rhythm of the day)
       const drumPx = drx - 4, drumPy = ground(drumPx) + 6;
@@ -1961,20 +1960,24 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.beginPath(); ctx.arc(headX - 4 * sc, headY + 3 * sc, 0.5 * sc, 0, 6.283); ctx.fill();
         ctx.restore();
       };
-      drawHorse(W * 0.78, ground(W * 0.78) - 7, 1.8, 0.0, true);           // grazing
-      drawHorse(W * 0.95, ground(W * 0.95) - 9, 2.0, 2.3, false);          // standing watch, far end of the bank
+      // grazing horse moved to the OPEN left bank so it no longer stands in
+      // front of the fish-drying rack (Hassan: the hide-dryers were hidden
+      // behind the horse). Second horse stays at the far end.
+      drawHorse(W * 0.555, ground(W * 0.555) - 7, 1.7, 0.0, true);          // grazing, open left bank
+      drawHorse(W * 0.95, ground(W * 0.95) - 9, 2.0, 2.3, false);          // standing watch, far end
       // ---- BROWN BEAR CROUCHED AT THE WATER, paw raised mid-strike at a salmon.
       //   The iconic Anishinaabe/Pacific Northwest "bear fishing" silhouette.
       //   Facing LEFT (head & paw over the water). Body crouched low, weight on
       //   the hind legs, ONE front paw raised in a striking arc, big shoulder
       //   hump, round head with two round ears, short tan snout, dark nose, eye.
       ctx.save(); ctx.globalAlpha = (1 - nm);
-      const S = 4.6;                                            // big, but clear of the village now
-      // Bear placed LEFT, on its own stretch of shore — well clear of the
-      // centered hero text + scroll-to-discover prompt (so it isn't hidden on
-      // first load) and well clear of the village to the right.
-      const bx = W * 0.38;
-      const by = shoreY(bx) - 4 * S;                            // at the water's edge (lower than the villagers up the bank)
+      const S = 4.4;                                            // big, but fully on-screen
+      // Bear stands in the OPEN FOREGROUND LAKE WATER on the left (the area left
+      // of the village bank is open water). FIXED y — NOT the clamped shoreline —
+      // so it is always FULLY visible (Hassan: bear was cut in half), well clear
+      // of the centred hero text + scroll prompt, hunting in real water.
+      const bx = W * 0.30;
+      const by = H * 0.80;
       // strike rhythm: paw cocks up, then slams down
       // ---- HUNT CYCLE: a full 6-second loop with phases
       //   0.00-0.45  WATCH   — bear is still, fish swims past underwater
@@ -2139,7 +2142,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   WATCH, is caught in the paw during HOLD. Body uses local units that
       //   are NOT multiplied by the bear scale S, so it's a realistic small fish.
       const drawSalmon = (cx, cy, ang, alpha) => {
-        const FS = 1.8;                                          // small — was ~6 before
+        const FS = 2.7;                                          // clearly visible prey, still realistic
         const fwag = Math.sin(tt * 10) * 0.35;
         ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang + fwag * 0.1);
         ctx.globalAlpha = alpha;
@@ -2163,14 +2166,24 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.restore();
       };
       if (phase === 'watch' || phase === 'lunge') {
-        // fish swims left-to-right past the bear, just below the waterline
+        // fish swims left→right through the shallows; it repeatedly breaks the
+        // SURFACE (dorsal/back showing, with a small wake) so it's obviously live
+        // prey the bear is tracking — then dips under right before the strike.
         const swimU = (huntT / lungeEnd);                        // 0..1 across watch+lunge
-        const sx = -28 * S + swimU * 50 * S;                     // travels through the strike zone
-        const sy = 12 * S + Math.sin(tt * 2) * 0.6;
-        drawSalmon(sx, sy, 0, 0.9);
+        const sx = -30 * S + swimU * 52 * S;                     // travels through the strike zone
+        const surface = Math.max(0, Math.sin(swimU * Math.PI * 3));  // porpoising in/out of the water
+        const sy = 12 * S - surface * 3.2 * S;                  // rises out of the pool on each porpoise
+        // a small wake behind the fish on the water surface
+        ctx.strokeStyle = 'rgba(235,242,236,0.5)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(sx - 3 * S, 12.2 * S, 4 * S, 1.2 * S, 0, 0, 6.283); ctx.stroke();
+        drawSalmon(sx, sy, surface * 0.3, 0.95);
+      } else if (phase === 'strike') {
+        // fish darts under, mostly hidden, just below the descending paw
+        drawSalmon(pawX - 2 * S, 13 * S, 0.1, 0.55);
       } else if (phase === 'hold') {
-        // fish is now in the bear's paw, lifted toward the mouth
-        drawSalmon(pawX + 1.2 * S, pawY - 0.5 * S, -0.6, 1.0);
+        // fish is now CAUGHT in the bear's paw, wriggling, lifted toward the mouth
+        const wrig = Math.sin(tt * 16) * 0.5;
+        drawSalmon(pawX + 1.2 * S, pawY - 0.5 * S, -0.7 + wrig, 1.0);
       }
 
       // -- water disturbance: ripples + spray under the paw strike --
@@ -2375,17 +2388,49 @@ function drawScene(ctx, W, H, p, tt, now) {
     }
   }
 
-  // ---- foreground reeds for depth (restored — the simpler tapered grasses) ----
-  ctx.strokeStyle = 'rgba(15,12,9,0.8)'; ctx.lineCap = 'round';
-  const reeds = [[W * 0.03, 8], [W * 0.06, 6], [W * 0.085, 9], [W * 0.95, 8], [W * 0.92, 6], [W * 0.975, 10]];
-  reeds.forEach((r, i) => {
-    const sway = Math.sin(tt * 1.2 + i) * 6;
-    const rx = r[0] + pxX * 40;                       // foreground parallax
-    ctx.lineWidth = r[1]; ctx.beginPath();
-    ctx.moveTo(rx, H);
-    ctx.quadraticCurveTo(rx + sway * 0.5, H - 70, rx + sway, H - 130);
-    ctx.stroke();
-  });
+  // ---- foreground WILD RICE clumps for depth (Hassan: these were black sticks —
+  //   now proper green manoomin stalks: slim green stems, tapering leaves and a
+  //   feathery seed-head, swaying. Kept fairly dark for foreground depth but
+  //   clearly GREEN and plant-like, never black poles). ----
+  {
+    const nmF = _smooth(0.52, 0.9, p);                  // match village nightness for colour
+    const clumps = [[W * 0.03, 4], [W * 0.06, 3], [W * 0.085, 4], [W * 0.95, 4], [W * 0.92, 3], [W * 0.975, 5]];
+    const stemCol = `rgba(${Math.round(_lerp(58, 30, nmF))},${Math.round(_lerp(96, 50, nmF))},${Math.round(_lerp(42, 24, nmF))},0.95)`;
+    const headCol = `rgba(${Math.round(_lerp(150, 70, nmF))},${Math.round(_lerp(140, 70, nmF))},${Math.round(_lerp(74, 38, nmF))},0.95)`;
+    clumps.forEach((c, i) => {
+      const baseX = c[0] + pxX * 40;                    // foreground parallax
+      for (let s = 0; s < c[1]; s++) {
+        const rx = baseX + (s - c[1] / 2) * 7;
+        const tall = 120 + (s % 3) * 26;
+        const sway = Math.sin(tt * 1.1 + i + s * 0.6) * (8 + s);
+        const topX = rx + sway, topY = H - tall;
+        // slim stem
+        ctx.strokeStyle = stemCol; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(rx, H);
+        ctx.quadraticCurveTo(rx + sway * 0.4, H - tall * 0.55, topX, topY);
+        ctx.stroke();
+        // a couple of long tapering leaves peeling off the stem
+        ctx.lineWidth = 1.6;
+        for (const lf of [0.45, 0.7]) {
+          const lx = rx + sway * lf * 0.5, ly = H - tall * lf;
+          ctx.beginPath();
+          ctx.moveTo(lx, ly);
+          ctx.quadraticCurveTo(lx + 16 - s * 3, ly - 8, lx + 26 - s * 4, ly + 6);
+          ctx.stroke();
+        }
+        // feathery seed-head — a soft fan of fine lines at the top (manoomin)
+        ctx.strokeStyle = headCol; ctx.lineWidth = 1.0;
+        for (let f = 0; f < 6; f++) {
+          const fa = -1.3 + f * 0.16;
+          ctx.beginPath();
+          ctx.moveTo(topX, topY);
+          ctx.lineTo(topX + Math.cos(fa) * 14, topY + Math.sin(fa) * 16 + 4);
+          ctx.stroke();
+        }
+      }
+    });
+  }
 
   // ---- LEAPING FISH: a proper parabolic arc, the body curls/bends as it goes ----
   for (const fi of _FISH) {
