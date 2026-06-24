@@ -41,9 +41,9 @@ const _SEVEN = Array.from({ length: 7 }, (_, i) => {
   return { x: 0.5 + Math.cos(a) * 0.075, y: 0.2 + Math.sin(a) * 0.06, ph: i * 0.62 };
 });
 const _FLOCKS = [
-  { baseX: 0.02, y: 0.20, n: 7, sp: 0.020, ph: 0, scale: 1.05 },
-  { baseX: 0.38, y: 0.13, n: 5, sp: 0.015, ph: 1.6, scale: 0.78 },
-  { baseX: 0.66, y: 0.25, n: 6, sp: 0.012, ph: 3.1, scale: 1.18 },
+  { baseX: 0.02, y: 0.20, n: 8, sp: 0.020, ph: 0, scale: 1.45 },
+  { baseX: 0.38, y: 0.12, n: 6, sp: 0.015, ph: 1.6, scale: 1.05 },
+  { baseX: 0.66, y: 0.27, n: 7, sp: 0.012, ph: 3.1, scale: 1.6 },
 ];
 // jumping-fish ripple sources: x across, yb = how far down the water (0..1)
 const _RIPPLES = [
@@ -535,24 +535,8 @@ function drawScene(ctx, W, H, p, tt, now) {
     halo.addColorStop(1, `rgba(${sunC[0]},${sunC[1]},${sunC[2]},0)`);
     ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hY + 2); ctx.clip();
     ctx.fillStyle = halo; ctx.fillRect(0, 0, W, hY + 2);
-    // volumetric light shafts (god rays) fanning softly down from the sun
-    ctx.globalCompositeOperation = 'lighter';
-    for (let r = 0; r < 7; r++) {
-      const ang = Math.PI / 2 + (r - 3) * 0.13 + Math.sin(tt * 0.3 + r) * 0.025;
-      const len = H * 0.75;
-      const ex = sunX + Math.cos(ang) * len, ey = sunY + Math.sin(ang) * len;
-      const nx = Math.cos(ang + Math.PI / 2), ny = Math.sin(ang + Math.PI / 2);
-      const wTop = 5, wBot = 24 + 10 * Math.sin(tt * 0.5 + r * 1.3);
-      ctx.beginPath();
-      ctx.moveTo(sunX - nx * wTop, sunY - ny * wTop);
-      ctx.lineTo(sunX + nx * wTop, sunY + ny * wTop);
-      ctx.lineTo(ex + nx * wBot, ey + ny * wBot);
-      ctx.lineTo(ex - nx * wBot, ey - ny * wBot);
-      ctx.closePath();
-      ctx.fillStyle = `rgba(${sunC[0]},${sunC[1]},${sunC[2]},${0.035 * sunA})`;
-      ctx.fill();
-    }
-    ctx.globalCompositeOperation = 'source-over';
+    // (Removed the volumetric "god ray" shafts — Hassan found them fake. The
+    //  warm halo glow + the sun's reflection on the water carry the light now.)
     ctx.globalAlpha = 1; ctx.restore();
     ctx.globalAlpha = sunA;
     const disc = ctx.createRadialGradient(sunX - sunR * 0.25, sunY - sunR * 0.25, sunR * 0.1, sunX, sunY, sunR);
@@ -1992,6 +1976,74 @@ function drawScene(ctx, W, H, p, tt, now) {
       // behind the horse). Second horse stays at the far end.
       drawHorse(W * 0.555, ground(W * 0.555) - 7, 1.7, 0.0, true);          // grazing, open left bank
       drawHorse(W * 0.95, ground(W * 0.95) - 9, 2.0, 2.3, false);          // standing watch, far end
+
+      // ---- CANADA GEESE on the ground (LHS bank) — brown body, pale breast,
+      //   black S-neck, white cheek patch. One honks (neck up), others graze
+      //   (neck down, pecking). Matches Hassan's reference photo. ----
+      const drawGoose = (gx, gy, gsc, honk, ph) => {
+        ctx.save(); ctx.translate(gx, gy); ctx.scale(gsc, gsc); ctx.globalAlpha = (1 - nm);
+        const bodyCol = `rgb(${Math.round(_lerp(150,76,nm))},${Math.round(_lerp(136,68,nm))},${Math.round(_lerp(112,54,nm))})`;
+        const breast = `rgb(${Math.round(_lerp(214,108,nm))},${Math.round(_lerp(206,104,nm))},${Math.round(_lerp(186,92,nm))})`;
+        // legs
+        ctx.strokeStyle = 'rgba(28,24,20,1)'; ctx.lineWidth = 1.0; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-1, 3); ctx.lineTo(-1.5, 8); ctx.moveTo(2, 3); ctx.lineTo(2.5, 8); ctx.stroke();
+        // body (teardrop, tail up to the right)
+        ctx.fillStyle = bodyCol;
+        ctx.beginPath();
+        ctx.moveTo(-7, 0);
+        ctx.quadraticCurveTo(-9, -5, -3, -6);
+        ctx.quadraticCurveTo(6, -7, 11, -2);                 // back to tail tip
+        ctx.quadraticCurveTo(6, 0, 2, 3);
+        ctx.quadraticCurveTo(-4, 4, -7, 0);
+        ctx.closePath(); ctx.fill();
+        // pale breast
+        ctx.fillStyle = breast;
+        ctx.beginPath(); ctx.ellipse(-5, -0.5, 3, 2.4, 0.2, 0, 6.283); ctx.fill();
+        // black S-neck — raised & open-billed when honking, lowered when grazing
+        const headX = honk ? -10 : -12, headY = honk ? -13 : 4;
+        ctx.strokeStyle = 'rgba(20,18,16,1)'; ctx.lineWidth = 2.0; ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-6, -4);
+        ctx.quadraticCurveTo(honk ? -11 : -10, honk ? -8 : 0, headX, headY);
+        ctx.stroke();
+        // head
+        ctx.fillStyle = 'rgba(20,18,16,1)';
+        ctx.beginPath(); ctx.arc(headX, headY, 2.0, 0, 6.283); ctx.fill();
+        // white cheek patch (the Canada-goose chin-strap)
+        ctx.fillStyle = 'rgba(238,238,232,0.95)';
+        ctx.beginPath(); ctx.ellipse(headX + (honk ? 0.6 : -0.6), headY + 0.6, 1.0, 1.4, 0, 0, 6.283); ctx.fill();
+        // bill
+        ctx.fillStyle = 'rgba(24,20,18,1)';
+        ctx.beginPath();
+        if (honk) { ctx.moveTo(headX - 1.5, headY - 1); ctx.lineTo(headX - 4, headY - 1.8); ctx.lineTo(headX - 1.5, headY); }   // open, pointing up
+        else { ctx.moveTo(headX - 1.5, headY); ctx.lineTo(headX - 4, headY + 0.6); ctx.lineTo(headX - 1.5, headY + 1); }       // down, grazing
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+      };
+      drawGoose(W * 0.50, ground(W * 0.50) + 4, 1.5, true, 0);             // the honker (neck up)
+      drawGoose(W * 0.475, ground(W * 0.475) + 6, 1.35, false, 1.5);      // grazing
+      drawGoose(W * 0.525, ground(W * 0.525) + 5, 1.4, false, 3.0);       // grazing
+
+      // ---- LAND PLANTS on the LHS bank (Hassan: "where are the plants on the
+      //   land? they can all be on LHS"): clumps of green grass/sedge tufts and
+      //   a few flowering stems, swaying. ----
+      const grassCol = `rgba(${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(120,62,nm))},${Math.round(_lerp(46,26,nm))},0.95)`;
+      [[0.46, 6], [0.49, 7], [0.52, 6], [0.55, 8], [0.585, 6]].forEach(([fxC, n], gi) => {
+        const bx0 = W * fxC, by0 = ground(bx0) + 6;
+        ctx.strokeStyle = grassCol; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+        for (let b = 0; b < n; b++) {
+          const sx = bx0 + (b - n / 2) * 3;
+          const h = 9 + (b % 3) * 4;
+          const sway = Math.sin(tt * 1.4 + gi + b * 0.5) * 2.2;
+          ctx.beginPath(); ctx.moveTo(sx, by0); ctx.quadraticCurveTo(sx + sway * 0.5, by0 - h * 0.6, sx + sway, by0 - h); ctx.stroke();
+        }
+        // a couple of small flower heads on the taller clumps
+        if (gi % 2 === 0) {
+          ctx.fillStyle = `rgba(${Math.round(_lerp(228,120,nm))},${Math.round(_lerp(200,104,nm))},${Math.round(_lerp(120,60,nm))},0.95)`;
+          ctx.beginPath(); ctx.arc(bx0 + Math.sin(tt + gi) * 2, by0 - 16, 1.4, 0, 6.283); ctx.fill();
+        }
+      });
+
       // ---- BROWN BEAR CROUCHED AT THE WATER, paw raised mid-strike at a salmon.
       //   The iconic Anishinaabe/Pacific Northwest "bear fishing" silhouette.
       //   Facing LEFT (head & paw over the water). Body crouched low, weight on
@@ -2243,29 +2295,32 @@ function drawScene(ctx, W, H, p, tt, now) {
         // fish darts under, mostly hidden, just below the descending paw
         drawSalmon(pawX - 2 * S, 13 * S, 0.1, 0.55);
       } else if (phase === 'carry') {
-        // fish is CAUGHT in the bear's paw, wriggling, lifted toward the mouth
-        const wrig = Math.sin(tt * 16) * 0.5;
-        drawSalmon(pawX + 1.2 * S, pawY - 0.5 * S, -0.7 + wrig, 1.0);
+        // fish caught in the paw is carried UP to the MOUTH (eases from the paw
+        // position to the snout) — no longer paraded by the eye.
+        const wrig = Math.sin(tt * 16) * 0.4;
+        const mX = hcX - 3.6 * S, mY = hcY + 2.6 * S;           // mouth / snout tip
+        const fromX = pawX + 1.2 * S, fromY = pawY - 0.5 * S;
+        const e = carryT * carryT;                              // accelerate toward the mouth
+        drawSalmon(fromX + (mX - fromX) * e, fromY + (mY - fromY) * e, -0.5 + wrig, 1.0);
       } else if (phase === 'devour') {
-        // fish is AT THE MOUTH being eaten — it SHRINKS as it's consumed and a
-        // few flecks fly off (Hassan: "fish just runs away, bear doesn't eat").
-        const remaining = Math.max(0, 1 - devourT * 1.3);                 // 1 → 0, gone by t≈0.77
+        // fish hangs from the JAWS and is EATEN IN BITES — it shortens in four
+        // discrete chunks (synced to the chewing) until it's gone, instead of
+        // smoothly fading away (Hassan: the vanishing looked fake).
+        const mX = hcX - 3.6 * S, mY = hcY + 2.6 * S;
+        const remaining = Math.max(0, 1 - Math.floor(devourT * 4 + 0.001) / 4);  // 1,.75,.5,.25,0
         if (remaining > 0.05) {
           ctx.save();
-          ctx.translate(hcX - 4.0 * S, hcY + 3.2 * S);
-          ctx.scale(remaining, remaining);
-          ctx.translate(-(hcX - 4.0 * S), -(hcY + 3.2 * S));
-          drawSalmon(hcX - 4.0 * S, hcY + 3.2 * S, -0.5, 1.0);
+          ctx.translate(mX, mY); ctx.rotate(0.55); ctx.scale(remaining, 0.92);   // hangs down, shortens
+          drawSalmon(0, 0, 0, 1.0);
           ctx.restore();
         }
-        // chew flecks
+        // chew flecks fly off as it bites
         if (chewing > 0.7) {
           ctx.fillStyle = 'rgba(228,178,142,0.85)';
           for (let f = 0; f < 3; f++) {
-            const fa = -2.2 - f * 0.4;
-            const fr = 2 + (tt * 8 + f) % 4;
+            const fa = -2.2 - f * 0.4, fr = 2 + (tt * 8 + f) % 4;
             ctx.beginPath();
-            ctx.arc(hcX - 4.5 * S + Math.cos(fa) * fr, hcY + 2.4 * S + Math.sin(fa) * fr, 0.6 * S, 0, 6.283);
+            ctx.arc(mX + Math.cos(fa) * fr, mY + Math.sin(fa) * fr, 0.6 * S, 0, 6.283);
             ctx.fill();
           }
         }
@@ -2636,6 +2691,38 @@ function drawScene(ctx, W, H, p, tt, now) {
       // dagger bill
       ctx.strokeStyle = 'rgba(210,180,90,1)'; ctx.lineWidth = 1.0;
       ctx.beginPath(); ctx.moveTo(crX + 5, crBase - 30 + bow); ctx.lineTo(crX + 11, crBase - 29 + bow); ctx.stroke();
+    }
+    // --- PAINTED TURTLE basking on a half-sunk log (mikinaak — culturally
+    //   important; Turtle Island). Occasionally stretches its neck. ---
+    {
+      const tuX = W * 0.30, tuY = hY + 18 + (H - hY) * 0.34;
+      ctx.globalAlpha = wildA * 0.95;
+      // the log it rests on
+      ctx.fillStyle = 'rgba(58,40,24,1)';
+      ctx.beginPath(); ctx.ellipse(tuX, tuY + 2, 22, 3.4, -0.04, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = 'rgba(34,22,12,0.7)'; ctx.lineWidth = 0.6;
+      ctx.beginPath(); ctx.moveTo(tuX - 18, tuY + 1.5); ctx.lineTo(tuX + 18, tuY + 1); ctx.stroke();
+      // reflection under the log
+      ctx.fillStyle = 'rgba(20,16,12,0.18)';
+      ctx.beginPath(); ctx.ellipse(tuX, tuY + 6, 20, 2.2, 0, 0, 6.283); ctx.fill();
+      // shell (domed, with scute lines + a warm rim)
+      const shell = ctx.createLinearGradient(tuX, tuY - 6, tuX, tuY + 1);
+      shell.addColorStop(0, 'rgba(70,86,52,1)'); shell.addColorStop(1, 'rgba(36,46,26,1)');
+      ctx.fillStyle = shell;
+      ctx.beginPath(); ctx.ellipse(tuX, tuY - 1, 8, 4.4, 0, Math.PI, 2 * Math.PI); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(tuX, tuY - 1, 8, 2.2, 0, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = 'rgba(30,38,20,0.8)'; ctx.lineWidth = 0.5;
+      for (let sl = -2; sl <= 2; sl++) { ctx.beginPath(); ctx.moveTo(tuX + sl * 3, tuY - 5); ctx.lineTo(tuX + sl * 3.4, tuY - 1); ctx.stroke(); }
+      // head stretches out periodically + red ear-stripe of a painted turtle
+      const neck = Math.max(0, Math.sin(tt * 0.4)) * 4;
+      ctx.fillStyle = 'rgba(58,70,40,1)';
+      ctx.beginPath(); ctx.ellipse(tuX - 8 - neck, tuY - 1, 2.4, 1.6, 0, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = 'rgba(200,70,50,0.9)'; ctx.lineWidth = 0.7;
+      ctx.beginPath(); ctx.moveTo(tuX - 8 - neck, tuY - 2); ctx.lineTo(tuX - 6 - neck, tuY - 1); ctx.stroke();
+      // little legs
+      ctx.fillStyle = 'rgba(50,62,34,1)';
+      ctx.beginPath(); ctx.ellipse(tuX - 5, tuY + 1, 2, 1.1, 0.4, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(tuX + 5, tuY + 1, 2, 1.1, -0.4, 0, 6.283); ctx.fill();
     }
     ctx.globalAlpha = 1;
   }
