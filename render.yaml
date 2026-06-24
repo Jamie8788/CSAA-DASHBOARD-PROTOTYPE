@@ -16,7 +16,13 @@ services:
     plan: free                # bump to "starter" ($7/mo) to remove cold starts
     region: oregon            # change to a region close to you / your users
     buildCommand: pip install --upgrade pip && pip install -r server/requirements.txt
-    startCommand: uvicorn server.main:app --host 0.0.0.0 --port $PORT --workers 2
+    # NOTE: 1 worker, not 2 — free tier has 0.5 GB RAM / 1 CPU, and two workers
+    # were causing deploys to stall (the new instance OOM'd during the swap,
+    # so Render kept the old one and never finished the deploy). Render's
+    # log even prints "Setting WEB_CONCURRENCY=1 by default, based on available
+    # CPUs in the instance" — we now honour that. Bump to 2 only if/when this
+    # service is upgraded to a paid plan with more RAM.
+    startCommand: uvicorn server.main:app --host 0.0.0.0 --port $PORT --workers 1
     healthCheckPath: /api/health
     autoDeploy: true          # redeploy on every push to main
     envVars:
