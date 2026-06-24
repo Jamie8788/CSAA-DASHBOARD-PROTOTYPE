@@ -1518,9 +1518,10 @@ function drawScene(ctx, W, H, p, tt, now) {
       const sArmY = shoulderY - bodyBob + 1.2 * sc;
       // base resting arm positions
       const bArmAng = (kind === 'walk') ? armSwing : Math.sin(tt * 1.3 + ph) * 0.15;
-      // left arm (back-swing in walk; reaches OUT to hold a neighbour in dance)
+      // left arm (back-swing in walk; reaches OUT & slightly DOWN to hold a
+      // neighbour's hand in the dance — at linked-hand height, not raised)
       if (kind === 'dance') {
-        limb(torsoX - 3.4 * sc, sArmY, torsoX - 8 * sc, sArmY - 3 * sc, 2.0 * sc, skin);  // reach out-left & up
+        limb(torsoX - 3.4 * sc, sArmY, torsoX - 9 * sc, sArmY + 5 * sc, 2.0 * sc, skin);
       } else {
         limb(torsoX - 3.4 * sc, sArmY,
              torsoX - 3.4 * sc - Math.sin(bArmAng) * 5 * sc,
@@ -1531,7 +1532,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       let rArmEndX = torsoX + 3.4 * sc + Math.sin(-bArmAng) * 5 * sc;
       let rArmEndY = sArmY + 6 * sc + Math.cos(-bArmAng) * 1.5 * sc;
       if (kind === 'dance') {
-        rArmEndX = torsoX + 8 * sc; rArmEndY = sArmY - 3 * sc;                              // reach out-right & up
+        rArmEndX = torsoX + 9 * sc; rArmEndY = sArmY + 5 * sc;                              // reach out-right & down (hand-hold)
       } else if (kind === 'stir') {
         const a = Math.sin(tt * 3 + ph) * 0.6 - 0.3;
         rArmEndX = torsoX + (5 + Math.cos(a) * 4) * sc;
@@ -1803,21 +1804,51 @@ function drawScene(ctx, W, H, p, tt, now) {
             a,
           });
         }
-        // HOLDING HANDS: a continuous linked arm-line joining every child's
-        // hands around the ring (drawn behind the bodies).
-        ctx.strokeStyle = `rgba(${Math.round(_lerp(228, 150, nm))},${Math.round(_lerp(190, 120, nm))},${Math.round(_lerp(150, 96, nm))},0.9)`;
-        ctx.lineWidth = 1.6; ctx.lineCap = 'round';
-        for (let c = 0; c < N; c++) {
-          const k1 = kp[c], k2 = kp[(c + 1) % N];
-          const midX = (k1.x + k2.x) / 2, midY = (k1.y + k2.y) / 2 + 2;   // arms dip slightly
-          ctx.beginPath(); ctx.moveTo(k1.x, k1.y - 5); ctx.quadraticCurveTo(midX, midY - 3, k2.x, k2.y - 5); ctx.stroke();
-        }
         // the children, facing their clockwise direction of travel
         for (let c = 0; c < N; c++) {
           const { x, y, a } = kp[c];
           const kdir = Math.cos(a) >= 0 ? 1 : -1;       // tangential facing (clockwise)
           fig(x, y, 1.05, 'dance', c * 1.3, { shirt: kidShirts[c], hairStyle: c % 2 ? 'long' : 'braid', dir: kdir });
         }
+        // HOLDING HANDS: drawn ON TOP, at the children's HAND height (their dance
+        // arms reach out to ~y-20), with a downward arc so the linked arms read
+        // clearly as joined hands all the way around the ring.
+        const handY = (k) => k.y - 20;
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(236, 168, nm))},${Math.round(_lerp(204, 132, nm))},${Math.round(_lerp(170, 110, nm))},0.95)`;
+        ctx.lineWidth = 2.0; ctx.lineCap = 'round';
+        for (let c = 0; c < N; c++) {
+          const k1 = kp[c], k2 = kp[(c + 1) % N];
+          const midX = (k1.x + k2.x) / 2, midY = (handY(k1) + handY(k2)) / 2 + 5;   // arms sag between hands
+          ctx.beginPath(); ctx.moveTo(k1.x, handY(k1)); ctx.quadraticCurveTo(midX, midY, k2.x, handY(k2)); ctx.stroke();
+        }
+      }
+      // --- TATANKA (Dakoda chase game) — MIDDAY: children run and the "Tatanka"
+      //   (wearing a buffalo-horn headdress) chases them back and forth, trying
+      //   to tag them into the herd. A second, distinct kids' game (Hassan asked
+      //   for more games). Foreground-right, its own clear lane. ---
+      if (isMidday) {
+        const tgY = H - 20;
+        const swing = Math.sin(tt * 0.9) * 70;          // the whole chase sweeps left↔right
+        const runDir = Math.cos(tt * 0.9) >= 0 ? 1 : -1;
+        const baseX = W * 0.86 + swing;
+        const runners = [
+          { dx: 0,   shirt: '#c93a1e', hair: 'long' },
+          { dx: -16, shirt: '#1f4e8f', hair: 'braid' },
+          { dx: -30, shirt: '#5a7d3a', hair: 'long' },
+        ];
+        for (const r of runners) {
+          const jx = baseX + r.dx * runDir;
+          fig(jx, tgY + (r.dx % 7) * 0.2, 0.9, 'walk', r.dx, { shirt: r.shirt, hairStyle: r.hair, dir: runDir });
+        }
+        // the Tatanka chaser, a bit behind, with a horned headdress
+        const txp = baseX - 46 * runDir, typ = tgY;
+        fig(txp, typ, 0.95, 'walk', 3, { shirt: '#3a2a1a', hairStyle: 'braid', dir: runDir });
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(60,30,nm))},${Math.round(_lerp(42,22,nm))},${Math.round(_lerp(28,14,nm))},0.95)`;
+        ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+        // two curved buffalo horns above the chaser's head
+        const hhX = txp, hhY = typ - 26;
+        ctx.beginPath(); ctx.moveTo(hhX - 2, hhY); ctx.quadraticCurveTo(hhX - 7, hhY - 2, hhX - 7, hhY + 3); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(hhX + 2, hhY); ctx.quadraticCurveTo(hhX + 7, hhY - 2, hhX + 7, hhY + 3); ctx.stroke();
       }
       // --- NEW VIGNETTE: BIRCH-BARK BASKET WEAVING (a classic Anishinaabe craft) ---
       //   A seated weaver up the bank with a small pile of bark strips and a
@@ -2079,9 +2110,10 @@ function drawScene(ctx, W, H, p, tt, now) {
       // -- RAISED FRONT PAW: a striking arc going up & forward then down at the fish.
       // shoulderJoint is roughly (-9, -2)*S in body space.
       const shJX = -9 * S, shJY = -2 * S;
-      // paw position arcs: high & back when cocked, low & forward when striking
-      const cockX = -14 * S, cockY = -3 * S;
-      const strikeX = -19 * S, strikeY = 11 * S;
+      // paw position arcs: HIGH & cocked when watching, sweeping DOWN deep into
+      // the water on the strike — a big, legible hunting motion.
+      const cockX = -15 * S, cockY = -10 * S;        // paw raised high above the water
+      const strikeX = -19 * S, strikeY = 13 * S;     // paw slams deep into the pool
       const pawX = cockX + (strikeX - cockX) * strikePhase;
       const pawY = cockY + (strikeY - cockY) * (strikePhase * strikePhase);   // accelerate down
       // upper arm (shoulder → elbow)
@@ -2103,8 +2135,12 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.stroke();
       }
 
-      // -- NECK + HEAD (looking down at the water/paw) --
-      const hcX = -16 * S, hcY = 1 * S;                          // head centre, set LOWER than the hump
+      // -- NECK + HEAD — LUNGES with the strike: rears slightly while the paw is
+      //   cocked, then drives DOWN & FORWARD toward the water on the strike, and
+      //   lifts back up with the catch. Makes the bear read as actively hunting.
+      const headFwd = strikePhase * 3 * S;                      // head drives forward (left) on strike
+      const headDip = strikePhase * strikePhase * 4 * S;        // head dips toward the water on strike
+      const hcX = -16 * S - headFwd, hcY = 1 * S + headDip;     // animated head centre
       // thick crouching neck
       ctx.fillStyle = furG;
       ctx.beginPath();
@@ -2169,13 +2205,15 @@ function drawScene(ctx, W, H, p, tt, now) {
         // fish swims left→right through the shallows; it repeatedly breaks the
         // SURFACE (dorsal/back showing, with a small wake) so it's obviously live
         // prey the bear is tracking — then dips under right before the strike.
+        // fish swims in the OPEN POOL in FRONT of the bear (left side, around the
+        // strike zone) — never over the bear's face/body. Porpoises gently.
         const swimU = (huntT / lungeEnd);                        // 0..1 across watch+lunge
-        const sx = -30 * S + swimU * 52 * S;                     // travels through the strike zone
+        const sx = -30 * S + swimU * 14 * S;                     // stays left, in front of the bear
         const surface = Math.max(0, Math.sin(swimU * Math.PI * 3));  // porpoising in/out of the water
-        const sy = 12 * S - surface * 3.2 * S;                  // rises out of the pool on each porpoise
+        const sy = 13.5 * S - surface * 2.4 * S;                // sits down in the water
         // a small wake behind the fish on the water surface
         ctx.strokeStyle = 'rgba(235,242,236,0.5)'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.ellipse(sx - 3 * S, 12.2 * S, 4 * S, 1.2 * S, 0, 0, 6.283); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(sx - 3 * S, 13.6 * S, 4 * S, 1.2 * S, 0, 0, 6.283); ctx.stroke();
         drawSalmon(sx, sy, surface * 0.3, 0.95);
       } else if (phase === 'strike') {
         // fish darts under, mostly hidden, just below the descending paw
