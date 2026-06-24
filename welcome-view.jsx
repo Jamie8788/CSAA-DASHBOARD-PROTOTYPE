@@ -1177,23 +1177,41 @@ function drawScene(ctx, W, H, p, tt, now) {
     //   the whole plume. Replaces the old single wavy line. ----
     const puffSmoke = (px, py, baseScale, alpha) => {
       ctx.save();
-      const N = 9;                                          // number of puffs in the column
-      const rise = 13 * baseScale;                          // vertical spacing
-      for (let i = 0; i < N; i++) {
-        // each puff cycles 0..1 on its own offset so the column is continuous
-        const life = ((tt * 0.5 + i / N) % 1);
-        const yy = py - life * rise * N;                    // travels up over its life
-        const drift = Math.sin(life * 3 + i) * (4 + life * 18) + life * 10;   // wind drift, more as it rises
-        const xx = px + drift;
-        const rad = (2 + life * 9) * baseScale;             // expands as it rises
-        const a = alpha * 0.4 * (1 - life) * Math.min(1, life * 4);   // fade in then out
-        if (a <= 0.01) continue;
-        const tone = Math.round(_lerp(216, 150, nm));
-        const gpf = ctx.createRadialGradient(xx, yy, 0, xx, yy, rad);
-        gpf.addColorStop(0, `rgba(${tone},${tone - 4},${tone - 12},${a})`);
-        gpf.addColorStop(1, `rgba(${tone},${tone - 4},${tone - 12},0)`);
-        ctx.fillStyle = gpf;
-        ctx.beginPath(); ctx.arc(xx, yy, rad, 0, 6.283); ctx.fill();
+      // TWO independent streams of puffs, offset in seed + drift direction,
+      // so the column reads as turbulent rolling smoke rather than a tidy
+      // chain of beads. Each puff rises, expands, drifts and fades.
+      const N = 11;                                         // puffs per stream
+      const rise = 14 * baseScale;                          // vertical spacing
+      const streams = [
+        { seed: 0,    driftDir:  1, hueBias:  0 },
+        { seed: 0.37, driftDir: -1, hueBias: -8 },
+      ];
+      for (const st of streams) {
+        for (let i = 0; i < N; i++) {
+          const life = ((tt * 0.42 + st.seed + i / N) % 1);
+          const yy = py - life * rise * N;
+          const wob = Math.sin(life * 5.5 + i + st.seed * 7) * 2.2;            // small wobble
+          const drift = (Math.sin(life * 2.2 + i + st.seed) * (3 + life * 12) + life * 14) * st.driftDir;
+          const xx = px + drift + wob;
+          const rad = (2.2 + life * 12) * baseScale;        // grows as it rises
+          const a = alpha * 0.36 * (1 - life * 0.92) * Math.min(1, life * 5);
+          if (a <= 0.01) continue;
+          const tone = Math.round(_lerp(218, 150, nm)) + st.hueBias;
+          const gpf = ctx.createRadialGradient(xx, yy, 0, xx, yy, rad);
+          gpf.addColorStop(0,    `rgba(${tone + 12},${tone + 8},${tone},${a})`);
+          gpf.addColorStop(0.55, `rgba(${tone},${tone - 4},${tone - 12},${a * 0.7})`);
+          gpf.addColorStop(1,    `rgba(${tone - 24},${tone - 28},${tone - 36},0)`);
+          ctx.fillStyle = gpf;
+          ctx.beginPath(); ctx.arc(xx, yy, rad, 0, 6.283); ctx.fill();
+        }
+      }
+      // small dark base — the dense, dirty smoke right at the source
+      if (alpha > 0.05) {
+        const base = ctx.createRadialGradient(px, py + 1, 0, px, py + 1, 7 * baseScale);
+        base.addColorStop(0, `rgba(70,60,50,${alpha * 0.55})`);
+        base.addColorStop(1, 'rgba(70,60,50,0)');
+        ctx.fillStyle = base;
+        ctx.beginPath(); ctx.ellipse(px, py + 1, 7 * baseScale, 3 * baseScale, 0, 0, 6.283); ctx.fill();
       }
       ctx.restore();
     };
@@ -1401,16 +1419,66 @@ function drawScene(ctx, W, H, p, tt, now) {
         }
       }
     }
-    // ---- a SECOND, smaller smokehouse further down the bank ----
-    {
-      const sm2x = W * 0.97, sm2y = ground(sm2x);
-      ctx.fillStyle = `rgb(${Math.round(_lerp(82, 40, nm))},${Math.round(_lerp(56, 26, nm))},${Math.round(_lerp(32, 14, nm))})`;
+    // ---- a real ANISHINAABE WIGWAM at the far end of the bank — a domed
+    //   sapling-frame dwelling skinned in birch-bark sheets. Replaces the
+    //   earlier brown blob ("taco/cow-shit" shape) with a proper structure:
+    //   wide dome silhouette, vertical/horizontal lashing lines for the
+    //   bark seams, a low arched doorway, and smoke from the central
+    //   smoke-hole. Used for both far-end and a foreground dwelling below.
+    const drawWigwam = (wx, wy, wScale) => {
+      const ww = 22 * wScale, wh = 18 * wScale;
+      // dome silhouette — wider than tall, like a real wigwam
+      const dome = ctx.createLinearGradient(wx, wy - wh, wx, wy);
+      dome.addColorStop(0, `rgb(${Math.round(_lerp(170, 80, nm))},${Math.round(_lerp(126, 56, nm))},${Math.round(_lerp(74, 30, nm))})`);
+      dome.addColorStop(0.6, `rgb(${Math.round(_lerp(122, 56, nm))},${Math.round(_lerp(80, 36, nm))},${Math.round(_lerp(46, 18, nm))})`);
+      dome.addColorStop(1, `rgb(${Math.round(_lerp(72, 32, nm))},${Math.round(_lerp(46, 20, nm))},${Math.round(_lerp(28, 10, nm))})`);
+      ctx.fillStyle = dome;
       ctx.beginPath();
-      ctx.moveTo(sm2x - 9, sm2y);
-      ctx.quadraticCurveTo(sm2x, sm2y - 20, sm2x + 9, sm2y);
+      ctx.moveTo(wx - ww, wy);
+      ctx.bezierCurveTo(wx - ww, wy - wh * 1.05, wx + ww, wy - wh * 1.05, wx + ww, wy);
       ctx.closePath(); ctx.fill();
-      if (nm < 0.95) puffSmoke(sm2x, sm2y - 18, 0.8, (1 - nm * 0.7));
-    }
+      // horizontal bark-seam bands
+      ctx.strokeStyle = `rgba(${Math.round(_lerp(58, 24, nm))},${Math.round(_lerp(40, 16, nm))},${Math.round(_lerp(22, 8, nm))},0.7)`;
+      ctx.lineWidth = 0.6;
+      for (let yb = 0.25; yb < 1; yb += 0.22) {
+        const wbY = wy - wh * yb;
+        const wbW = ww * Math.sqrt(Math.max(0, 1 - (yb - 0) * (yb - 0)));
+        ctx.beginPath(); ctx.moveTo(wx - wbW, wbY); ctx.quadraticCurveTo(wx, wbY - 1.5, wx + wbW, wbY); ctx.stroke();
+      }
+      // vertical sapling-frame lines (4-5 ribs showing through)
+      for (let rb = -3; rb <= 3; rb++) {
+        const rx = wx + (rb / 3) * ww * 0.85;
+        ctx.beginPath();
+        ctx.moveTo(rx, wy);
+        ctx.quadraticCurveTo(rx * 0.5 + wx * 0.5, wy - wh * 1.02, wx, wy - wh * 1.02);
+        ctx.stroke();
+      }
+      // low arched doorway with a dark interior
+      ctx.fillStyle = `rgba(${Math.round(_lerp(24, 8, nm))},${Math.round(_lerp(16, 6, nm))},${Math.round(_lerp(10, 4, nm))},0.95)`;
+      ctx.beginPath();
+      ctx.moveTo(wx - 4 * wScale, wy);
+      ctx.quadraticCurveTo(wx, wy - 8 * wScale, wx + 4 * wScale, wy);
+      ctx.closePath(); ctx.fill();
+      // a hide-flap rolled up to one side of the door
+      ctx.fillStyle = `rgb(${Math.round(_lerp(196, 100, nm))},${Math.round(_lerp(160, 80, nm))},${Math.round(_lerp(110, 56, nm))})`;
+      ctx.beginPath(); ctx.ellipse(wx + 3.5 * wScale, wy - 4 * wScale, 1.2 * wScale, 3 * wScale, 0.3, 0, 6.283); ctx.fill();
+      // warm interior glow at night spilling through the door
+      if (nm > 0.4) {
+        const gg = ctx.createRadialGradient(wx, wy - 4 * wScale, 0, wx, wy - 4 * wScale, 10 * wScale);
+        gg.addColorStop(0, `rgba(255,176,84,${0.6 * nm})`);
+        gg.addColorStop(1, 'rgba(255,176,84,0)');
+        ctx.fillStyle = gg;
+        ctx.beginPath(); ctx.ellipse(wx, wy - 1, 12 * wScale, 4 * wScale, 0, 0, 6.283); ctx.fill();
+      }
+      // smoke from the central smoke-hole
+      if (nm < 0.95) puffSmoke(wx, wy - wh * 1.0, 0.7 * wScale, (1 - nm * 0.65));
+    };
+    // far-end wigwam (replaces the old taco/cowpat second smokehouse)
+    drawWigwam(W * 0.97, ground(W * 0.97), 1.0);
+    // a SECOND larger wigwam mid-bank — real dwelling for the village (the
+    // village had no actual house). Placed in an open spot between the rice
+    // and basket-weaving stations.
+    drawWigwam(W * 0.86, ground(W * 0.86) + 2, 1.25);
     // village fire
     const fx = W * 0.625, fy = ground(fx) + 6, fa = 0.45 + 0.55 * nm;
     const gl = ctx.createRadialGradient(fx, fy - 6, 0, fx, fy - 6, 64 * (0.6 + nm));
@@ -1629,12 +1697,30 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.closePath(); ctx.fill();
       }
     };
-    if (nm < 0.98) {
-      ctx.save(); ctx.globalAlpha = 1 - nm;
-      // ---- VILLAGE STAGED AS WORK VIGNETTES (Hassan: villagers look static,
-      //   village too small / scattered). Each station gets a tighter group of
-      //   one or two villagers + a dark earth patch underneath so it reads as a
-      //   real "workstation", not a stick figure standing on grass.
+    // SHARP DAY↔NIGHT CROSSFADE (fix ghost overlap): the day vignette and night
+    // fire-circle previously both rendered with low alpha across a wide nm range,
+    // making villagers look ghostly. Now they hand over over a narrow ~10% window
+    // centred at nm=0.5, so figures cleanly fade out / in at scene change.
+    const dayA   = _clamp((0.55 - nm) / 0.10, 0, 1);   // 1 below 0.45, 0 above 0.55
+    const nightA = _clamp((nm - 0.45) / 0.10, 0, 1);   // 0 below 0.45, 1 above 0.55
+    if (dayA > 0.02) {
+      ctx.save(); ctx.globalAlpha = dayA;
+      // ---- VILLAGE STAGED AS WORK VIGNETTES ----
+      // ACTIVITIES VARY BY TIME OF DAY (Hassan: "should vary from day → evening → night")
+      //   MORNING  (p < 0.20)  : woodcutter chops, gardener tends, walkers head out
+      //   MIDDAY   (0.20-0.36) : full village — pounding rice, hide work, weaving,
+      //                          kids playing, fishing, smokehouse running
+      //   EVENING  (0.36-0.55) : kids settle, hide-scraping wraps, food brought to
+      //                          the fire; walkers heading home; gardener gone
+      // The flags below let any vignette skip drawing outside its window.
+      // smooth membership 0..1 for each phase so figures gently fade in/out
+      // across phase boundaries instead of popping (Hassan: "smooth transitions")
+      const wMorning = _clamp((0.22 - p) / 0.08, 0, 1);                                          // 1 until ~0.14, fades to 0 by ~0.22
+      const wMidday  = _clamp((p - 0.14) / 0.08, 0, 1) * _clamp((0.40 - p) / 0.08, 0, 1);         // peaks midday
+      const wEvening = _clamp((p - 0.32) / 0.08, 0, 1);                                          // fades in from 0.32 onward
+      const isMorning = wMorning > 0.5;
+      const isMidday  = wMidday  > 0.5;
+      const isEvening = wEvening > 0.5;
 
       // helper: a dark trodden-earth patch under a work station
       const earth = (ex, ey, w) => {
@@ -1646,14 +1732,19 @@ function drawScene(ctx, W, H, p, tt, now) {
       };
 
       // --- VIGNETTE 1: HIDE-WORKING (scraper + a helper folding hides) ---
+      //   morning + midday: full pair. evening: scraper has gone home, just the
+      //   helper folds the day's hides.
       earth(hfx - 4, hfy + 10, 38);
-      fig(hfx - 16, hfy + 6, 1.55, 'scrape', 2.3, { shirt: '#b04a2a', hairStyle: 'braid', dir: 1 });
+      if (!isEvening) fig(hfx - 16, hfy + 6, 1.55, 'scrape', 2.3, { shirt: '#b04a2a', hairStyle: 'braid', dir: 1 });
       fig(hfx + 22, hfy + 6, 1.35, 'carry', 1.8, { shirt: '#5a7d3a', hairStyle: 'long', dir: -1 });
 
       // --- VIGNETTE 2: WILD-RICE POUNDING (pounder + a winnower nearby) ---
-      earth(wmx + 4, wmy + 10, 32);
-      fig(wmx - 8, wmy + 6, 1.55, 'pound', 4.4, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });
-      fig(wmx + 18, wmy + 6, 1.30, 'stir', 0.6, { shirt: '#d68a1f', hairStyle: 'braid', dir: -1 });
+      //   absent in morning (no rice yet); starts midday; peak in evening.
+      if (!isMorning) {
+        earth(wmx + 4, wmy + 10, 32);
+        fig(wmx - 8, wmy + 6, 1.55, 'pound', 4.4, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });
+        fig(wmx + 18, wmy + 6, 1.30, 'stir', 0.6, { shirt: '#d68a1f', hairStyle: 'braid', dir: -1 });
+      }
 
       // --- VIGNETTE 2b: THREE SISTERS GARDEN (corn, beans, squash — farming) ---
       //   A row of tall corn stalks with low squash mounds, tended by a person
@@ -1684,15 +1775,18 @@ function drawScene(ctx, W, H, p, tt, now) {
             ctx.beginPath(); ctx.ellipse(sx + sway * 0.7 + 2, gy0 - 13, 1.4, 3, -0.3, 0, 6.283); ctx.fill();
           }
         }
-        // a gardener tending with a digging stick (scraping motion at the soil)
-        fig(gx0 - 22, gy0 + 4, 1.35, 'scrape', 1.5, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });
+        // a gardener tending with a digging stick — only present in the morning,
+        // when garden work is done before the heat. Garden itself stays visible.
+        if (isMorning) fig(gx0 - 22, gy0 + 4, 1.35, 'scrape', 1.5, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });
       }
 
-      // --- VIGNETTE 3: WOOD-CHOPPING (woodcutter strikes a log + a helper stacking) ---
+      // --- VIGNETTE 3: WOOD-CHOPPING ---
+      //   morning: woodcutter chops, no helper yet. midday: both. evening: just
+      //   the helper carrying the day's wood to the fire.
       const chopX = W * 0.63, chopY = ground(chopX) + 6;        // its own clear spot
       earth(chopX + 4, chopY + 6, 34);
-      fig(chopX, chopY, 1.55, 'chop', 1.7, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
-      fig(chopX + 26, chopY, 1.35, 'carry', 3.5, { shirt: '#c93a1e', hairStyle: 'long', dir: -1 });
+      if (!isEvening) fig(chopX, chopY, 1.55, 'chop', 1.7, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
+      if (!isMorning) fig(chopX + 26, chopY, 1.35, 'carry', 3.5, { shirt: '#c93a1e', hairStyle: 'long', dir: -1 });
 
       // --- VIGNETTE 4: SMOKEHOUSE / FISH-DRYING (tender + a hanger) ---
       earth(smx, smy + 8, 30);
@@ -1719,19 +1813,42 @@ function drawScene(ctx, W, H, p, tt, now) {
         const bxw = W * (0.755 + bT * 0.02);
         fig(bxw, ground(bxw) + 7, 1.50, 'walk', 5.1, { shirt: '#3a4658', hairStyle: 'braid', dir: (Math.cos(tt * 0.3 + 2.1) >= 0 ? 1 : -1) });
       }
-      // --- CHILDREN PLAYING (in the OPEN foreground, nothing in front of them) ---
-      //   Lower down the bank, centre-left, in their own clear play area.
-      {
-        const ringX = W * 0.59, ringY = ground(ringX) + 20, ringR = 18;
-        ctx.strokeStyle = `rgba(${Math.round(_lerp(70, 38, nm))},${Math.round(_lerp(52, 26, nm))},${Math.round(_lerp(30, 14, nm))},0.5)`;
-        ctx.lineWidth = 1.2;
-        ctx.beginPath(); ctx.ellipse(ringX, ringY + 4, ringR, ringR * 0.35, 0, 0, 6.283); ctx.stroke();
-        for (let c = 0; c < 3; c++) {
-          const a = tt * 1.4 + c * (Math.PI * 2 / 3);
+      // --- CHILDREN PLAYING RING-OF-ROSES (foreground attraction, prominent) ---
+      //   Active in MIDDAY only — peak play time. In the morning they're
+      //   helping with chores; in the evening they're listening to the
+      //   storyteller (see above). Sat on its own grass clearing.
+      if (isMidday) {
+        // Forward of the work-line on the closer grass — visually dominant, no
+        // other vignette occupies this zone so nothing merges with the kids.
+        const ringX = W * 0.66, ringY = H - 28, ringR = 36;
+        // a clearly trodden grass ring
+        ctx.fillStyle = `rgba(${Math.round(_lerp(150, 70, nm))},${Math.round(_lerp(132, 60, nm))},${Math.round(_lerp(86, 36, nm))},0.45)`;
+        ctx.beginPath(); ctx.ellipse(ringX, ringY + 6, ringR + 4, (ringR + 4) * 0.4, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(58, 28, nm))},${Math.round(_lerp(40, 18, nm))},${Math.round(_lerp(22, 10, nm))},0.65)`;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.ellipse(ringX, ringY + 6, ringR, ringR * 0.4, 0, 0, 6.283); ctx.stroke();
+        // four kids holding hands, running in a circle (clearly larger now)
+        const kidShirts = ['#d68a1f', '#5a7d3a', '#c93a1e', '#1f4e8f'];
+        const kidPos = [];
+        for (let c = 0; c < 4; c++) {
+          const a = tt * 1.3 + c * (Math.PI * 2 / 4);
           const kx = ringX + Math.cos(a) * ringR;
-          const ky = ringY + 4 + Math.sin(a) * ringR * 0.35;
+          const ky = ringY + 6 + Math.sin(a) * ringR * 0.4;
+          kidPos.push({ kx, ky, a });
+        }
+        // draw a thin "holding hands" arc between successive kids
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(230, 140, nm))},${Math.round(_lerp(190, 110, nm))},${Math.round(_lerp(160, 90, nm))},0.85)`;
+        ctx.lineWidth = 1.2;
+        for (let c = 0; c < 4; c++) {
+          const k1 = kidPos[c], k2 = kidPos[(c + 1) % 4];
+          const midX = (k1.kx + k2.kx) / 2;
+          const midY = (k1.ky + k2.ky) / 2 - 4;
+          ctx.beginPath(); ctx.moveTo(k1.kx, k1.ky - 6); ctx.quadraticCurveTo(midX, midY, k2.kx, k2.ky - 6); ctx.stroke();
+        }
+        for (let c = 0; c < 4; c++) {
+          const { kx, ky, a } = kidPos[c];
           const kdir = Math.sin(a) >= 0 ? 1 : -1;
-          fig(kx, ky, 0.75, 'walk', c * 2, { shirt: ['#d68a1f', '#5a7d3a', '#c93a1e'][c], hairStyle: 'long', dir: kdir });
+          fig(kx, ky, 1.05, 'walk', c * 1.7, { shirt: kidShirts[c], hairStyle: c % 2 ? 'long' : 'braid', dir: kdir });
         }
       }
       // --- NEW VIGNETTE: BIRCH-BARK BASKET WEAVING (a classic Anishinaabe craft) ---
@@ -1752,13 +1869,15 @@ function drawScene(ctx, W, H, p, tt, now) {
         }
         fig(wvX, wvY + 4, 1.35, 'sit', 2.6, { shirt: '#7c2f6b', hairStyle: 'braid' });
       }
-      // --- NEW VIGNETTE: AN ELDER STORYTELLER (kneeling, gesturing, with a
-      //   small child sitting attentively in front) — left of the fire circle.
-      {
+      // --- ELDER STORYTELLER + listening child — appears in the EVENING when
+      //   work winds down. Replaces day-bustle with quieter gathering energy.
+      if (isEvening) {
         const stX = fx - 56, stY = ground(stX) + 6;
         earth(stX + 4, stY + 6, 26);
-        fig(stX, stY, 1.45, 'wave', 1.1, { shirt: '#5a7d3a', hairStyle: 'long', dir: 1 });   // elder gestures
-        fig(stX + 18, stY + 2, 0.85, 'sit', 0.4, { shirt: '#d68a1f', hairStyle: 'long', dir: -1 });   // listening child
+        fig(stX, stY, 1.45, 'wave', 1.1, { shirt: '#5a7d3a', hairStyle: 'long', dir: 1 });
+        fig(stX + 18, stY + 2, 0.85, 'sit', 0.4, { shirt: '#d68a1f', hairStyle: 'long', dir: -1 });
+        // a couple more kids drift over from the play ring to listen
+        fig(stX + 26, stY + 2, 0.85, 'sit', 1.9, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 });
       }
       // a drummer seated at the ceremonial drum (rhythm of the day)
       const drumPx = drx - 4, drumPy = ground(drumPx) + 6;
@@ -1851,7 +1970,10 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   hump, round head with two round ears, short tan snout, dark nose, eye.
       ctx.save(); ctx.globalAlpha = (1 - nm);
       const S = 4.6;                                            // big, but clear of the village now
-      const bx = W * 0.545;                                     // moved LEFT into open shore, away from the people
+      // Bear placed LEFT, on its own stretch of shore — well clear of the
+      // centered hero text + scroll-to-discover prompt (so it isn't hidden on
+      // first load) and well clear of the village to the right.
+      const bx = W * 0.38;
       const by = shoreY(bx) - 4 * S;                            // at the water's edge (lower than the villagers up the bank)
       // strike rhythm: paw cocks up, then slams down
       // ---- HUNT CYCLE: a full 6-second loop with phases
@@ -2128,8 +2250,8 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.beginPath(); ctx.ellipse(otX + 4, otY + 1, 4, 1.2, 0, 0, 6.283); ctx.stroke();
       ctx.restore();
     }
-    if (nm > 0.02) {
-      ctx.save(); ctx.globalAlpha = nm;
+    if (nightA > 0.02) {
+      ctx.save(); ctx.globalAlpha = nightA;
       // night: a fuller circle around the fire, varied dress + hair, gently breathing
       const styles = [
         { shirt: '#c93a1e', hairStyle: 'long' },
