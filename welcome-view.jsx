@@ -2083,6 +2083,51 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.restore();
       }
 
+      // ---- MARTEN (waabizheshi) — the 7th CLAN animal (warriors). A small,
+      //   sleek weasel that darts ALONG A FALLEN LOG, low and quick, with a long
+      //   bushy tail, pointed face and pale throat. Scampers back and forth. ----
+      {
+        const logX = W * 0.82, logY = ground(logX) + 2, logLen = 34;
+        // the fallen log it runs along
+        ctx.save(); ctx.globalAlpha = (1 - nm);
+        ctx.fillStyle = `rgb(${Math.round(_lerp(96,52,nm))},${Math.round(_lerp(64,34,nm))},${Math.round(_lerp(36,18,nm))})`;
+        ctx.beginPath(); ctx.ellipse(logX, logY, logLen / 2, 3.2, -0.05, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(40,22,nm))},${Math.round(_lerp(26,14,nm))},${Math.round(_lerp(14,8,nm))},0.7)`;
+        ctx.lineWidth = 0.6;
+        ctx.beginPath(); ctx.arc(logX - logLen / 2, logY, 2.4, 0, 6.283); ctx.stroke();   // log end-grain
+        // the marten scampers back and forth along the log
+        const run = Math.sin(tt * 1.1);
+        const mxp = logX + run * (logLen / 2 - 5);
+        const mdir = Math.cos(tt * 1.1) >= 0 ? 1 : -1;
+        const gallop = Math.abs(Math.sin(tt * 9)) * 1.4;                                  // bounding body arch
+        ctx.save(); ctx.translate(mxp, logY - 3); ctx.scale(mdir, 1);
+        const fur = `rgb(${Math.round(_lerp(132,68,nm))},${Math.round(_lerp(78,40,nm))},${Math.round(_lerp(38,20,nm))})`;
+        // long bushy tail
+        ctx.strokeStyle = fur; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(6, 0); ctx.quadraticCurveTo(12, -2 - gallop, 15, -5 - gallop * 2); ctx.stroke();
+        // low arched body
+        ctx.fillStyle = fur;
+        ctx.beginPath();
+        ctx.moveTo(-7, 0); ctx.quadraticCurveTo(-2, -3 - gallop, 4, -2); ctx.quadraticCurveTo(7, -1, 7, 1);
+        ctx.quadraticCurveTo(0, 2, -7, 0); ctx.closePath(); ctx.fill();
+        // little legs (bounding)
+        ctx.strokeStyle = fur; ctx.lineWidth = 1.0;
+        ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(-6, 3 + gallop); ctx.moveTo(4, 0); ctx.lineTo(5, 3 - gallop); ctx.stroke();
+        // pointed head + pale throat + dark eye
+        ctx.fillStyle = fur;
+        ctx.beginPath(); ctx.ellipse(-8, -1, 2.4, 1.6, -0.2, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(228,214,180,0.9)';
+        ctx.beginPath(); ctx.ellipse(-8, 0.4, 1.0, 0.7, 0, 0, 6.283); ctx.fill();           // throat patch
+        ctx.fillStyle = 'rgba(16,12,8,1)';
+        ctx.beginPath(); ctx.arc(-9, -1.4, 0.5, 0, 6.283); ctx.fill();                       // eye
+        ctx.beginPath(); ctx.arc(-10, -0.6, 0.4, 0, 6.283); ctx.fill();                      // nose
+        // tiny round ears
+        ctx.fillStyle = fur;
+        ctx.beginPath(); ctx.arc(-7.5, -2.6, 0.7, 0, 6.283); ctx.fill();
+        ctx.restore();
+        ctx.restore();
+      }
+
       // ---- LAND PLANTS on the LHS bank (Hassan: "where are the plants on the
       //   land? they can all be on LHS"): clumps of green grass/sedge tufts and
       //   a few flowering stems, swaying. ----
@@ -2542,6 +2587,35 @@ function drawScene(ctx, W, H, p, tt, now) {
           ctx.fillStyle = '#b7855a';                                             // head
           ctx.beginPath(); ctx.arc(bx2 - 6, slY - 1, 1.8, 0, 6.283); ctx.fill();
         }
+      }
+      // SPREAD UP THE BANK (Hassan: villagers were all on the shoreline). A
+      // SECOND, smaller fire higher up the slope with its own little gathering,
+      // plus a couple climbing the bank with a lantern + a lone night-watcher.
+      {
+        const f2x = fx + 150, f2y = ground(f2x) + 4;                              // further up the rising bank
+        // small fire glow
+        const flick2 = 0.7 + 0.3 * Math.sin(tt * 8 + 1);
+        const g2 = ctx.createRadialGradient(f2x, f2y - 4, 0, f2x, f2y - 4, 40);
+        g2.addColorStop(0, `rgba(255,170,80,${0.5 * flick2})`); g2.addColorStop(1, 'rgba(255,170,80,0)');
+        ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(f2x, f2y - 4, 40, 0, 6.283); ctx.fill();
+        // little flames
+        ctx.fillStyle = `rgba(255,150,60,${0.8 * flick2})`;
+        ctx.beginPath(); ctx.moveTo(f2x - 4, f2y); ctx.quadraticCurveTo(f2x, f2y - 9 * flick2, f2x + 4, f2y); ctx.closePath(); ctx.fill();
+        // three people seated around it, breathing
+        [[-12, 1.15, 1], [10, 1.15, -1], [0, 1.05, 1]].forEach(([dxx, sc, dir], i) => {
+          const bob = Math.sin(tt * 1.5 + i) * 0.6;
+          fig(f2x + dxx, f2y + 6 + bob, sc, 'sit', i + 2, { dir, shirt: ['#1f4e8f', '#d68a1f', '#7c2f6b'][i], hairStyle: i % 2 ? 'long' : 'braid' });
+        });
+        // a couple CLIMBING the bank between the two fires, carrying a lantern
+        const climbT = (tt * 0.16) % 1;
+        const clx = fx + 40 + climbT * 100, cly = ground(clx) + 6;
+        const lg = ctx.createRadialGradient(clx, cly - 8, 0, clx, cly - 8, 22);
+        lg.addColorStop(0, 'rgba(255,186,90,0.5)'); lg.addColorStop(1, 'rgba(255,186,90,0)');
+        ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(clx, cly - 8, 22, 0, 6.283); ctx.fill();
+        fig(clx, cly, 1.3, 'walk', 0.5, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });
+        ctx.fillStyle = '#ffce7a'; ctx.beginPath(); ctx.arc(clx + 6, cly - 7 + Math.sin(tt * 2) * 1.4, 2.2, 0, 6.283); ctx.fill();
+        // a lone NIGHT-WATCHER standing higher up, looking out over the lake
+        fig(fx + 220, ground(fx + 220) + 6, 1.35, 'sit', 5, { shirt: '#b04a2a', hairStyle: 'long', dir: -1 });
       }
       ctx.restore();
       // ---- WOLVES at night on the ridge: a proper lupine silhouette, one howling
