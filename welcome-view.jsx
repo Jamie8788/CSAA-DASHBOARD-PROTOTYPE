@@ -490,38 +490,26 @@ function drawScene(ctx, W, H, p, tt, now) {
     }
     ctx.globalAlpha = 1;
   }
-  // ---- AURORA — the northern lights, "the ancestors dancing" (deep dusk →
-  //   night). Proper shimmering vertical CURTAINS: many close vertical rays of
-  //   light rising from a slowly-undulating baseline, brightest green low down
-  //   fading to purple/teal up high, drifting and pulsing. ----
-  const aurA = _smooth(0.60, 0.90, p);
+  // ---- AURORA — the northern lights (deep dusk → night). Soft, subtle bands
+  //   (Hassan asked me NOT to change the sky — reverted to the original gentle
+  //   version, no bright vertical "purple line" curtains). ----
+  const aurA = _smooth(0.62, 0.92, p);
   if (aurA > 0.01) {
     ctx.save();
-    ctx.globalCompositeOperation = 'lighter';   // glows additively
-    // 3 overlapping curtains at different depths/colours
-    const curtains = [
-      { baseY: hY * 0.20, hue: [90, 224, 150], drift: 0.10, amp: 30, ph: 0.0,  topF: 0.85 },  // green
-      { baseY: hY * 0.30, hue: [120, 150, 240], drift: 0.07, amp: 22, ph: 2.1, topF: 0.70 },  // blue
-      { baseY: hY * 0.14, hue: [170, 96, 214], drift: 0.13, amp: 26, ph: 4.0,  topF: 0.95 },  // violet
-    ];
-    for (const cu of curtains) {
-      for (let x = 0; x <= W; x += 7) {
-        // the curtain's local base height undulates along x and over time
-        const baseY = cu.baseY
-          + Math.sin(x * 0.006 + tt * cu.drift * 6 + cu.ph) * cu.amp
-          + Math.sin(x * 0.017 + tt * cu.drift * 3) * (cu.amp * 0.4);
-        // each ray's brightness flickers (the shimmer), some rays absent
-        const flick = 0.5 + 0.5 * Math.sin(x * 0.05 + tt * 1.6 + cu.ph);
-        const a = aurA * (0.05 + 0.10 * flick);
-        if (a < 0.012) continue;
-        const rayTop = baseY - (hY * cu.topF) * (0.5 + 0.5 * flick);          // ray height varies
-        const g = ctx.createLinearGradient(0, baseY, 0, rayTop);
-        g.addColorStop(0,   `rgba(${cu.hue[0]},${cu.hue[1]},${cu.hue[2]},${a})`);
-        g.addColorStop(0.6, `rgba(${cu.hue[0]},${cu.hue[1]},${cu.hue[2]},${a * 0.45})`);
-        g.addColorStop(1,   `rgba(${cu.hue[0]},${cu.hue[1]},${cu.hue[2]},0)`);
-        ctx.strokeStyle = g; ctx.lineWidth = 7; ctx.lineCap = 'butt';
-        ctx.beginPath(); ctx.moveTo(x, baseY + 6); ctx.lineTo(x, rayTop); ctx.stroke();
+    ctx.globalCompositeOperation = 'lighter';
+    const cols = ['80,212,150', '120,150,232', '156,92,204', '88,200,182'];
+    for (let b = 0; b < 4; b++) {
+      ctx.beginPath();
+      const baseY = hY * (0.12 + b * 0.10);
+      for (let x = 0; x <= W; x += 14) {
+        const y = baseY
+          + Math.sin(x * 0.005 + tt * 0.6 + b * 1.3) * 26
+          + Math.sin(x * 0.013 + tt * 0.9) * 12
+          + Math.sin(x * 0.026 + tt * 0.4 + b) * 6;
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
+      ctx.strokeStyle = `rgba(${cols[b]},${aurA * (0.18 + 0.05 * Math.sin(tt * 0.8 + b))})`;
+      ctx.lineWidth = 16 + 8 * Math.sin(tt * 0.7 + b); ctx.lineCap = 'round'; ctx.stroke();
     }
     ctx.restore();
   }
@@ -651,44 +639,8 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.globalAlpha = 1;
   }
 
-  // ---- BALD EAGLE — SOARING (not flapping) in slow circles high over the
-  //   lake. Wings held in a long flat plank with fingered tips, white head &
-  //   tail. Banks as it circles so it reads as gliding, not the old fake flap. ----
-  const eagA = _smooth(0.10, 0.30, p) * (1 - _smooth(0.58, 0.80, p));
-  if (eagA > 0.02) {
-    const circT = tt * 0.35;
-    const ecx = W * (0.40 + 0.06 * Math.cos(circT)), ecy = hY * 0.34 + 0.06 * hY * Math.sin(circT * 1.3);
-    const bank = Math.cos(circT);                       // -1..1 → wing foreshortening as it banks
-    const span = 22 + 4 * Math.sin(tt * 0.8);           // subtle breathing of the glide
-    ctx.save(); ctx.globalAlpha = eagA; ctx.translate(ecx, ecy);
-    const body = 'rgba(46,34,24,1)';
-    // wings — a shallow dihedral plank, foreshortened by the bank
-    ctx.strokeStyle = body; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
-    const wL = span * (0.7 + 0.3 * bank), wR = span * (0.7 - 0.3 * bank);
-    ctx.beginPath();
-    ctx.moveTo(-wL, -2 - bank * 2);
-    ctx.quadraticCurveTo(-wL * 0.4, -4, 0, 0);
-    ctx.quadraticCurveTo(wR * 0.4, -4, wR, -2 + bank * 2);
-    ctx.stroke();
-    // fingered wingtips
-    ctx.lineWidth = 1.2;
-    for (const sgn of [-1, 1]) {
-      const wt = sgn < 0 ? wL : wR;
-      for (let f = 0; f < 3; f++) {
-        ctx.beginPath(); ctx.moveTo(sgn * wt, -2); ctx.lineTo(sgn * (wt + 3 + f), -4 - f); ctx.stroke();
-      }
-    }
-    // body
-    ctx.fillStyle = body;
-    ctx.beginPath(); ctx.ellipse(0, 1, 2.4, 5, 0, 0, 6.283); ctx.fill();
-    // white head + tail (bald eagle)
-    ctx.fillStyle = 'rgba(238,236,230,1)';
-    ctx.beginPath(); ctx.arc(0, -5, 1.7, 0, 6.283); ctx.fill();              // head
-    ctx.beginPath(); ctx.moveTo(-1.6, 5.5); ctx.lineTo(1.6, 5.5); ctx.lineTo(0, 8.5); ctx.closePath(); ctx.fill();  // tail
-    ctx.fillStyle = 'rgba(214,170,60,1)';                                     // beak
-    ctx.beginPath(); ctx.arc(0, -6.4, 0.7, 0, 6.283); ctx.fill();
-    ctx.restore();
-  }
+  // (Soaring-eagle removed — it didn't read as an eagle. The Bird clan is
+  //  represented by the geese skeins + ravens; the eagle stays in the soundscape.)
   // ---- RAVENS — a pair flapping & tumbling near the treeline (croaking sentries
   //   of the bush). Quick wingbeats + the odd barrel-roll, clearly black. ----
   const ravA = (1 - _smooth(0.66, 0.86, p));
@@ -1818,7 +1770,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   real Friendship Dance, not random hand-waving. Plays through MIDDAY
       //   and EVENING (Hassan: they disappeared too soon, they can play longer).
       if (isMidday || isEvening) {
-        const ringX = W * 0.66, ringY = H - 30, ringR = 40;
+        const ringX = W * 0.66, ringY = H - 30, ringR = 30;   // tighter so hands nearly touch
         // trodden grass ring
         ctx.fillStyle = `rgba(${Math.round(_lerp(150, 70, nm))},${Math.round(_lerp(132, 60, nm))},${Math.round(_lerp(86, 36, nm))},0.45)`;
         ctx.beginPath(); ctx.ellipse(ringX, ringY + 6, ringR + 5, (ringR + 5) * 0.4, 0, 0, 6.283); ctx.fill();
@@ -1853,28 +1805,15 @@ function drawScene(ctx, W, H, p, tt, now) {
           const kdir = Math.cos(a) >= 0 ? 1 : -1;       // tangential facing (clockwise)
           fig(x, y, 1.05, 'dance', c * 1.3, { shirt: kidShirts[c], hairStyle: c % 2 ? 'long' : 'braid', dir: kdir });
         }
-        // HOLDING HANDS: drawn ON TOP, at the children's HAND height (their dance
-        // arms reach out to ~y-20), with a downward arc so the linked arms read
-        // clearly as joined hands (NOT a rope — Hassan: "looks like a rope").
-        // Each pair has a SHARED hand point exactly halfway between them. From
-        // that point we draw TWO short forearms back to each child's shoulder
-        // (skin-tone), then a small darker DOT at the shared point — visible
-        // as a held-hand pair, not a continuous rope around the ring.
-        const armCol = 'rgba(228,184,150,1)';                                       // skin tone
-        const handDot = `rgba(${Math.round(_lerp(186, 120, nm))},${Math.round(_lerp(132, 80, nm))},${Math.round(_lerp(96, 56, nm))},1)`;
-        ctx.lineCap = 'round';
+        // (No connecting line/rope around the ring — Hassan hated the "rope".
+        //  The children stand CLOSE in a tight circle and their own dance arms
+        //  reach toward each other so their hands nearly touch; we just add a
+        //  tiny skin-tone hand where each neighbouring pair meets, nothing else.)
+        ctx.fillStyle = 'rgba(228,184,150,1)';
         for (let c = 0; c < N; c++) {
           const k1 = kp[c], k2 = kp[(c + 1) % N];
-          const sh1X = k1.x, sh1Y = k1.y - 18;                                       // shoulder height of each kid
-          const sh2X = k2.x, sh2Y = k2.y - 18;
-          const handX = (sh1X + sh2X) / 2, handY = (sh1Y + sh2Y) / 2 - 1;            // hands meet between them
-          // two forearms in skin tone reaching to the shared hand point
-          ctx.strokeStyle = armCol; ctx.lineWidth = 2.4;
-          ctx.beginPath(); ctx.moveTo(sh1X + (handX - sh1X) * 0.1, sh1Y); ctx.lineTo(handX, handY); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(sh2X + (handX - sh2X) * 0.1, sh2Y); ctx.lineTo(handX, handY); ctx.stroke();
-          // the joined hands themselves — a small darker dot at the meeting point
-          ctx.fillStyle = handDot;
-          ctx.beginPath(); ctx.arc(handX, handY, 1.6, 0, 6.283); ctx.fill();
+          const handX = (k1.x + k2.x) / 2, handY = (k1.y + k2.y) / 2 - 13;
+          ctx.beginPath(); ctx.arc(handX, handY, 1.5, 0, 6.283); ctx.fill();
         }
       }
       // --- TATANKA (Dakoda chase game) — MIDDAY: children run and the "Tatanka"
@@ -2101,6 +2040,49 @@ function drawScene(ctx, W, H, p, tt, now) {
       drawGoose(W * 0.47, ground(W * 0.47) + 6, 1.7, false, 1.5);         // grazing
       drawGoose(W * 0.53, ground(W * 0.53) + 5, 1.75, false, 3.0);        // grazing
 
+      // ---- DEER (waawaashkeshi) on the upper bank — a CLAN animal (poets &
+      //   peacemakers). Stands grazing, lifts its head ALERT now and then, ears
+      //   flicking, tail twitching. Slender legs, white throat & tail. ----
+      {
+        const dxe = W * 0.71, dye = ground(dxe) - 26, dsc = 1.7;            // up the bank, behind the work line
+        ctx.save(); ctx.translate(dxe, dye); ctx.scale(dsc, dsc); ctx.globalAlpha = (1 - nm);
+        const coat = `rgb(${Math.round(_lerp(168,86,nm))},${Math.round(_lerp(120,60,nm))},${Math.round(_lerp(78,40,nm))})`;
+        const alert = Math.max(0, Math.sin(tt * 0.4));                      // 0 grazing → 1 head up
+        const headY = 4 - alert * 12, headX = -11 + alert * 3;             // head lifts & draws back when alert
+        // legs (slender)
+        ctx.strokeStyle = `rgb(${Math.round(_lerp(120,58,nm))},${Math.round(_lerp(84,40,nm))},${Math.round(_lerp(52,26,nm))})`;
+        ctx.lineWidth = 1.3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-6, 1); ctx.lineTo(-6.5, 11); ctx.moveTo(-3, 1); ctx.lineTo(-3, 11);
+        ctx.moveTo(5, 1); ctx.lineTo(5.5, 11); ctx.moveTo(8, 1); ctx.lineTo(8, 11); ctx.stroke();
+        // body
+        ctx.fillStyle = coat;
+        ctx.beginPath();
+        ctx.moveTo(-7, 0); ctx.quadraticCurveTo(-8, -5, -2, -5);
+        ctx.quadraticCurveTo(7, -6, 10, -2); ctx.quadraticCurveTo(9, 1, 5, 1);
+        ctx.quadraticCurveTo(-3, 2, -7, 0); ctx.closePath(); ctx.fill();
+        // neck + head (raises when alert)
+        ctx.strokeStyle = coat; ctx.lineWidth = 3.0;
+        ctx.beginPath(); ctx.moveTo(-6, -3); ctx.quadraticCurveTo(headX + 3, (headY - 3), headX, headY); ctx.stroke();
+        ctx.fillStyle = coat;
+        ctx.beginPath(); ctx.ellipse(headX - 1, headY, 2.6, 1.7, -0.3, 0, 6.283); ctx.fill();   // head
+        // ears (flick)
+        const ear = Math.sin(tt * 3) * 0.3;
+        ctx.strokeStyle = coat; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.moveTo(headX, headY - 1); ctx.lineTo(headX - 1 + ear, headY - 4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(headX + 1, headY - 1); ctx.lineTo(headX + 2 + ear, headY - 4); ctx.stroke();
+        // white throat + nose
+        ctx.fillStyle = 'rgba(238,232,220,0.9)';
+        ctx.beginPath(); ctx.ellipse(headX - 2.4, headY + 0.6, 0.9, 0.7, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(20,14,10,1)';
+        ctx.beginPath(); ctx.arc(headX - 2.6, headY + 0.3, 0.5, 0, 6.283); ctx.fill();          // nose
+        ctx.beginPath(); ctx.arc(headX, headY - 0.6, 0.4, 0, 6.283); ctx.fill();                // eye
+        // white tail (twitches up)
+        const tail = Math.sin(tt * 5) > 0.7 ? -3 : 0;
+        ctx.fillStyle = 'rgba(240,234,222,0.95)';
+        ctx.beginPath(); ctx.ellipse(9.5, -2 + tail, 1.2, 2.0, 0.3, 0, 6.283); ctx.fill();
+        ctx.restore();
+      }
+
       // ---- LAND PLANTS on the LHS bank (Hassan: "where are the plants on the
       //   land? they can all be on LHS"): clumps of green grass/sedge tufts and
       //   a few flowering stems, swaying. ----
@@ -2248,39 +2230,23 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.fillStyle = 'rgba(8,5,3,1)';
       ctx.beginPath(); ctx.ellipse(-8 * S, 12.2 * S, 2.6 * S, 1.2 * S, 0, 0, 6.283); ctx.fill();
 
-      // -- RAISED FRONT PAW: a striking arc going up & forward then down at the fish.
-      // shoulderJoint is roughly (-9, -2)*S in body space.
-      const shJX = -9 * S, shJY = -2 * S;
-      // paw position arcs: HIGH & cocked when watching, sweeping DOWN deep into
-      // the water on the strike — a big, legible hunting motion.
-      const cockX = -15 * S, cockY = -10 * S;        // paw raised high above the water
-      const strikeX = -19 * S, strikeY = 13 * S;     // paw slams deep into the pool
-      const pawX = cockX + (strikeX - cockX) * strikePhase;
-      const pawY = cockY + (strikeY - cockY) * (strikePhase * strikePhase);   // accelerate down
-      // upper arm (shoulder → elbow)
-      const elbowX = shJX - 4 * S - strikePhase * 3 * S;
-      const elbowY = shJY + 2 * S + strikePhase * 2 * S;
-      ctx.strokeStyle = furG; ctx.lineWidth = 5.2 * S; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(shJX, shJY); ctx.lineTo(elbowX, elbowY); ctx.stroke();
-      // forearm (elbow → paw)
-      ctx.strokeStyle = 'rgba(30,18,10,1)'; ctx.lineWidth = 4.4 * S;
-      ctx.beginPath(); ctx.moveTo(elbowX, elbowY); ctx.lineTo(pawX, pawY); ctx.stroke();
-      // the paw itself (large oval with claws when striking)
+      // -- NEAR FRONT LEG (normal planted leg — NO raised arm. A real bear catches
+      //   fish with its MOUTH, head down in the water; the legs just stand.) --
+      ctx.fillStyle = furG;
+      ctx.beginPath();
+      ctx.moveTo(-3 * S, 4 * S); ctx.quadraticCurveTo(-5 * S, 8 * S, -4 * S, 12 * S);
+      ctx.lineTo(0 * S, 12 * S); ctx.quadraticCurveTo(0 * S, 8 * S, 0 * S, 4 * S);
+      ctx.closePath(); ctx.fill();
       ctx.fillStyle = 'rgba(8,5,3,1)';
-      ctx.beginPath(); ctx.ellipse(pawX, pawY, 3.0 * S, 2.0 * S, 0.2, 0, 6.283); ctx.fill();
-      // claws — three pale curves on the underside
-      ctx.strokeStyle = 'rgba(240,232,210,0.9)'; ctx.lineWidth = 0.9 * S;
-      for (let c = 0; c < 3; c++) {
-        ctx.beginPath();
-        ctx.arc(pawX - 1.6 * S + c * 1.2 * S, pawY + 2.4 * S, 1.0, 0.2, 2.9);
-        ctx.stroke();
-      }
+      ctx.beginPath(); ctx.ellipse(-2 * S, 12.2 * S, 2.6 * S, 1.2 * S, 0, 0, 6.283); ctx.fill();
+      // a dummy "paw" reference kept at the water for splash/fish code below
+      const pawX = -16 * S, pawY = 13 * S;
 
-      // -- NECK + HEAD — LUNGES with the strike: rears slightly while the paw is
-      //   cocked, then drives DOWN & FORWARD toward the water on the strike, and
-      //   lifts back up with the catch. Makes the bear read as actively hunting.
-      const headFwd = strikePhase * 3 * S;                      // head drives forward (left) on strike
-      const headDip = strikePhase * strikePhase * 4 * S;        // head dips toward the water on strike
+      // -- NECK + HEAD — the bear DIPS its head down into the water to grab the
+      //   fish in its MOUTH on the strike, then lifts it back up. A natural
+      //   fishing motion, not an arm thrown overhead.
+      const headFwd = strikePhase * 2.5 * S;                    // muzzle reaches forward over the water
+      const headDip = strikePhase * strikePhase * 9 * S;        // head plunges DOWN to the water on strike
       const hcX = -16 * S - headFwd, hcY = 1 * S + headDip;     // animated head centre
       // thick crouching neck
       ctx.fillStyle = furG;
@@ -2729,52 +2695,40 @@ function drawScene(ctx, W, H, p, tt, now) {
     });
   }
 
-  // ---- LAKE WILDLIFE (Hassan: "I don't see cranes or other water life"):
-  //   a little raft of DUCKS paddling, a BEAVER swimming with a V-wake, and a
-  //   tall standing CRANE on the near shore. All gated to daylight, fading at
-  //   night. Drawn over the water plane, behind the foreground reeds. ----
+  // ---- LAKE WILDLIFE — the CLAN ANIMALS of the water: a LOON (maang, a leader
+  //   clan) gliding calmly, and the CRANE (ajijaak, also a leader clan) on the
+  //   shore. The old fake-looking ducks/beaver were removed. Gated to daylight. ----
   const wildA = (1 - _smooth(0.62, 0.86, p));
   if (wildA > 0.04) {
-    // --- DUCKS: 3 paddling in a loose line, gently bobbing, leaving wakes ---
-    const duckBaseX = ((tt * 0.012) % 1.2 - 0.1) * W;
-    for (let d = 0; d < 3; d++) {
-      const dx2 = duckBaseX + d * 22 - (d % 2) * 6;
-      const dy2 = hY + 26 + (H - hY) * 0.30 + d * 9 + Math.sin(tt * 1.6 + d) * 1.2;
-      ctx.globalAlpha = wildA * 0.9;
-      // wake
-      ctx.strokeStyle = 'rgba(232,238,236,0.3)'; ctx.lineWidth = 0.8;
-      ctx.beginPath(); ctx.moveTo(dx2 - 3, dy2 + 1); ctx.lineTo(dx2 - 16, dy2 + 4); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(dx2 - 3, dy2 + 1); ctx.lineTo(dx2 - 16, dy2 - 2); ctx.stroke();
-      // body
-      ctx.fillStyle = 'rgba(70,54,38,1)';
-      ctx.beginPath(); ctx.ellipse(dx2, dy2, 5, 2.4, 0.1, 0, 6.283); ctx.fill();
-      // raised tail
-      ctx.beginPath(); ctx.moveTo(dx2 - 5, dy2 - 0.5); ctx.lineTo(dx2 - 8, dy2 - 2.5); ctx.lineTo(dx2 - 5, dy2 + 0.5); ctx.fill();
-      // neck + head (mallard-ish: dark head)
-      ctx.strokeStyle = 'rgba(70,54,38,1)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(dx2 + 4, dy2 - 0.5); ctx.lineTo(dx2 + 7, dy2 - 4); ctx.stroke();
-      ctx.fillStyle = 'rgba(40,60,46,1)';
-      ctx.beginPath(); ctx.arc(dx2 + 7.5, dy2 - 4.5, 1.7, 0, 6.283); ctx.fill();
-      ctx.fillStyle = 'rgba(210,170,70,1)';                                       // bill
-      ctx.beginPath(); ctx.ellipse(dx2 + 9, dy2 - 4, 1.4, 0.7, 0.2, 0, 6.283); ctx.fill();
-    }
-    // --- BEAVER: swims across with just the head + back showing and a V-wake ---
+    // --- LOON (maang): black head, checkerboard back, white breast, red eye.
+    //   Glides slowly across the lake with a soft wake; dips its bill now & then. ---
     {
-      const bvX = (1.15 - (tt * 0.018) % 1.3) * W;
-      const bvY = hY + 20 + (H - hY) * 0.46 + Math.sin(tt * 1.1) * 1.5;
+      const loX = ((tt * 0.010) % 1.25 - 0.12) * W;
+      const loY = hY + 30 + (H - hY) * 0.30 + Math.sin(tt * 0.8) * 1.2;
+      const dip = Math.max(0, Math.sin(tt * 0.35)) * 3;                          // periodic bill-dip
       ctx.globalAlpha = wildA;
-      // V-wake spreading behind
-      ctx.strokeStyle = 'rgba(232,238,236,0.34)'; ctx.lineWidth = 1.0;
-      ctx.beginPath(); ctx.moveTo(bvX + 6, bvY); ctx.lineTo(bvX + 30, bvY + 9); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(bvX + 6, bvY); ctx.lineTo(bvX + 30, bvY - 9); ctx.stroke();
-      // low back + head above the surface
-      ctx.fillStyle = 'rgba(58,38,22,1)';
-      ctx.beginPath(); ctx.ellipse(bvX, bvY, 8, 2.6, -0.06, 0, 6.283); ctx.fill();          // back
-      ctx.beginPath(); ctx.ellipse(bvX + 8, bvY - 1.5, 3.2, 2.4, 0, 0, 6.283); ctx.fill();   // head
-      ctx.fillStyle = 'rgba(20,12,8,1)';
-      ctx.beginPath(); ctx.arc(bvX + 10, bvY - 2.2, 0.6, 0, 6.283); ctx.fill();              // eye
-      // round ear + nose
-      ctx.beginPath(); ctx.arc(bvX + 7, bvY - 3.6, 0.8, 0, 6.283); ctx.fill();
+      // soft wake
+      ctx.strokeStyle = 'rgba(232,238,236,0.28)'; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(loX - 6, loY + 1); ctx.lineTo(loX - 26, loY + 5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(loX - 6, loY + 1); ctx.lineTo(loX - 26, loY - 3); ctx.stroke();
+      // low sleek body (dark with a pale flank)
+      ctx.fillStyle = 'rgba(28,26,30,1)';
+      ctx.beginPath(); ctx.ellipse(loX, loY, 11, 3.2, -0.05, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(225,228,228,0.9)';                                   // white breast/flank
+      ctx.beginPath(); ctx.ellipse(loX - 2, loY + 0.8, 7, 1.6, 0, 0, 6.283); ctx.fill();
+      // checkerboard hint on the back
+      ctx.fillStyle = 'rgba(210,214,214,0.7)';
+      for (let cb = 0; cb < 4; cb++) { ctx.beginPath(); ctx.arc(loX - 4 + cb * 3, loY - 2, 0.5, 0, 6.283); ctx.fill(); }
+      // upright neck + head (black), dipping bill
+      ctx.strokeStyle = 'rgba(20,18,22,1)'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(loX + 7, loY - 1); ctx.quadraticCurveTo(loX + 10, loY - 7, loX + 11, loY - 8 + dip); ctx.stroke();
+      ctx.fillStyle = 'rgba(20,18,22,1)';
+      ctx.beginPath(); ctx.arc(loX + 11, loY - 8 + dip, 2.2, 0, 6.283); ctx.fill();
+      // dagger bill + red eye
+      ctx.strokeStyle = 'rgba(20,18,22,1)'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(loX + 12.5, loY - 8.5 + dip); ctx.lineTo(loX + 16, loY - 8 + dip); ctx.stroke();
+      ctx.fillStyle = 'rgba(190,40,30,1)';
+      ctx.beginPath(); ctx.arc(loX + 11, loY - 8.5 + dip, 0.5, 0, 6.283); ctx.fill();
     }
     // --- CRANE / heron standing tall on the near shore, occasionally bowing ---
     {
