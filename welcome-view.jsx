@@ -490,24 +490,38 @@ function drawScene(ctx, W, H, p, tt, now) {
     }
     ctx.globalAlpha = 1;
   }
-  // ---- AURORA — the northern lights, "the ancestors dancing" (deep dusk → night) ----
-  const aurA = _smooth(0.62, 0.92, p);
+  // ---- AURORA — the northern lights, "the ancestors dancing" (deep dusk →
+  //   night). Proper shimmering vertical CURTAINS: many close vertical rays of
+  //   light rising from a slowly-undulating baseline, brightest green low down
+  //   fading to purple/teal up high, drifting and pulsing. ----
+  const aurA = _smooth(0.60, 0.90, p);
   if (aurA > 0.01) {
     ctx.save();
-    ctx.globalCompositeOperation = 'lighter';   // glows additively, more alive
-    const cols = ['80,212,150', '120,150,232', '156,92,204', '88,200,182'];
-    for (let b = 0; b < 4; b++) {
-      ctx.beginPath();
-      const baseY = hY * (0.12 + b * 0.10);
-      for (let x = 0; x <= W; x += 14) {
-        const y = baseY
-          + Math.sin(x * 0.005 + tt * 0.6 + b * 1.3) * 26
-          + Math.sin(x * 0.013 + tt * 0.9) * 12
-          + Math.sin(x * 0.026 + tt * 0.4 + b) * 6;
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    ctx.globalCompositeOperation = 'lighter';   // glows additively
+    // 3 overlapping curtains at different depths/colours
+    const curtains = [
+      { baseY: hY * 0.20, hue: [90, 224, 150], drift: 0.10, amp: 30, ph: 0.0,  topF: 0.85 },  // green
+      { baseY: hY * 0.30, hue: [120, 150, 240], drift: 0.07, amp: 22, ph: 2.1, topF: 0.70 },  // blue
+      { baseY: hY * 0.14, hue: [170, 96, 214], drift: 0.13, amp: 26, ph: 4.0,  topF: 0.95 },  // violet
+    ];
+    for (const cu of curtains) {
+      for (let x = 0; x <= W; x += 7) {
+        // the curtain's local base height undulates along x and over time
+        const baseY = cu.baseY
+          + Math.sin(x * 0.006 + tt * cu.drift * 6 + cu.ph) * cu.amp
+          + Math.sin(x * 0.017 + tt * cu.drift * 3) * (cu.amp * 0.4);
+        // each ray's brightness flickers (the shimmer), some rays absent
+        const flick = 0.5 + 0.5 * Math.sin(x * 0.05 + tt * 1.6 + cu.ph);
+        const a = aurA * (0.05 + 0.10 * flick);
+        if (a < 0.012) continue;
+        const rayTop = baseY - (hY * cu.topF) * (0.5 + 0.5 * flick);          // ray height varies
+        const g = ctx.createLinearGradient(0, baseY, 0, rayTop);
+        g.addColorStop(0,   `rgba(${cu.hue[0]},${cu.hue[1]},${cu.hue[2]},${a})`);
+        g.addColorStop(0.6, `rgba(${cu.hue[0]},${cu.hue[1]},${cu.hue[2]},${a * 0.45})`);
+        g.addColorStop(1,   `rgba(${cu.hue[0]},${cu.hue[1]},${cu.hue[2]},0)`);
+        ctx.strokeStyle = g; ctx.lineWidth = 7; ctx.lineCap = 'butt';
+        ctx.beginPath(); ctx.moveTo(x, baseY + 6); ctx.lineTo(x, rayTop); ctx.stroke();
       }
-      ctx.strokeStyle = `rgba(${cols[b]},${aurA * (0.2 + 0.06 * Math.sin(tt * 0.8 + b))})`;
-      ctx.lineWidth = 16 + 8 * Math.sin(tt * 0.7 + b); ctx.lineCap = 'round'; ctx.stroke();
     }
     ctx.restore();
   }
@@ -637,8 +651,69 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.globalAlpha = 1;
   }
 
-  // (Visual bald eagle removed at Hassan's request — the flapping read as
-  //  fake. The eagle now lives only in the AFTERNOON soundscape.)
+  // ---- BALD EAGLE — SOARING (not flapping) in slow circles high over the
+  //   lake. Wings held in a long flat plank with fingered tips, white head &
+  //   tail. Banks as it circles so it reads as gliding, not the old fake flap. ----
+  const eagA = _smooth(0.10, 0.30, p) * (1 - _smooth(0.58, 0.80, p));
+  if (eagA > 0.02) {
+    const circT = tt * 0.35;
+    const ecx = W * (0.40 + 0.06 * Math.cos(circT)), ecy = hY * 0.34 + 0.06 * hY * Math.sin(circT * 1.3);
+    const bank = Math.cos(circT);                       // -1..1 → wing foreshortening as it banks
+    const span = 22 + 4 * Math.sin(tt * 0.8);           // subtle breathing of the glide
+    ctx.save(); ctx.globalAlpha = eagA; ctx.translate(ecx, ecy);
+    const body = 'rgba(46,34,24,1)';
+    // wings — a shallow dihedral plank, foreshortened by the bank
+    ctx.strokeStyle = body; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+    const wL = span * (0.7 + 0.3 * bank), wR = span * (0.7 - 0.3 * bank);
+    ctx.beginPath();
+    ctx.moveTo(-wL, -2 - bank * 2);
+    ctx.quadraticCurveTo(-wL * 0.4, -4, 0, 0);
+    ctx.quadraticCurveTo(wR * 0.4, -4, wR, -2 + bank * 2);
+    ctx.stroke();
+    // fingered wingtips
+    ctx.lineWidth = 1.2;
+    for (const sgn of [-1, 1]) {
+      const wt = sgn < 0 ? wL : wR;
+      for (let f = 0; f < 3; f++) {
+        ctx.beginPath(); ctx.moveTo(sgn * wt, -2); ctx.lineTo(sgn * (wt + 3 + f), -4 - f); ctx.stroke();
+      }
+    }
+    // body
+    ctx.fillStyle = body;
+    ctx.beginPath(); ctx.ellipse(0, 1, 2.4, 5, 0, 0, 6.283); ctx.fill();
+    // white head + tail (bald eagle)
+    ctx.fillStyle = 'rgba(238,236,230,1)';
+    ctx.beginPath(); ctx.arc(0, -5, 1.7, 0, 6.283); ctx.fill();              // head
+    ctx.beginPath(); ctx.moveTo(-1.6, 5.5); ctx.lineTo(1.6, 5.5); ctx.lineTo(0, 8.5); ctx.closePath(); ctx.fill();  // tail
+    ctx.fillStyle = 'rgba(214,170,60,1)';                                     // beak
+    ctx.beginPath(); ctx.arc(0, -6.4, 0.7, 0, 6.283); ctx.fill();
+    ctx.restore();
+  }
+  // ---- RAVENS — a pair flapping & tumbling near the treeline (croaking sentries
+  //   of the bush). Quick wingbeats + the odd barrel-roll, clearly black. ----
+  const ravA = (1 - _smooth(0.66, 0.86, p));
+  if (ravA > 0.04) {
+    for (let rv = 0; rv < 2; rv++) {
+      const rt = tt * 0.5 + rv * 3.0;
+      const rx = W * (0.30 + rv * 0.06) + Math.cos(rt) * W * 0.05;
+      const ry = hY * 0.5 + Math.sin(rt * 1.4) * 22 - rv * 10;
+      const flap = Math.sin(tt * 6 + rv * 2);
+      const roll = (Math.sin(rt * 0.7) > 0.9) ? Math.sin(tt * 8) : 0;        // occasional tumble
+      const wing = (7 + 3 * Math.abs(flap));
+      ctx.globalAlpha = ravA * 0.95;
+      ctx.strokeStyle = 'rgba(16,14,18,1)'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(rx - wing, ry + flap * 3 + roll * 3);
+      ctx.quadraticCurveTo(rx - wing * 0.3, ry - wing * 0.5, rx, ry);
+      ctx.quadraticCurveTo(rx + wing * 0.3, ry - wing * 0.5, rx + wing, ry + flap * 3 - roll * 3);
+      ctx.stroke();
+      // wedge tail + head (raven silhouette)
+      ctx.fillStyle = 'rgba(16,14,18,1)';
+      ctx.beginPath(); ctx.ellipse(rx, ry, 2.2, 1.2, 0, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(rx - 2, ry); ctx.lineTo(rx - 5, ry - 1); ctx.lineTo(rx - 2, ry + 1); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
   // ---- far shore: treeline + a small community gathering, with a fire glow ----
   const shoreAlpha = 0.6 + 0.28 * _smooth(0.6, 1, p);
   const vx = W * 0.66;                                 // the village gathering sits here on the shore
@@ -1999,19 +2074,21 @@ function drawScene(ctx, W, H, p, tt, now) {
         // pale breast
         ctx.fillStyle = breast;
         ctx.beginPath(); ctx.ellipse(-5, -0.5, 3, 2.4, 0.2, 0, 6.283); ctx.fill();
-        // black S-neck — raised & open-billed when honking, lowered when grazing
-        const headX = honk ? -10 : -12, headY = honk ? -13 : 4;
-        ctx.strokeStyle = 'rgba(20,18,16,1)'; ctx.lineWidth = 2.0; ctx.lineCap = 'round';
+        // LONG black neck — tall vertical S when honking/alert, swept down to
+        // the grass when grazing. A proper goose neck (the old one was stubby).
+        const headX = honk ? -8 : -15, headY = honk ? -20 : 6;
+        ctx.strokeStyle = 'rgba(20,18,16,1)'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(-6, -4);
-        ctx.quadraticCurveTo(honk ? -11 : -10, honk ? -8 : 0, headX, headY);
+        ctx.moveTo(-6, -3.5);
+        if (honk) ctx.bezierCurveTo(-9, -10, -6, -16, headX, headY);          // upright S, head high
+        else      ctx.bezierCurveTo(-12, -5, -16, 1, headX, headY);            // reaching down to graze
         ctx.stroke();
         // head
         ctx.fillStyle = 'rgba(20,18,16,1)';
-        ctx.beginPath(); ctx.arc(headX, headY, 2.0, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(headX, headY, 2.3, 1.9, honk ? 0 : 0.5, 0, 6.283); ctx.fill();
         // white cheek patch (the Canada-goose chin-strap)
         ctx.fillStyle = 'rgba(238,238,232,0.95)';
-        ctx.beginPath(); ctx.ellipse(headX + (honk ? 0.6 : -0.6), headY + 0.6, 1.0, 1.4, 0, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(headX + (honk ? 0.8 : -0.8), headY + 0.6, 1.1, 1.5, 0, 0, 6.283); ctx.fill();
         // bill
         ctx.fillStyle = 'rgba(24,20,18,1)';
         ctx.beginPath();
@@ -2020,9 +2097,9 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.closePath(); ctx.fill();
         ctx.restore();
       };
-      drawGoose(W * 0.50, ground(W * 0.50) + 4, 1.5, true, 0);             // the honker (neck up)
-      drawGoose(W * 0.475, ground(W * 0.475) + 6, 1.35, false, 1.5);      // grazing
-      drawGoose(W * 0.525, ground(W * 0.525) + 5, 1.4, false, 3.0);       // grazing
+      drawGoose(W * 0.50, ground(W * 0.50) + 4, 1.9, true, 0);             // the honker (neck up)
+      drawGoose(W * 0.47, ground(W * 0.47) + 6, 1.7, false, 1.5);         // grazing
+      drawGoose(W * 0.53, ground(W * 0.53) + 5, 1.75, false, 3.0);        // grazing
 
       // ---- LAND PLANTS on the LHS bank (Hassan: "where are the plants on the
       //   land? they can all be on LHS"): clumps of green grass/sedge tufts and
@@ -2452,6 +2529,40 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.fillStyle = '#ffce7a';
         ctx.beginPath(); ctx.arc(lwX + 7, lwY - 7 + Math.sin(tt * 2) * 1.5, 2.4, 0, 6.283); ctx.fill();
       }
+      // a NIGHT FEAST on a long woven mat — a row of bowls of food laid out,
+      // two figures sitting and EATING (reaching to the bowls), one passing a
+      // bowl to a neighbour. This is the "dinner on the land" Hassan asked for.
+      {
+        const ftX = fx - 110, ftY = ground(fx - 110) + 10;
+        // woven mat
+        ctx.fillStyle = `rgba(${Math.round(_lerp(96, 58, nm))},${Math.round(_lerp(64, 40, nm))},${Math.round(_lerp(28, 18, nm))},0.85)`;
+        ctx.beginPath(); ctx.ellipse(ftX, ftY + 2, 32, 7, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(40, 22, nm))},${Math.round(_lerp(28, 16, nm))},${Math.round(_lerp(14, 8, nm))},0.7)`;
+        ctx.lineWidth = 0.5;
+        for (let mw = -28; mw <= 28; mw += 6) {
+          ctx.beginPath(); ctx.moveTo(ftX + mw, ftY - 2); ctx.lineTo(ftX + mw + 2, ftY + 6); ctx.stroke();
+        }
+        // bowls on the mat (wild rice, berries, fish — different shades)
+        const bowlCols = ['#d8c896', '#7a2a18', '#a6c1d6'];
+        for (let bw = 0; bw < 3; bw++) {
+          const bxC = ftX - 18 + bw * 18, byC = ftY - 1;
+          ctx.fillStyle = '#3a2410';
+          ctx.beginPath(); ctx.ellipse(bxC, byC, 4.4, 1.8, 0, 0, 6.283); ctx.fill();    // bowl rim
+          ctx.fillStyle = bowlCols[bw];
+          ctx.beginPath(); ctx.ellipse(bxC, byC - 0.4, 3.4, 1.2, 0, 0, 6.283); ctx.fill();  // food
+          // a little wisp of steam rising from the warm food
+          ctx.strokeStyle = `rgba(220,214,200,${0.35 + 0.2 * Math.sin(tt * 2 + bw)})`;
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(bxC, byC - 1);
+          ctx.quadraticCurveTo(bxC + 2 * Math.sin(tt + bw), byC - 6, bxC, byC - 12);
+          ctx.stroke();
+        }
+        // two diners reaching to the bowls + one passing a bowl
+        fig(ftX - 22, ftY - 1, 1.20, 'sit', 1.2, { shirt: '#5a7d3a', hairStyle: 'long', dir: 1 });
+        fig(ftX + 22, ftY - 1, 1.20, 'sit', 3.4, { shirt: '#1f4e8f', hairStyle: 'braid', dir: -1 });
+        fig(ftX, ftY - 1, 1.25, 'stir', 2.1, { shirt: '#d68a1f', hairStyle: 'braid', dir: 1 });
+      }
       // two CHILDREN already ASLEEP on a hide near the fire's warmth
       {
         const slX = fx - 70, slY = ground(fx - 70) + 8;
@@ -2668,6 +2779,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     // --- CRANE / heron standing tall on the near shore, occasionally bowing ---
     {
       const crX = W * 0.86, crBase = ground(W * 0.86) + 4;
+      ctx.save(); ctx.translate(crX, crBase); ctx.scale(1.6, 1.6); ctx.translate(-crX, -crBase);  // bigger / more prominent
       ctx.globalAlpha = wildA * 0.95;
       const bow = Math.max(0, Math.sin(tt * 0.5)) * 6;                                       // periodic bow toward the water
       const col = `rgba(${Math.round(_lerp(150,80,nm))},${Math.round(_lerp(160,92,nm))},${Math.round(_lerp(170,104,nm))},1)`;
@@ -2691,6 +2803,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       // dagger bill
       ctx.strokeStyle = 'rgba(210,180,90,1)'; ctx.lineWidth = 1.0;
       ctx.beginPath(); ctx.moveTo(crX + 5, crBase - 30 + bow); ctx.lineTo(crX + 11, crBase - 29 + bow); ctx.stroke();
+      ctx.restore();                                                           // close the 1.6x scale wrap
     }
     // --- PAINTED TURTLE basking on a half-sunk log (mikinaak — culturally
     //   important; Turtle Island). Occasionally stretches its neck. ---
