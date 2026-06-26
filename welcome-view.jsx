@@ -404,15 +404,13 @@ function createAmbient(getP) {
     timers.push(setTimeout(fireCrackle, 700 + Math.random() * 900));
   }
 
-  // OPEN THE DAY — a traditional rattle, then gentle birds + the time-of-day voices
-  rattle(true);
-  timers.push(setTimeout(bird, 1500));                 // calming birdsong layer
-  timers.push(setTimeout(rattleLoop, 17000));
+  // SOUNDSCAPE (Hassan: "remove all sound, just calming lake + birds + animal
+  // voices"). Kept: ambient water lapping (always on, set up earlier) + gentle
+  // BIRDSONG + an occasional EAGLE cry + distant WOLF howls at night.
+  // Removed: rattle, fire-crackle, fish splashes, otter splashes.
+  timers.push(setTimeout(bird, 1500));
   timers.push(setTimeout(eagle, 4500));
-  timers.push(setTimeout(fishLoop, 6500));
-  timers.push(setTimeout(otterLoop, 12000));
   timers.push(setTimeout(wolf, 9000));
-  timers.push(setTimeout(fireCrackle, 3000));
   try { master.gain.linearRampToValueAtTime(0.46, T() + 2.6); } catch (e) {}
   return {
     stop() {
@@ -639,8 +637,82 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.globalAlpha = 1;
   }
 
-  // (Soaring-eagle removed — it didn't read as an eagle. The Bird clan is
-  //  represented by the geese skeins + ravens; the eagle stays in the soundscape.)
+  // ---- BALD EAGLE (migizi) — large, prominent, in the Anishinaabe woodland-art
+  //   spirit (Hassan supplied reference art). Soars in a long banking glide
+  //   across the sky, wings held wide with clearly fingered primary feathers,
+  //   bright WHITE HEAD + WHITE TAIL + GOLDEN BEAK & TALONS. Big enough to
+  //   actually read as an eagle.
+  const eagA = _smooth(0.06, 0.24, p) * (1 - _smooth(0.62, 0.84, p));
+  if (eagA > 0.02) {
+    const glideX = ((tt * 0.012) % 1.3 - 0.15) * W;        // sails L→R across the sky
+    const ecy = hY * 0.30 + Math.sin(tt * 0.4) * 8;        // gentle up/down
+    const tilt = Math.sin(tt * 0.4) * 0.10;                // slight bank
+    ctx.save(); ctx.globalAlpha = eagA;
+    ctx.translate(glideX, ecy); ctx.rotate(-Math.PI / 2 + tilt);            // head leads to the RIGHT (direction of glide)
+    // BIG scale so it's actually visible
+    const Eg = 1.0;                                         // size unit
+    const span = 64 * Eg;                                   // wide wingspan
+    // wing baseline – a slight upward arch (dihedral)
+    const wingArch = -10 * Eg;
+    // dark body
+    const body = 'rgba(48,30,18,1)';
+    const wingDark = 'rgba(58,40,24,1)';
+    ctx.fillStyle = body;
+    ctx.beginPath(); ctx.ellipse(0, 0, 4 * Eg, 12 * Eg, 0, 0, 6.283); ctx.fill();
+    // wings — broad with fingered tips, drawn as filled shapes (not lines)
+    for (const sgn of [-1, 1]) {
+      ctx.fillStyle = wingDark;
+      ctx.beginPath();
+      ctx.moveTo(0, -3 * Eg);
+      ctx.quadraticCurveTo(sgn * span * 0.35, wingArch, sgn * span, -2 * Eg);   // leading edge
+      ctx.lineTo(sgn * (span - 4 * Eg), 4 * Eg);                                 // tip
+      ctx.quadraticCurveTo(sgn * span * 0.4, 5 * Eg, 0, 5 * Eg);                 // trailing edge
+      ctx.closePath(); ctx.fill();
+      // fingered primaries (4 long feathers splayed at the tip)
+      ctx.strokeStyle = body; ctx.lineWidth = 2.2 * Eg; ctx.lineCap = 'round';
+      for (let f = 0; f < 4; f++) {
+        const tipX = sgn * (span - 1 * Eg + f * 1.5 * Eg);
+        const tipY = -2 * Eg + f * 1.8 * Eg;
+        const outX = sgn * (span + 5 * Eg + f * 1.8 * Eg);
+        const outY = 0 + f * 2.4 * Eg;
+        ctx.beginPath(); ctx.moveTo(tipX, tipY); ctx.lineTo(outX, outY); ctx.stroke();
+      }
+      // a hint of pale feather edging along the leading edge (woodland-art style)
+      ctx.strokeStyle = 'rgba(200,210,224,0.55)'; ctx.lineWidth = 1.0 * Eg;
+      ctx.beginPath();
+      ctx.moveTo(sgn * 5 * Eg, -2 * Eg);
+      ctx.quadraticCurveTo(sgn * span * 0.5, wingArch + 1, sgn * (span - 2 * Eg), -2 * Eg);
+      ctx.stroke();
+    }
+    // WHITE HEAD
+    ctx.fillStyle = 'rgba(244,242,236,1)';
+    ctx.beginPath(); ctx.ellipse(0, -12 * Eg, 4 * Eg, 4 * Eg, 0, 0, 6.283); ctx.fill();
+    // golden HOOKED BEAK pointing forward (down the body axis)
+    ctx.fillStyle = 'rgba(232,184,52,1)';
+    ctx.beginPath();
+    ctx.moveTo(-1.4 * Eg, -14 * Eg);
+    ctx.quadraticCurveTo(0, -18 * Eg, 1.4 * Eg, -14 * Eg);
+    ctx.quadraticCurveTo(0.6 * Eg, -13 * Eg, -1.4 * Eg, -14 * Eg);
+    ctx.closePath(); ctx.fill();
+    // sharp dark eye + brow ridge
+    ctx.fillStyle = 'rgba(232,184,52,1)';
+    ctx.beginPath(); ctx.arc(-1.6 * Eg, -12.4 * Eg, 1.0 * Eg, 0, 6.283); ctx.fill();
+    ctx.fillStyle = 'rgba(12,8,4,1)';
+    ctx.beginPath(); ctx.arc(-1.7 * Eg, -12.5 * Eg, 0.55 * Eg, 0, 6.283); ctx.fill();
+    // WHITE FANNED TAIL
+    ctx.fillStyle = 'rgba(244,242,236,1)';
+    ctx.beginPath();
+    ctx.moveTo(-3 * Eg, 11 * Eg);
+    ctx.lineTo(3 * Eg, 11 * Eg);
+    ctx.lineTo(2 * Eg, 17 * Eg);
+    ctx.lineTo(-2 * Eg, 17 * Eg);
+    ctx.closePath(); ctx.fill();
+    // golden tucked TALONS just visible
+    ctx.fillStyle = 'rgba(232,184,52,1)';
+    ctx.beginPath(); ctx.arc(-1.6 * Eg, 9 * Eg, 0.8 * Eg, 0, 6.283); ctx.fill();
+    ctx.beginPath(); ctx.arc(1.6 * Eg, 9 * Eg, 0.8 * Eg, 0, 6.283); ctx.fill();
+    ctx.restore();
+  }
   // ---- RAVENS — a pair flapping & tumbling near the treeline (croaking sentries
   //   of the bush). Quick wingbeats + the odd barrel-roll, clearly black. ----
   const ravA = (1 - _smooth(0.66, 0.86, p));
@@ -2058,7 +2130,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   peacemakers). Stands grazing, lifts its head ALERT now and then, ears
       //   flicking, tail twitching. Slender legs, white throat & tail. ----
       {
-        const dxe = W * 0.71, dye = ground(dxe) - 26, dsc = 1.7;            // up the bank, behind the work line
+        const dxe = W * 0.93, dye = ground(dxe) - 30, dsc = 1.7;            // far end of the bank, clear of all villagers
         ctx.save(); ctx.translate(dxe, dye); ctx.scale(dsc, dsc); ctx.globalAlpha = (1 - nm);
         const coat = `rgb(${Math.round(_lerp(168,86,nm))},${Math.round(_lerp(120,60,nm))},${Math.round(_lerp(78,40,nm))})`;
         const alert = Math.max(0, Math.sin(tt * 0.4));                      // 0 grazing → 1 head up
@@ -2112,7 +2184,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         // the marten scampers back and forth along the log
         const run = Math.sin(tt * 1.1);
         const mxp = logX + run * (logLen / 2 - 5);
-        const mdir = Math.cos(tt * 1.1) >= 0 ? 1 : -1;
+        const mdir = Math.cos(tt * 1.1) >= 0 ? -1 : 1;   // body is drawn head-LEFT, so invert to face travel
         const gallop = Math.abs(Math.sin(tt * 9)) * 1.4;                                  // bounding body arch
         ctx.save(); ctx.translate(mxp, logY - 3); ctx.scale(mdir, 1);
         const fur = `rgb(${Math.round(_lerp(132,68,nm))},${Math.round(_lerp(78,40,nm))},${Math.round(_lerp(38,20,nm))})`;
@@ -2541,19 +2613,8 @@ function drawScene(ctx, W, H, p, tt, now) {
         const dnx = fx + 56, dny = fy + 6;
         fig(dnx, dny, 1.35, 'drum', 4, { shirt: '#b04a2a', hairStyle: 'braid', dir: -1 });
       }
-      // a COUPLE WALKING with a carried LANTERN, away from the fire
-      {
-        const lwT = (tt * 0.18) % 1;
-        const lwX = fx + 80 + lwT * 70, lwY = ground(fx + 80 + lwT * 70) + 6;
-        const lg = ctx.createRadialGradient(lwX, lwY - 8, 0, lwX, lwY - 8, 26);
-        lg.addColorStop(0, 'rgba(255,186,90,0.5)'); lg.addColorStop(1, 'rgba(255,186,90,0)');
-        ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(lwX, lwY - 8, 26, 0, 6.283); ctx.fill();
-        fig(lwX, lwY, 1.35, 'walk', 0.5, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });
-        fig(lwX - 12, lwY + 1, 1.30, 'walk', 2.3, { shirt: '#d68a1f', hairStyle: 'braid', dir: 1 });
-        // the lantern itself, swinging from a hand
-        ctx.fillStyle = '#ffce7a';
-        ctx.beginPath(); ctx.arc(lwX + 7, lwY - 7 + Math.sin(tt * 2) * 1.5, 2.4, 0, 6.283); ctx.fill();
-      }
+      // (removed: lantern-couple walking filler — Hassan didn't want more
+      //  walking-with-lanterns; replaced with real fixed activities elsewhere)
       // a NIGHT FEAST on a long woven mat — a row of bowls of food laid out,
       // two figures sitting and EATING (reaching to the bowls), one passing a
       // bowl to a neighbour. This is the "dinner on the land" Hassan asked for.
@@ -2665,7 +2726,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       // Wolves were too small / not animated enough. Wrap in a 2.2x scale and
       // do everything in local (0, 0) coordinates so we don't have to rewrite
       // every offset by hand.
-      ctx.translate(wRidgeX, wRidgeY); ctx.scale(2.2, 2.2);
+      ctx.translate(wRidgeX, wRidgeY); ctx.scale(0.9, 0.9);    // small distant silhouettes (was 2.2× = "black dinosaurs")
       const wolfBody = 'rgba(8,6,4,1)';
       const wolfRim  = `rgba(180,196,224,${0.18 * nm})`;
       ctx.fillStyle = wolfBody;
