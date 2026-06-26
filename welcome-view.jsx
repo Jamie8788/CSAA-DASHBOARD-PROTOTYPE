@@ -1879,7 +1879,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   real Friendship Dance, not random hand-waving. DAY / AFTERNOON ONLY
       //   (Hassan: ring-of-roses belongs to the day, not the evening/night).
       if (isMorning || isMidday) {
-        const ringX = W * 0.66, ringY = H - 30, ringR = 22;   // tight enough for hands to actually meet
+        const ringX = W * 0.50, ringY = H - 22, ringR = 20;   // moved to the OPEN left foreground, away from the village cluster
         // trodden grass ring
         ctx.fillStyle = `rgba(${Math.round(_lerp(150, 70, nm))},${Math.round(_lerp(132, 60, nm))},${Math.round(_lerp(86, 36, nm))},0.45)`;
         ctx.beginPath(); ctx.ellipse(ringX, ringY + 6, ringR + 5, (ringR + 5) * 0.4, 0, 0, 6.283); ctx.fill();
@@ -1912,7 +1912,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         for (let c = 0; c < N; c++) {
           const { x, y, a } = kp[c];
           const kdir = Math.cos(a) >= 0 ? 1 : -1;       // tangential facing (clockwise)
-          fig(x, y, 1.05, 'dance', c * 1.3, { shirt: kidShirts[c], hairStyle: c % 2 ? 'long' : 'braid', dir: kdir });
+          fig(x, y, 0.82, 'dance', c * 1.3, { shirt: kidShirts[c], hairStyle: c % 2 ? 'long' : 'braid', dir: kdir });  // clearly small CHILDREN
         }
         // (No connecting line/rope around the ring — Hassan hated the "rope".
         //  The children stand CLOSE in a tight circle and their own dance arms
@@ -1923,8 +1923,8 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.fillStyle = 'rgba(186,138,98,1)';
         for (let c = 0; c < N; c++) {
           const k1 = kp[c], k2 = kp[(c + 1) % N];
-          ctx.beginPath(); ctx.moveTo(k1.x + 5, k1.y - 13); ctx.lineTo(k2.x - 5, k2.y - 13); ctx.stroke();
-          ctx.beginPath(); ctx.arc((k1.x + k2.x) / 2, (k1.y + k2.y) / 2 - 13, 1.8, 0, 6.283); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(k1.x + 3.5, k1.y - 10); ctx.lineTo(k2.x - 3.5, k2.y - 10); ctx.stroke();
+          ctx.beginPath(); ctx.arc((k1.x + k2.x) / 2, (k1.y + k2.y) / 2 - 10, 1.4, 0, 6.283); ctx.fill();
         }
       }
       // --- TATANKA (Dakoda chase game) — MIDDAY: children run and the "Tatanka"
@@ -2688,7 +2688,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       // two figures sitting and EATING (reaching to the bowls), one passing a
       // bowl to a neighbour. This is the "dinner on the land" Hassan asked for.
       {
-        const ftX = fx - 110, ftY = ground(fx - 110) + 10;
+        const ftX = fx - 175, ftY = ground(fx - 175) + 10;   // pulled well left of the fire so night isn't crowded
         // woven mat
         ctx.fillStyle = `rgba(${Math.round(_lerp(96, 58, nm))},${Math.round(_lerp(64, 40, nm))},${Math.round(_lerp(28, 18, nm))},0.85)`;
         ctx.beginPath(); ctx.ellipse(ftX, ftY + 2, 32, 7, 0, 0, 6.283); ctx.fill();
