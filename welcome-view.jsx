@@ -648,7 +648,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     const ecy = hY * 0.30 + Math.sin(tt * 0.4) * 8;        // gentle up/down
     const tilt = Math.sin(tt * 0.4) * 0.10;                // slight bank
     ctx.save(); ctx.globalAlpha = eagA;
-    ctx.translate(glideX, ecy); ctx.rotate(-Math.PI / 2 + tilt);            // head leads to the RIGHT (direction of glide)
+    ctx.translate(glideX, ecy); ctx.rotate(tilt);                          // head-UP, wings spread WIDE (classic soaring view)
     // BIG scale so it's actually visible
     const Eg = 1.0;                                         // size unit
     const span = 64 * Eg;                                   // wide wingspan
@@ -1757,6 +1757,31 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.beginPath(); ctx.ellipse(ex, ey, w, w * 0.42, 0, 0, 6.283); ctx.fill();
       };
 
+      // --- VILLAGERS SPREAD UP THE BANK (Hassan: "whole village is only on the
+      //   shoreline"). A scatter of people working/moving HIGHER up the green
+      //   slope, well above the waterline work-stations, so the community fills
+      //   the land — not just a line at the edge. Each at its own clear spot. ---
+      {
+        const up = (fxC, lift, sc, kind, ph, opt) => fig(W * fxC, ground(W * fxC) - lift, sc, kind, ph, opt);
+        // berry-pickers up the slope (bending to pick into baskets)
+        up(0.555, 40, 1.15, 'scrape', 0.7, { shirt: '#7c2f6b', hairStyle: 'long', dir: 1 });
+        up(0.575, 46, 1.10, 'carry', 2.2, { shirt: '#5a7d3a', hairStyle: 'braid', dir: -1 });
+        // a water-carrier climbing from the lake with a yoke (moves up the slope)
+        const wcT = (Math.sin(tt * 0.25) * 0.5 + 0.5);
+        up(0.66 + wcT * 0.03, 30 + wcT * 22, 1.2, 'carry', 1.1, { shirt: '#1f4e8f', hairStyle: 'braid', dir: 1 });
+        // two people setting a snare / checking a trapline at the treeline edge
+        up(0.74, 52, 1.05, 'sit', 3.3, { shirt: '#b04a2a', hairStyle: 'long', dir: 1 });
+        up(0.875, 44, 1.10, 'stir', 4.0, { shirt: '#d68a1f', hairStyle: 'braid', dir: -1 });
+        // a lone hunter with a bow, scanning up at the top of the bank
+        {
+          const hbx = W * 0.50, hby = ground(W * 0.50) - 58;
+          fig(hbx, hby, 1.2, 'sit', 5, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
+          ctx.strokeStyle = 'rgba(60,40,20,0.95)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.arc(hbx + 7, hby - 6, 7, -1.1, 1.1); ctx.stroke();   // the bow
+          ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(hbx + 7, hby - 12.5); ctx.lineTo(hbx + 7, hby + 0.5); ctx.stroke();
+        }
+      }
+
       // --- VIGNETTE 1: HIDE-WORKING — always staffed (scraper + helper). ---
       earth(hfx - 4, hfy + 10, 38);
       fig(hfx - 16, hfy + 6, 1.55, 'scrape', 2.3, { shirt: '#b04a2a', hairStyle: 'braid', dir: 1 });
@@ -2004,7 +2029,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       // ---- HORSES grazing on the bank (Anishinaabe communities have long
       //   kept horses — adds a real sign of life Hassan asked for) ----
       const drawHorse = (hx, hy, sc, ph, headDown) => {
-        ctx.save(); ctx.globalAlpha = (1 - nm);
+        ctx.save(); ctx.globalAlpha = dayA;   // solid through the day, fades at dusk like the villagers (not ghosty)
         // colours
         const coat = ctx.createLinearGradient(hx, hy - 16 * sc, hx, hy + 12 * sc);
         coat.addColorStop(0, 'rgba(96,62,36,1)');
@@ -2081,7 +2106,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   black S-neck, white cheek patch. One honks (neck up), others graze
       //   (neck down, pecking). Matches Hassan's reference photo. ----
       const drawGoose = (gx, gy, gsc, honk, ph) => {
-        ctx.save(); ctx.translate(gx, gy); ctx.scale(gsc, gsc); ctx.globalAlpha = (1 - nm);
+        ctx.save(); ctx.translate(gx, gy); ctx.scale(gsc, gsc); ctx.globalAlpha = dayA;
         const bodyCol = `rgb(${Math.round(_lerp(150,76,nm))},${Math.round(_lerp(136,68,nm))},${Math.round(_lerp(112,54,nm))})`;
         const breast = `rgb(${Math.round(_lerp(214,108,nm))},${Math.round(_lerp(206,104,nm))},${Math.round(_lerp(186,92,nm))})`;
         // legs
@@ -2130,8 +2155,10 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   peacemakers). Stands grazing, lifts its head ALERT now and then, ears
       //   flicking, tail twitching. Slender legs, white throat & tail. ----
       {
-        const dxe = W * 0.93, dye = ground(dxe) - 30, dsc = 1.7;            // far end of the bank, clear of all villagers
-        ctx.save(); ctx.translate(dxe, dye); ctx.scale(dsc, dsc); ctx.globalAlpha = (1 - nm);
+        // PROMINENT, on its own clear patch of UPPER bank (well above the work
+        // line, mid-screen) so nothing overlaps it. Bigger + solid (not ghosty).
+        const dxe = W * 0.60, dye = ground(W * 0.60) - 52, dsc = 2.2;
+        ctx.save(); ctx.translate(dxe, dye); ctx.scale(dsc, dsc); ctx.globalAlpha = dayA;
         const coat = `rgb(${Math.round(_lerp(168,86,nm))},${Math.round(_lerp(120,60,nm))},${Math.round(_lerp(78,40,nm))})`;
         const alert = Math.max(0, Math.sin(tt * 0.4));                      // 0 grazing → 1 head up
         const headY = 4 - alert * 12, headX = -11 + alert * 3;             // head lifts & draws back when alert
@@ -2175,7 +2202,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       {
         const logX = W * 0.82, logY = ground(logX) + 2, logLen = 34;
         // the fallen log it runs along
-        ctx.save(); ctx.globalAlpha = (1 - nm);
+        ctx.save(); ctx.globalAlpha = dayA;   // solid through the day, fades at dusk like the villagers (not ghosty)
         ctx.fillStyle = `rgb(${Math.round(_lerp(96,52,nm))},${Math.round(_lerp(64,34,nm))},${Math.round(_lerp(36,18,nm))})`;
         ctx.beginPath(); ctx.ellipse(logX, logY, logLen / 2, 3.2, -0.05, 0, 6.283); ctx.fill();
         ctx.strokeStyle = `rgba(${Math.round(_lerp(40,22,nm))},${Math.round(_lerp(26,14,nm))},${Math.round(_lerp(14,8,nm))},0.7)`;
