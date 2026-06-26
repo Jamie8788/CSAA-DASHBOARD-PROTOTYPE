@@ -1575,11 +1575,29 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.lineTo(torsoX + 4.0 * sc, torsoY);                                       // hip R
       ctx.quadraticCurveTo(torsoX, torsoY + 0.6 * sc, torsoX - 4.0 * sc, torsoY);   // hem curve
       ctx.closePath(); ctx.fill();
-      // ribbon stripes — a thin contrasting band across the chest
-      ctx.fillStyle = 'rgba(245,232,200,0.85)';
-      ctx.fillRect(torsoX - 3.6 * sc, shoulderY - bodyBob + 3.2 * sc, 7.2 * sc, 0.7 * sc);
-      ctx.fillStyle = 'rgba(20,12,8,0.45)';
-      ctx.fillRect(torsoX - 3.6 * sc, shoulderY - bodyBob + 4.2 * sc, 7.2 * sc, 0.4 * sc);
+      // RIBBON-WORK detailing (Hassan: richer shirts). A pale ribbon band across
+      // the chest with a row of applique TRIANGLES, a vertical ribbon down the
+      // front, and a coloured hem band — the look of a real ribbon shirt.
+      const ribTop = shoulderY - bodyBob + 3.0 * sc;
+      ctx.fillStyle = 'rgba(245,232,200,0.9)';
+      ctx.fillRect(torsoX - 3.6 * sc, ribTop, 7.2 * sc, 0.8 * sc);                 // chest ribbon
+      // a row of little applique triangles along the band (per-figure accent hue)
+      const accent = ['rgba(214,90,40,0.95)', 'rgba(60,120,170,0.95)', 'rgba(210,170,60,0.95)', 'rgba(120,150,80,0.95)'][Math.floor(ph) % 4];
+      ctx.fillStyle = accent;
+      for (let tr = -3; tr <= 3; tr++) {
+        const txc = torsoX + tr * 1.1 * sc;
+        ctx.beginPath();
+        ctx.moveTo(txc - 0.5 * sc, ribTop + 0.8 * sc);
+        ctx.lineTo(txc + 0.5 * sc, ribTop + 0.8 * sc);
+        ctx.lineTo(txc, ribTop + 1.7 * sc);
+        ctx.closePath(); ctx.fill();
+      }
+      // vertical ribbon down the centre-front
+      ctx.fillStyle = 'rgba(245,232,200,0.7)';
+      ctx.fillRect(torsoX - 0.35 * sc, ribTop + 1.7 * sc, 0.7 * sc, (torsoY - ribTop) - 2.0 * sc);
+      // coloured hem band at the bottom of the shirt
+      ctx.fillStyle = accent;
+      ctx.fillRect(torsoX - 3.9 * sc, torsoY - 1.0 * sc, 7.8 * sc, 0.9 * sc);
 
       // ---- ARMS (in skin tone) + activity hand ----
       const sArmY = shoulderY - bodyBob + 1.2 * sc;
@@ -1822,6 +1840,21 @@ function drawScene(ctx, W, H, p, tt, now) {
       fig(dx - 6, dyy + 6, 1.50, 'hang', 1.2, { shirt: '#7c2f6b', hairStyle: 'braid' });
       fig(dx + 18, dyy + 6, 1.30, 'hang', 4.0, { shirt: '#5a7d3a', dir: -1 });
 
+      // --- LEFT-BANK / "EMPTY TRIANGLE" group (Hassan: utilise the empty space).
+      //   A shore-fishing pair on the open left of the bank: one casting a line
+      //   over the water, one cleaning the catch, on solid ground (not floating).
+      {
+        const lbx = W * 0.485, lby = ground(W * 0.485) + 6;
+        earth(lbx, lby + 4, 26);
+        fig(lbx, lby, 1.35, 'sit', 0.8, { shirt: '#1f4e8f', hairStyle: 'braid', dir: 1 });            // angler
+        ctx.strokeStyle = 'rgba(46,32,18,1)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+        const rod = Math.sin(tt * 1.1) * 1.4;
+        ctx.beginPath(); ctx.moveTo(lbx + 2, lby - 14); ctx.lineTo(lbx - 30 + rod, lby - 4); ctx.stroke();
+        ctx.strokeStyle = 'rgba(220,214,200,0.55)'; ctx.lineWidth = 0.7;
+        ctx.beginPath(); ctx.moveTo(lbx - 30 + rod, lby - 4); ctx.lineTo(lbx - 32 + rod, lby + 6); ctx.stroke();
+        fig(lbx + 20, lby + 2, 1.25, 'scrape', 2.4, { shirt: '#7c2f6b', hairStyle: 'long', dir: -1 });  // cleaning the catch
+      }
+
       // --- VIGNETTE 5: FIRE CIRCLE (cook stirring the pot + drummer) ---
       earth(fx + 4, fy + 14, 36);
       fig(fx + 16, ground(fx + 16) + 6, 1.55, 'stir', 0.0, { shirt: '#c93a1e', hairStyle: 'long' });
@@ -1843,9 +1876,9 @@ function drawScene(ctx, W, H, p, tt, now) {
       // --- MI'KMAQ FRIENDSHIP DANCE (foreground attraction, prominent) ---
       //   Five children HOLD HANDS in a circle and move CLOCKWISE, taking
       //   THREE STEPS FORWARD and ONE STEP BACK in time with the drum — the
-      //   real Friendship Dance, not random hand-waving. Plays through MIDDAY
-      //   and EVENING (Hassan: they disappeared too soon, they can play longer).
-      if (isMidday || isEvening) {
+      //   real Friendship Dance, not random hand-waving. DAY / AFTERNOON ONLY
+      //   (Hassan: ring-of-roses belongs to the day, not the evening/night).
+      if (isMorning || isMidday) {
         const ringX = W * 0.66, ringY = H - 30, ringR = 22;   // tight enough for hands to actually meet
         // trodden grass ring
         ctx.fillStyle = `rgba(${Math.round(_lerp(150, 70, nm))},${Math.round(_lerp(132, 60, nm))},${Math.round(_lerp(86, 36, nm))},0.45)`;
@@ -2598,22 +2631,15 @@ function drawScene(ctx, W, H, p, tt, now) {
         { shirt: '#1f4e8f', hairStyle: 'long' },
         { shirt: '#d68a1f', hairStyle: 'braid' },
       ];
-      // NIGHT = a ROUND DANCE around the fire (distinct from the EVENING's quiet
-      // seated storytelling). Adults move slowly CLOCKWISE in a ring, facing the
-      // fire, stepping to the drum — a celebration, not people sitting/walking.
+      // NIGHT = a CALM, well-SPACED gathering around the fire (Hassan: the round
+      // dance looked clustered / ritual-y). Just a few people sitting and one
+      // drummer keeping a soft beat — quiet end of the day, not a ceremony.
       {
-        const M = 8, rot = tt * 0.35;                          // slow clockwise rotation
-        const step = Math.abs(Math.sin(tt * 2.4));             // drum-step bob
-        for (let i = 0; i < M; i++) {
-          const a = rot + i * (Math.PI * 2 / M);
-          const dxx = Math.cos(a) * 42, dyy = Math.sin(a) * 16;   // flattened ring around the fire
-          const dir = Math.sin(a) >= 0 ? -1 : 1;               // face along the circle (clockwise)
-          fig(fx + dxx, fy + 9 + dyy - step * 2, 1.2 + (dyy > 0 ? 0.15 : 0), 'dance', i * 1.1,
-              Object.assign({ dir }, styles[i % styles.length]));
-        }
-        // two seated DRUMMERS just off the ring keeping the beat
-        fig(fx - 60, fy + 8, 1.25, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
-        fig(fx - 70, fy + 9, 1.2, 'drum', 5, { shirt: '#7c2f6b', hairStyle: 'long', dir: 1 });
+        [[-30, 1.25, 1], [-15, 1.3, 1], [16, 1.3, -1], [30, 1.2, -1]].forEach(([dxx, sc, dir], i) => {
+          const bob = Math.sin(tt * 1.4 + i) * 0.6;
+          fig(fx + dxx, fy + 8 + bob, sc, 'sit', i, Object.assign({ dir }, styles[i % styles.length]));
+        });
+        fig(fx - 52, fy + 8, 1.25, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
       }
       // TORCH-FISHING on the open LEFT water (uses the empty side; a real night
       // activity — spearing fish by torchlight from a small canoe).
