@@ -643,7 +643,7 @@ function drawScene(ctx, W, H, p, tt, now) {
   //   bright WHITE HEAD + WHITE TAIL + GOLDEN BEAK & TALONS. Big enough to
   //   actually read as an eagle.
   const eagA = _smooth(0.06, 0.24, p) * (1 - _smooth(0.62, 0.84, p));
-  if (eagA > 0.02) {
+  if (false && eagA > 0.02) {   // EAGLE DISABLED (Hassan) — Bird clan carried by the geese skeins + ravens
     const glideX = ((tt * 0.012) % 1.3 - 0.15) * W;        // sails L→R across the sky
     const ecy = hY * 0.30 + Math.sin(tt * 0.4) * 8;        // gentle up/down
     const tilt = Math.sin(tt * 0.4) * 0.10;                // slight bank
@@ -1757,30 +1757,9 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.beginPath(); ctx.ellipse(ex, ey, w, w * 0.42, 0, 0, 6.283); ctx.fill();
       };
 
-      // --- VILLAGERS SPREAD UP THE BANK (Hassan: "whole village is only on the
-      //   shoreline"). A scatter of people working/moving HIGHER up the green
-      //   slope, well above the waterline work-stations, so the community fills
-      //   the land — not just a line at the edge. Each at its own clear spot. ---
-      {
-        const up = (fxC, lift, sc, kind, ph, opt) => fig(W * fxC, ground(W * fxC) - lift, sc, kind, ph, opt);
-        // berry-pickers up the slope (bending to pick into baskets)
-        up(0.555, 40, 1.15, 'scrape', 0.7, { shirt: '#7c2f6b', hairStyle: 'long', dir: 1 });
-        up(0.575, 46, 1.10, 'carry', 2.2, { shirt: '#5a7d3a', hairStyle: 'braid', dir: -1 });
-        // a water-carrier climbing from the lake with a yoke (moves up the slope)
-        const wcT = (Math.sin(tt * 0.25) * 0.5 + 0.5);
-        up(0.66 + wcT * 0.03, 30 + wcT * 22, 1.2, 'carry', 1.1, { shirt: '#1f4e8f', hairStyle: 'braid', dir: 1 });
-        // two people setting a snare / checking a trapline at the treeline edge
-        up(0.74, 52, 1.05, 'sit', 3.3, { shirt: '#b04a2a', hairStyle: 'long', dir: 1 });
-        up(0.875, 44, 1.10, 'stir', 4.0, { shirt: '#d68a1f', hairStyle: 'braid', dir: -1 });
-        // a lone hunter with a bow, scanning up at the top of the bank
-        {
-          const hbx = W * 0.50, hby = ground(W * 0.50) - 58;
-          fig(hbx, hby, 1.2, 'sit', 5, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
-          ctx.strokeStyle = 'rgba(60,40,20,0.95)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.arc(hbx + 7, hby - 6, 7, -1.1, 1.1); ctx.stroke();   // the bow
-          ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(hbx + 7, hby - 12.5); ctx.lineTo(hbx + 7, hby + 0.5); ctx.stroke();
-        }
-      }
+      // (Upper-bank villagers I added last round were rendering OVER THE WATER
+      //  on wide screens because the bank slope is too low at those x positions.
+      //  Removed. Villagers stay along the existing work stations on the bank.)
 
       // --- VIGNETTE 1: HIDE-WORKING — always staffed (scraper + helper). ---
       earth(hfx - 4, hfy + 10, 38);
@@ -1867,7 +1846,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   real Friendship Dance, not random hand-waving. Plays through MIDDAY
       //   and EVENING (Hassan: they disappeared too soon, they can play longer).
       if (isMidday || isEvening) {
-        const ringX = W * 0.66, ringY = H - 30, ringR = 30;   // tighter so hands nearly touch
+        const ringX = W * 0.66, ringY = H - 30, ringR = 22;   // tight enough for hands to actually meet
         // trodden grass ring
         ctx.fillStyle = `rgba(${Math.round(_lerp(150, 70, nm))},${Math.round(_lerp(132, 60, nm))},${Math.round(_lerp(86, 36, nm))},0.45)`;
         ctx.beginPath(); ctx.ellipse(ringX, ringY + 6, ringR + 5, (ringR + 5) * 0.4, 0, 0, 6.283); ctx.fill();
@@ -1906,11 +1885,13 @@ function drawScene(ctx, W, H, p, tt, now) {
         //  The children stand CLOSE in a tight circle and their own dance arms
         //  reach toward each other so their hands nearly touch; we just add a
         //  tiny skin-tone hand where each neighbouring pair meets, nothing else.)
-        ctx.fillStyle = 'rgba(228,184,150,1)';
+        // a short skin-tone forearm bridges each pair so hands clearly TOUCH
+        ctx.strokeStyle = 'rgba(228,184,150,1)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+        ctx.fillStyle = 'rgba(186,138,98,1)';
         for (let c = 0; c < N; c++) {
           const k1 = kp[c], k2 = kp[(c + 1) % N];
-          const handX = (k1.x + k2.x) / 2, handY = (k1.y + k2.y) / 2 - 13;
-          ctx.beginPath(); ctx.arc(handX, handY, 1.5, 0, 6.283); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(k1.x + 5, k1.y - 13); ctx.lineTo(k2.x - 5, k2.y - 13); ctx.stroke();
+          ctx.beginPath(); ctx.arc((k1.x + k2.x) / 2, (k1.y + k2.y) / 2 - 13, 1.8, 0, 6.283); ctx.fill();
         }
       }
       // --- TATANKA (Dakoda chase game) — MIDDAY: children run and the "Tatanka"
@@ -2155,9 +2136,9 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   peacemakers). Stands grazing, lifts its head ALERT now and then, ears
       //   flicking, tail twitching. Slender legs, white throat & tail. ----
       {
-        // PROMINENT, on its own clear patch of UPPER bank (well above the work
-        // line, mid-screen) so nothing overlaps it. Bigger + solid (not ghosty).
-        const dxe = W * 0.60, dye = ground(W * 0.60) - 52, dsc = 2.2;
+        // On the solid mid-bank between the wood-chop and the fire — a spot
+        // where the green slope is high enough that it actually stands on land.
+        const dxe = W * 0.685, dye = ground(W * 0.685) - 4, dsc = 2.0;
         ctx.save(); ctx.translate(dxe, dye); ctx.scale(dsc, dsc); ctx.globalAlpha = dayA;
         const coat = `rgb(${Math.round(_lerp(168,86,nm))},${Math.round(_lerp(120,60,nm))},${Math.round(_lerp(78,40,nm))})`;
         const alert = Math.max(0, Math.sin(tt * 0.4));                      // 0 grazing → 1 head up
@@ -2617,10 +2598,45 @@ function drawScene(ctx, W, H, p, tt, now) {
         { shirt: '#1f4e8f', hairStyle: 'long' },
         { shirt: '#d68a1f', hairStyle: 'braid' },
       ];
-      [[-32, 1.25, -1], [-22, 1.35, -1], [-11, 1.4, -1], [12, 1.4, 1], [23, 1.35, 1], [33, 1.2, 1], [-42, 1.15, -1], [43, 1.15, 1]].forEach(([dxx, sc, dir], i) => {
-        const bob = Math.sin(tt * 1.5 + i) * 0.7;
-        fig(fx + dxx, fy + 7 + bob, sc, 'sit', i, Object.assign({ dir }, styles[i % styles.length]));
-      });
+      // NIGHT = a ROUND DANCE around the fire (distinct from the EVENING's quiet
+      // seated storytelling). Adults move slowly CLOCKWISE in a ring, facing the
+      // fire, stepping to the drum — a celebration, not people sitting/walking.
+      {
+        const M = 8, rot = tt * 0.35;                          // slow clockwise rotation
+        const step = Math.abs(Math.sin(tt * 2.4));             // drum-step bob
+        for (let i = 0; i < M; i++) {
+          const a = rot + i * (Math.PI * 2 / M);
+          const dxx = Math.cos(a) * 42, dyy = Math.sin(a) * 16;   // flattened ring around the fire
+          const dir = Math.sin(a) >= 0 ? -1 : 1;               // face along the circle (clockwise)
+          fig(fx + dxx, fy + 9 + dyy - step * 2, 1.2 + (dyy > 0 ? 0.15 : 0), 'dance', i * 1.1,
+              Object.assign({ dir }, styles[i % styles.length]));
+        }
+        // two seated DRUMMERS just off the ring keeping the beat
+        fig(fx - 60, fy + 8, 1.25, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
+        fig(fx - 70, fy + 9, 1.2, 'drum', 5, { shirt: '#7c2f6b', hairStyle: 'long', dir: 1 });
+      }
+      // TORCH-FISHING on the open LEFT water (uses the empty side; a real night
+      // activity — spearing fish by torchlight from a small canoe).
+      {
+        const tcx = W * 0.30, tcy = H * 0.82 + Math.sin(tt * 1.2) * 2;
+        // torch glow on the water
+        const tg = ctx.createRadialGradient(tcx - 14, tcy - 14, 0, tcx - 14, tcy - 14, 48);
+        tg.addColorStop(0, `rgba(255,170,70,${0.55 + 0.15 * Math.sin(tt * 9)})`); tg.addColorStop(1, 'rgba(255,170,70,0)');
+        ctx.fillStyle = tg; ctx.beginPath(); ctx.arc(tcx - 14, tcy - 14, 48, 0, 6.283); ctx.fill();
+        // small canoe
+        ctx.fillStyle = 'rgba(40,28,18,1)';
+        ctx.beginPath(); ctx.ellipse(tcx, tcy, 28, 5, -0.03, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(60,42,26,1)';
+        ctx.beginPath(); ctx.ellipse(tcx, tcy - 1.5, 24, 2.6, -0.03, 0, 6.283); ctx.fill();
+        // a standing fisher holding a torch + a fish spear poised
+        fig(tcx + 4, tcy - 2, 1.2, 'sit', 0, { shirt: '#b04a2a', hairStyle: 'braid', dir: -1 });
+        ctx.strokeStyle = '#3a2412'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(tcx - 6, tcy - 8); ctx.lineTo(tcx - 16, tcy - 20); ctx.stroke();   // torch pole
+        ctx.fillStyle = `rgba(255,180,80,${0.85 + 0.15 * Math.sin(tt * 11)})`;
+        ctx.beginPath(); ctx.arc(tcx - 16, tcy - 22, 3, 0, 6.283); ctx.fill();                          // flame
+        ctx.strokeStyle = '#6b4626'; ctx.lineWidth = 1.0;
+        ctx.beginPath(); ctx.moveTo(tcx + 8, tcy - 6); ctx.lineTo(tcx + 18, tcy + 6); ctx.stroke();      // spear toward the water
+      }
       // a FIRE-TENDER kneeling, poking the embers with a long stick
       {
         const ftX = fx - 2, ftY = fy + 4;
@@ -2745,10 +2761,8 @@ function drawScene(ctx, W, H, p, tt, now) {
         }
       }
       ctx.restore();
-      // ---- WOLVES at night on the ridge: a proper lupine silhouette, one howling
-      //   with muzzle raised to the moon. Pose lifted from photo references —
-      //   long sloping back, deep chest, low-set tail, pointed ears.
-      ctx.save(); ctx.globalAlpha = nm * 0.95;
+      // ---- WOLVES on the ridge — REMOVED (Hassan: read as "black dinosaurs").
+      ctx.save(); ctx.globalAlpha = 0;   // disabled; left in place to avoid touching the long block below
       const wRidgeX = W * 0.42, wRidgeY = hY - 32;
       // Wolves were too small / not animated enough. Wrap in a 2.2x scale and
       // do everything in local (0, 0) coordinates so we don't have to rewrite
