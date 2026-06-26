@@ -1862,6 +1862,20 @@ function drawScene(ctx, W, H, p, tt, now) {
         }
         fig(wvX, wvY + 4, 1.35, 'sit', 2.6, { shirt: '#7c2f6b', hairStyle: 'braid' });
       }
+      // --- MORNING WATER CEREMONY — at first light an elder stands at the
+      //   water's edge offering tobacco/asemaa to the lake, arms slowly raised
+      //   and lowered. A calm dawn ritual distinct from the day's bustle. ----
+      if (isMorning) {
+        const ceX = fx - 50, ceY = ground(fx - 50) + 6;
+        earth(ceX + 4, ceY + 6, 24);
+        const raise = 0.5 + 0.5 * Math.sin(tt * 0.6);                          // arms rise & lower
+        fig(ceX, ceY, 1.5, 'wave', 0.0, { shirt: '#d68a1f', hairStyle: 'long', dir: -1 });
+        // a small offering of tobacco drifting down to the water
+        ctx.fillStyle = `rgba(${Math.round(_lerp(180,120,nm))},${Math.round(_lerp(150,90,nm))},${Math.round(_lerp(90,56,nm))},${0.5 * raise})`;
+        for (let o = 0; o < 3; o++) {
+          ctx.beginPath(); ctx.arc(ceX - 10 - o * 2, ceY - 6 + o * 5 + Math.sin(tt + o) * 2, 0.8, 0, 6.283); ctx.fill();
+        }
+      }
       // --- ELDER STORYTELLER + listening child — appears in the EVENING when
       //   work winds down. Replaces day-bustle with quieter gathering energy.
       if (isEvening) {
@@ -2606,16 +2620,41 @@ function drawScene(ctx, W, H, p, tt, now) {
           const bob = Math.sin(tt * 1.5 + i) * 0.6;
           fig(f2x + dxx, f2y + 6 + bob, sc, 'sit', i + 2, { dir, shirt: ['#1f4e8f', '#d68a1f', '#7c2f6b'][i], hairStyle: i % 2 ? 'long' : 'braid' });
         });
-        // a couple CLIMBING the bank between the two fires, carrying a lantern
-        const climbT = (tt * 0.16) % 1;
-        const clx = fx + 40 + climbT * 100, cly = ground(clx) + 6;
-        const lg = ctx.createRadialGradient(clx, cly - 8, 0, clx, cly - 8, 22);
-        lg.addColorStop(0, 'rgba(255,186,90,0.5)'); lg.addColorStop(1, 'rgba(255,186,90,0)');
-        ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(clx, cly - 8, 22, 0, 6.283); ctx.fill();
-        fig(clx, cly, 1.3, 'walk', 0.5, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });
-        ctx.fillStyle = '#ffce7a'; ctx.beginPath(); ctx.arc(clx + 6, cly - 7 + Math.sin(tt * 2) * 1.4, 2.2, 0, 6.283); ctx.fill();
-        // a lone NIGHT-WATCHER standing higher up, looking out over the lake
-        fig(fx + 220, ground(fx + 220) + 6, 1.35, 'sit', 5, { shirt: '#b04a2a', hairStyle: 'long', dir: -1 });
+        // a pipe-smoking ELDER seated slightly apart from the upper fire, with a
+        // thin wisp of pipe-smoke (real night activity, fixed spot — no walking)
+        {
+          const pex = f2x + 26, pey = f2y + 6;
+          fig(pex, pey, 1.2, 'sit', 6, { shirt: '#3a4658', hairStyle: 'braid', dir: -1 });
+          ctx.strokeStyle = 'rgba(70,46,24,0.9)'; ctx.lineWidth = 1.0; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(pex - 3, pey - 6); ctx.lineTo(pex - 6, pey - 5); ctx.stroke();    // pipe stem
+          ctx.fillStyle = 'rgba(40,26,14,1)'; ctx.beginPath(); ctx.arc(pex - 6.5, pey - 4.5, 0.9, 0, 6.283); ctx.fill();
+          ctx.strokeStyle = `rgba(220,214,200,${0.25 + 0.15 * Math.sin(tt * 2)})`; ctx.lineWidth = 0.7;
+          ctx.beginPath(); ctx.moveTo(pex - 6.5, pey - 5); ctx.quadraticCurveTo(pex - 9 + Math.sin(tt) * 2, pey - 12, pex - 7, pey - 18); ctx.stroke();
+        }
+        // a NIGHT FISHERMAN cleaning the day's catch on a flat stone in the gap
+        // between the two fires — lit by a small staked lantern beside him.
+        {
+          const nfx = fx + 92, nfy = ground(fx + 92) + 6;
+          const lg = ctx.createRadialGradient(nfx + 12, nfy - 10, 0, nfx + 12, nfy - 10, 26);
+          lg.addColorStop(0, 'rgba(255,186,90,0.45)'); lg.addColorStop(1, 'rgba(255,186,90,0)');
+          ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(nfx + 12, nfy - 10, 26, 0, 6.283); ctx.fill();
+          // staked lantern
+          ctx.strokeStyle = '#3a2412'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(nfx + 12, nfy); ctx.lineTo(nfx + 12, nfy - 12); ctx.stroke();
+          ctx.fillStyle = '#ffce7a'; ctx.beginPath(); ctx.arc(nfx + 12, nfy - 14, 2.4, 0, 6.283); ctx.fill();
+          // flat cleaning stone + a fish on it
+          ctx.fillStyle = 'rgba(70,66,60,0.9)'; ctx.beginPath(); ctx.ellipse(nfx - 4, nfy + 2, 7, 2.2, 0, 0, 6.283); ctx.fill();
+          ctx.fillStyle = 'rgba(150,120,110,0.9)'; ctx.beginPath(); ctx.ellipse(nfx - 5, nfy, 4, 1.4, 0.1, 0, 6.283); ctx.fill();
+          fig(nfx, nfy, 1.2, 'scrape', 2.0, { shirt: '#7c2f6b', hairStyle: 'long', dir: 1 });          // gutting motion
+        }
+        // a lone STAR-GAZER reclining higher up, looking at the night sky
+        {
+          const sgx = fx + 230, sgy = ground(fx + 230) + 6;
+          ctx.fillStyle = 'rgba(90,60,36,0.8)'; ctx.beginPath(); ctx.ellipse(sgx, sgy + 1, 11, 3, -0.12, 0, 6.283); ctx.fill();  // reclining mat
+          ctx.fillStyle = '#b04a2a';
+          ctx.beginPath(); ctx.ellipse(sgx, sgy - 2, 7, 2.6, -0.18, 0, 6.283); ctx.fill();              // reclined body
+          ctx.fillStyle = '#b7855a'; ctx.beginPath(); ctx.arc(sgx + 7, sgy - 3.5, 2, 0, 6.283); ctx.fill();  // head propped up
+          ctx.fillStyle = '#1a0e08'; ctx.beginPath(); ctx.arc(sgx + 7, sgy - 4.6, 2.1, Math.PI, 2 * Math.PI); ctx.fill();  // hair
+        }
       }
       ctx.restore();
       // ---- WOLVES at night on the ridge: a proper lupine silhouette, one howling
