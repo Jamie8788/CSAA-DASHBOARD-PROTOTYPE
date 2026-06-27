@@ -1860,26 +1860,15 @@ function drawScene(ctx, W, H, p, tt, now) {
       fig(fx + 16, ground(fx + 16) + 6, 1.55, 'stir', 0.0, { shirt: '#c93a1e', hairStyle: 'long' });
       fig(fx - 24, ground(fx - 24) + 6, 1.40, 'sit', 1.7, { shirt: '#1f4e8f', hairStyle: 'braid', dir: -1 });
 
-      // --- VIGNETTE 6: SHORELINE — figures that ACTUALLY MOVE (pace back and
-      //   forth along the bank, following the slope), so they aren't "walking
-      //   on the spot". x is driven by time; dir flips with travel direction. ---
-      {
-        // walker A paces along an open stretch between the smokehouse and the kids' ring
-        const aT = Math.sin(tt * 0.35);
-        const ax = W * (0.85 + aT * 0.025);
-        fig(ax, ground(ax) + 7, 1.45, 'walk', 2.4, { shirt: '#b04a2a', hairStyle: 'long', dir: (Math.cos(tt * 0.35) >= 0 ? 1 : -1) });
-        // walker B paces a narrow stretch between the wood-chop and the fishing spot
-        const bT = Math.sin(tt * 0.3 + 2.1);
-        const bxw = W * (0.755 + bT * 0.02);
-        fig(bxw, ground(bxw) + 7, 1.50, 'walk', 5.1, { shirt: '#3a4658', hairStyle: 'braid', dir: (Math.cos(tt * 0.3 + 2.1) >= 0 ? 1 : -1) });
-      }
+      // (Removed the shoreline pacing walkers — Hassan: "walking in a line then
+      //  disappear". They were filler that faded oddly at the dusk crossfade.)
       // --- MI'KMAQ FRIENDSHIP DANCE (foreground attraction, prominent) ---
       //   Five children HOLD HANDS in a circle and move CLOCKWISE, taking
       //   THREE STEPS FORWARD and ONE STEP BACK in time with the drum — the
       //   real Friendship Dance, not random hand-waving. DAY / AFTERNOON ONLY
       //   (Hassan: ring-of-roses belongs to the day, not the evening/night).
       if (isMorning || isMidday) {
-        const ringX = W * 0.50, ringY = H - 22, ringR = 20;   // moved to the OPEN left foreground, away from the village cluster
+        const ringX = W * 0.50, ringY = H - 24, ringR = 34;   // wider ring so kids are clearly SPACED, not clumped
         // trodden grass ring
         ctx.fillStyle = `rgba(${Math.round(_lerp(150, 70, nm))},${Math.round(_lerp(132, 60, nm))},${Math.round(_lerp(86, 36, nm))},0.45)`;
         ctx.beginPath(); ctx.ellipse(ringX, ringY + 6, ringR + 5, (ringR + 5) * 0.4, 0, 0, 6.283); ctx.fill();
@@ -2631,159 +2620,37 @@ function drawScene(ctx, W, H, p, tt, now) {
         { shirt: '#1f4e8f', hairStyle: 'long' },
         { shirt: '#d68a1f', hairStyle: 'braid' },
       ];
-      // NIGHT = a CALM, well-SPACED gathering around the fire (Hassan: the round
-      // dance looked clustered / ritual-y). Just a few people sitting and one
-      // drummer keeping a soft beat — quiet end of the day, not a ceremony.
+      // NIGHT = ONE clean BONFIRE CIRCLE (Hassan: "elder in the middle and all
+      // around him in a circle"). An elder sits at the fire telling stories; the
+      // community sits AROUND in a ring facing the flames. Calm and spaced — the
+      // only night gathering, nothing else cluttering the bank.
       {
-        [[-30, 1.25, 1], [-15, 1.3, 1], [16, 1.3, -1], [30, 1.2, -1]].forEach(([dxx, sc, dir], i) => {
-          const bob = Math.sin(tt * 1.4 + i) * 0.6;
-          fig(fx + dxx, fy + 8 + bob, sc, 'sit', i, Object.assign({ dir }, styles[i % styles.length]));
+        // the elder, just behind the fire, gesturing as he speaks
+        fig(fx, fy - 2, 1.45, 'wave', 1.0, { shirt: '#7c2f6b', hairStyle: 'long', dir: 1 });
+        // listeners seated AROUND the fire in a clear ring (front arc lower/bigger)
+        const seats = [
+          [-46, -4, 1.15], [-30, 2, 1.25], [-14, 7, 1.35],     // left + front
+          [14, 7, 1.35], [30, 2, 1.25], [46, -4, 1.15],         // front + right
+        ];
+        seats.forEach(([dxx, dyy, sc], i) => {
+          const bob = Math.sin(tt * 1.3 + i) * 0.5;
+          fig(fx + dxx, fy + 6 + dyy + bob, sc, 'sit', i, Object.assign({ dir: dxx < 0 ? 1 : -1 }, styles[i % styles.length]));
         });
-        fig(fx - 52, fy + 8, 1.25, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
+        // one drummer keeping a soft beat, set a little apart
+        fig(fx - 66, fy + 4, 1.2, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
       }
-      // TORCH-FISHING on the open LEFT water (uses the empty side; a real night
-      // activity — spearing fish by torchlight from a small canoe).
+      // two CHILDREN asleep on a hide, set well AWAY from the fire (left), so the
+      // night reads as spread out, not one big crowd.
       {
-        const tcx = W * 0.30, tcy = H * 0.82 + Math.sin(tt * 1.2) * 2;
-        // torch glow on the water
-        const tg = ctx.createRadialGradient(tcx - 14, tcy - 14, 0, tcx - 14, tcy - 14, 48);
-        tg.addColorStop(0, `rgba(255,170,70,${0.55 + 0.15 * Math.sin(tt * 9)})`); tg.addColorStop(1, 'rgba(255,170,70,0)');
-        ctx.fillStyle = tg; ctx.beginPath(); ctx.arc(tcx - 14, tcy - 14, 48, 0, 6.283); ctx.fill();
-        // small canoe
-        ctx.fillStyle = 'rgba(40,28,18,1)';
-        ctx.beginPath(); ctx.ellipse(tcx, tcy, 28, 5, -0.03, 0, 6.283); ctx.fill();
-        ctx.fillStyle = 'rgba(60,42,26,1)';
-        ctx.beginPath(); ctx.ellipse(tcx, tcy - 1.5, 24, 2.6, -0.03, 0, 6.283); ctx.fill();
-        // a standing fisher holding a torch + a fish spear poised
-        fig(tcx + 4, tcy - 2, 1.2, 'sit', 0, { shirt: '#b04a2a', hairStyle: 'braid', dir: -1 });
-        ctx.strokeStyle = '#3a2412'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(tcx - 6, tcy - 8); ctx.lineTo(tcx - 16, tcy - 20); ctx.stroke();   // torch pole
-        ctx.fillStyle = `rgba(255,180,80,${0.85 + 0.15 * Math.sin(tt * 11)})`;
-        ctx.beginPath(); ctx.arc(tcx - 16, tcy - 22, 3, 0, 6.283); ctx.fill();                          // flame
-        ctx.strokeStyle = '#6b4626'; ctx.lineWidth = 1.0;
-        ctx.beginPath(); ctx.moveTo(tcx + 8, tcy - 6); ctx.lineTo(tcx + 18, tcy + 6); ctx.stroke();      // spear toward the water
-      }
-      // a FIRE-TENDER kneeling, poking the embers with a long stick
-      {
-        const ftX = fx - 2, ftY = fy + 4;
-        fig(ftX - 8, ftY + 3, 1.2, 'sit', 2.0, { shirt: '#7c2f6b', hairStyle: 'braid', dir: 1 });
-        const poke = Math.sin(tt * 2) * 2;
-        ctx.strokeStyle = 'rgba(70,46,24,0.95)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(ftX - 4, ftY - 6); ctx.lineTo(ftX + 6 + poke, ftY + 2); ctx.stroke();
-        // a spray of sparks lifting off the poked fire
-        for (let s = 0; s < 4; s++) {
-          const sp = (tt * 3 + s) % 1;
-          ctx.fillStyle = `rgba(255,${170 + s * 12},80,${(1 - sp) * 0.8})`;
-          ctx.beginPath(); ctx.arc(fx + Math.sin(s * 2 + tt) * 4, fy - sp * 22, 0.8, 0, 6.283); ctx.fill();
-        }
-      }
-      // a DRUMMER at the night fire (keeps the rhythm of the evening)
-      {
-        const dnx = fx + 56, dny = fy + 6;
-        fig(dnx, dny, 1.35, 'drum', 4, { shirt: '#b04a2a', hairStyle: 'braid', dir: -1 });
-      }
-      // (removed: lantern-couple walking filler — Hassan didn't want more
-      //  walking-with-lanterns; replaced with real fixed activities elsewhere)
-      // a NIGHT FEAST on a long woven mat — a row of bowls of food laid out,
-      // two figures sitting and EATING (reaching to the bowls), one passing a
-      // bowl to a neighbour. This is the "dinner on the land" Hassan asked for.
-      {
-        const ftX = fx - 175, ftY = ground(fx - 175) + 10;   // pulled well left of the fire so night isn't crowded
-        // woven mat
-        ctx.fillStyle = `rgba(${Math.round(_lerp(96, 58, nm))},${Math.round(_lerp(64, 40, nm))},${Math.round(_lerp(28, 18, nm))},0.85)`;
-        ctx.beginPath(); ctx.ellipse(ftX, ftY + 2, 32, 7, 0, 0, 6.283); ctx.fill();
-        ctx.strokeStyle = `rgba(${Math.round(_lerp(40, 22, nm))},${Math.round(_lerp(28, 16, nm))},${Math.round(_lerp(14, 8, nm))},0.7)`;
-        ctx.lineWidth = 0.5;
-        for (let mw = -28; mw <= 28; mw += 6) {
-          ctx.beginPath(); ctx.moveTo(ftX + mw, ftY - 2); ctx.lineTo(ftX + mw + 2, ftY + 6); ctx.stroke();
-        }
-        // bowls on the mat (wild rice, berries, fish — different shades)
-        const bowlCols = ['#d8c896', '#7a2a18', '#a6c1d6'];
-        for (let bw = 0; bw < 3; bw++) {
-          const bxC = ftX - 18 + bw * 18, byC = ftY - 1;
-          ctx.fillStyle = '#3a2410';
-          ctx.beginPath(); ctx.ellipse(bxC, byC, 4.4, 1.8, 0, 0, 6.283); ctx.fill();    // bowl rim
-          ctx.fillStyle = bowlCols[bw];
-          ctx.beginPath(); ctx.ellipse(bxC, byC - 0.4, 3.4, 1.2, 0, 0, 6.283); ctx.fill();  // food
-          // a little wisp of steam rising from the warm food
-          ctx.strokeStyle = `rgba(220,214,200,${0.35 + 0.2 * Math.sin(tt * 2 + bw)})`;
-          ctx.lineWidth = 0.8;
-          ctx.beginPath();
-          ctx.moveTo(bxC, byC - 1);
-          ctx.quadraticCurveTo(bxC + 2 * Math.sin(tt + bw), byC - 6, bxC, byC - 12);
-          ctx.stroke();
-        }
-        // two diners reaching to the bowls + one passing a bowl
-        fig(ftX - 22, ftY - 1, 1.20, 'sit', 1.2, { shirt: '#5a7d3a', hairStyle: 'long', dir: 1 });
-        fig(ftX + 22, ftY - 1, 1.20, 'sit', 3.4, { shirt: '#1f4e8f', hairStyle: 'braid', dir: -1 });
-        fig(ftX, ftY - 1, 1.25, 'stir', 2.1, { shirt: '#d68a1f', hairStyle: 'braid', dir: 1 });
-      }
-      // two CHILDREN already ASLEEP on a hide near the fire's warmth
-      {
-        const slX = fx - 70, slY = ground(fx - 70) + 8;
-        ctx.fillStyle = 'rgba(120,84,52,0.9)';                                    // the hide they lie on
+        const slX = fx - 150, slY = ground(fx - 150) + 8;
+        ctx.fillStyle = 'rgba(120,84,52,0.9)';
         ctx.beginPath(); ctx.ellipse(slX, slY + 2, 16, 4, 0, 0, 6.283); ctx.fill();
         for (let s = 0; s < 2; s++) {
-          const bx2 = slX - 6 + s * 12;
-          const brC = Math.sin(tt * 1.2 + s) * 0.6;                              // gentle sleeping breath
+          const bx2 = slX - 6 + s * 12, brC = Math.sin(tt * 1.2 + s) * 0.6;
           ctx.fillStyle = ['#5a7d3a', '#c93a1e'][s];
           ctx.beginPath(); ctx.ellipse(bx2, slY - 1 + brC * 0.2, 6, 2.6, 0, 0, 6.283); ctx.fill();
-          ctx.fillStyle = '#b7855a';                                             // head
+          ctx.fillStyle = '#b7855a';
           ctx.beginPath(); ctx.arc(bx2 - 6, slY - 1, 1.8, 0, 6.283); ctx.fill();
-        }
-      }
-      // SPREAD UP THE BANK (Hassan: villagers were all on the shoreline). A
-      // SECOND, smaller fire higher up the slope with its own little gathering,
-      // plus a couple climbing the bank with a lantern + a lone night-watcher.
-      {
-        const f2x = fx + 150, f2y = ground(f2x) + 4;                              // further up the rising bank
-        // small fire glow
-        const flick2 = 0.7 + 0.3 * Math.sin(tt * 8 + 1);
-        const g2 = ctx.createRadialGradient(f2x, f2y - 4, 0, f2x, f2y - 4, 40);
-        g2.addColorStop(0, `rgba(255,170,80,${0.5 * flick2})`); g2.addColorStop(1, 'rgba(255,170,80,0)');
-        ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(f2x, f2y - 4, 40, 0, 6.283); ctx.fill();
-        // little flames
-        ctx.fillStyle = `rgba(255,150,60,${0.8 * flick2})`;
-        ctx.beginPath(); ctx.moveTo(f2x - 4, f2y); ctx.quadraticCurveTo(f2x, f2y - 9 * flick2, f2x + 4, f2y); ctx.closePath(); ctx.fill();
-        // three people seated around it, breathing
-        [[-12, 1.15, 1], [10, 1.15, -1], [0, 1.05, 1]].forEach(([dxx, sc, dir], i) => {
-          const bob = Math.sin(tt * 1.5 + i) * 0.6;
-          fig(f2x + dxx, f2y + 6 + bob, sc, 'sit', i + 2, { dir, shirt: ['#1f4e8f', '#d68a1f', '#7c2f6b'][i], hairStyle: i % 2 ? 'long' : 'braid' });
-        });
-        // a pipe-smoking ELDER seated slightly apart from the upper fire, with a
-        // thin wisp of pipe-smoke (real night activity, fixed spot — no walking)
-        {
-          const pex = f2x + 26, pey = f2y + 6;
-          fig(pex, pey, 1.2, 'sit', 6, { shirt: '#3a4658', hairStyle: 'braid', dir: -1 });
-          ctx.strokeStyle = 'rgba(70,46,24,0.9)'; ctx.lineWidth = 1.0; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(pex - 3, pey - 6); ctx.lineTo(pex - 6, pey - 5); ctx.stroke();    // pipe stem
-          ctx.fillStyle = 'rgba(40,26,14,1)'; ctx.beginPath(); ctx.arc(pex - 6.5, pey - 4.5, 0.9, 0, 6.283); ctx.fill();
-          ctx.strokeStyle = `rgba(220,214,200,${0.25 + 0.15 * Math.sin(tt * 2)})`; ctx.lineWidth = 0.7;
-          ctx.beginPath(); ctx.moveTo(pex - 6.5, pey - 5); ctx.quadraticCurveTo(pex - 9 + Math.sin(tt) * 2, pey - 12, pex - 7, pey - 18); ctx.stroke();
-        }
-        // a NIGHT FISHERMAN cleaning the day's catch on a flat stone in the gap
-        // between the two fires — lit by a small staked lantern beside him.
-        {
-          const nfx = fx + 92, nfy = ground(fx + 92) + 6;
-          const lg = ctx.createRadialGradient(nfx + 12, nfy - 10, 0, nfx + 12, nfy - 10, 26);
-          lg.addColorStop(0, 'rgba(255,186,90,0.45)'); lg.addColorStop(1, 'rgba(255,186,90,0)');
-          ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(nfx + 12, nfy - 10, 26, 0, 6.283); ctx.fill();
-          // staked lantern
-          ctx.strokeStyle = '#3a2412'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(nfx + 12, nfy); ctx.lineTo(nfx + 12, nfy - 12); ctx.stroke();
-          ctx.fillStyle = '#ffce7a'; ctx.beginPath(); ctx.arc(nfx + 12, nfy - 14, 2.4, 0, 6.283); ctx.fill();
-          // flat cleaning stone + a fish on it
-          ctx.fillStyle = 'rgba(70,66,60,0.9)'; ctx.beginPath(); ctx.ellipse(nfx - 4, nfy + 2, 7, 2.2, 0, 0, 6.283); ctx.fill();
-          ctx.fillStyle = 'rgba(150,120,110,0.9)'; ctx.beginPath(); ctx.ellipse(nfx - 5, nfy, 4, 1.4, 0.1, 0, 6.283); ctx.fill();
-          fig(nfx, nfy, 1.2, 'scrape', 2.0, { shirt: '#7c2f6b', hairStyle: 'long', dir: 1 });          // gutting motion
-        }
-        // a lone STAR-GAZER reclining higher up, looking at the night sky
-        {
-          const sgx = fx + 230, sgy = ground(fx + 230) + 6;
-          ctx.fillStyle = 'rgba(90,60,36,0.8)'; ctx.beginPath(); ctx.ellipse(sgx, sgy + 1, 11, 3, -0.12, 0, 6.283); ctx.fill();  // reclining mat
-          ctx.fillStyle = '#b04a2a';
-          ctx.beginPath(); ctx.ellipse(sgx, sgy - 2, 7, 2.6, -0.18, 0, 6.283); ctx.fill();              // reclined body
-          ctx.fillStyle = '#b7855a'; ctx.beginPath(); ctx.arc(sgx + 7, sgy - 3.5, 2, 0, 6.283); ctx.fill();  // head propped up
-          ctx.fillStyle = '#1a0e08'; ctx.beginPath(); ctx.arc(sgx + 7, sgy - 4.6, 2.1, Math.PI, 2 * Math.PI); ctx.fill();  // hair
         }
       }
       ctx.restore();
