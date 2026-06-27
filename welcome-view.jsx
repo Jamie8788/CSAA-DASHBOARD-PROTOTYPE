@@ -1868,7 +1868,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   real Friendship Dance, not random hand-waving. DAY / AFTERNOON ONLY
       //   (Hassan: ring-of-roses belongs to the day, not the evening/night).
       if (isMorning || isMidday) {
-        const ringX = W * 0.50, ringY = H - 24, ringR = 34;   // wider ring so kids are clearly SPACED, not clumped
+        const ringX = W * 0.83, ringY = H - 24, ringR = 32;   // far-RIGHT foreground, clear of the centred scroll button
         // trodden grass ring
         ctx.fillStyle = `rgba(${Math.round(_lerp(150, 70, nm))},${Math.round(_lerp(132, 60, nm))},${Math.round(_lerp(86, 36, nm))},0.45)`;
         ctx.beginPath(); ctx.ellipse(ringX, ringY + 6, ringR + 5, (ringR + 5) * 0.4, 0, 0, 6.283); ctx.fill();
@@ -2625,19 +2625,26 @@ function drawScene(ctx, W, H, p, tt, now) {
       // community sits AROUND in a ring facing the flames. Calm and spaced — the
       // only night gathering, nothing else cluttering the bank.
       {
-        // the elder, just behind the fire, gesturing as he speaks
-        fig(fx, fy - 2, 1.45, 'wave', 1.0, { shirt: '#7c2f6b', hairStyle: 'long', dir: 1 });
-        // listeners seated AROUND the fire in a clear ring (front arc lower/bigger)
+        // a male ELDER seated just behind the fire, gesturing as he tells a story
+        // (short hair so he reads as an older man, not a girl)
+        fig(fx, fy - 2, 1.5, 'wave', 1.0, { shirt: '#5a3a2a', hairStyle: 'short', dir: 1 });
+        // listeners seated AROUND the fire — a MIXED community: tall adults,
+        // medium youths and small children (per-seat size + hair + shirt vary).
         const seats = [
-          [-46, -4, 1.15], [-30, 2, 1.25], [-14, 7, 1.35],     // left + front
-          [14, 7, 1.35], [30, 2, 1.25], [46, -4, 1.15],         // front + right
+          [-48, -4, 1.45, 'braid'],   // tall adult (left)
+          [-32, 3, 0.85, 'long'],     // small child
+          [-15, 8, 1.30, 'long'],     // youth (front-left)
+          [15, 8, 0.95, 'braid'],     // small child (front-right)
+          [32, 3, 1.45, 'short'],     // tall adult (man)
+          [48, -4, 1.15, 'long'],     // medium (right)
         ];
-        seats.forEach(([dxx, dyy, sc], i) => {
+        seats.forEach(([dxx, dyy, sc, hair], i) => {
           const bob = Math.sin(tt * 1.3 + i) * 0.5;
-          fig(fx + dxx, fy + 6 + dyy + bob, sc, 'sit', i, Object.assign({ dir: dxx < 0 ? 1 : -1 }, styles[i % styles.length]));
+          fig(fx + dxx, fy + 6 + dyy + bob, sc, 'sit', i,
+              { dir: dxx < 0 ? 1 : -1, shirt: styles[i % styles.length].shirt, hairStyle: hair });
         });
         // one drummer keeping a soft beat, set a little apart
-        fig(fx - 66, fy + 4, 1.2, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
+        fig(fx - 66, fy + 4, 1.25, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
       }
       // two CHILDREN asleep on a hide, set well AWAY from the fire (left), so the
       // night reads as spread out, not one big crowd.
