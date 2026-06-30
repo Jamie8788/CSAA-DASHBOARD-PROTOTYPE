@@ -2827,7 +2827,13 @@ function drawScene(ctx, W, H, p, tt, now) {
     }
     // --- CRANE / heron standing tall on the near shore, occasionally bowing ---
     {
-      const crX = W * 0.86, crBase = ground(W * 0.86) + 4;
+      // NOTE: `ground` is village-block-scoped and NOT available here, so compute
+      // the shore Y inline (same formula: lx0=W*0.45, RISE=H*0.30, +9 ground, +4).
+      // Using `ground` here was throwing "ground is not defined" every frame and
+      // crashing the whole render — which is why the scene looked frozen/stale.
+      const crX = W * 0.86;
+      const _crT = _clamp((crX - W * 0.45) / (W - W * 0.45), 0, 1);
+      const crBase = (H - 6 - (H * 0.30) * (_crT * 0.6 + _crT * _crT * 0.4)) + 13;
       ctx.save(); ctx.translate(crX, crBase); ctx.scale(1.6, 1.6); ctx.translate(-crX, -crBase);  // bigger / more prominent
       ctx.globalAlpha = wildA * 0.95;
       const bow = Math.max(0, Math.sin(tt * 0.5)) * 6;                                       // periodic bow toward the water
