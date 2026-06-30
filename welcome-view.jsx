@@ -2794,6 +2794,9 @@ function drawScene(ctx, W, H, p, tt, now) {
   //   clan) gliding calmly, and the CRANE (ajijaak, also a leader clan) on the
   //   shore. The old fake-looking ducks/beaver were removed. Gated to daylight. ----
   const wildA = (1 - _smooth(0.62, 0.86, p));
+  // `nm` (nightness) is village-block-scoped; define it locally here too so the
+  // wildlife colours don't throw "nm is not defined" and crash the render.
+  const nm = _smooth(0.52, 0.9, p);
   if (wildA > 0.04) {
     // --- LOON (maang): black head, checkerboard back, white breast, red eye.
     //   Glides slowly across the lake with a soft wake; dips its bill now & then. ---
