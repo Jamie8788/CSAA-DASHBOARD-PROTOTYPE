@@ -1558,10 +1558,14 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.beginPath(); ctx.ellipse(px - 1.6 * sc + legL, py - bodyBob, 1.7 * sc, 0.9 * sc, 0, 0, 6.283); ctx.fill();
         ctx.beginPath(); ctx.ellipse(px + 1.6 * sc + legR, py - bodyBob, 1.7 * sc, 0.9 * sc, 0, 0, 6.283); ctx.fill();
       } else {
-        // cross-legged seated: knees pointing forward, feet tucked
+        // cross-legged seated: a small, low crossed-legs base (NOT a big round
+        // "butt" — Hassan). One slim crossed-leg shape tucked under the torso.
         ctx.fillStyle = leg;
-        ctx.beginPath(); ctx.ellipse(px - 2.4 * sc, hipY + 2 * sc, 3.4 * sc, 2 * sc, 0, 0, 6.283); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(px + 2.4 * sc, hipY + 2 * sc, 3.4 * sc, 2 * sc, 0, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(px, hipY + 1.6 * sc, 3.6 * sc, 1.5 * sc, 0, 0, 6.283); ctx.fill();
+        // a couple of short shins crossing in front
+        ctx.strokeStyle = leg; ctx.lineWidth = 1.6 * sc; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(px - 3 * sc, hipY + 2.2 * sc); ctx.lineTo(px + 1.5 * sc, hipY + 1.2 * sc); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px + 3 * sc, hipY + 2.2 * sc); ctx.lineTo(px - 1.5 * sc, hipY + 1.2 * sc); ctx.stroke();
       }
 
       // ---- TORSO: ribbon shirt with a contrast hem ----
@@ -1916,34 +1920,8 @@ function drawScene(ctx, W, H, p, tt, now) {
           ctx.beginPath(); ctx.arc((k1.x + k2.x) / 2, (k1.y + k2.y) / 2 - 10, 1.4, 0, 6.283); ctx.fill();
         }
       }
-      // --- TATANKA (Dakoda chase game) — MIDDAY: children run and the "Tatanka"
-      //   (wearing a buffalo-horn headdress) chases them back and forth, trying
-      //   to tag them into the herd. A second, distinct kids' game (Hassan asked
-      //   for more games). Foreground-right, its own clear lane. ---
-      if (isMidday) {
-        const tgY = H - 20;
-        const swing = Math.sin(tt * 0.9) * 70;          // the whole chase sweeps left↔right
-        const runDir = Math.cos(tt * 0.9) >= 0 ? 1 : -1;
-        const baseX = W * 0.86 + swing;
-        const runners = [
-          { dx: 0,   shirt: '#c93a1e', hair: 'long' },
-          { dx: -16, shirt: '#1f4e8f', hair: 'braid' },
-          { dx: -30, shirt: '#5a7d3a', hair: 'long' },
-        ];
-        for (const r of runners) {
-          const jx = baseX + r.dx * runDir;
-          fig(jx, tgY + (r.dx % 7) * 0.2, 0.9, 'walk', r.dx, { shirt: r.shirt, hairStyle: r.hair, dir: runDir });
-        }
-        // the Tatanka chaser, a bit behind, with a horned headdress
-        const txp = baseX - 46 * runDir, typ = tgY;
-        fig(txp, typ, 0.95, 'walk', 3, { shirt: '#3a2a1a', hairStyle: 'braid', dir: runDir });
-        ctx.strokeStyle = `rgba(${Math.round(_lerp(60,30,nm))},${Math.round(_lerp(42,22,nm))},${Math.round(_lerp(28,14,nm))},0.95)`;
-        ctx.lineWidth = 1.8; ctx.lineCap = 'round';
-        // two curved buffalo horns above the chaser's head
-        const hhX = txp, hhY = typ - 26;
-        ctx.beginPath(); ctx.moveTo(hhX - 2, hhY); ctx.quadraticCurveTo(hhX - 7, hhY - 2, hhX - 7, hhY + 3); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(hhX + 2, hhY); ctx.quadraticCurveTo(hhX + 7, hhY - 2, hhX + 7, hhY + 3); ctx.stroke();
-      }
+      // (Removed the TATANKA chase — its runners swept across the ring-of-roses,
+      //  reading as "4 girls walking straight through" the dancing children.)
       // --- NEW VIGNETTE: BIRCH-BARK BASKET WEAVING (a classic Anishinaabe craft) ---
       //   A seated weaver up the bank with a small pile of bark strips and a
       //   finished basket beside them.
@@ -2150,9 +2128,11 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.closePath(); ctx.fill();
         ctx.restore();
       };
-      drawGoose(W * 0.50, ground(W * 0.50) + 4, 1.9, true, 0);             // the honker (neck up)
-      drawGoose(W * 0.47, ground(W * 0.47) + 6, 1.7, false, 1.5);         // grazing
-      drawGoose(W * 0.53, ground(W * 0.53) + 5, 1.75, false, 3.0);        // grazing
+      // geese ("swans") moved OFF the centred scroll-down button to the open
+      // mid-right bank, grouped together near the water's edge.
+      drawGoose(W * 0.72, ground(W * 0.72) + 5, 1.9, true, 0);             // the honker (neck up)
+      drawGoose(W * 0.695, ground(W * 0.695) + 7, 1.7, false, 1.5);       // grazing
+      drawGoose(W * 0.745, ground(W * 0.745) + 6, 1.75, false, 3.0);      // grazing
 
       // ---- DEER (waawaashkeshi) on the upper bank — a CLAN animal (poets &
       //   peacemakers). Stands grazing, lifts its head ALERT now and then, ears
@@ -2631,16 +2611,16 @@ function drawScene(ctx, W, H, p, tt, now) {
         // listeners seated AROUND the fire — a MIXED community: tall adults,
         // medium youths and small children (per-seat size + hair + shirt vary).
         const seats = [
-          [-48, -4, 1.45, 'braid'],   // tall adult (left)
-          [-32, 3, 0.85, 'long'],     // small child
-          [-15, 8, 1.30, 'long'],     // youth (front-left)
-          [15, 8, 0.95, 'braid'],     // small child (front-right)
-          [32, 3, 1.45, 'short'],     // tall adult (man)
-          [48, -4, 1.15, 'long'],     // medium (right)
+          [-44, -3, 1.45, 'braid'],   // tall adult (left)
+          [-28, 2, 0.85, 'long'],     // small child
+          [-13, 5, 1.30, 'long'],     // youth (front-left)
+          [13, 5, 0.95, 'braid'],     // small child (front-right)
+          [28, 2, 1.45, 'short'],     // tall adult (man)
+          [44, -3, 1.15, 'long'],     // medium (right)
         ];
         seats.forEach(([dxx, dyy, sc, hair], i) => {
           const bob = Math.sin(tt * 1.3 + i) * 0.5;
-          fig(fx + dxx, fy + 6 + dyy + bob, sc, 'sit', i,
+          fig(fx + dxx, fy + 2 + dyy + bob, sc, 'sit', i,                       // raised so they sit on the bank, not "in water"
               { dir: dxx < 0 ? 1 : -1, shirt: styles[i % styles.length].shirt, hairStyle: hair });
         });
         // one drummer keeping a soft beat, set a little apart
@@ -3182,7 +3162,7 @@ function WelcomeView({ all, setView }) {
   const panels = [
     <div className="wv-panel wv-p-hero" key="hero" ref={setPanelRef(0)}>
       <p className="wv-eyebrow">Mino Bimaadiziwin · The Good Life</p>
-      <h1 className="wv-title">A living atlas of<br /><em>community care.</em></h1>
+      <h1 className="wv-title">A Living Atlas of<br /><em>Individual, Family &amp; Community<br />Health &amp; Wellness.</em></h1>
       <p className="wv-lead">Physical, mental, spiritual, and emotional health programming across First Nations communities and partners — in their own words.</p>
       <div className="wv-hero-cta">
         <button className="wv-btn" onClick={() => setView('map')}>◉ Explore the map</button>
