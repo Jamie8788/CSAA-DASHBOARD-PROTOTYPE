@@ -1326,7 +1326,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     //  The bank now has only the cattails + wild rice + low ground tone.)
     // ---- BULL RUSH (cattail) stand on the bank: tall stems with sausage-shaped
     //   brown seed-heads. A signature Anishinaabe-territory wetland plant. ----
-    const cattailClumps = [[W * 0.68, 5], [W * 0.755, 4], [W * 0.86, 6]];
+    const cattailClumps = [[W * 0.68, 5], [W * 0.86, 6]];
     cattailClumps.forEach(([cxC, n], ci) => {
       for (let k = 0; k < n; k++) {
         const sx0 = cxC + (k - n / 2) * 6 + Math.sin(ci + k) * 2;
@@ -2173,9 +2173,11 @@ function drawScene(ctx, W, H, p, tt, now) {
       // mid-right bank, grouped together near the water's edge.
       // geese on the OPEN LEFT stretch of bank — well away from any villager
       // work-station (they were merging with the rice-pounders at ~0.70).
-      drawGoose(W * 0.545, ground(W * 0.545) + 5, 1.9, true, 0);           // the honker (neck up)
-      drawGoose(W * 0.52, ground(W * 0.52) + 7, 1.7, false, 1.5);         // grazing
-      drawGoose(W * 0.575, ground(W * 0.575) + 6, 1.75, false, 3.0);      // grazing
+      // geese in the BIG EMPTY bottom-middle foreground grass — far from every
+      // villager, station, plant clump and the horse (they kept merging before).
+      drawGoose(W * 0.70, H - 34, 1.9, true, 0);                           // the honker (neck up)
+      drawGoose(W * 0.675, H - 26, 1.7, false, 1.5);                      // grazing
+      drawGoose(W * 0.73, H - 28, 1.75, false, 3.0);                      // grazing
 
       // ---- DEER (waawaashkeshi) on the upper bank — a CLAN animal (poets &
       //   peacemakers). Stands grazing, lifts its head ALERT now and then, ears
@@ -2183,7 +2185,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       {
         // On the solid mid-bank between the wood-chop and the fire — a spot
         // where the green slope is high enough that it actually stands on land.
-        const dxe = W * 0.685, dye = ground(W * 0.685) - 4, dsc = 2.0;
+        const dxe = W * 0.76, dye = ground(W * 0.76) - 4, dsc = 2.0;
         ctx.save(); ctx.translate(dxe, dye); ctx.scale(dsc, dsc); ctx.globalAlpha = dayA;
         const coat = `rgb(${Math.round(_lerp(168,86,nm))},${Math.round(_lerp(120,60,nm))},${Math.round(_lerp(78,40,nm))})`;
         const alert = Math.max(0, Math.sin(tt * 0.4));                      // 0 grazing → 1 head up
@@ -2271,7 +2273,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   land? they can all be on LHS"): clumps of green grass/sedge tufts and
       //   a few flowering stems, swaying. ----
       const grassCol = `rgba(${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(120,62,nm))},${Math.round(_lerp(46,26,nm))},0.95)`;
-      [[0.46, 6], [0.49, 7], [0.52, 6], [0.55, 8], [0.585, 6]].forEach(([fxC, n], gi) => {
+      [[0.46, 6], [0.49, 7], [0.52, 6]]  /* clumps at 0.55/0.585 removed — they drew INSIDE the horse */.forEach(([fxC, n], gi) => {
         const bx0 = W * fxC, by0 = ground(bx0) + 6;
         ctx.strokeStyle = grassCol; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
         for (let b = 0; b < n; b++) {
@@ -2676,11 +2678,14 @@ function drawScene(ctx, W, H, p, tt, now) {
         ];
         seats.forEach(([dxx, dyy, sc, hair], i) => {
           const bob = Math.sin(tt * 1.3 + i) * 0.5;
-          fig(fx + dxx, fy + 2 + dyy + bob, sc, 'sit', i,                       // raised so they sit on the bank, not "in water"
+          // PER-SEAT ground: the bank slopes DOWN to the left, so seats left of
+          // the fire were rendering below the grass line ("sitting in water").
+          const seatY = ground(fx + dxx) + 2 + dyy * 0.4 + bob;
+          fig(fx + dxx, seatY, sc, 'sit', i,
               { dir: dxx < 0 ? 1 : -1, shirt: styles[i % styles.length].shirt, hairStyle: hair });
         });
         // one drummer keeping a soft beat, set a little apart
-        fig(fx - 66, fy + 4, 1.25, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
+        fig(fx - 66, ground(fx - 66) + 4, 1.25, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
       }
       // two CHILDREN asleep on a hide, set well AWAY from the fire (left), so the
       // night reads as spread out, not one big crowd.
