@@ -637,80 +637,101 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.globalAlpha = 1;
   }
 
-  // ---- BALD EAGLE (migizi) — large, prominent, in the Anishinaabe woodland-art
-  //   spirit (Hassan supplied reference art). Soars in a long banking glide
-  //   across the sky, wings held wide with clearly fingered primary feathers,
-  //   bright WHITE HEAD + WHITE TAIL + GOLDEN BEAK & TALONS. Big enough to
-  //   actually read as an eagle.
+  // ---- BALD EAGLE (migizi) — SIDE PROFILE in flight, fully animated. A side
+  //   view reads clearly at any size (the top-down versions never did). The
+  //   eagle crosses the sky with slow, powerful WING BEATS: the wing sweeps
+  //   from raised over the back to swept below the body, the body rises on
+  //   each downstroke, the tail trims, the head stays level like a real bird.
   const eagA = _smooth(0.06, 0.24, p) * (1 - _smooth(0.62, 0.84, p));
-  if (false && eagA > 0.02) {   // EAGLE DISABLED (Hassan) — Bird clan carried by the geese skeins + ravens
-    const glideX = ((tt * 0.012) % 1.3 - 0.15) * W;        // sails L→R across the sky
-    const ecy = hY * 0.30 + Math.sin(tt * 0.4) * 8;        // gentle up/down
-    const tilt = Math.sin(tt * 0.4) * 0.10;                // slight bank
+  if (eagA > 0.02) {
+    const ex = ((tt * 0.016) % 1.3 - 0.15) * W;                 // crosses L→R
+    const flapT = Math.sin(tt * 3.2);                           // slow, powerful beats
+    const ey = hY * 0.28 + Math.sin(tt * 0.5) * 10 - flapT * 2; // body lifts on the downstroke
     ctx.save(); ctx.globalAlpha = eagA;
-    ctx.translate(glideX, ecy); ctx.rotate(tilt);                          // head-UP, wings spread WIDE (classic soaring view)
-    // BIG scale so it's actually visible
-    const Eg = 1.0;                                         // size unit
-    const span = 64 * Eg;                                   // wide wingspan
-    // wing baseline – a slight upward arch (dihedral)
-    const wingArch = -10 * Eg;
-    // dark body
-    const body = 'rgba(48,30,18,1)';
-    const wingDark = 'rgba(58,40,24,1)';
-    ctx.fillStyle = body;
-    ctx.beginPath(); ctx.ellipse(0, 0, 4 * Eg, 12 * Eg, 0, 0, 6.283); ctx.fill();
-    // wings — broad with fingered tips, drawn as filled shapes (not lines)
-    for (const sgn of [-1, 1]) {
-      ctx.fillStyle = wingDark;
+    ctx.translate(ex, ey);
+    ctx.scale(-1.35, 1.35);  // mirrored: head leads the L→R flight
+    const dark = 'rgba(52,36,22,1)';
+    // FAR WING (behind the body, half a beat out of phase visually smaller)
+    {
+      const lift = flapT * 14;
+      ctx.fillStyle = 'rgba(38,26,16,1)';
       ctx.beginPath();
-      ctx.moveTo(0, -3 * Eg);
-      ctx.quadraticCurveTo(sgn * span * 0.35, wingArch, sgn * span, -2 * Eg);   // leading edge
-      ctx.lineTo(sgn * (span - 4 * Eg), 4 * Eg);                                 // tip
-      ctx.quadraticCurveTo(sgn * span * 0.4, 5 * Eg, 0, 5 * Eg);                 // trailing edge
+      ctx.moveTo(2, -3);
+      ctx.quadraticCurveTo(10, -8 - lift * 0.7, 22, -6 - lift);          // leading edge up/back
+      ctx.quadraticCurveTo(24, -2 - lift, 18, 1 - lift * 0.4);           // wingtip
+      ctx.quadraticCurveTo(9, 2, 2, 0);                                   // trailing edge back to body
       ctx.closePath(); ctx.fill();
-      // fingered primaries (4 long feathers splayed at the tip)
-      ctx.strokeStyle = body; ctx.lineWidth = 2.2 * Eg; ctx.lineCap = 'round';
-      for (let f = 0; f < 4; f++) {
-        const tipX = sgn * (span - 1 * Eg + f * 1.5 * Eg);
-        const tipY = -2 * Eg + f * 1.8 * Eg;
-        const outX = sgn * (span + 5 * Eg + f * 1.8 * Eg);
-        const outY = 0 + f * 2.4 * Eg;
-        ctx.beginPath(); ctx.moveTo(tipX, tipY); ctx.lineTo(outX, outY); ctx.stroke();
-      }
-      // a hint of pale feather edging along the leading edge (woodland-art style)
-      ctx.strokeStyle = 'rgba(200,210,224,0.55)'; ctx.lineWidth = 1.0 * Eg;
+    }
+    // BODY — sleek horizontal fuselage, dark brown
+    ctx.fillStyle = dark;
+    ctx.beginPath();
+    ctx.moveTo(-14, 0);                                                    // chest front
+    ctx.quadraticCurveTo(-6, -5, 6, -4);                                   // back
+    ctx.quadraticCurveTo(16, -3, 22, -1);                                  // toward tail root
+    ctx.quadraticCurveTo(14, 3, 4, 4);                                     // belly
+    ctx.quadraticCurveTo(-8, 5, -14, 0);
+    ctx.closePath(); ctx.fill();
+    // WHITE TAIL — fanned, trimming slightly with the beat
+    ctx.fillStyle = 'rgba(244,242,236,1)';
+    ctx.beginPath();
+    ctx.moveTo(20, -2);
+    ctx.lineTo(30, -4 + flapT * 1.5);
+    ctx.lineTo(31, 1 + flapT * 1.5);
+    ctx.lineTo(21, 2);
+    ctx.closePath(); ctx.fill();
+    // NEAR WING — the star of the animation. Shoulder at (-2,-3). The wing
+    // sweeps through a full beat: raised high over the back → level → swept
+    // down below the belly. Broad inner wing + 4 long fingered primaries.
+    {
+      const lift = flapT * 22;                                              // -22 (down) .. +22 (up)
+      const wx = -2, wy = -3;
+      ctx.fillStyle = dark;
       ctx.beginPath();
-      ctx.moveTo(sgn * 5 * Eg, -2 * Eg);
-      ctx.quadraticCurveTo(sgn * span * 0.5, wingArch + 1, sgn * (span - 2 * Eg), -2 * Eg);
+      ctx.moveTo(wx, wy);
+      ctx.quadraticCurveTo(wx - 6, wy - 6 - lift * 0.55, wx - 4, wy - lift);        // inner wing rises
+      ctx.quadraticCurveTo(wx - 2 , wy - lift - 3, wx + 8, wy - lift - 2);           // mid-wing
+      ctx.quadraticCurveTo(wx + 18, wy - lift, wx + 20, wy - lift + 2);              // to the wrist
+      ctx.quadraticCurveTo(wx + 12, wy + 2, wx + 4, wy + 3);                          // trailing edge home
+      ctx.closePath(); ctx.fill();
+      // fingered primaries splaying from the wrist
+      ctx.strokeStyle = dark; ctx.lineWidth = 2.0; ctx.lineCap = 'round';
+      for (let ftr = 0; ftr < 4; ftr++) {
+        const baseX2 = wx + 20, baseY2 = wy - lift + 2;
+        ctx.beginPath();
+        ctx.moveTo(baseX2, baseY2);
+        ctx.lineTo(baseX2 + 7 + ftr * 1.5, baseY2 + 2 + ftr * 2.5 - lift * 0.25);
+        ctx.stroke();
+      }
+      // pale feather-edge along the inner wing (subtle woodland-art accent)
+      ctx.strokeStyle = 'rgba(210,218,228,0.5)'; ctx.lineWidth = 1.0;
+      ctx.beginPath();
+      ctx.moveTo(wx - 2, wy - lift * 0.8);
+      ctx.quadraticCurveTo(wx + 8, wy - lift - 1, wx + 18, wy - lift + 1);
       ctx.stroke();
     }
-    // WHITE HEAD
-    ctx.fillStyle = 'rgba(244,242,236,1)';
-    ctx.beginPath(); ctx.ellipse(0, -12 * Eg, 4 * Eg, 4 * Eg, 0, 0, 6.283); ctx.fill();
-    // golden HOOKED BEAK pointing forward (down the body axis)
-    ctx.fillStyle = 'rgba(232,184,52,1)';
-    ctx.beginPath();
-    ctx.moveTo(-1.4 * Eg, -14 * Eg);
-    ctx.quadraticCurveTo(0, -18 * Eg, 1.4 * Eg, -14 * Eg);
-    ctx.quadraticCurveTo(0.6 * Eg, -13 * Eg, -1.4 * Eg, -14 * Eg);
-    ctx.closePath(); ctx.fill();
-    // sharp dark eye + brow ridge
-    ctx.fillStyle = 'rgba(232,184,52,1)';
-    ctx.beginPath(); ctx.arc(-1.6 * Eg, -12.4 * Eg, 1.0 * Eg, 0, 6.283); ctx.fill();
-    ctx.fillStyle = 'rgba(12,8,4,1)';
-    ctx.beginPath(); ctx.arc(-1.7 * Eg, -12.5 * Eg, 0.55 * Eg, 0, 6.283); ctx.fill();
-    // WHITE FANNED TAIL
+    // WHITE HEAD — forward of the chest, level gaze
     ctx.fillStyle = 'rgba(244,242,236,1)';
     ctx.beginPath();
-    ctx.moveTo(-3 * Eg, 11 * Eg);
-    ctx.lineTo(3 * Eg, 11 * Eg);
-    ctx.lineTo(2 * Eg, 17 * Eg);
-    ctx.lineTo(-2 * Eg, 17 * Eg);
+    ctx.moveTo(-13, -4);
+    ctx.quadraticCurveTo(-20, -6, -23, -2);                                 // crown → forehead
+    ctx.quadraticCurveTo(-20, 2, -13, 1);                                    // throat back to chest
     ctx.closePath(); ctx.fill();
-    // golden tucked TALONS just visible
-    ctx.fillStyle = 'rgba(232,184,52,1)';
-    ctx.beginPath(); ctx.arc(-1.6 * Eg, 9 * Eg, 0.8 * Eg, 0, 6.283); ctx.fill();
-    ctx.beginPath(); ctx.arc(1.6 * Eg, 9 * Eg, 0.8 * Eg, 0, 6.283); ctx.fill();
+    // GOLDEN HOOKED BEAK
+    ctx.fillStyle = 'rgba(226,176,48,1)';
+    ctx.beginPath();
+    ctx.moveTo(-23, -3);
+    ctx.quadraticCurveTo(-28, -2.5, -27.5, -0.5);                            // upper mandible
+    ctx.quadraticCurveTo(-26, 1.5, -23, 0.5);                                // hook curls down & back
+    ctx.closePath(); ctx.fill();
+    // fierce EYE with brow
+    ctx.fillStyle = 'rgba(20,14,8,1)';
+    ctx.beginPath(); ctx.arc(-19.5, -2.2, 1.0, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = 'rgba(120,110,96,0.8)'; ctx.lineWidth = 0.7;
+    ctx.beginPath(); ctx.moveTo(-21.5, -3.6); ctx.lineTo(-17.5, -3.2); ctx.stroke();  // brow ridge
+    // TALONS tucked under the tail in flight
+    ctx.strokeStyle = 'rgba(226,176,48,1)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(8, 4); ctx.lineTo(12, 6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(11, 4); ctx.lineTo(15, 5.5); ctx.stroke();
     ctx.restore();
   }
   // ---- RAVENS — a pair flapping & tumbling near the treeline (croaking sentries
@@ -1872,7 +1893,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   real Friendship Dance, not random hand-waving. DAY / AFTERNOON ONLY
       //   (Hassan: ring-of-roses belongs to the day, not the evening/night).
       if (isMorning || isMidday) {
-        const ringX = W * 0.83, ringY = H - 24, ringR = 32;   // far-RIGHT foreground, clear of the centred scroll button
+        const ringX = W * 0.83, ringY = H - 24, ringR = 16;   // TIGHT ring: kids' own arms genuinely reach each other
         // trodden grass ring
         ctx.fillStyle = `rgba(${Math.round(_lerp(150, 70, nm))},${Math.round(_lerp(132, 60, nm))},${Math.round(_lerp(86, 36, nm))},0.45)`;
         ctx.beginPath(); ctx.ellipse(ringX, ringY + 6, ringR + 5, (ringR + 5) * 0.4, 0, 0, 6.283); ctx.fill();
@@ -1907,18 +1928,9 @@ function drawScene(ctx, W, H, p, tt, now) {
           const kdir = Math.cos(a) >= 0 ? 1 : -1;       // tangential facing (clockwise)
           fig(x, y, 0.82, 'dance', c * 1.3, { shirt: kidShirts[c], hairStyle: c % 2 ? 'long' : 'braid', dir: kdir });  // clearly small CHILDREN
         }
-        // (No connecting line/rope around the ring — Hassan hated the "rope".
-        //  The children stand CLOSE in a tight circle and their own dance arms
-        //  reach toward each other so their hands nearly touch; we just add a
-        //  tiny skin-tone hand where each neighbouring pair meets, nothing else.)
-        // a short skin-tone forearm bridges each pair so hands clearly TOUCH
-        ctx.strokeStyle = 'rgba(228,184,150,1)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
-        ctx.fillStyle = 'rgba(186,138,98,1)';
-        for (let c = 0; c < N; c++) {
-          const k1 = kp[c], k2 = kp[(c + 1) % N];
-          ctx.beginPath(); ctx.moveTo(k1.x + 3.5, k1.y - 10); ctx.lineTo(k2.x - 3.5, k2.y - 10); ctx.stroke();
-          ctx.beginPath(); ctx.arc((k1.x + k2.x) / 2, (k1.y + k2.y) / 2 - 10, 1.4, 0, 6.283); ctx.fill();
-        }
+        // NO bridge lines at all (they read as "weird sticks"). The ring is now
+        // tight enough (R=16) that each child's own outstretched dance arms
+        // genuinely reach the neighbour's — the hands meet naturally.
       }
       // (Removed the TATANKA chase — its runners swept across the ring-of-roses,
       //  reading as "4 girls walking straight through" the dancing children.)
@@ -1962,6 +1974,28 @@ function drawScene(ctx, W, H, p, tt, now) {
         fig(stX, stY, 1.45, 'wave', 1.1, { shirt: '#5a7d3a', hairStyle: 'long', dir: 1 });
         fig(stX + 18, stY + 2, 0.85, 'sit', 0.4, { shirt: '#d68a1f', hairStyle: 'long', dir: -1 });
         fig(stX + 26, stY + 2, 0.85, 'sit', 1.9, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 });
+
+        // --- EVENING MEAL (evening-only — the day's harvest shared before dark).
+        //   A woven mat with steaming bowls; a family eating together. Placed on
+        //   the open right stretch so it doesn't crowd anything. ---
+        const emX = W * 0.90, emY = ground(W * 0.90) + 6;
+        earth(emX, emY + 4, 26);
+        ctx.fillStyle = `rgba(${Math.round(_lerp(96, 58, nm))},${Math.round(_lerp(64, 40, nm))},${Math.round(_lerp(28, 18, nm))},0.85)`;
+        ctx.beginPath(); ctx.ellipse(emX, emY + 2, 22, 5, 0, 0, 6.283); ctx.fill();
+        const bowlCols2 = ['#d8c896', '#7a2a18', '#a6c1d6'];
+        for (let bw = 0; bw < 3; bw++) {
+          const bxC = emX - 12 + bw * 12, byC = emY - 1;
+          ctx.fillStyle = '#3a2410';
+          ctx.beginPath(); ctx.ellipse(bxC, byC, 3.6, 1.5, 0, 0, 6.283); ctx.fill();
+          ctx.fillStyle = bowlCols2[bw];
+          ctx.beginPath(); ctx.ellipse(bxC, byC - 0.4, 2.7, 1.0, 0, 0, 6.283); ctx.fill();
+          ctx.strokeStyle = `rgba(220,214,200,${0.3 + 0.2 * Math.sin(tt * 2 + bw)})`;
+          ctx.lineWidth = 0.7;
+          ctx.beginPath(); ctx.moveTo(bxC, byC - 1); ctx.quadraticCurveTo(bxC + 2 * Math.sin(tt + bw), byC - 5, bxC, byC - 10); ctx.stroke();
+        }
+        fig(emX - 18, emY - 1, 1.25, 'sit', 1.2, { shirt: '#1f4e8f', hairStyle: 'braid', dir: 1 });
+        fig(emX + 18, emY - 1, 1.25, 'sit', 3.4, { shirt: '#7c2f6b', hairStyle: 'long', dir: -1 });
+        fig(emX + 2, emY - 3, 0.85, 'sit', 2.1, { shirt: '#d68a1f', hairStyle: 'long', dir: -1 });  // child between them
       }
       // --- TALKING CIRCLE (Mi'kmaq) — EVENING: people sit in a circle and a
       //   TALKING STICK passes clockwise; only the holder "speaks" (gestures).
@@ -2087,7 +2121,11 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   black S-neck, white cheek patch. One honks (neck up), others graze
       //   (neck down, pecking). Matches Hassan's reference photo. ----
       const drawGoose = (gx, gy, gsc, honk, ph) => {
-        ctx.save(); ctx.translate(gx, gy); ctx.scale(gsc, gsc); ctx.globalAlpha = dayA;
+        // WADDLE: the whole goose gently rocks side to side + tiny step shuffle,
+        // so it reads as a live bird, not a sticker.
+        const rock = Math.sin(tt * 1.8 + ph) * 0.05;
+        const shuffle = Math.sin(tt * 0.5 + ph) * 3;
+        ctx.save(); ctx.translate(gx + shuffle, gy); ctx.rotate(rock); ctx.scale(gsc, gsc); ctx.globalAlpha = dayA;
         const bodyCol = `rgb(${Math.round(_lerp(150,76,nm))},${Math.round(_lerp(136,68,nm))},${Math.round(_lerp(112,54,nm))})`;
         const breast = `rgb(${Math.round(_lerp(214,108,nm))},${Math.round(_lerp(206,104,nm))},${Math.round(_lerp(186,92,nm))})`;
         // legs
@@ -2106,8 +2144,11 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.fillStyle = breast;
         ctx.beginPath(); ctx.ellipse(-5, -0.5, 3, 2.4, 0.2, 0, 6.283); ctx.fill();
         // LONG black neck — tall vertical S when honking/alert, swept down to
-        // the grass when grazing. A proper goose neck (the old one was stubby).
-        const headX = honk ? -8 : -15, headY = honk ? -20 : 6;
+        // the grass when grazing. ANIMATED: the honker's neck PUMPS up and down
+        // as it calls; grazers PECK — the head bobs down to the grass and back.
+        const pump = honk ? Math.sin(tt * 2.2 + ph) * 2.5 : 0;                  // honk pump
+        const peck = honk ? 0 : Math.max(0, Math.sin(tt * 1.6 + ph)) * 5;       // grazing peck
+        const headX = honk ? -8 : -15, headY = (honk ? -20 + pump : 1 + peck);
         ctx.strokeStyle = 'rgba(20,18,16,1)'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(-6, -3.5);
@@ -2130,9 +2171,11 @@ function drawScene(ctx, W, H, p, tt, now) {
       };
       // geese ("swans") moved OFF the centred scroll-down button to the open
       // mid-right bank, grouped together near the water's edge.
-      drawGoose(W * 0.72, ground(W * 0.72) + 5, 1.9, true, 0);             // the honker (neck up)
-      drawGoose(W * 0.695, ground(W * 0.695) + 7, 1.7, false, 1.5);       // grazing
-      drawGoose(W * 0.745, ground(W * 0.745) + 6, 1.75, false, 3.0);      // grazing
+      // geese on the OPEN LEFT stretch of bank — well away from any villager
+      // work-station (they were merging with the rice-pounders at ~0.70).
+      drawGoose(W * 0.545, ground(W * 0.545) + 5, 1.9, true, 0);           // the honker (neck up)
+      drawGoose(W * 0.52, ground(W * 0.52) + 7, 1.7, false, 1.5);         // grazing
+      drawGoose(W * 0.575, ground(W * 0.575) + 6, 1.75, false, 3.0);      // grazing
 
       // ---- DEER (waawaashkeshi) on the upper bank — a CLAN animal (poets &
       //   peacemakers). Stands grazing, lifts its head ALERT now and then, ears
@@ -2299,7 +2342,12 @@ function drawScene(ctx, W, H, p, tt, now) {
       const blink = (((tt + 0.4) % 3.5) < 0.12);
       // TAIL flick — small wiggle, more in carry/devour
       const tailFlick = Math.sin(tt * 4) * 0.8 * (phase === 'carry' || phase === 'devour' ? 1.4 : 0.5);
+      // WHOLE-BODY hunt motion (Nat-Geo feel): the bear COILS back slightly
+      // during the lunge, then the whole body PITCHES FORWARD-DOWN into the
+      // strike (rotation about the hips) and recovers through the carry.
+      const bodyPitch = strikePhase * 0.10 - (phase === 'lunge' ? 0.04 : 0);
       ctx.translate(bx, by + breath);
+      ctx.rotate(bodyPitch);
 
       // ---- WATER INLET at the bear's feet: the shallows it is fishing in, so it
       //   reads as a bear hunting IN water (Nat-Geo), not standing on grass. Drawn
@@ -2388,7 +2436,14 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   fishing motion, not an arm thrown overhead.
       const headFwd = strikePhase * 2.5 * S;                    // muzzle reaches forward over the water
       const headDip = strikePhase * strikePhase * 9 * S;        // head plunges DOWN to the water on strike
-      const hcX = -16 * S - headFwd, hcY = 1 * S + headDip;     // animated head centre
+      // HEAD TRACKS THE FISH while watching — the muzzle follows the swimming
+      // fish left→right, exactly like a bear locked onto prey in a documentary.
+      let track = 0;
+      if (phase === 'watch' || phase === 'lunge') {
+        const swimU2 = (huntT / lungeEnd);
+        track = (swimU2 - 0.5) * 2.2 * S;                        // follows the fish across the pool
+      }
+      const hcX = -16 * S - headFwd + track, hcY = 1 * S + headDip + Math.abs(track) * 0.12;
       // thick crouching neck
       ctx.fillStyle = furG;
       ctx.beginPath();
@@ -2398,9 +2453,10 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.closePath(); ctx.fill();
       // round head
       ctx.beginPath(); ctx.arc(hcX, hcY, 4.0 * S, 0, 6.283); ctx.fill();
-      // ROUND EARS on top (key bear feature)
-      ctx.beginPath(); ctx.arc(hcX - 2.0 * S, hcY - 3.6 * S, 1.7 * S, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(hcX + 2.6 * S, hcY - 3.4 * S, 1.7 * S, 0, 6.283); ctx.fill();
+      // ROUND EARS on top — they FLICK now and then (fly shake), like a real bear
+      const earFlick = (((tt + 1.2) % 4.2) < 0.15) ? Math.sin(tt * 40) * 0.5 * S : 0;
+      ctx.beginPath(); ctx.arc(hcX - 2.0 * S + earFlick, hcY - 3.6 * S, 1.7 * S, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(hcX + 2.6 * S - earFlick, hcY - 3.4 * S, 1.7 * S, 0, 6.283); ctx.fill();
       ctx.fillStyle = furHi;
       ctx.beginPath(); ctx.arc(hcX - 2.0 * S, hcY - 3.6 * S, 0.9 * S, 0, 6.283); ctx.fill();
       ctx.beginPath(); ctx.arc(hcX + 2.6 * S, hcY - 3.4 * S, 0.9 * S, 0, 6.283); ctx.fill();
@@ -2805,13 +2861,20 @@ function drawScene(ctx, W, H, p, tt, now) {
       const loY = hY + 30 + (H - hY) * 0.30 + Math.sin(tt * 0.8) * 1.2;
       const dip = Math.max(0, Math.sin(tt * 0.35)) * 3;                          // periodic bill-dip
       ctx.globalAlpha = wildA;
-      // soft wake
-      ctx.strokeStyle = 'rgba(232,238,236,0.28)'; ctx.lineWidth = 0.9;
-      ctx.beginPath(); ctx.moveTo(loX - 6, loY + 1); ctx.lineTo(loX - 26, loY + 5); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(loX - 6, loY + 1); ctx.lineTo(loX - 26, loY - 3); ctx.stroke();
-      // low sleek body (dark with a pale flank)
+      // SIT the loon IN the water (it was "floating in air"): a soft ripple ring
+      // around the hull + a dark reflection beneath, and the wake starts AT the
+      // waterline instead of hanging off mid-air.
+      ctx.strokeStyle = 'rgba(232,238,236,0.35)'; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.ellipse(loX, loY + 2.4, 13, 2.6, 0, 0, 6.283); ctx.stroke();   // ripple ring at waterline
+      ctx.fillStyle = 'rgba(14,14,18,0.25)';
+      ctx.beginPath(); ctx.ellipse(loX, loY + 4, 10, 2, 0, 0, 6.283); ctx.fill();          // reflection/shadow
+      // wake trailing on the surface
+      ctx.strokeStyle = 'rgba(232,238,236,0.25)'; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(loX - 10, loY + 2.4); ctx.lineTo(loX - 26, loY + 5.5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(loX - 10, loY + 2.4); ctx.lineTo(loX - 26, loY + 0.5); ctx.stroke();
+      // low sleek body (dark with a pale flank) — hull sits DOWN into the water
       ctx.fillStyle = 'rgba(28,26,30,1)';
-      ctx.beginPath(); ctx.ellipse(loX, loY, 11, 3.2, -0.05, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(loX, loY, 11, 3.2, -0.05, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = 'rgba(225,228,228,0.9)';                                   // white breast/flank
       ctx.beginPath(); ctx.ellipse(loX - 2, loY + 0.8, 7, 1.6, 0, 0, 6.283); ctx.fill();
       // checkerboard hint on the back
