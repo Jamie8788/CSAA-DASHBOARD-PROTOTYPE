@@ -1,0 +1,101 @@
+{
+  "pack_name": "brown_bear_hunter_dev_asset_pack",
+  "bear_frame_canvas": {
+    "w": 768,
+    "h": 512
+  },
+  "fish_water_canvas": {
+    "w": 512,
+    "h": 256
+  },
+  "transparent_pngs": true,
+  "bear_sequences": {
+    "idle": [
+      "01_bear_transparent_png_frames_768x512/idle/bear_idle_01.png",
+      "01_bear_transparent_png_frames_768x512/idle/bear_idle_02.png",
+      "01_bear_transparent_png_frames_768x512/idle/bear_idle_03.png",
+      "01_bear_transparent_png_frames_768x512/idle/bear_idle_04.png"
+    ],
+    "walk": [
+      "01_bear_transparent_png_frames_768x512/walk/bear_walk_01.png",
+      "01_bear_transparent_png_frames_768x512/walk/bear_walk_02.png",
+      "01_bear_transparent_png_frames_768x512/walk/bear_walk_03.png",
+      "01_bear_transparent_png_frames_768x512/walk/bear_walk_04.png",
+      "01_bear_transparent_png_frames_768x512/walk/bear_walk_05.png",
+      "01_bear_transparent_png_frames_768x512/walk/bear_walk_06.png"
+    ],
+    "stalk": [
+      "01_bear_transparent_png_frames_768x512/stalk/bear_stalk_01.png",
+      "01_bear_transparent_png_frames_768x512/stalk/bear_stalk_02.png",
+      "01_bear_transparent_png_frames_768x512/stalk/bear_stalk_03.png",
+      "01_bear_transparent_png_frames_768x512/stalk/bear_stalk_04.png",
+      "01_bear_transparent_png_frames_768x512/stalk/bear_stalk_05.png",
+      "01_bear_transparent_png_frames_768x512/stalk/bear_stalk_06.png"
+    ],
+    "strike": [
+      "01_bear_transparent_png_frames_768x512/strike/bear_strike_01.png",
+      "01_bear_transparent_png_frames_768x512/strike/bear_strike_02.png",
+      "01_bear_transparent_png_frames_768x512/strike/bear_strike_03.png",
+      "01_bear_transparent_png_frames_768x512/strike/bear_strike_04.png",
+      "01_bear_transparent_png_frames_768x512/strike/bear_strike_05.png",
+      "01_bear_transparent_png_frames_768x512/strike/bear_strike_06.png"
+    ],
+    "splash_impact": [
+      "01_bear_transparent_png_frames_768x512/splash_impact/bear_splash_impact_01.png",
+      "01_bear_transparent_png_frames_768x512/splash_impact/bear_splash_impact_02.png",
+      "01_bear_transparent_png_frames_768x512/splash_impact/bear_splash_impact_03.png"
+    ],
+    "catch_claw": [
+      "01_bear_transparent_png_frames_768x512/catch_claw/bear_catch_claw_01.png",
+      "01_bear_transparent_png_frames_768x512/catch_claw/bear_catch_claw_02.png"
+    ],
+    "catch_mouth": [
+      "01_bear_transparent_png_frames_768x512/catch_mouth/bear_catch_mouth_01.png",
+      "01_bear_transparent_png_frames_768x512/catch_mouth/bear_catch_mouth_02.png"
+    ],
+    "recovery_victory": [
+      "01_bear_transparent_png_frames_768x512/recovery_victory/bear_recovery_victory_01.png"
+    ]
+  },
+  "fish_assets": [
+    "02_fish_transparent_png_assets/fish_salmon_flop.png",
+    "02_fish_transparent_png_assets/fish_salmon_side_swim.png",
+    "02_fish_transparent_png_assets/fish_salmon_slight_turn.png",
+    "02_fish_transparent_png_assets/fish_trout_leap.png",
+    "02_fish_transparent_png_assets/fish_trout_side_swim.png",
+    "02_fish_transparent_png_assets/fish_trout_slight_turn.png"
+  ],
+  "water_assets": [
+    "03_water_fx_transparent_png_assets/water_contact_water_patch.png",
+    "03_water_fx_transparent_png_assets/water_ripple_large_01.png",
+    "03_water_fx_transparent_png_assets/water_ripple_large_02.png",
+    "03_water_fx_transparent_png_assets/water_ripple_medium_01.png",
+    "03_water_fx_transparent_png_assets/water_ripple_medium_02.png",
+    "03_water_fx_transparent_png_assets/water_ripple_small_01.png",
+    "03_water_fx_transparent_png_assets/water_ripple_small_02.png",
+    "03_water_fx_transparent_png_assets/water_shadow_fish_underwater.png",
+    "03_water_fx_transparent_png_assets/water_splash_big_strike.png",
+    "03_water_fx_transparent_png_assets/water_splash_heavy.png",
+    "03_water_fx_transparent_png_assets/water_splash_large.png",
+    "03_water_fx_transparent_png_assets/water_splash_medium.png",
+    "03_water_fx_transparent_png_assets/water_splash_small_foot.png",
+    "03_water_fx_transparent_png_assets/water_wake_fast_swim.png",
+    "03_water_fx_transparent_png_assets/water_wake_surface_roll.png",
+    "03_water_fx_transparent_png_assets/water_wake_swim.png",
+    "03_water_fx_transparent_png_assets/water_wake_tail_thrash.png"
+  ],
+  "footfall_assets": [
+    "03_water_fx_transparent_png_assets/footfall_variations/water_footfall_stalk_01.png",
+    "03_water_fx_transparent_png_assets/footfall_variations/water_footfall_stalk_02.png",
+    "03_water_fx_transparent_png_assets/footfall_variations/water_footfall_stalk_03.png",
+    "03_water_fx_transparent_png_assets/footfall_variations/water_footfall_stalk_04.png",
+    "03_water_fx_transparent_png_assets/footfall_variations/water_footfall_stalk_05.png",
+    "03_water_fx_transparent_png_assets/footfall_variations/water_footfall_stalk_06.png",
+    "03_water_fx_transparent_png_assets/footfall_variations/water_footfall_walk_01.png",
+    "03_water_fx_transparent_png_assets/footfall_variations/water_footfall_walk_02.png",
+    "03_water_fx_transparent_png_assets/footfall_variations/water_footfall_walk_03.png",
+    "03_water_fx_transparent_png_assets/footfall_variations/water_footfall_walk_04.png",
+    "03_water_fx_transparent_png_assets/footfall_variations/water_footfall_walk_05.png",
+    "03_water_fx_transparent_png_assets/footfall_variations/water_footfall_walk_06.png"
+  ]
+}
