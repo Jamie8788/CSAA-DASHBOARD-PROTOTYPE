@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "image": "catch_mouth_spritesheet.png",
+    "frame_width": 768,
+    "frame_height": 512,
+    "columns": 2,
+    "rows": 1,
+    "fps": 8,
+    "notes": "Transparent PNG spritesheet. Use frame coordinates below. Pivot is bottom-center-ish for simple 2D placement."
+  },
+  "frames": {
+    "bear_catch_mouth_01.png": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 768,
+        "h": 512
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.88
+      },
+      "duration_ms": 125
+    },
+    "bear_catch_mouth_02.png": {
+      "frame": {
+        "x": 768,
+        "y": 0,
+        "w": 768,
+        "h": 512
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.88
+      },
+      "duration_ms": 125
+    }
+  }
+}
