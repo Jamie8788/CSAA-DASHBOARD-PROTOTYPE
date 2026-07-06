@@ -666,7 +666,10 @@ function drawScene(ctx, W, H, p, tt, now) {
   const eagA = _smooth(0.06, 0.24, p) * (1 - _smooth(0.62, 0.84, p));
   if (eagA > 0.02) {
     const ex = ((tt * 0.016) % 1.3 - 0.15) * W;                 // crosses L→R
-    const flapT = Math.sin(tt * 3.2);                           // slow, powerful beats
+    // real raptor flight: bursts of powerful beats, then a long soaring GLIDE
+    // with the wings held out (slightly raised), body calm
+    const glide = _smooth(0.35, 0.65, 0.5 + 0.5 * Math.sin(tt * 0.35));
+    const flapT = Math.sin(tt * 3.2) * (1 - glide * 0.88) + glide * 0.3;
     const ey = hY * 0.28 + Math.sin(tt * 0.5) * 10 - flapT * 2; // body lifts on the downstroke
     _tpReg(ex, ey - 30, 36, eagA, 'Migizii', 'Truth');
     ctx.save(); ctx.globalAlpha = eagA;
@@ -2910,10 +2913,23 @@ function drawScene(ctx, W, H, p, tt, now) {
       const loX = ((tt * 0.010) % 1.25 - 0.12) * W;
       const loY = hY + 30 + (H - hY) * 0.30 + Math.sin(tt * 0.8) * 1.2;
       const dip = Math.max(0, Math.sin(tt * 0.35)) * 3;                          // periodic bill-dip
-      _tpReg(loX, loY - 22, 32, wildA, 'Maang', 'Humility');
+      // real loon behaviour: every ~14s it DIVES — slips under leaving an
+      // expanding ring, stays down a moment, then pops back up
+      const dcyc = (tt % 14) / 14;
+      let sink = 0;
+      if (dcyc > 0.70 && dcyc < 0.78) sink = (dcyc - 0.70) / 0.08;
+      else if (dcyc >= 0.78 && dcyc < 0.92) sink = 1;
+      else if (dcyc >= 0.92) sink = 1 - (dcyc - 0.92) / 0.08;
+      _tpReg(loX, loY - 22, 32, wildA * (1 - sink), 'Maang', 'Humility');
       ctx.save();
+      if (sink > 0) {
+        ctx.globalAlpha = wildA;
+        ctx.strokeStyle = 'rgba(235,242,238,0.5)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(loX, loY + 2.4, 8 + sink * 16, 2 + sink * 3.4, 0, 0, 6.283); ctx.stroke();
+      }
       ctx.translate(loX, loY); ctx.scale(1.7, 1.7); ctx.translate(-loX, -loY);   // bigger, clan-prominent
-      ctx.globalAlpha = wildA;
+      ctx.translate(0, sink * 9);                                                // slips down as it dives
+      ctx.globalAlpha = wildA * (1 - sink);
       // SIT the loon IN the water (it was "floating in air"): a soft ripple ring
       // around the hull + a dark reflection beneath, and the wake starts AT the
       // waterline instead of hanging off mid-air.
@@ -2957,7 +2973,13 @@ function drawScene(ctx, W, H, p, tt, now) {
       _tpReg(crX, crBase - 95, 34, wildA, 'Ajijaak', 'Respect');
       ctx.save(); ctx.translate(crX, crBase); ctx.scale(2.0, 2.0); ctx.translate(-crX, -crBase);  // bigger / more prominent
       ctx.globalAlpha = wildA * 0.95;
-      const bow = Math.max(0, Math.sin(tt * 0.5)) * 6;                                       // periodic bow toward the water
+      // real hunting: slow scanning bow, then a lightning STAB (~every 8s)
+      const cyc = (tt % 8) / 8;
+      let bow;
+      if (cyc < 0.72)      bow = Math.max(0, Math.sin(cyc / 0.72 * Math.PI)) * 5;          // slow scan
+      else if (cyc < 0.80) { const u = (cyc - 0.72) / 0.08; bow = 5 + u * u * 9; }          // STAB down
+      else                 { const u = (cyc - 0.80) / 0.20; bow = 14 - u * 14; }            // recover
+      const stabbing = cyc >= 0.73 && cyc < 0.84;
       const col = `rgba(${Math.round(_lerp(150,80,nm))},${Math.round(_lerp(160,92,nm))},${Math.round(_lerp(170,104,nm))},1)`;
       // long legs
       ctx.strokeStyle = 'rgba(50,40,32,1)'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
@@ -2979,7 +3001,14 @@ function drawScene(ctx, W, H, p, tt, now) {
       // dagger bill
       ctx.strokeStyle = 'rgba(210,180,90,1)'; ctx.lineWidth = 1.0;
       ctx.beginPath(); ctx.moveTo(crX + 5, crBase - 30 + bow); ctx.lineTo(crX + 11, crBase - 29 + bow); ctx.stroke();
-      ctx.restore();                                                           // close the 1.6x scale wrap
+      // splash flick at the bill tip on the stab
+      if (stabbing) {
+        ctx.strokeStyle = 'rgba(240,246,240,0.75)'; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.ellipse(crX + 11, crBase - 28 + bow, 3.5, 1.0, 0, 0, 6.283); ctx.stroke();
+        ctx.fillStyle = 'rgba(240,246,240,0.8)';
+        for (let dd = 0; dd < 3; dd++) { ctx.beginPath(); ctx.arc(crX + 9 + dd * 2, crBase - 31 + bow - dd, 0.5, 0, 6.283); ctx.fill(); }
+      }
+      ctx.restore();                                                           // close the scale wrap
     }
     // --- PAINTED TURTLE basking on a half-sunk log (mikinaak — culturally
     //   important; Turtle Island). Occasionally stretches its neck. ---
