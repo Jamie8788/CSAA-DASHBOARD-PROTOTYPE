@@ -1,0 +1,117 @@
+{
+  "meta": {
+    "image": "water_ripple_loop_512x256_spritesheet.png",
+    "frame_width": 512,
+    "frame_height": 256,
+    "columns": 4,
+    "rows": 2,
+    "fps": 10,
+    "notes": "Dashboard-style transparent spritesheet."
+  },
+  "frames": {
+    "water_ripple_01.png": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 256
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 100
+    },
+    "water_ripple_02.png": {
+      "frame": {
+        "x": 512,
+        "y": 0,
+        "w": 512,
+        "h": 256
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 100
+    },
+    "water_ripple_03.png": {
+      "frame": {
+        "x": 1024,
+        "y": 0,
+        "w": 512,
+        "h": 256
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 100
+    },
+    "water_ripple_04.png": {
+      "frame": {
+        "x": 1536,
+        "y": 0,
+        "w": 512,
+        "h": 256
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 100
+    },
+    "water_ripple_05.png": {
+      "frame": {
+        "x": 0,
+        "y": 256,
+        "w": 512,
+        "h": 256
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 100
+    },
+    "water_ripple_06.png": {
+      "frame": {
+        "x": 512,
+        "y": 256,
+        "w": 512,
+        "h": 256
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 100
+    },
+    "water_ripple_07.png": {
+      "frame": {
+        "x": 1024,
+        "y": 256,
+        "w": 512,
+        "h": 256
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 100
+    },
+    "water_ripple_08.png": {
+      "frame": {
+        "x": 1536,
+        "y": 256,
+        "w": 512,
+        "h": 256
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 100
+    }
+  }
+}

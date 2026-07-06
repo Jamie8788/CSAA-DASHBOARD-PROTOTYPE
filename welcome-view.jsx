@@ -93,36 +93,28 @@ const _FISH = [
 ];
 
 // ============================================================================
-// REAL BEAR SPRITE PACK (professional asset pack in bear_hunter_dev_asset_pack/)
-// Transparent 768x512 frames, pivot bottom-centre (384,450) per the dev README.
-// Loaded once, lazily; _SPR.ready flips true only if EVERY frame loaded, so the
-// canvas-drawn bear remains as a safe automatic fallback.
+// UPDATED DASHBOARD BEAR PACK (dashboard_bear_updated_dev_pack/)
+// The designer's newer, flatter, dashboard-friendly bear. Square/cutout
+// artifacts were cleaned and the fish + water ripple are baked into each
+// frame and softly blended, so we do NOT draw any separate water FX. It is a
+// simple 8-frame "combined hero loop" (bear + fish + gentle water), 768x384,
+// meant to sit at the shoreline in DAY only and fade out on scroll.
+// Loaded once, lazily; _SPR.ready flips true only if EVERY frame loaded, so
+// the hand-drawn canvas bear stays as a safe automatic fallback.
 // ============================================================================
-const _SPRROOT = 'bear_hunter_dev_asset_pack/';
-const _SPR = { started: false, ready: false, fail: false, anims: {} };
+const _SPRROOT = 'dashboard_bear_updated_dev_pack/';
+const _SPR = { started: false, ready: false, fail: false, hero: [] };
 function _loadSprites() {
   if (_SPR.started) return; _SPR.started = true;
-  const groups = { idle: 4, stalk: 6, strike: 6, splash_impact: 3, catch_mouth: 2, recovery_victory: 1 };
   const jobs = [];
   const track = (im) => jobs.push(new Promise((res) => { im.onload = res; im.onerror = () => { _SPR.fail = true; res(); }; }));
-  for (const g of Object.keys(groups)) {
-    _SPR.anims[g] = [];
-    for (let i = 1; i <= groups[g]; i++) {
-      const im = new Image();
-      im.src = _SPRROOT + '01_bear_transparent_png_frames_768x512/' + g + '/bear_' + g + '_' + String(i).padStart(2, '0') + '.png';
-      _SPR.anims[g].push(im); track(im);
-    }
-  }
-  const singles = {
-    fishSwim: '02_fish_transparent_png_assets/fish_salmon_side_swim.png',
-    patch:    '03_water_fx_transparent_png_assets/water_contact_water_patch.png',
-    ripple:   '03_water_fx_transparent_png_assets/water_ripple_medium_01.png',
-  };
-  for (const k of Object.keys(singles)) {
-    const im = new Image(); im.src = _SPRROOT + singles[k];
-    _SPR[k] = im; track(im);
+  for (let i = 1; i <= 8; i++) {
+    const im = new Image();
+    im.src = _SPRROOT + '02_animation_frames/combined_hero_loop_768x384/hero_bear_loop_' + String(i).padStart(2, '0') + '.png';
+    _SPR.hero.push(im); track(im);
   }
   Promise.all(jobs).then(() => { if (!_SPR.fail) _SPR.ready = true; });
+  window.__SPR = _SPR;   // debug/diagnostic handle
 }
 
 // cursor position (-1..1 from centre), eased, for a parallax depth effect
@@ -2324,49 +2316,35 @@ function drawScene(ctx, W, H, p, tt, now) {
         }
       });
 
-      // ================= REAL SPRITE BEAR (professional asset pack) =============
-      // Full Nat-Geo hunt loop with the artist's frames: IDLE watch -> STALK ->
-      // 6-frame STRIKE -> SPLASH IMPACT -> MOUTH CATCH -> VICTORY hold with the
-      // fish. The hand-drawn bear below remains the automatic fallback while
-      // sprites load (or if any frame fails).
-      if (_SPR.ready) {
-        ctx.save(); ctx.globalAlpha = dayA;
-        const bx = W * 0.28, by = H * 0.90;                    // pivot point at the waterline
-        const sc = Math.max(0.20, Math.min(0.33, W / 4600));   // responsive sprite scale
-        const FW = 768 * sc, FH = 512 * sc;
-        const hunt = (tt % 9) / 9;                             // 9s full hunt cycle
-        let anim, fi;
-        if (hunt < 0.38)      { anim = 'idle';            fi = Math.floor(tt * 5.5) % 4; }
-        else if (hunt < 0.55) { anim = 'stalk';           fi = Math.floor(tt * 7.5) % 6; }
-        else if (hunt < 0.66) { anim = 'strike';          fi = Math.min(5, Math.floor((hunt - 0.55) / 0.11 * 6)); }
-        else if (hunt < 0.74) { anim = 'splash_impact';   fi = Math.min(2, Math.floor((hunt - 0.66) / 0.08 * 3)); }
-        else if (hunt < 0.84) { anim = 'catch_mouth';     fi = Math.min(1, Math.floor((hunt - 0.74) / 0.10 * 2)); }
-        else                  { anim = 'recovery_victory'; fi = 0; }
-        // water contact patch under the bear (artist FX asset)
-        ctx.globalAlpha = dayA * 0.9;
-        ctx.drawImage(_SPR.patch, bx - FW * 0.42, by - FH * 0.10, FW * 0.84, FH * 0.22);
-        // expanding ripple ring
-        const rp = (tt * 0.55) % 1;
-        ctx.globalAlpha = dayA * (1 - rp) * 0.85;
-        const rw = FW * (0.35 + rp * 0.55);
-        ctx.drawImage(_SPR.ripple, bx - rw / 2, by - rw * 0.11, rw, rw * 0.22);
-        ctx.globalAlpha = dayA;
-        // live salmon cruises in from the right while the bear watches/stalks
-        // (the artist fish faces LEFT natively = swimming toward the bear)
-        if (hunt < 0.55) {
-          const u = hunt / 0.55;
-          const fsc = sc * 0.55, fwW = 512 * fsc, fwH = 256 * fsc;
-          const fxp = bx + FW * (0.62 - u * 0.38);
-          const fyp = by - fwH * 0.42 + Math.sin(tt * 2.2) * 3;
-          ctx.globalAlpha = dayA * 0.85;
-          ctx.drawImage(_SPR.fishSwim, fxp - fwW / 2, fyp, fwW, fwH * 0.6);
-          ctx.globalAlpha = dayA;
-        }
-        // the bear frame itself — pivot (384,450) lands on (bx,by)
-        const frame = _SPR.anims[anim][fi];
-        ctx.drawImage(frame, bx - 384 * sc, by - 450 * sc, FW, FH);
+      // ================= UPDATED DASHBOARD BEAR (designer's newer pack) ========
+      // Flat, dashboard-friendly bear with the fish + gentle water ripple baked
+      // into each frame (no separate "stupid water" FX, no square/cutout edges).
+      // It lives at the shoreline in DAY ONLY and fades out on scroll — exactly
+      // the designer's intent (opacity 1 up top, gone once you scroll down, with
+      // a slight drop + shrink during the fade). The hand-drawn bear below stays
+      // as the automatic fallback while frames load (or if any frame fails).
+      //
+      // bearFade: NOTE drawScene remaps p to 0.30..1.00 (story starts mid-morning),
+      // and dusk begins at p≈0.52 (nm = _smooth(0.52,...)). So fade the bear out
+      // across p 0.34→0.50: fully visible at the top, completely gone BEFORE the
+      // first hint of evening — the bear only exists in the day.
+      const bearFade = 1 - _smooth(0.34, 0.50, p);
+      try { ctx.canvas.dataset.bearDbg = _SPR.ready + '|' + p.toFixed(3) + '|' + bearFade.toFixed(3); } catch (e) {}
+      if (_SPR.ready && bearFade > 0.01) {
+        ctx.save();
+        const FW = Math.max(210, W * 0.17), FH = FW * 0.5;     // native 768x384 = 2:1
+        const bx = W * 0.30;                                   // lower-left, by the buttons
+        // designer's fade motion: slight translateY down + slight scale down
+        const drop = (1 - bearFade) * FH * 0.10;
+        const shrink = 1 - (1 - bearFade) * 0.05;
+        const dw = FW * shrink, dh = FH * shrink;
+        const by = H * 0.84 + drop;                            // feet at the waterline (canvas hangs ~150px below the fold, so keep the bear higher)
+        const frame = _SPR.hero[Math.floor(tt * 6) % 8];       // gentle 6fps loop
+        ctx.globalAlpha = bearFade;
+        // bottom-centre placement; feet sit ~86% down the frame (reflection below)
+        ctx.drawImage(frame, bx - dw / 2, by - dh * 0.86, dw, dh);
         ctx.restore();
-      } else {
+      } else if (false) {
       // ---- BROWN BEAR CROUCHED AT THE WATER, paw raised mid-strike at a salmon.
       //   The iconic Anishinaabe/Pacific Northwest "bear fishing" silhouette.
       //   Facing LEFT (head & paw over the water). Body crouched low, weight on

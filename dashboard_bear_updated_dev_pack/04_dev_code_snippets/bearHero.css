@@ -1,0 +1,43 @@
+.hero-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.bear-hero-layer {
+  position: absolute;
+  left: clamp(260px, 24vw, 455px);
+  bottom: clamp(16px, 4vw, 46px);
+  width: clamp(210px, 18vw, 330px);
+  pointer-events: none;
+  z-index: 3;
+  transition: opacity 120ms linear, transform 120ms linear;
+  mix-blend-mode: normal;
+}
+
+.bear-hero-sprite {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: saturate(0.88) contrast(0.92) brightness(0.92);
+  animation: bearIdleFloat 3.2s ease-in-out infinite;
+}
+
+@keyframes bearIdleFloat {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-2px) scale(1.006); }
+}
+
+@media (max-width: 900px) {
+  .bear-hero-layer {
+    left: 42%;
+    bottom: 32px;
+    width: 190px;
+    opacity: 0.85;
+  }
+}
+
+@media (max-width: 640px) {
+  .bear-hero-layer {
+    display: none;
+  }
+}
