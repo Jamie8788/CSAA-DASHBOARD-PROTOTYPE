@@ -671,7 +671,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     const glide = _smooth(0.35, 0.65, 0.5 + 0.5 * Math.sin(tt * 0.35));
     const flapT = Math.sin(tt * 3.2) * (1 - glide * 0.88) + glide * 0.3;
     const ey = hY * 0.28 + Math.sin(tt * 0.5) * 10 - flapT * 2; // body lifts on the downstroke
-    _tpReg(ex, ey - 30, 36, eagA, 'Migizii', 'Truth');
+    _tpReg(ex - 12, ey - 4, 36, eagA, 'Migizii', 'Truth');   // on the eagle's body (it is drawn mirrored about ex)
     ctx.save(); ctx.globalAlpha = eagA;
     ctx.translate(ex, ey);
     ctx.scale(-1.7, 1.7);  // mirrored: head leads the L→R flight
@@ -696,13 +696,15 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.quadraticCurveTo(14, 3, 4, 4);                                     // belly
     ctx.quadraticCurveTo(-8, 5, -14, 0);
     ctx.closePath(); ctx.fill();
-    // WHITE TAIL — fanned, trimming slightly with the beat
+    // WHITE TAIL — a short tapered FAN (was a long rectangle that read as a
+    // giant wing tip), trimming slightly with the beat
     ctx.fillStyle = 'rgba(244,242,236,1)';
     ctx.beginPath();
-    ctx.moveTo(20, -2);
-    ctx.lineTo(30, -4 + flapT * 1.5);
-    ctx.lineTo(31, 1 + flapT * 1.5);
-    ctx.lineTo(21, 2);
+    ctx.moveTo(20, -1.2);
+    ctx.quadraticCurveTo(24, -2.6 + flapT * 1.2, 27, -2.2 + flapT * 1.2);
+    ctx.lineTo(28, -0.2 + flapT * 1.2);
+    ctx.lineTo(27, 1.6 + flapT * 1.2);
+    ctx.quadraticCurveTo(24, 2, 20.5, 1.4);
     ctx.closePath(); ctx.fill();
     // NEAR WING — the star of the animation. Shoulder at (-2,-3). The wing
     // sweeps through a full beat: raised high over the back → level → swept
@@ -2211,7 +2213,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         // On the solid mid-bank between the wood-chop and the fire — a spot
         // where the green slope is high enough that it actually stands on land.
         const dxe = W * 0.76, dye = ground(W * 0.76) - 4, dsc = 2.6;
-        _tpReg(dxe, dye - 58, 34, dayA, 'Waawaashkesh', 'Love');
+        _tpReg(dxe, dye - 34, 34, dayA, 'Waawaashkesh', 'Love');   // on the deer's body
         ctx.save(); ctx.translate(dxe, dye); ctx.scale(dsc, dsc); ctx.globalAlpha = dayA;
         const coat = `rgb(${Math.round(_lerp(168,86,nm))},${Math.round(_lerp(120,60,nm))},${Math.round(_lerp(78,40,nm))})`;
         const alert = Math.max(0, Math.sin(tt * 0.4));                      // 0 grazing → 1 head up
@@ -2255,10 +2257,10 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   bushy tail, pointed face and pale throat. Scampers back and forth. ----
       {
         const logX = W * 0.82, logY = ground(logX) + 2, logLen = 34;
-        _tpReg(logX, logY - 30, 32, dayA, 'Waabizheshii', 'Bravery');
+        _tpReg(logX, logY - 12, 32, dayA, 'Waabizheshii', 'Bravery');   // on the marten itself
         // the fallen log it runs along
         ctx.save(); ctx.globalAlpha = dayA;
-        ctx.translate(logX, logY); ctx.scale(1.6, 1.6); ctx.translate(-logX, -logY);   // bigger, clan-prominent   // solid through the day, fades at dusk like the villagers (not ghosty)
+        ctx.translate(logX, logY); ctx.scale(2.2, 2.2); ctx.translate(-logX, -logY);   // bigger, clan-prominent   // solid through the day, fades at dusk like the villagers (not ghosty)
         ctx.fillStyle = `rgb(${Math.round(_lerp(96,52,nm))},${Math.round(_lerp(64,34,nm))},${Math.round(_lerp(36,18,nm))})`;
         ctx.beginPath(); ctx.ellipse(logX, logY, logLen / 2, 3.2, -0.05, 0, 6.283); ctx.fill();
         ctx.strokeStyle = `rgba(${Math.round(_lerp(40,22,nm))},${Math.round(_lerp(26,14,nm))},${Math.round(_lerp(14,8,nm))},0.7)`;
@@ -2920,14 +2922,14 @@ function drawScene(ctx, W, H, p, tt, now) {
       if (dcyc > 0.70 && dcyc < 0.78) sink = (dcyc - 0.70) / 0.08;
       else if (dcyc >= 0.78 && dcyc < 0.92) sink = 1;
       else if (dcyc >= 0.92) sink = 1 - (dcyc - 0.92) / 0.08;
-      _tpReg(loX, loY - 22, 32, wildA * (1 - sink), 'Maang', 'Humility');
+      _tpReg(loX, loY - 12, 32, wildA * (1 - sink), 'Maang', 'Humility');   // on the loon's back
       ctx.save();
       if (sink > 0) {
         ctx.globalAlpha = wildA;
         ctx.strokeStyle = 'rgba(235,242,238,0.5)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.ellipse(loX, loY + 2.4, 8 + sink * 16, 2 + sink * 3.4, 0, 0, 6.283); ctx.stroke();
       }
-      ctx.translate(loX, loY); ctx.scale(1.7, 1.7); ctx.translate(-loX, -loY);   // bigger, clan-prominent
+      ctx.translate(loX, loY); ctx.scale(2.0, 2.0); ctx.translate(-loX, -loY);   // bigger, clan-prominent
       ctx.translate(0, sink * 9);                                                // slips down as it dives
       ctx.globalAlpha = wildA * (1 - sink);
       // SIT the loon IN the water (it was "floating in air"): a soft ripple ring
@@ -2970,7 +2972,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       const crX = W * 0.86;
       const _crT = _clamp((crX - W * 0.45) / (W - W * 0.45), 0, 1);
       const crBase = (H - 6 - (H * 0.30) * (_crT * 0.6 + _crT * _crT * 0.4)) + 13;
-      _tpReg(crX, crBase - 95, 34, wildA, 'Ajijaak', 'Respect');
+      _tpReg(crX + 6, crBase - 50, 34, wildA, 'Ajijaak', 'Respect');   // on the crane's body/neck
       ctx.save(); ctx.translate(crX, crBase); ctx.scale(2.0, 2.0); ctx.translate(-crX, -crBase);  // bigger / more prominent
       ctx.globalAlpha = wildA * 0.95;
       // real hunting: slow scanning bow, then a lightning STAB (~every 8s)
@@ -3014,9 +3016,9 @@ function drawScene(ctx, W, H, p, tt, now) {
     //   important; Turtle Island). Occasionally stretches its neck. ---
     {
       const tuX = W * 0.30, tuY = hY + 18 + (H - hY) * 0.34;
-      _tpReg(tuX, tuY - 24, 32, wildA, 'Mshiikenh', 'Wisdom');
+      _tpReg(tuX, tuY - 10, 32, wildA, 'Mshiikenh', 'Wisdom');   // on the shell
       ctx.save();
-      ctx.translate(tuX, tuY); ctx.scale(1.6, 1.6); ctx.translate(-tuX, -tuY);   // bigger, clan-prominent
+      ctx.translate(tuX, tuY); ctx.scale(2.2, 2.2); ctx.translate(-tuX, -tuY);   // bigger, clan-prominent
       ctx.globalAlpha = wildA * 0.95;
       // the log it rests on
       ctx.fillStyle = 'rgba(58,40,24,1)';
