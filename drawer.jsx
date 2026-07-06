@@ -1,9 +1,56 @@
 /* global React */
 const { useState, useEffect, useMemo } = React;
 
+// Read-aloud (text-to-speech) — lets Elders and low-vision users LISTEN to a
+// community's key facts instead of reading. Uses the browser's built-in speech
+// synthesis; the button hides itself where it isn't supported.
+function ListenButton({ c }) {
+  const [speaking, setSpeaking] = useState(false);
+  const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  useEffect(() => () => { if (supported) window.speechSynthesis.cancel(); }, [supported]);
+  useEffect(() => {
+    if (supported) { window.speechSynthesis.cancel(); setSpeaking(false); }
+  }, [c && c.id, supported]);
+  if (!supported || !c) return null;
+
+  function buildText() {
+    const parts = [c.name.trim() + '.'];
+    const dir = window.DIRECTION[c.direction || 'Central'];
+    if (dir) parts.push('A community in the ' + dir.label + ' region of the atlas.');
+    if (c.population != null) parts.push('Registered population, about ' + c.population.toLocaleString() + ' people.');
+    const on = window.PILLARS.filter(p => window.pillarOn(c, p.key)).map(p => p.label.split(' ')[0]);
+    if (on.length) parts.push('Services documented in: ' + on.join(', ') + '.');
+    if (c.hasYouth) parts.push('Youth programming is on file.');
+    if (c.hasSurvivors) parts.push('Survivor support is on file.');
+    if (c.physical) parts.push(String(c.physical).slice(0, 480));
+    return parts.join(' ');
+  }
+  function toggle() {
+    if (speaking) { window.speechSynthesis.cancel(); setSpeaking(false); return; }
+    try {
+      const u = new SpeechSynthesisUtterance(buildText());
+      u.rate = 0.94; u.pitch = 1;
+      u.onend = () => setSpeaking(false);
+      u.onerror = () => setSpeaking(false);
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+      setSpeaking(true);
+    } catch (e) { setSpeaking(false); }
+  }
+  return (
+    <button
+      className={`drawer-tool listen-btn ${speaking ? 'on' : ''}`}
+      onClick={toggle}
+      title={speaking ? 'Stop reading' : 'Listen to this profile'}
+      aria-label={speaking ? 'Stop reading' : 'Listen to this profile'}
+    >{speaking ? '◼' : '🔊'}<span className="listen-label">{speaking ? 'Stop' : 'Listen'}</span></button>
+  );
+}
+
 function CommunityDrawer({ community, onClose, searchQuery }) {
   const cms = window.useCMS();
   const [tab, setTab] = useState('overview');
+  const [full, setFull] = useState(false);
   useEffect(() => { setTab('overview'); }, [community?.id]);
   useEffect(() => {
     function esc(e){ if (e.key === 'Escape') onClose(); }
@@ -28,8 +75,17 @@ function CommunityDrawer({ community, onClose, searchQuery }) {
   return (
     <>
       <div className={`drawer-backdrop ${open?'open':''}`} onClick={onClose}></div>
-      <aside className={`drawer ${open?'open':''}`} style={{'--region-color':hex}}>
-        <button className="drawer-close" onClick={onClose} title="Close (Esc)">✕</button>
+      <aside className={`drawer ${open?'open':''} ${full?'full':''}`} style={{'--region-color':hex}}>
+        <div className="drawer-tools">
+          <ListenButton c={c} />
+          <button
+            className="drawer-tool"
+            onClick={() => setFull(f => !f)}
+            title={full ? 'Exit full screen' : 'Open full screen'}
+            aria-label={full ? 'Exit full screen' : 'Open full screen'}
+          >{full ? '⤡' : '⤢'}</button>
+          <button className="drawer-tool drawer-close" onClick={onClose} title="Close (Esc)" aria-label="Close">✕</button>
+        </div>
         <header className="drawer-hero">
           <div className="drawer-eyebrow">
             <span style={{display:'inline-block',width:8,height:8,borderRadius:'50%',background:hex, border: dir==='North'?'1px solid var(--ink-3)':'none'}}></span>

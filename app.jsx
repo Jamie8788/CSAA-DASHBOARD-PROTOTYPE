@@ -87,8 +87,9 @@ function AppInner() {
     const q = search.trim().toLowerCase();
     let list = all.filter(c => {
       if (q) {
-        const hay = (c.name + ' ' + (c.regionGroup||'') + ' ' + (c.physical||'') + ' ' + (c.mental||'') + ' ' + (c.spiritual||'') + ' ' + (c.emotional||'') + ' ' + (c.youth||'') + ' ' + (c.survivors||'') + ' ' + (c.contacts||'')).toLowerCase();
-        if (!hay.includes(q)) return false;
+        // Token-aware + typo-tolerant so voice search / multi-word / misspelled
+        // queries return matches instead of an empty list (see matchCommunity).
+        if (window.matchCommunity ? !window.matchCommunity(c, q) : !(c.name + ' ' + (c.regionGroup||'') + ' ' + (c.physical||'') + ' ' + (c.mental||'') + ' ' + (c.spiritual||'') + ' ' + (c.emotional||'') + ' ' + (c.youth||'') + ' ' + (c.survivors||'') + ' ' + (c.contacts||'')).toLowerCase().includes(q)) return false;
       }
       if (regions.size > 0 && !regions.has(c.regionGroup)) return false;
       if (directions.size > 0 && !directions.has(c.direction || 'Central')) return false;
