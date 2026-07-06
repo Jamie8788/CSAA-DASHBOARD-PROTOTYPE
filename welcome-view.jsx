@@ -2334,8 +2334,8 @@ function drawScene(ctx, W, H, p, tt, now) {
       // in bites. DAY ONLY: fades out with a slight settle before dusk begins.
       if (bearFade > 0.01) {
         ctx.save();
-        const S = Math.max(3.0, Math.min(4.4, W / 330));
-        const bx = W * 0.30, by = H * 0.78 + (1 - bearFade) * 10;
+        const S = Math.max(3.6, Math.min(5.4, W / 270));         // BIG presence like the old bear
+        const bx = W * 0.30, by = H * 0.77 + (1 - bearFade) * 10;
         ctx.globalAlpha = bearFade;
         ctx.translate(bx, by);
         const WL = 12 * S;                                       // waterline at the feet
@@ -2368,8 +2368,8 @@ function drawScene(ctx, W, H, p, tt, now) {
           fishLeft = Math.max(0, 1 - Math.floor(eatT * 3 + 0.001) / 3);
         }
 
-        // flat scene-matched palette (no harsh black shadows)
-        const fur = 'rgba(122,89,58,1)', furDk = 'rgba(97,68,44,1)', muzzleC = 'rgba(166,132,94,1)';
+        // rich dark chocolate browns like the ORIGINAL bear (still flat, no harsh black)
+        const fur = 'rgba(92,62,38,1)', furDk = 'rgba(70,46,28,1)', muzzleC = 'rgba(150,114,78,1)';
 
         // soft expanding ripples where it stands (thin lines — no water blob)
         ctx.lineWidth = 1.2;
@@ -2386,53 +2386,53 @@ function drawScene(ctx, W, H, p, tt, now) {
         const leg = (x, dark) => {
           ctx.fillStyle = dark ? furDk : fur;
           ctx.beginPath();
-          ctx.moveTo((x - 1.4) * S, 2 * S);
-          ctx.lineTo((x - 1.6) * S, 11 * S);
-          ctx.quadraticCurveTo((x - 1.8) * S, 12.2 * S, (x - 0.5) * S, 12.2 * S);
-          ctx.lineTo((x + 0.9) * S, 12.2 * S);
-          ctx.quadraticCurveTo((x + 1.9) * S, 12.2 * S, (x + 1.6) * S, 11 * S);
-          ctx.lineTo((x + 1.8) * S, 2 * S);
+          ctx.moveTo((x - 2.0) * S, 2 * S);
+          ctx.lineTo((x - 2.2) * S, 11 * S);
+          ctx.quadraticCurveTo((x - 2.4) * S, 12.2 * S, (x - 0.8) * S, 12.2 * S);
+          ctx.lineTo((x + 1.2) * S, 12.2 * S);
+          ctx.quadraticCurveTo((x + 2.5) * S, 12.2 * S, (x + 2.2) * S, 11 * S);
+          ctx.lineTo((x + 2.4) * S, 2 * S);
           ctx.closePath(); ctx.fill();
         };
-        leg(-5.8, true); leg(7.6, true);                         // far legs behind the body
+        leg(-5.8, true); leg(8.2, true);                         // far legs behind the body
 
         // body: one smooth curve — gentle shoulder rise, level back, round rump
         // (the old bear's "big hump" is gone; this is a relaxed standing profile)
         ctx.fillStyle = fur;
         ctx.beginPath();
-        ctx.moveTo(-11 * S, 3.5 * S);                            // chest
-        ctx.quadraticCurveTo(-12.5 * S, -3.5 * S, -7.5 * S, -5.8 * S);
-        ctx.quadraticCurveTo(-3 * S, -7.1 * S, 2 * S, -6.6 * S); // gentle shoulder line
-        ctx.quadraticCurveTo(8 * S, -6.0 * S, 11.5 * S, -3.5 * S);
-        ctx.quadraticCurveTo(14 * S, -1 * S, 13 * S, 2.5 * S);   // round rump
-        ctx.quadraticCurveTo(11 * S, 5 * S, 5 * S, 5 * S);
-        ctx.quadraticCurveTo(-2 * S, 5.4 * S, -11 * S, 3.5 * S); // belly
+        ctx.moveTo(-12.5 * S, 4 * S);                            // chest
+        ctx.quadraticCurveTo(-14 * S, -4 * S, -8 * S, -6.8 * S);
+        ctx.quadraticCurveTo(-2 * S, -8.4 * S, 4 * S, -7.9 * S); // broad LEVEL back — no camel hump
+        ctx.quadraticCurveTo(10 * S, -7.2 * S, 13.5 * S, -4 * S);
+        ctx.quadraticCurveTo(16.2 * S, -1 * S, 15 * S, 3 * S);   // big round rump
+        ctx.quadraticCurveTo(12.5 * S, 5.6 * S, 5 * S, 5.6 * S);
+        ctx.quadraticCurveTo(-3 * S, 6 * S, -12.5 * S, 4 * S);   // belly
         ctx.closePath(); ctx.fill();
         // tiny stub tail (flicks a little)
         ctx.fillStyle = fur;
-        ctx.beginPath(); ctx.arc(13.6 * S + Math.sin(tt * 4) * 0.5 * S, 0.5 * S, 1.1 * S, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(15.6 * S + Math.sin(tt * 4) * 0.5 * S, 0.5 * S, 1.3 * S, 0, 6.283); ctx.fill();
 
-        leg(-8.6, false); leg(10.2, false);                      // near legs in front
+        leg(-9.4, false); leg(11.2, false);                      // near legs in front
 
         // neck: one thick round-capped stroke from the shoulders to the head —
         // stays solidly attached no matter where the head animates to
-        ctx.strokeStyle = fur; ctx.lineCap = 'round'; ctx.lineWidth = 6.4 * S;
+        ctx.strokeStyle = fur; ctx.lineCap = 'round'; ctx.lineWidth = 7.6 * S;
         ctx.beginPath();
         ctx.moveTo(-6 * S, -3 * S);
         ctx.quadraticCurveTo((headX + 4) * S, (headY - 1) * S, (headX + 1) * S, headY * S);
         ctx.stroke();
         ctx.fillStyle = fur;
         // head + ears
-        ctx.beginPath(); ctx.arc(headX * S, headY * S, 3.4 * S, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(headX * S, headY * S, 3.9 * S, 0, 6.283); ctx.fill();
         const earFl = (((tt + 1.2) % 4.2) < 0.15) ? Math.sin(tt * 40) * 0.4 : 0;
-        ctx.beginPath(); ctx.arc((headX - 1.1 + earFl) * S, (headY - 3.2) * S, 1.25 * S, 0, 6.283); ctx.fill();
-        ctx.beginPath(); ctx.arc((headX + 2.2 - earFl) * S, (headY - 3.0) * S, 1.25 * S, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc((headX - 1.3 + earFl) * S, (headY - 3.7) * S, 1.55 * S, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc((headX + 2.5 - earFl) * S, (headY - 3.5) * S, 1.55 * S, 0, 6.283); ctx.fill();
         ctx.fillStyle = furDk;
-        ctx.beginPath(); ctx.arc((headX - 1.1) * S, (headY - 3.2) * S, 0.6 * S, 0, 6.283); ctx.fill();
-        ctx.beginPath(); ctx.arc((headX + 2.2) * S, (headY - 3.0) * S, 0.6 * S, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc((headX - 1.3) * S, (headY - 3.7) * S, 0.75 * S, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc((headX + 2.5) * S, (headY - 3.5) * S, 0.75 * S, 0, 6.283); ctx.fill();
         // muzzle, nose
         ctx.fillStyle = muzzleC;
-        ctx.beginPath(); ctx.ellipse((headX - 3.0) * S, (headY + 1.0) * S, 2.3 * S, 1.6 * S, -0.12, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse((headX - 3.4) * S, (headY + 1.2) * S, 2.6 * S, 1.8 * S, -0.12, 0, 6.283); ctx.fill();
         ctx.fillStyle = 'rgba(38,28,20,1)';
         ctx.beginPath(); ctx.ellipse((headX - 4.8) * S, (headY + 0.6) * S, 0.9 * S, 0.72 * S, 0, 0, 6.283); ctx.fill();
         // eye: blinks; squints happily while eating
@@ -2991,12 +2991,20 @@ function drawScene(ctx, W, H, p, tt, now) {
   // ---- CLAN TOUCH POINTS: tiny pulsing gold rings on each dodem (subtle —
   //   they invite a tap without cluttering the scene) + the tap popup card ----
   for (const t of _TP) {
-    const pulse = 1 + Math.sin(tt * 2.4 + t.x * 0.02) * 0.22;
-    ctx.save(); ctx.globalAlpha = t.a * (0.55 + 0.25 * Math.sin(tt * 2.4 + t.x * 0.02));
-    ctx.strokeStyle = 'rgba(255,238,190,0.9)'; ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.arc(t.x, t.y, 5.5 * pulse, 0, 6.283); ctx.stroke();
-    ctx.fillStyle = 'rgba(255,238,190,0.95)';
-    ctx.beginPath(); ctx.arc(t.x, t.y, 1.8, 0, 6.283); ctx.fill();
+    const ph = tt * 2.2 + t.x * 0.02;
+    const pulse = 1 + Math.sin(ph) * 0.22;
+    ctx.save(); ctx.globalAlpha = t.a;
+    // soft breathing glow halo so the point clearly reads as tappable
+    const gl = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, 15 * pulse);
+    gl.addColorStop(0, 'rgba(255,238,190,0.32)');
+    gl.addColorStop(1, 'rgba(255,238,190,0)');
+    ctx.fillStyle = gl;
+    ctx.beginPath(); ctx.arc(t.x, t.y, 15 * pulse, 0, 6.283); ctx.fill();
+    ctx.globalAlpha = t.a * (0.75 + 0.25 * Math.sin(ph));
+    ctx.strokeStyle = 'rgba(255,240,196,0.95)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(t.x, t.y, 7 * pulse, 0, 6.283); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,240,196,1)';
+    ctx.beginPath(); ctx.arc(t.x, t.y, 2.4, 0, 6.283); ctx.fill();
     ctx.restore();
   }
   if (_TPOP) {
