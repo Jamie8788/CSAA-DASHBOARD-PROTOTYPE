@@ -224,6 +224,133 @@ def health() -> dict:
     }
 
 
+# --------------------------- read-aloud proxy ----------------------------- #
+# Extract the readable text of an external document (PDF or web page) so the
+# dashboard's "Listen" feature can read a linked strategic plan / annual report
+# aloud. Runs server-side to sidestep browser CORS and to do PDF parsing.
+
+_READ_DOC_MAX_BYTES = 12 * 1024 * 1024   # don't download more than 12 MB
+_READ_DOC_MAX_CHARS = 24_000             # ~25 min of speech; plenty for a listen
+_READ_DOC_MAX_PAGES = 60
+
+
+def _read_doc_host_ok(host: str) -> bool:
+    """Block obvious internal / private targets (basic SSRF guard)."""
+    h = (host or "").lower()
+    if not h:
+        return False
+    if h in ("localhost", "127.0.0.1", "0.0.0.0", "::1", "metadata", "metadata.google.internal"):
+        return False
+    if h.startswith(("10.", "192.168.", "169.254.", "172.16.", "172.17.", "172.18.",
+                     "172.19.", "172.2", "172.30.", "172.31.")):
+        return False
+    return True
+
+
+def _html_to_text(html: str) -> str:
+    import re as _re
+    # drop script/style/nav/etc, then strip tags and collapse whitespace
+    html = _re.sub(r"(?is)<(script|style|noscript|head|nav|footer|svg)[^>]*>.*?</\1>", " ", html)
+    html = _re.sub(r"(?is)<br\s*/?>", "\n", html)
+    html = _re.sub(r"(?is)</(p|div|li|h[1-6]|tr)>", "\n", html)
+    text = _re.sub(r"(?s)<[^>]+>", " ", html)
+    # unescape a few common entities
+    for a, b in (("&nbsp;", " "), ("&amp;", "&"), ("&quot;", '"'),
+                 ("&#39;", "'"), ("&rsquo;", "'"), ("&lsquo;", "'"),
+                 ("&ldquo;", '"'), ("&rdquo;", '"'), ("&mdash;", "—"), ("&ndash;", "–")):
+        text = text.replace(a, b)
+    text = _re.sub(r"[^\S\n]+", " ", text)
+    text = _re.sub(r"\n\s*\n\s*\n+", "\n\n", text)
+    return text.strip()
+
+
+@app.get("/api/read-doc")
+def read_doc(url: str) -> dict:
+    """Fetch `url` and return its readable text so it can be spoken aloud.
+    Returns {ok, kind, title, text, truncated} or {ok: False, error}."""
+    import io as _io
+    import re as _re
+    from urllib.parse import urlparse
+
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return {"ok": False, "error": "bad-url"}
+    if parsed.scheme not in ("http", "https") or not _read_doc_host_ok(parsed.hostname):
+        return {"ok": False, "error": "blocked-url"}
+
+    import requests  # already a dependency
+    try:
+        resp = requests.get(
+            url, timeout=15, stream=True,
+            headers={"User-Agent": "MinoBimaadiziwinAtlas/1.0 (+read-aloud)"},
+        )
+        resp.raise_for_status()
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": "fetch-failed", "detail": str(exc)[:200]}
+
+    ctype = (resp.headers.get("content-type") or "").lower()
+    # bounded read
+    chunks, total = [], 0
+    for chunk in resp.iter_content(64 * 1024):
+        if not chunk:
+            break
+        chunks.append(chunk)
+        total += len(chunk)
+        if total > _READ_DOC_MAX_BYTES:
+            break
+    raw = b"".join(chunks)
+
+    is_pdf = "pdf" in ctype or parsed.path.lower().endswith(".pdf") or raw[:5] == b"%PDF-"
+    title = (parsed.path.rsplit("/", 1)[-1] or parsed.hostname or "document")
+
+    if is_pdf:
+        try:
+            from pypdf import PdfReader
+        except Exception:
+            return {"ok": False, "error": "pdf-unsupported"}
+        try:
+            reader = PdfReader(_io.BytesIO(raw))
+            if getattr(reader, "is_encrypted", False):
+                try:
+                    reader.decrypt("")
+                except Exception:
+                    pass
+            parts = []
+            for i, page in enumerate(reader.pages):
+                if i >= _READ_DOC_MAX_PAGES:
+                    break
+                try:
+                    parts.append(page.extract_text() or "")
+                except Exception:
+                    continue
+            text = "\n".join(p.strip() for p in parts if p and p.strip())
+            if reader.metadata and reader.metadata.title:
+                title = str(reader.metadata.title)
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": "pdf-parse-failed", "detail": str(exc)[:200]}
+        kind = "pdf"
+    else:
+        try:
+            html = raw.decode(resp.encoding or "utf-8", errors="replace")
+        except Exception:
+            html = raw.decode("utf-8", errors="replace")
+        m = _re.search(r"(?is)<title[^>]*>(.*?)</title>", html)
+        if m:
+            title = _re.sub(r"\s+", " ", m.group(1)).strip() or title
+        text = _html_to_text(html)
+        kind = "web"
+
+    text = " ".join((text or "").split())
+    if not text:
+        return {"ok": False, "error": "no-text",
+                "message": "This document has no machine-readable text (it may be scanned images)."}
+    truncated = len(text) > _READ_DOC_MAX_CHARS
+    if truncated:
+        text = text[:_READ_DOC_MAX_CHARS].rsplit(" ", 1)[0]
+    return {"ok": True, "kind": kind, "title": title, "text": text, "truncated": truncated}
+
+
 # ------------------------------ auth -------------------------------------- #
 
 @app.post("/api/auth/login", response_model=LoginOut)

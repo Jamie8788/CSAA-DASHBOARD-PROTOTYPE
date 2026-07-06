@@ -1,59 +1,213 @@
 /* global React */
 const { useState, useEffect, useMemo } = React;
 
-// Read-aloud (text-to-speech) — lets Elders and low-vision users LISTEN to a
-// community's key facts instead of reading. Uses the browser's built-in speech
-// synthesis; the button hides itself where it isn't supported.
-function ListenButton({ c }) {
-  const [speaking, setSpeaking] = useState(false);
-  const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
-  useEffect(() => () => { if (supported) window.speechSynthesis.cancel(); }, [supported]);
-  useEffect(() => {
-    if (supported) { window.speechSynthesis.cancel(); setSpeaking(false); }
-  }, [c && c.id, supported]);
-  if (!supported || !c) return null;
+// ============================================================================
+// READ-ALOUD SYSTEM  (Kobo-style karaoke reader)
+//   A single shared speech controller lets Elders / low-vision users LISTEN to:
+//     · a short spoken SUMMARY of the whole profile (the main "Listen")
+//     · any individual section (per-section 🔊 buttons)
+//     · any text they select with the mouse ("Read selection")
+//     · a linked PDF / web document (fetched & extracted server-side)
+//   As it speaks, the current word is highlighted in a caption bar that scrolls
+//   along — like an e-reader. Placeholder "under review" text is never read.
+// ============================================================================
+const ReaderCtx = React.createContext(null);
 
-  function buildText() {
-    const parts = [c.name.trim() + '.'];
-    const dir = window.DIRECTION[c.direction || 'Central'];
-    if (dir) parts.push('A community in the ' + dir.label + ' region of the atlas.');
-    if (c.population != null) parts.push('Registered population, about ' + c.population.toLocaleString() + ' people.');
-    const on = window.PILLARS.filter(p => window.pillarOn(c, p.key)).map(p => p.label.split(' ')[0]);
-    if (on.length) parts.push('Services documented in: ' + on.join(', ') + '.');
-    if (c.hasYouth) parts.push('Youth programming is on file.');
-    if (c.hasSurvivors) parts.push('Survivor support is on file.');
-    if (c.physical) parts.push(String(c.physical).slice(0, 480));
-    return parts.join(' ');
+// Strip source URLs / citation markers and squeeze whitespace so speech is clean.
+function _readerClean(s) {
+  return String(s || '')
+    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/\b(?:www\.)?[a-z0-9-]+\.(?:ca|com|org|net|gov)\b\S*/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+function _firstSentence(s, max) {
+  const t = _readerClean(s);
+  if (!t) return '';
+  const m = t.match(/^.*?[.!?](?:\s|$)/);
+  let out = (m ? m[0] : t).trim();
+  const lim = max || 240;
+  if (out.length > lim) out = out.slice(0, lim).replace(/\s+\S*$/, '') + '…';
+  return out;
+}
+// A concise, human "story" summary — NOT a dump of every field.
+function readerSummary(c) {
+  const parts = [c.name.trim() + '.'];
+  const dir = window.DIRECTION[c.direction || 'Central'];
+  const kind = (c.orgType || 'community').toLowerCase();
+  parts.push('A ' + kind + (dir ? ' in the ' + dir.label + ' region of the atlas' : '') + '.');
+  if (c.population != null) parts.push('Registered population, about ' + c.population.toLocaleString() + ' people.');
+  const onP = window.PILLARS.filter(p => window.pillarOn(c, p.key));
+  if (onP.length) parts.push('Documented services cover ' + onP.map(p => p.label.split(' ')[0]).join(', ') + '.');
+  else parts.push('No service programming is documented yet.');
+  for (const p of onP) {                       // one real sentence, skipping filler
+    const v = c[p.key];
+    if (v && window.fieldStatus(c, p.key, v) === 'ok') {
+      const fs = _firstSentence(v, 220);
+      if (fs) { parts.push(fs); break; }
+    }
   }
-  function toggle() {
-    if (speaking) { window.speechSynthesis.cancel(); setSpeaking(false); return; }
+  if (c.hasYouth) parts.push('Youth programming is on file.');
+  if (c.hasSurvivors) parts.push('Survivor support is on file.');
+  parts.push('This profile is ' + Math.round((c.completeness || 0) * 100) + ' percent documented.');
+  return parts.join(' ');
+}
+
+// The controller (one per open drawer). Handles speech + karaoke boundaries +
+// fetching linked documents to read.
+function useReaderProvider() {
+  const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  const [st, setSt] = useState({ status: 'idle', text: '', from: 0, to: 0, label: '' });
+  function stop() {
+    if (supported) window.speechSynthesis.cancel();
+    setSt({ status: 'idle', text: '', from: 0, to: 0, label: '' });
+  }
+  function speakText(text, label) {
+    if (!supported) return;
+    const clean = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!clean) return;
+    window.speechSynthesis.cancel();
+    let u;
+    try { u = new SpeechSynthesisUtterance(clean); } catch (e) { return; }
+    u.rate = 0.96; u.pitch = 1;
+    u.onboundary = (e) => {
+      const ci = e.charIndex || 0;
+      const m = clean.slice(ci).match(/^\S+/);
+      setSt(s => (s.status === 'speaking' ? { ...s, from: ci, to: ci + (m ? m[0].length : 1) } : s));
+    };
+    u.onend = () => setSt(s => ({ ...s, status: 'idle', from: 0, to: 0 }));
+    u.onerror = () => setSt(s => ({ ...s, status: 'idle' }));
+    setSt({ status: 'speaking', text: clean, from: 0, to: 0, label: label || '' });
+    window.speechSynthesis.speak(u);
+  }
+  async function speakDoc(url, label) {
+    if (!supported || !url) return;
+    if (supported) window.speechSynthesis.cancel();
+    setSt({ status: 'loading', text: '', from: 0, to: 0, label: label || 'document' });
     try {
-      const u = new SpeechSynthesisUtterance(buildText());
-      u.rate = 0.94; u.pitch = 1;
-      u.onend = () => setSpeaking(false);
-      u.onerror = () => setSpeaking(false);
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-      setSpeaking(true);
-    } catch (e) { setSpeaking(false); }
+      const res = await fetch('/api/read-doc?url=' + encodeURIComponent(url));
+      const data = await res.json();
+      if (data && data.ok && data.text) {
+        speakText((data.title ? data.title + '. ' : '') + data.text, label || 'document');
+      } else {
+        speakText((data && data.message) ? data.message
+          : 'Sorry, this document could not be read automatically. Please open the link to view it.', label || 'document');
+      }
+    } catch (e) {
+      speakText('Sorry, the document could not be opened right now.', label || 'document');
+    }
   }
+  useEffect(() => () => { if (supported) window.speechSynthesis.cancel(); }, [supported]);
+  return { supported, status: st.status, text: st.text, from: st.from, to: st.to, label: st.label, speakText, speakDoc, stop };
+}
+
+// The scrolling caption bar that highlights each spoken word (Kobo-style).
+function ReadAlongBar() {
+  const r = React.useContext(ReaderCtx);
+  const markRef = React.useRef(null);
+  useEffect(() => { if (markRef.current) markRef.current.scrollIntoView({ block: 'nearest' }); });
+  if (!r || (r.status !== 'speaking' && r.status !== 'loading')) return null;
+  return (
+    <div className="read-along" role="status" aria-live="polite">
+      <button className="read-along-stop" onClick={r.stop} title="Stop reading" aria-label="Stop reading">◼</button>
+      {r.status === 'loading'
+        ? <div className="read-along-text loading">Fetching the document to read aloud…</div>
+        : <div className="read-along-text">
+            <span>{r.text.slice(0, r.from)}</span>
+            <mark ref={markRef}>{r.text.slice(r.from, r.to)}</mark>
+            <span>{r.text.slice(r.to)}</span>
+          </div>}
+    </div>
+  );
+}
+
+// Small speaker button for a section. `text` may be a string or a getter.
+function SpeakButton({ text, label, className }) {
+  const r = React.useContext(ReaderCtx);
+  if (!r || !r.supported) return null;
+  const t = typeof text === 'function' ? text() : text;
+  if (!t || !String(t).trim()) return null;
+  const active = r.status === 'speaking' && r.label === label;
   return (
     <button
-      className={`drawer-tool listen-btn ${speaking ? 'on' : ''}`}
-      onClick={toggle}
-      title={speaking ? 'Stop reading' : 'Listen to this profile'}
-      aria-label={speaking ? 'Stop reading' : 'Listen to this profile'}
-    >{speaking ? '◼' : '🔊'}<span className="listen-label">{speaking ? 'Stop' : 'Listen'}</span></button>
+      className={`speak-btn ${active ? 'on' : ''} ${className || ''}`}
+      title={active ? 'Stop reading' : 'Read this aloud'}
+      aria-label={active ? 'Stop reading' : 'Read this section aloud'}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); active ? r.stop() : r.speakText(t, label); }}
+    >{active ? '◼' : '🔊'}</button>
+  );
+}
+
+// Speaker button for a linked document (PDF / web page) — reads its contents.
+function ReadDocButton({ url, label }) {
+  const r = React.useContext(ReaderCtx);
+  if (!r || !r.supported || !url) return null;
+  const busy = r.status === 'loading' && r.label === label;
+  return (
+    <button
+      className={`speak-btn doc ${busy ? 'busy' : ''}`}
+      title="Read this document aloud"
+      aria-label="Read this document aloud"
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); r.speakDoc(url, label); }}
+    >{busy ? '⋯' : '🔊'}</button>
+  );
+}
+
+// Floating "Read selection" button that appears when the user highlights text.
+function SelectionReader({ containerRef }) {
+  const r = React.useContext(ReaderCtx);
+  const [sel, setSel] = useState(null);
+  useEffect(() => {
+    function update() {
+      const s = window.getSelection && window.getSelection();
+      const text = s && s.toString().trim();
+      if (!text || text.length < 4 || !containerRef.current || s.rangeCount === 0) { setSel(null); return; }
+      const node = s.anchorNode;
+      const el = node && (node.nodeType === 3 ? node.parentNode : node);
+      if (!el || !containerRef.current.contains(el)) { setSel(null); return; }
+      const rect = s.getRangeAt(0).getBoundingClientRect();
+      if (!rect || (!rect.width && !rect.height)) { setSel(null); return; }
+      setSel({ text, x: rect.left + rect.width / 2, y: rect.top });
+    }
+    document.addEventListener('mouseup', update);
+    document.addEventListener('keyup', update);
+    return () => { document.removeEventListener('mouseup', update); document.removeEventListener('keyup', update); };
+  }, [containerRef]);
+  if (!r || !r.supported || !sel) return null;
+  return (
+    <button
+      className="selection-read"
+      style={{ left: sel.x + 'px', top: (sel.y - 46) + 'px' }}
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => { r.speakText(sel.text, 'selection'); setSel(null); if (window.getSelection) window.getSelection().removeAllRanges(); }}
+    >🔊 Read selection</button>
+  );
+}
+
+// The main header "Listen" — reads the concise SUMMARY (not every page).
+function ListenButton({ c }) {
+  const r = React.useContext(ReaderCtx);
+  if (!r || !r.supported || !c) return null;
+  const active = r.status === 'speaking' && r.label === 'summary';
+  return (
+    <button
+      className={`drawer-tool listen-btn ${active ? 'on' : ''}`}
+      onClick={() => (active ? r.stop() : r.speakText(readerSummary(c), 'summary'))}
+      title={active ? 'Stop reading' : 'Listen to a summary'}
+      aria-label={active ? 'Stop reading' : 'Listen to a summary of this profile'}
+    >{active ? '◼' : '🔊'}<span className="listen-label">{active ? 'Stop' : 'Listen'}</span></button>
   );
 }
 
 function CommunityDrawer({ community, onClose, searchQuery }) {
+  const reader = useReaderProvider();
+  const drawerRef = React.useRef(null);
   const cms = window.useCMS();
   const [tab, setTab] = useState('overview');
   const [full, setFull] = useState(false);
-  useEffect(() => { setTab('overview'); }, [community?.id]);
+  useEffect(() => { setTab('overview'); reader.stop(); }, [community?.id]);
   useEffect(() => {
-    function esc(e){ if (e.key === 'Escape') onClose(); }
+    function esc(e){ if (e.key === 'Escape') { reader.stop(); onClose(); } }
     window.addEventListener('keydown', esc);
     return () => window.removeEventListener('keydown', esc);
   }, [onClose]);
@@ -73,9 +227,9 @@ function CommunityDrawer({ community, onClose, searchQuery }) {
   const depts = c.departments || [];
 
   return (
-    <>
+    <ReaderCtx.Provider value={reader}>
       <div className={`drawer-backdrop ${open?'open':''}`} onClick={onClose}></div>
-      <aside className={`drawer ${open?'open':''} ${full?'full':''}`} style={{'--region-color':hex}}>
+      <aside ref={drawerRef} className={`drawer ${open?'open':''} ${full?'full':''}`} style={{'--region-color':hex}}>
         <div className="drawer-tools">
           <ListenButton c={c} />
           <button
@@ -146,8 +300,10 @@ function CommunityDrawer({ community, onClose, searchQuery }) {
           {tab==='people' && <PeopleTab c={c} searchQuery={searchQuery} />}
           {tab==='contact' && <ContactTab c={c} />}
         </div>
+        <ReadAlongBar />
       </aside>
-    </>
+      <SelectionReader containerRef={drawerRef} />
+    </ReaderCtx.Provider>
   );
 }
 
@@ -173,11 +329,14 @@ function FieldLinkOne({ url, label }) {
   try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
   const isPdf = /\.pdf(\?|#|$)/i.test(url);
   return (
-    <a className="field-link" href={url} target="_blank" rel="noopener noreferrer">
-      <span className="fl-icon">{isPdf ? '⤓' : '↗'}</span>
-      <span className="fl-text">{label || 'Open source'}</span>
-      <span className="fl-host">{isPdf ? 'PDF · ' : ''}{host}</span>
-    </a>
+    <div className="field-link-row">
+      <a className="field-link" href={url} target="_blank" rel="noopener noreferrer">
+        <span className="fl-icon">{isPdf ? '⤓' : '↗'}</span>
+        <span className="fl-text">{label || 'Open source'}</span>
+        <span className="fl-host">{isPdf ? 'PDF · ' : ''}{host}</span>
+      </a>
+      <ReadDocButton url={url} label={'doc:' + url} />
+    </div>
   );
 }
 // A field can carry SEVERAL source links — render them all, numbered when >1.
@@ -281,7 +440,10 @@ function Section({ title, swatch, children, value, eyebrow, searchQuery, communi
           <span>{eyebrow || 'Section'}</span>
         </div>
       )}
-      <h3 className="section-title">{title}</h3>
+      <h3 className="section-title">
+        {title}
+        {status === 'ok' && value && <SpeakButton text={() => _readerClean(value)} label={'sec:' + (fieldKey || title)} className="inline" />}
+      </h3>
       {empty
         ? <PendingNotice status={status} c={community} fieldKey={fieldKey} />
         : status === 'ok' && value && <div className="section-body">{window.richText(value, searchQuery)}</div>}
@@ -643,6 +805,7 @@ function PillarServiceCard({ pillar, value, on, c, searchQuery }) {
               {meta.links.length > 0 && ` · ${meta.links.length} link${meta.links.length===1?'':'s'}`}
             </div>
           </div>
+          <SpeakButton text={() => _readerClean(value)} label={'pillar:' + pillar.key} className="pc-speak" />
           <button className="pc-status on" onClick={() => setOpen(o => !o)} aria-expanded={open}>
             {open ? '— Collapse' : '+ Expand'}
           </button>
