@@ -259,6 +259,111 @@ a:hover { color: var(--south); }
 }
 .search-clear:hover { color: var(--south); }
 
+/* ---- Voice search (Elder-friendly: speak a community's name) ------------ */
+.voice-btn {
+  background: transparent; border: 0; cursor: pointer;
+  font-size: 13px; color: var(--ink-4); padding: 0 4px;
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--mono); letter-spacing: .08em;
+  transition: color .2s;
+}
+.voice-btn:hover { color: var(--south); }
+.voice-btn.on { color: var(--south); animation: voicePulse 1s ease-in-out infinite; }
+@keyframes voicePulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+
+/* ---- Autocomplete dropdown (Google-style typeahead) --------------------- */
+.smart-search { position: relative; }
+.search-drop {
+  position: absolute; left: -1px; right: -1px; top: calc(100% + 5px);
+  z-index: 60;
+  background: var(--paper-card);
+  border: 1px solid var(--ink-5);
+  box-shadow: 0 12px 30px -12px rgba(30,20,10,.35);
+  max-height: 360px; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--ink-5) transparent;
+}
+.search-drop .sugg,
+.search-drop .did-you-mean {
+  display: block; width: 100%; text-align: left;
+  background: transparent; border: 0; cursor: pointer;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--line-soft);
+  transition: background .12s;
+}
+.search-drop .sugg:last-child { border-bottom: 0; }
+.search-drop .sugg.hi,
+.search-drop .sugg:hover { background: var(--east-glaze); }
+.sugg-name {
+  display: block; font-family: var(--serif, var(--sans));
+  font-size: 14px; color: var(--ink); line-height: 1.25;
+}
+.sugg-name mark.search-hit { background: transparent; color: var(--south); font-weight: 600; padding: 0; }
+.sugg-meta {
+  display: block; margin-top: 2px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-4);
+}
+.did-you-mean {
+  font-family: var(--sans); font-size: 12.5px; color: var(--ink-2);
+  background: var(--east-glaze) !important;
+  border-bottom: 1px solid var(--east-soft) !important;
+}
+.did-you-mean strong { color: var(--south); font-weight: 600; }
+.did-you-mean:hover { background: var(--east-soft) !important; }
+
+/* ---- Contribute / correction button (Anishinaabe four-direction motif) -- */
+.contribute { margin-top: 14px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+.contribute-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 11px 14px; cursor: pointer;
+  background: var(--paper-card);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  font-family: var(--sans); font-size: 12.5px; color: var(--ink-2);
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.contribute-btn:hover { border-color: var(--south); box-shadow: 0 4px 14px -8px rgba(184,53,30,.5); }
+.contribute-btn.open { border-color: var(--south); background: var(--paper); }
+.contribute-medallion {
+  position: relative; width: 18px; height: 18px; flex-shrink: 0;
+  border-radius: 50%; overflow: hidden;
+  box-shadow: 0 0 0 1px var(--line) inset;
+  transform: rotate(0deg); transition: transform .4s ease;
+}
+.contribute-btn:hover .contribute-medallion { transform: rotate(90deg); }
+.contribute-medallion span { position: absolute; width: 50%; height: 50%; }
+.contribute-medallion .q-east  { top: 0; left: 0;  background: var(--east); }
+.contribute-medallion .q-south { top: 0; right: 0; background: var(--south); }
+.contribute-medallion .q-west  { bottom: 0; left: 0;  background: #2e2820; }
+.contribute-medallion .q-north { bottom: 0; right: 0; background: var(--north); }
+.contribute-label { flex: 1; text-align: left; letter-spacing: .01em; }
+.contribute-note {
+  margin-top: 10px; padding: 13px 14px;
+  background: var(--paper); border: 1px solid var(--line-soft);
+  animation: contribIn .25s ease;
+}
+@keyframes contribIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.contribute-note p {
+  margin: 0 0 9px; font-family: var(--sans); font-size: 12px;
+  line-height: 1.55; color: var(--ink-3);
+}
+.contribute-note p:last-of-type { margin-bottom: 12px; }
+.contribute-note strong { color: var(--ink-2); font-weight: 600; }
+.contribute-go {
+  display: inline-block; text-decoration: none;
+  padding: 9px 16px; border-radius: 20px;
+  background: var(--south); color: var(--paper);
+  font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+  letter-spacing: .01em; transition: background .2s, transform .1s;
+}
+.contribute-go:hover { background: var(--south-deep); }
+.contribute-go:active { transform: translateY(1px); }
+
+/* Elder mode: bigger, calmer targets in the smart-search + contribute area */
+body.elder-mode .sugg-name { font-size: 16px; }
+body.elder-mode .contribute-btn { font-size: 14px; padding: 13px 16px; }
+body.elder-mode .contribute-note p { font-size: 13.5px; }
+
 .filter-group { margin-bottom: 22px; }
 .filter-label {
   display: flex; justify-content: space-between; align-items: baseline;

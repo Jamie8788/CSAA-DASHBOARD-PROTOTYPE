@@ -98,7 +98,13 @@ function AppInner() {
         if (!b || !popBuckets.has(b)) return false;
       }
       if (pillars.size > 0) {
-        for (const p of pillars) if (!window.pillarOn(c, p)) return false;
+        // OR within the pillar facet (consistent with region / org-type):
+        // show communities offering ANY selected pillar. Selecting more
+        // pillars now visibly broadens the results instead of narrowing to
+        // the handful that happen to offer all of them.
+        let anyPillar = false;
+        for (const p of pillars) { if (window.pillarOn(c, p)) { anyPillar = true; break; } }
+        if (!anyPillar) return false;
       }
       if (hasYouth && !c.hasYouth) return false;
       if (hasSurvivor && !c.hasSurvivors) return false;
@@ -115,6 +121,15 @@ function AppInner() {
   }, [all, search, regions, directions, orgTypes, popBuckets, pillars, hasYouth, hasSurvivor, completeOnly, sortBy]);
 
   const selected = useMemo(() => all.find(c => c.id === selectedId), [all, selectedId]);
+
+  // Highlight search hits inside the drawer ONLY when the query is a service
+  // term. If you searched a community's own NAME, don't paint that name yellow
+  // all over its own profile — that just reads as noise.
+  const drawerQuery = useMemo(() => {
+    const q = search.trim();
+    if (!q || !selected) return '';
+    return selected.name.toLowerCase().includes(q.toLowerCase()) ? '' : q;
+  }, [search, selected]);
 
   const counts = useMemo(() => {
     const r = {}, o = {}, p = {}, d = {};
@@ -184,7 +199,7 @@ function AppInner() {
       ) : (
         <div className="main-grid">
           <FilterRail
-            search={search} setSearch={setSearch}
+            search={search} setSearch={setSearch} onPick={setSelectedId}
             regions={regions} setRegions={setRegions}
             directions={directions} setDirections={setDirections}
             orgTypes={orgTypes} setOrgTypes={setOrgTypes}
@@ -247,7 +262,7 @@ function AppInner() {
         </div>
       )}
 
-      <window.CommunityDrawer community={selected} onClose={() => setSelectedId(null)} searchQuery={search.trim()} />
+      <window.CommunityDrawer community={selected} onClose={() => setSelectedId(null)} searchQuery={drawerQuery} />
 
       {/* Presentation mode — available on every page */}
       {agmOpen && window.AGMPresentation && <window.AGMPresentation all={all} view={view} onClose={() => setAgmOpen(false)} />}
@@ -644,7 +659,7 @@ function NavStrip({ view, setView, filtered, all }) {
 }
 
 function FilterRail(props) {
-  const { search, setSearch, regions, setRegions, directions, setDirections, orgTypes, setOrgTypes,
+  const { search, setSearch, onPick, regions, setRegions, directions, setDirections, orgTypes, setOrgTypes,
     popBuckets, setPopBuckets, pillars, setPillars,
     hasYouth, setHasYouth, hasSurvivor, setHasSurvivor,
     completeOnly, setCompleteOnly, counts, all, toggle, anyFilters, clearAll, shareLink } = props;
@@ -657,14 +672,7 @@ function FilterRail(props) {
 
   return (
     <aside className="rail">
-      <div className="search-box">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="11" cy="11" r="7" />
-          <path d="M21 21l-5-5" />
-        </svg>
-        <input type="text" placeholder="Search communities, services, contacts…" value={search} onChange={e => setSearch(e.target.value)} />
-        {search && <button className="search-clear" onClick={() => setSearch('')}>✕</button>}
-      </div>
+      <SmartSearch search={search} setSearch={setSearch} all={all} onPick={onPick} />
 
       <FilterGroup label="Region (Direction)" onClear={directions.size ? () => setDirections(new Set()) : null}>
         <div className="toggle-row">
@@ -745,7 +753,160 @@ function FilterRail(props) {
       <button className="share-btn" onClick={shareLink} title="Copy a link to this filtered view">
         ↗ Share this view
       </button>
+
+      <ContributeCard />
     </aside>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SmartSearch — typo-tolerant search box with a Google-style autocomplete
+// dropdown, a "Did you mean …?" correction line, and (where the browser
+// supports it) voice search so Elders can simply speak a community's name.
+// ---------------------------------------------------------------------------
+function SmartSearch({ search, setSearch, all, onPick }) {
+  const [open, setOpen] = useState(false);
+  const [hi, setHi] = useState(-1);
+  const [listening, setListening] = useState(false);
+  const boxRef = React.useRef(null);
+  const q = search.trim();
+
+  const { list, didYouMean } = useMemo(
+    () => (window.searchSuggest ? window.searchSuggest(q, all, 8) : { list: [], didYouMean: null }),
+    [q, all]
+  );
+  const showDrop = open && q.length >= 2 && list.length > 0;
+
+  useEffect(() => {
+    function onDoc(e) { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+
+  function choose(c) {
+    setSearch(c.name.trim());   // narrows the list to the picked community…
+    if (onPick) onPick(c.id);   // …and opens its profile, like clicking a result
+    setOpen(false);
+    setHi(-1);
+  }
+
+  function onKey(e) {
+    if (!showDrop) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setHi(h => Math.min(h + 1, list.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setHi(h => Math.max(h - 1, -1)); }
+    else if (e.key === 'Enter') { if (hi >= 0 && list[hi]) { e.preventDefault(); choose(list[hi].c); } }
+    else if (e.key === 'Escape') { setOpen(false); setHi(-1); }
+  }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  function startVoice() {
+    if (!SR) return;
+    let rec;
+    try { rec = new SR(); } catch (e) { return; }
+    rec.lang = 'en-CA'; rec.interimResults = false; rec.maxAlternatives = 1;
+    rec.onstart = () => setListening(true);
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    rec.onresult = (ev) => {
+      const t = (ev.results[0][0].transcript || '').replace(/[.。\s]+$/, '').trim();
+      if (t) { setSearch(t); setOpen(true); setHi(-1); }
+    };
+    try { rec.start(); } catch (e) { setListening(false); }
+  }
+
+  return (
+    <div className="search-box smart-search" ref={boxRef}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="11" cy="11" r="7" />
+        <path d="M21 21l-5-5" />
+      </svg>
+      <input
+        type="text"
+        placeholder="Search communities, services, contacts…"
+        value={search}
+        onChange={e => { setSearch(e.target.value); setOpen(true); setHi(-1); }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={onKey}
+        role="combobox"
+        aria-expanded={showDrop}
+        aria-autocomplete="list"
+      />
+      {SR && (
+        <button
+          className={`voice-btn ${listening ? 'on' : ''}`}
+          onClick={startVoice}
+          title="Search by voice"
+          aria-label="Search by voice"
+        >{listening ? '● listening' : '🎤'}</button>
+      )}
+      {search && <button className="search-clear" onClick={() => { setSearch(''); setOpen(false); }}>✕</button>}
+
+      {showDrop && (
+        <div className="search-drop" role="listbox">
+          {didYouMean && (
+            <button className="did-you-mean" onClick={() => choose(didYouMean)}>
+              Did you mean <strong>{didYouMean.name.trim()}</strong>?
+            </button>
+          )}
+          {list.map((s, i) => (
+            <button
+              key={s.c.id}
+              role="option"
+              aria-selected={hi === i}
+              className={`sugg ${hi === i ? 'hi' : ''}`}
+              onMouseEnter={() => setHi(i)}
+              onClick={() => choose(s.c)}
+            >
+              <span className="sugg-name">{window.highlight(s.c.name.trim(), q)}</span>
+              <span className="sugg-meta">
+                {s.c.orgType || 'Community'}{s.c.regionGroup ? ' · ' + s.c.regionGroup : ''}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ContributeCard — a quiet, Anishinaabe-styled button that opens a public
+// correction form. The raw Google Forms URL is hidden behind the button; a
+// clear disclaimer makes it plain that anything submitted becomes public.
+// ---------------------------------------------------------------------------
+function ContributeCard() {
+  const [openNote, setOpenNote] = useState(false);
+  const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScD4F_ea0sln3A9jrcmTh9G6KFl1cdTCzNscWxQeUNR5myKEQ/viewform';
+  return (
+    <div className="contribute">
+      <button
+        className={`contribute-btn ${openNote ? 'open' : ''}`}
+        onClick={() => setOpenNote(v => !v)}
+        aria-expanded={openNote}
+      >
+        <span className="contribute-medallion" aria-hidden="true">
+          <span className="q-east"></span><span className="q-south"></span>
+          <span className="q-west"></span><span className="q-north"></span>
+        </span>
+        <span className="contribute-label">Share a correction</span>
+      </button>
+      {openNote && (
+        <div className="contribute-note">
+          <p>
+            Everything in this atlas is <strong>public information</strong>, gathered
+            from published community and organization sources.
+          </p>
+          <p>
+            If you'd like to offer a correction or addition, please know that
+            <strong> anything you share may be shown publicly here</strong>. Miigwech —
+            but please don't submit anything you'd rather keep private.
+          </p>
+          <a className="contribute-go" href={FORM_URL} target="_blank" rel="noopener noreferrer">
+            Open the correction form ↗
+          </a>
+        </div>
+      )}
+    </div>
   );
 }
 
