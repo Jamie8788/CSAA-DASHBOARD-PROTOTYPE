@@ -66,11 +66,18 @@ const _CLICKS = [];
 const _TP = [];
 let _TPOP = null;                       // active popup { ojib, en, x, y, t0 }
 function _tpReg(x, y, r, a, ojib, en, below) { if (a > 0.05) _TP.push({ x, y, r, a, ojib, en, below: !!below }); }
+const _TP_PAD = 22;   // generous tap padding — animals move, so forgive near-misses
 function _tpHit(cx, cy) {
+  // Pick the CLOSEST touch point within (radius + padding), not just the first,
+  // so overlapping animals resolve to whichever you actually aimed at.
+  let best = null, bestD = Infinity;
   for (const t of _TP) {
     const dx = cx - t.x, dy = cy - t.y;
-    if (dx * dx + dy * dy <= t.r * t.r) { _TPOP = { ojib: t.ojib, en: t.en, x: t.x, y: t.y, below: t.below, t0: performance.now() }; return true; }
+    const R = t.r + _TP_PAD;
+    const d2 = dx * dx + dy * dy;
+    if (d2 <= R * R && d2 < bestD) { bestD = d2; best = t; }
   }
+  if (best) { _TPOP = { ojib: best.ojib, en: best.en, x: best.x, y: best.y, below: best.below, t0: performance.now() }; return true; }
   return false;
 }
 // slow drifting clouds, tinted by the sky for atmosphere
@@ -1569,6 +1576,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     const RIBBON = ['#c93a1e', '#1f4e8f', '#d68a1f', '#5a7d3a', '#7c2f6b', '#b04a2a'];
     const fig = (px, py, sc, kind, ph, opt) => {
       opt = opt || {};
+      sc *= 1.2;                                               // Hassan: villagers more prominent — enlarge every figure ~20% in place (rooted at the feet, so no re-layout)
       const dir = opt.dir || 1;                                // facing 1=right, -1=left
       const skin = opt.skin || '#a3704a';
       const hair = opt.hair || '#1a0e08';
@@ -3242,17 +3250,26 @@ function drawScene(ctx, W, H, p, tt, now) {
     const ph = tt * 2.2 + t.x * 0.02;
     const pulse = 1 + Math.sin(ph) * 0.22;
     ctx.save(); ctx.globalAlpha = t.a;
-    // soft breathing glow halo so the point clearly reads as tappable
-    const gl = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, 15 * pulse);
-    gl.addColorStop(0, 'rgba(255,238,190,0.32)');
+    // soft breathing glow halo so the point clearly reads as tappable (larger
+    // + brighter so the clan animals are discoverable — Hassan: "not prominent")
+    const gl = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, 22 * pulse);
+    gl.addColorStop(0, 'rgba(255,238,190,0.42)');
     gl.addColorStop(1, 'rgba(255,238,190,0)');
     ctx.fillStyle = gl;
-    ctx.beginPath(); ctx.arc(t.x, t.y, 15 * pulse, 0, 6.283); ctx.fill();
-    ctx.globalAlpha = t.a * (0.75 + 0.25 * Math.sin(ph));
-    ctx.strokeStyle = 'rgba(255,240,196,0.95)'; ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.arc(t.x, t.y, 7 * pulse, 0, 6.283); ctx.stroke();
+    ctx.beginPath(); ctx.arc(t.x, t.y, 22 * pulse, 0, 6.283); ctx.fill();
+    // an expanding "ping" ring that radiates outward, clearly saying "tap me"
+    const pingT = (ph * 0.5) % 3.14159;
+    const pingR = 8 + (pingT / 3.14159) * 18;
+    ctx.globalAlpha = t.a * Math.max(0, 1 - pingT / 3.14159) * 0.7;
+    ctx.strokeStyle = 'rgba(255,240,196,0.9)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(t.x, t.y, pingR, 0, 6.283); ctx.stroke();
+    // solid ring + centre dot
+    ctx.globalAlpha = t.a * (0.8 + 0.2 * Math.sin(ph));
+    ctx.strokeStyle = 'rgba(255,240,196,0.98)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(t.x, t.y, 9 * pulse, 0, 6.283); ctx.stroke();
+    ctx.globalAlpha = t.a;
     ctx.fillStyle = 'rgba(255,240,196,1)';
-    ctx.beginPath(); ctx.arc(t.x, t.y, 2.4, 0, 6.283); ctx.fill();
+    ctx.beginPath(); ctx.arc(t.x, t.y, 3.2, 0, 6.283); ctx.fill();
     ctx.restore();
   }
   if (_TPOP) {
@@ -3339,7 +3356,7 @@ function WelcomeView({ all, setView }) {
     if (cv2) {
       const r2 = cv2.getBoundingClientRect();
       const hx = e.clientX - r2.left, hy = e.clientY - r2.top;
-      cv2.style.cursor = _TP.some((t) => (hx - t.x) * (hx - t.x) + (hy - t.y) * (hy - t.y) <= t.r * t.r) ? 'pointer' : '';
+      cv2.style.cursor = _TP.some((t) => { const R = t.r + _TP_PAD; return (hx - t.x) * (hx - t.x) + (hy - t.y) * (hy - t.y) <= R * R; }) ? 'pointer' : '';
     }
   };
   // tap the lake → an expanding ripple (ignored on buttons/links)
@@ -3421,7 +3438,9 @@ function WelcomeView({ all, setView }) {
         el.style.opacity = String(opc);
         // larger vertical hand-off (one slides up & out as the next rises in)
         el.style.transform = `translate3d(0, ${(p - center) * -150}px, 0) scale(${_lerp(1.03, 1, opc)})`;
-        el.style.pointerEvents = opc > 0.6 ? 'auto' : 'none';
+        // NOTE: pointer-events are handled in CSS (.wv-panels is click-through;
+        // only in-view chapter buttons re-enable them) so the canvas below keeps
+        // receiving taps on the clan-animal touch points.
         // graceful staggered line-reveal: arm it once the chapter is on screen
         if (opc > 0.55) el.classList.add('wv-in'); else if (opc < 0.05) el.classList.remove('wv-in');
       });
