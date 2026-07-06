@@ -93,29 +93,9 @@ const _FISH = [
 ];
 
 // ============================================================================
-// UPDATED DASHBOARD BEAR PACK (dashboard_bear_updated_dev_pack/)
-// The designer's newer, flatter, dashboard-friendly bear. Square/cutout
-// artifacts were cleaned and the fish + water ripple are baked into each
-// frame and softly blended, so we do NOT draw any separate water FX. It is a
-// simple 8-frame "combined hero loop" (bear + fish + gentle water), 768x384,
-// meant to sit at the shoreline in DAY only and fade out on scroll.
-// Loaded once, lazily; _SPR.ready flips true only if EVERY frame loaded, so
-// the hand-drawn canvas bear stays as a safe automatic fallback.
+// (bear is hand-drawn on the canvas in the scene's own flat style — no
+//  external sprite packs; see the BEAR block inside the village section)
 // ============================================================================
-const _SPRROOT = 'dashboard_bear_updated_dev_pack/';
-const _SPR = { started: false, ready: false, fail: false, hero: [] };
-function _loadSprites() {
-  if (_SPR.started) return; _SPR.started = true;
-  const jobs = [];
-  const track = (im) => jobs.push(new Promise((res) => { im.onload = res; im.onerror = () => { _SPR.fail = true; res(); }; }));
-  for (let i = 1; i <= 8; i++) {
-    const im = new Image();
-    im.src = _SPRROOT + '02_animation_frames/combined_hero_loop_768x384/hero_bear_loop_' + String(i).padStart(2, '0') + '.png';
-    _SPR.hero.push(im); track(im);
-  }
-  Promise.all(jobs).then(() => { if (!_SPR.fail) _SPR.ready = true; });
-  window.__SPR = _SPR;   // debug/diagnostic handle
-}
 
 // cursor position (-1..1 from centre), eased, for a parallax depth effect
 let _MX = 0, _MY = 0, _MXe = 0, _MYe = 0;
@@ -448,7 +428,6 @@ function createAmbient(getP) {
 }
 
 function drawScene(ctx, W, H, p, tt, now) {
-  _loadSprites();   // lazy one-time load of the real bear sprite pack
   const hY = H * 0.5;
   // Begin the story in bright MORNING (not pre-dawn dark) and end at night, so
   // the very first screen is a luminous, lit lake. The whole day still unfolds.
@@ -2329,320 +2308,179 @@ function drawScene(ctx, W, H, p, tt, now) {
       // across p 0.34→0.50: fully visible at the top, completely gone BEFORE the
       // first hint of evening — the bear only exists in the day.
       const bearFade = 1 - _smooth(0.34, 0.50, p);
-      try { ctx.canvas.dataset.bearDbg = _SPR.ready + '|' + p.toFixed(3) + '|' + bearFade.toFixed(3); } catch (e) {}
-      if (_SPR.ready && bearFade > 0.01) {
+      // ================= BEAR v2 — hand-drawn in the scene's own flat style =====
+      // No sprite packs. A soft, illustrated brown bear (same muted palette as
+      // the horse/deer) fishing in the shallows: it WATCHES the salmon cruise
+      // past, plunges its HEAD into the water (the way real bears fish — no
+      // raised-arm pose, no giant hump), lifts the catch in its jaws and EATS it
+      // in bites. DAY ONLY: fades out with a slight settle before dusk begins.
+      if (bearFade > 0.01) {
         ctx.save();
-        const FW = Math.max(210, W * 0.17), FH = FW * 0.5;     // native 768x384 = 2:1
-        const bx = W * 0.30;                                   // lower-left, by the buttons
-        // designer's fade motion: slight translateY down + slight scale down
-        const drop = (1 - bearFade) * FH * 0.10;
-        const shrink = 1 - (1 - bearFade) * 0.05;
-        const dw = FW * shrink, dh = FH * shrink;
-        const by = H * 0.84 + drop;                            // feet at the waterline (canvas hangs ~150px below the fold, so keep the bear higher)
-        const frame = _SPR.hero[Math.floor(tt * 6) % 8];       // gentle 6fps loop
+        const S = Math.max(3.0, Math.min(4.4, W / 330));
+        const bx = W * 0.30, by = H * 0.78 + (1 - bearFade) * 10;
         ctx.globalAlpha = bearFade;
-        // bottom-centre placement; feet sit ~86% down the frame (reflection below)
-        ctx.drawImage(frame, bx - dw / 2, by - dh * 0.86, dw, dh);
-        ctx.restore();
-      } else if (false) {
-      // ---- BROWN BEAR CROUCHED AT THE WATER, paw raised mid-strike at a salmon.
-      //   The iconic Anishinaabe/Pacific Northwest "bear fishing" silhouette.
-      //   Facing LEFT (head & paw over the water). Body crouched low, weight on
-      //   the hind legs, ONE front paw raised in a striking arc, big shoulder
-      //   hump, round head with two round ears, short tan snout, dark nose, eye.
-      ctx.save(); ctx.globalAlpha = (1 - nm);
-      const S = 4.4;                                            // big, but fully on-screen
-      // Bear stands in the OPEN FOREGROUND LAKE WATER on the left (the area left
-      // of the village bank is open water). FIXED y — NOT the clamped shoreline —
-      // so it is always FULLY visible (Hassan: bear was cut in half), well clear
-      // of the centred hero text + scroll prompt, hunting in real water.
-      const bx = W * 0.30;
-      const by = H * 0.80;
-      // strike rhythm: paw cocks up, then slams down
-      // ---- HUNT CYCLE (full 7-second loop): 4 phases →
-      //   0.00-0.40  WATCH   — fish swims past, bear tracks it
-      //   0.40-0.55  LUNGE   — paw cocks high, body coils
-      //   0.55-0.65  STRIKE  — paw slams down into the water, splash
-      //   0.65-0.83  CARRY   — bear lifts the wriggling fish in its paw toward
-      //                          the mouth (head meets paw)
-      //   0.83-1.00  DEVOUR  — fish is at the bear's mouth, head shakes
-      //                          chewing motion, fish shrinks then disappears
-      //                          (Hassan: "bear is not eating, fish runs away")
-      const huntT = (tt % 7) / 7;
-      const watchEnd = 0.40, lungeEnd = 0.55, strikeEnd = 0.65, carryEnd = 0.83;
-      let phase, strikePhase, carryT = 0, devourT = 0;
-      if (huntT < watchEnd) {
-        phase = 'watch';
-        strikePhase = 0;
-      } else if (huntT < lungeEnd) {
-        phase = 'lunge';
-        const u = (huntT - watchEnd) / (lungeEnd - watchEnd);
-        strikePhase = 0.15 * u;
-      } else if (huntT < strikeEnd) {
-        phase = 'strike';
-        const u = (huntT - lungeEnd) / (strikeEnd - lungeEnd);
-        strikePhase = 0.15 + 0.85 * (u * u);
-      } else if (huntT < carryEnd) {
-        phase = 'carry';
-        carryT = (huntT - strikeEnd) / (carryEnd - strikeEnd);
-        strikePhase = 1 - 0.85 * carryT;                          // paw lifts back up holding the fish
-      } else {
-        phase = 'devour';
-        devourT = (huntT - carryEnd) / (1 - carryEnd);            // 0..1
-        strikePhase = 0.15 + 0.05 * Math.sin(devourT * 18);       // paw near mouth, small shaking
-      }
-      const fishCaught = phase === 'hold';
-      // BREATHING — slow vertical bob of the whole body (~3.6s cycle), bigger
-      // in watch/devour, suppressed during the strike (bear is tensed).
-      const breathBase = Math.sin(tt * 1.75) * 0.7;
-      const breath = (phase === 'strike' || phase === 'lunge') ? breathBase * 0.2 : breathBase;
-      // BLINK — eyelid drops every ~3.5s for ~0.12s (long enough to read)
-      const blink = (((tt + 0.4) % 3.5) < 0.12);
-      // TAIL flick — small wiggle, more in carry/devour
-      const tailFlick = Math.sin(tt * 4) * 0.8 * (phase === 'carry' || phase === 'devour' ? 1.4 : 0.5);
-      // WHOLE-BODY hunt motion (Nat-Geo feel): the bear COILS back slightly
-      // during the lunge, then the whole body PITCHES FORWARD-DOWN into the
-      // strike (rotation about the hips) and recovers through the carry.
-      const bodyPitch = strikePhase * 0.10 - (phase === 'lunge' ? 0.04 : 0);
-      ctx.translate(bx, by + breath);
-      ctx.rotate(bodyPitch);
+        ctx.translate(bx, by);
+        const WL = 12 * S;                                       // waterline at the feet
 
-      // ---- WATER INLET at the bear's feet: the shallows it is fishing in, so it
-      //   reads as a bear hunting IN water (Nat-Geo), not standing on grass. Drawn
-      //   first, behind the bear. Colour tracks day→night like the lake. ----
-      {
-        const wr = Math.round(_lerp(74, 30, nm)), wg = Math.round(_lerp(98, 44, nm)), wb = Math.round(_lerp(104, 52, nm));
-        const poolCx = -13 * S, poolCy = 12.5 * S, poolRX = 26 * S, poolRY = 8 * S;
-        const poolG = ctx.createRadialGradient(poolCx, poolCy, 0, poolCx, poolCy, poolRX);
-        poolG.addColorStop(0, `rgba(${wr},${wg},${wb},0.95)`);
-        poolG.addColorStop(0.7, `rgba(${wr},${wg},${wb},0.7)`);
-        poolG.addColorStop(1, `rgba(${wr},${wg},${wb},0)`);
-        ctx.fillStyle = poolG;
-        ctx.beginPath(); ctx.ellipse(poolCx, poolCy, poolRX, poolRY, 0, 0, 6.283); ctx.fill();
-        // a couple of concentric surface ripples in the pool
-        ctx.strokeStyle = `rgba(${wr + 40},${wg + 40},${wb + 36},0.4)`; ctx.lineWidth = 1;
-        for (let rr = 0; rr < 2; rr++) {
-          const rad = (6 + rr * 7 + (tt * 4) % 7) * S;
-          ctx.beginPath(); ctx.ellipse(poolCx, poolCy, rad, rad * 0.32, 0, 0, 6.283); ctx.stroke();
+        // ---- 8s hunt cycle: WATCH -> CROUCH -> STRIKE -> LIFT -> EAT -> REST
+        const T = (tt % 8) / 8;
+        const breathe = Math.sin(tt * 1.6) * 0.35;
+        let headX = -11.5, headY = -3.5 + breathe * 0.3;
+        let mouthOpen = 0.12, eatT = 0, splash = 0, drip = 0, fishAtMouth = false, fishLeft = 1;
+        if (T < 0.35) {                                          // WATCH: head tracks the fish
+          const u = T / 0.35;
+          headX = -11.5 + (u - 0.5) * 1.6;
+        } else if (T < 0.45) {                                   // CROUCH: locks on, head lowers
+          const u = (T - 0.35) / 0.10;
+          headY = -3.5 + u * 4; headX = -11.5 - u * 1.5; mouthOpen = 0.35;
+        } else if (T < 0.55) {                                   // STRIKE: head plunges into the water IN FRONT of the bear
+          const u = (T - 0.45) / 0.10;
+          headY = 0.5 + u * u * 8; headX = -13 - u * 3.5;
+          mouthOpen = 1; splash = u;
+        } else if (T < 0.70) {                                   // LIFT: comes up with the fish, dripping
+          const u = (T - 0.55) / 0.15;
+          headY = 8.5 - u * 12; headX = -16.5 + u * 5;
+          mouthOpen = 0.7; fishAtMouth = true; drip = 1 - u;
+        } else if (T < 0.95) {                                   // EAT: chews, fish shrinks in bites
+          eatT = (T - 0.70) / 0.25;
+          headY = -3.5 + Math.sin(eatT * 22) * 0.35;
+          mouthOpen = 0.25 + Math.abs(Math.sin(eatT * 22)) * 0.5;
+          fishAtMouth = true;
+          fishLeft = Math.max(0, 1 - Math.floor(eatT * 3 + 0.001) / 3);
         }
-      }
 
-      const furG = ctx.createLinearGradient(0, -10 * S, 0, 12 * S);
-      furG.addColorStop(0, 'rgba(80,50,28,1)');                 // sunlit caramel back
-      furG.addColorStop(0.5, 'rgba(48,30,16,1)');
-      furG.addColorStop(1, 'rgba(20,12,6,1)');                  // shadow at the belly
-      const furHi = 'rgba(120,84,48,1)';                         // hump highlight
+        // flat scene-matched palette (no harsh black shadows)
+        const fur = 'rgba(122,89,58,1)', furDk = 'rgba(97,68,44,1)', muzzleC = 'rgba(166,132,94,1)';
 
-      // -- far hind leg (drawn first, behind) --
-      ctx.fillStyle = 'rgba(14,8,4,1)';
-      ctx.beginPath();
-      ctx.moveTo(8 * S, 2 * S); ctx.quadraticCurveTo(12 * S, 8 * S, 11 * S, 12 * S);
-      ctx.lineTo(15 * S, 12 * S); ctx.quadraticCurveTo(16 * S, 7 * S, 14 * S, 2 * S);
-      ctx.closePath(); ctx.fill();
+        // soft expanding ripples where it stands (thin lines — no water blob)
+        ctx.lineWidth = 1.2;
+        for (let r = 0; r < 2; r++) {
+          const rp = (tt * 0.45 + r * 0.5) % 1;
+          ctx.strokeStyle = `rgba(235,242,238,${(1 - rp) * 0.28})`;
+          ctx.beginPath(); ctx.ellipse(-5 * S, WL, (8 + rp * 11) * S, (1.5 + rp * 1.5) * S, 0, 0, 6.283); ctx.stroke();
+        }
+        // soft reflection smudge in the water under the body
+        ctx.fillStyle = 'rgba(30,34,32,0.16)';
+        ctx.beginPath(); ctx.ellipse(0, WL + 1.6 * S, 15 * S, 2.1 * S, 0, 0, 6.283); ctx.fill();
 
-      // -- BODY: crouched, low arched back, weight on the hind end --
-      ctx.fillStyle = furG;
-      ctx.beginPath();
-      ctx.moveTo(-12 * S, 4 * S);                                                // chest
-      ctx.quadraticCurveTo(-14 * S, -2 * S, -8 * S, -6 * S);                      // up to shoulder hump
-      ctx.quadraticCurveTo(-2 * S, -9 * S, 4 * S, -7 * S);                        // hump (highest point)
-      ctx.quadraticCurveTo(12 * S, -4 * S, 16 * S, 0 * S);                        // back down to rump
-      ctx.quadraticCurveTo(18 * S, 4 * S, 14 * S, 7 * S);                         // rump rolls down
-      ctx.quadraticCurveTo(8 * S, 6 * S, 0 * S, 6 * S);                           // belly
-      ctx.quadraticCurveTo(-8 * S, 6 * S, -12 * S, 4 * S);
-      ctx.closePath(); ctx.fill();
+        // legs: simple soft columns, slight paw flare; far pair darker
+        const leg = (x, dark) => {
+          ctx.fillStyle = dark ? furDk : fur;
+          ctx.beginPath();
+          ctx.moveTo((x - 1.4) * S, 2 * S);
+          ctx.lineTo((x - 1.6) * S, 11 * S);
+          ctx.quadraticCurveTo((x - 1.8) * S, 12.2 * S, (x - 0.5) * S, 12.2 * S);
+          ctx.lineTo((x + 0.9) * S, 12.2 * S);
+          ctx.quadraticCurveTo((x + 1.9) * S, 12.2 * S, (x + 1.6) * S, 11 * S);
+          ctx.lineTo((x + 1.8) * S, 2 * S);
+          ctx.closePath(); ctx.fill();
+        };
+        leg(-5.8, true); leg(7.6, true);                         // far legs behind the body
 
-      // hump highlight
-      ctx.fillStyle = furHi;
-      ctx.beginPath(); ctx.ellipse(-1 * S, -7 * S, 6 * S, 2.4 * S, -0.15, 0, 6.283); ctx.fill();
-      // belly shadow
-      ctx.fillStyle = 'rgba(8,5,3,0.55)';
-      ctx.beginPath(); ctx.ellipse(2 * S, 6.5 * S, 11 * S, 1.6 * S, 0, 0, 6.283); ctx.fill();
-
-      // -- planted near hind leg (visible in front of body) --
-      ctx.fillStyle = furG;
-      ctx.beginPath();
-      ctx.moveTo(6 * S, 5 * S); ctx.quadraticCurveTo(6 * S, 9 * S, 8 * S, 12 * S);
-      ctx.lineTo(12 * S, 12 * S); ctx.quadraticCurveTo(12 * S, 8 * S, 11 * S, 5 * S);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(8,5,3,1)';
-      ctx.beginPath(); ctx.ellipse(10 * S, 12.2 * S, 2.6 * S, 1.2 * S, 0, 0, 6.283); ctx.fill();
-
-      // -- PLANTED far front leg (supporting weight in the water) --
-      ctx.fillStyle = furG;
-      ctx.beginPath();
-      ctx.moveTo(-9 * S, 4 * S); ctx.quadraticCurveTo(-11 * S, 8 * S, -10 * S, 12 * S);
-      ctx.lineTo(-6 * S, 12 * S); ctx.quadraticCurveTo(-6 * S, 8 * S, -6 * S, 4 * S);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(8,5,3,1)';
-      ctx.beginPath(); ctx.ellipse(-8 * S, 12.2 * S, 2.6 * S, 1.2 * S, 0, 0, 6.283); ctx.fill();
-
-      // -- NEAR FRONT LEG (normal planted leg — NO raised arm. A real bear catches
-      //   fish with its MOUTH, head down in the water; the legs just stand.) --
-      ctx.fillStyle = furG;
-      ctx.beginPath();
-      ctx.moveTo(-3 * S, 4 * S); ctx.quadraticCurveTo(-5 * S, 8 * S, -4 * S, 12 * S);
-      ctx.lineTo(0 * S, 12 * S); ctx.quadraticCurveTo(0 * S, 8 * S, 0 * S, 4 * S);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(8,5,3,1)';
-      ctx.beginPath(); ctx.ellipse(-2 * S, 12.2 * S, 2.6 * S, 1.2 * S, 0, 0, 6.283); ctx.fill();
-      // a dummy "paw" reference kept at the water for splash/fish code below
-      const pawX = -16 * S, pawY = 13 * S;
-
-      // -- NECK + HEAD — the bear DIPS its head down into the water to grab the
-      //   fish in its MOUTH on the strike, then lifts it back up. A natural
-      //   fishing motion, not an arm thrown overhead.
-      const headFwd = strikePhase * 2.5 * S;                    // muzzle reaches forward over the water
-      const headDip = strikePhase * strikePhase * 9 * S;        // head plunges DOWN to the water on strike
-      // HEAD TRACKS THE FISH while watching — the muzzle follows the swimming
-      // fish left→right, exactly like a bear locked onto prey in a documentary.
-      let track = 0;
-      if (phase === 'watch' || phase === 'lunge') {
-        const swimU2 = (huntT / lungeEnd);
-        track = (swimU2 - 0.5) * 2.2 * S;                        // follows the fish across the pool
-      }
-      const hcX = -16 * S - headFwd + track, hcY = 1 * S + headDip + Math.abs(track) * 0.12;
-      // thick crouching neck
-      ctx.fillStyle = furG;
-      ctx.beginPath();
-      ctx.moveTo(-10 * S, -5 * S);
-      ctx.quadraticCurveTo(-14 * S, -3 * S, hcX + 1 * S, hcY - 2 * S);
-      ctx.quadraticCurveTo(hcX + 3 * S, hcY + 3 * S, -8 * S, 1 * S);
-      ctx.closePath(); ctx.fill();
-      // round head
-      ctx.beginPath(); ctx.arc(hcX, hcY, 4.0 * S, 0, 6.283); ctx.fill();
-      // ROUND EARS on top — they FLICK now and then (fly shake), like a real bear
-      const earFlick = (((tt + 1.2) % 4.2) < 0.15) ? Math.sin(tt * 40) * 0.5 * S : 0;
-      ctx.beginPath(); ctx.arc(hcX - 2.0 * S + earFlick, hcY - 3.6 * S, 1.7 * S, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(hcX + 2.6 * S - earFlick, hcY - 3.4 * S, 1.7 * S, 0, 6.283); ctx.fill();
-      ctx.fillStyle = furHi;
-      ctx.beginPath(); ctx.arc(hcX - 2.0 * S, hcY - 3.6 * S, 0.9 * S, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(hcX + 2.6 * S, hcY - 3.4 * S, 0.9 * S, 0, 6.283); ctx.fill();
-      // SHORT TAN SNOUT (forward-down, toward the fish)
-      ctx.fillStyle = 'rgba(126,92,56,1)';
-      ctx.beginPath(); ctx.ellipse(hcX - 3.6 * S, hcY + 1.6 * S, 2.6 * S, 1.9 * S, -0.15, 0, 6.283); ctx.fill();
-      // black nose
-      ctx.fillStyle = 'rgba(0,0,0,1)';
-      ctx.beginPath(); ctx.ellipse(hcX - 5.4 * S, hcY + 2.4 * S, 1.2 * S, 1.0 * S, 0, 0, 6.283); ctx.fill();
-      // eye + catchlight — BLINKS periodically (Hassan: eyes should animate).
-      // During devour, eyes squint (chewing/satisfied).
-      ctx.fillStyle = 'rgba(18,12,6,1)';
-      const eyeOpen = blink ? 0.15 : (phase === 'devour' ? 0.55 : 1.0);
-      ctx.beginPath(); ctx.ellipse(hcX - 1.6 * S, hcY - 0.2 * S, 0.8 * S, 0.8 * S * eyeOpen, 0, 0, 6.283); ctx.fill();
-      if (eyeOpen > 0.5) {
-        ctx.fillStyle = 'rgba(255,236,180,1)';
-        ctx.beginPath(); ctx.arc(hcX - 1.4 * S, hcY - 0.5 * S, 0.35 * S, 0, 6.283); ctx.fill();
-      }
-      // mouth — animates: closed in watch, open wide on strike/carry/devour;
-      // during devour it CHEWS (open/close rapidly).
-      const chewing = phase === 'devour' ? Math.abs(Math.sin(devourT * 24)) : 0;
-      const mouthOpen = phase === 'strike' || phase === 'carry' ? 1.0
-                      : phase === 'devour' ? chewing
-                      : 0.3;
-      ctx.strokeStyle = 'rgba(8,5,3,0.85)'; ctx.lineWidth = 0.7 * S;
-      ctx.fillStyle = 'rgba(20,8,4,0.95)';
-      ctx.beginPath();
-      ctx.ellipse(hcX - 3.3 * S, hcY + 3.0 * S, 1.6 * S, 0.7 * S + mouthOpen * 1.2 * S, -0.1, 0, 6.283);
-      ctx.fill();
-      // tiny stub tail on the rump — FLICKS (animated)
-      ctx.fillStyle = furG;
-      ctx.beginPath(); ctx.arc(17 * S + tailFlick * S, 1 * S, 1.3 * S, 0, 6.283); ctx.fill();
-
-      // -- THE SALMON: SMALL (about head-size). Swims past under the bear during
-      //   WATCH, is caught in the paw during HOLD. Body uses local units that
-      //   are NOT multiplied by the bear scale S, so it's a realistic small fish.
-      const drawSalmon = (cx, cy, ang, alpha) => {
-        const FS = 2.7;                                          // clearly visible prey, still realistic
-        const fwag = Math.sin(tt * 10) * 0.35;
-        ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang + fwag * 0.1);
-        ctx.globalAlpha = alpha;
-        const sg = ctx.createLinearGradient(0, -2 * FS, 0, 2 * FS);
-        sg.addColorStop(0, 'rgba(238,228,218,1)');
-        sg.addColorStop(0.5, 'rgba(210,150,134,1)');
-        sg.addColorStop(1, 'rgba(96,104,112,1)');
-        ctx.fillStyle = sg;
+        // body: one smooth curve — gentle shoulder rise, level back, round rump
+        // (the old bear's "big hump" is gone; this is a relaxed standing profile)
+        ctx.fillStyle = fur;
         ctx.beginPath();
-        ctx.moveTo(4 * FS, 0);
-        ctx.quadraticCurveTo(2 * FS, -2 * FS, -2 * FS, -1.8 * FS);
-        ctx.quadraticCurveTo(-5 * FS, -1 * FS, -6 * FS, 0);
-        ctx.quadraticCurveTo(-5 * FS, 1.4 * FS, -2 * FS, 1.8 * FS);
-        ctx.quadraticCurveTo(2 * FS, 2 * FS, 4 * FS, 0);
+        ctx.moveTo(-11 * S, 3.5 * S);                            // chest
+        ctx.quadraticCurveTo(-12.5 * S, -3.5 * S, -7.5 * S, -5.8 * S);
+        ctx.quadraticCurveTo(-3 * S, -7.1 * S, 2 * S, -6.6 * S); // gentle shoulder line
+        ctx.quadraticCurveTo(8 * S, -6.0 * S, 11.5 * S, -3.5 * S);
+        ctx.quadraticCurveTo(14 * S, -1 * S, 13 * S, 2.5 * S);   // round rump
+        ctx.quadraticCurveTo(11 * S, 5 * S, 5 * S, 5 * S);
+        ctx.quadraticCurveTo(-2 * S, 5.4 * S, -11 * S, 3.5 * S); // belly
         ctx.closePath(); ctx.fill();
+        // tiny stub tail (flicks a little)
+        ctx.fillStyle = fur;
+        ctx.beginPath(); ctx.arc(13.6 * S + Math.sin(tt * 4) * 0.5 * S, 0.5 * S, 1.1 * S, 0, 6.283); ctx.fill();
+
+        leg(-8.6, false); leg(10.2, false);                      // near legs in front
+
+        // neck: one thick round-capped stroke from the shoulders to the head —
+        // stays solidly attached no matter where the head animates to
+        ctx.strokeStyle = fur; ctx.lineCap = 'round'; ctx.lineWidth = 6.4 * S;
         ctx.beginPath();
-        ctx.moveTo(-6 * FS, 0); ctx.lineTo(-9 * FS, -2 * FS + fwag); ctx.lineTo(-7.5 * FS, 0); ctx.lineTo(-9 * FS, 2 * FS + fwag);
-        ctx.closePath(); ctx.fill();
-        ctx.fillStyle = 'rgba(20,18,18,1)';
-        ctx.beginPath(); ctx.arc(2 * FS, -0.4 * FS, 0.45 * FS, 0, 6.283); ctx.fill();
-        ctx.restore();
-      };
-      if (phase === 'watch' || phase === 'lunge') {
-        // fish swims left→right through the shallows; it repeatedly breaks the
-        // SURFACE (dorsal/back showing, with a small wake) so it's obviously live
-        // prey the bear is tracking — then dips under right before the strike.
-        // fish swims in the OPEN POOL in FRONT of the bear (left side, around the
-        // strike zone) — never over the bear's face/body. Porpoises gently.
-        const swimU = (huntT / lungeEnd);                        // 0..1 across watch+lunge
-        const sx = -30 * S + swimU * 14 * S;                     // stays left, in front of the bear
-        const surface = Math.max(0, Math.sin(swimU * Math.PI * 3));  // porpoising in/out of the water
-        const sy = 13.5 * S - surface * 2.4 * S;                // sits down in the water
-        // a small wake behind the fish on the water surface
-        ctx.strokeStyle = 'rgba(235,242,236,0.5)'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.ellipse(sx - 3 * S, 13.6 * S, 4 * S, 1.2 * S, 0, 0, 6.283); ctx.stroke();
-        drawSalmon(sx, sy, surface * 0.3, 0.95);
-      } else if (phase === 'strike') {
-        // fish darts under, mostly hidden, just below the descending paw
-        drawSalmon(pawX - 2 * S, 13 * S, 0.1, 0.55);
-      } else if (phase === 'carry') {
-        // fish caught in the paw is carried UP to the MOUTH (eases from the paw
-        // position to the snout) — no longer paraded by the eye.
-        const wrig = Math.sin(tt * 16) * 0.4;
-        const mX = hcX - 3.6 * S, mY = hcY + 2.6 * S;           // mouth / snout tip
-        const fromX = pawX + 1.2 * S, fromY = pawY - 0.5 * S;
-        const e = carryT * carryT;                              // accelerate toward the mouth
-        drawSalmon(fromX + (mX - fromX) * e, fromY + (mY - fromY) * e, -0.5 + wrig, 1.0);
-      } else if (phase === 'devour') {
-        // fish hangs from the JAWS and is EATEN IN BITES — it shortens in four
-        // discrete chunks (synced to the chewing) until it's gone, instead of
-        // smoothly fading away (Hassan: the vanishing looked fake).
-        const mX = hcX - 3.6 * S, mY = hcY + 2.6 * S;
-        const remaining = Math.max(0, 1 - Math.floor(devourT * 4 + 0.001) / 4);  // 1,.75,.5,.25,0
-        if (remaining > 0.05) {
+        ctx.moveTo(-6 * S, -3 * S);
+        ctx.quadraticCurveTo((headX + 4) * S, (headY - 1) * S, (headX + 1) * S, headY * S);
+        ctx.stroke();
+        ctx.fillStyle = fur;
+        // head + ears
+        ctx.beginPath(); ctx.arc(headX * S, headY * S, 3.4 * S, 0, 6.283); ctx.fill();
+        const earFl = (((tt + 1.2) % 4.2) < 0.15) ? Math.sin(tt * 40) * 0.4 : 0;
+        ctx.beginPath(); ctx.arc((headX - 1.1 + earFl) * S, (headY - 3.2) * S, 1.25 * S, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc((headX + 2.2 - earFl) * S, (headY - 3.0) * S, 1.25 * S, 0, 6.283); ctx.fill();
+        ctx.fillStyle = furDk;
+        ctx.beginPath(); ctx.arc((headX - 1.1) * S, (headY - 3.2) * S, 0.6 * S, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc((headX + 2.2) * S, (headY - 3.0) * S, 0.6 * S, 0, 6.283); ctx.fill();
+        // muzzle, nose
+        ctx.fillStyle = muzzleC;
+        ctx.beginPath(); ctx.ellipse((headX - 3.0) * S, (headY + 1.0) * S, 2.3 * S, 1.6 * S, -0.12, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(38,28,20,1)';
+        ctx.beginPath(); ctx.ellipse((headX - 4.8) * S, (headY + 0.6) * S, 0.9 * S, 0.72 * S, 0, 0, 6.283); ctx.fill();
+        // eye: blinks; squints happily while eating
+        const blink = (((tt + 0.4) % 3.5) < 0.12);
+        const eyeO = blink ? 0.15 : (eatT > 0 ? 0.55 : 1);
+        ctx.fillStyle = 'rgba(26,18,12,1)';
+        ctx.beginPath(); ctx.ellipse((headX - 1.2) * S, (headY - 0.6) * S, 0.55 * S, 0.55 * S * eyeO, 0, 0, 6.283); ctx.fill();
+        // mouth (opens on strike, chews during eat)
+        ctx.fillStyle = 'rgba(46,26,18,0.9)';
+        ctx.beginPath(); ctx.ellipse((headX - 2.9) * S, (headY + 2.3) * S, 1.25 * S, (0.25 + mouthOpen * 0.85) * S, -0.1, 0, 6.283); ctx.fill();
+
+        // ---- the salmon (small, same soft style) ----
+        const salmon = (cx, cy, ang, sc2) => {
+          ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang); ctx.scale(sc2, sc2);
+          const wag = Math.sin(tt * 9) * 0.3;
+          ctx.fillStyle = 'rgba(172,140,120,1)';
+          ctx.beginPath();
+          ctx.moveTo(3.4 * S, 0);
+          ctx.quadraticCurveTo(1 * S, -1.5 * S, -2 * S, -1.2 * S);
+          ctx.quadraticCurveTo(-4 * S, -0.6 * S, -4.6 * S, 0);
+          ctx.quadraticCurveTo(-4 * S, 0.8 * S, -2 * S, 1.2 * S);
+          ctx.quadraticCurveTo(1 * S, 1.5 * S, 3.4 * S, 0);
+          ctx.closePath(); ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(-4.6 * S, 0); ctx.lineTo(-6.4 * S, (-1.3 + wag) * S); ctx.lineTo(-5.5 * S, 0); ctx.lineTo(-6.4 * S, (1.3 + wag) * S);
+          ctx.closePath(); ctx.fill();
+          ctx.fillStyle = 'rgba(60,50,44,1)';
+          ctx.beginPath(); ctx.arc(1.8 * S, -0.3 * S, 0.32 * S, 0, 6.283); ctx.fill();
+          ctx.restore();
+        };
+        if (T < 0.45) {
+          // cruises in from the left, porpoising at the surface with a small wake
+          const u2 = T / 0.45;
+          const fx2 = (-27 + u2 * 10) * S;
+          const surf = Math.max(0, Math.sin(u2 * Math.PI * 3));
+          ctx.strokeStyle = 'rgba(235,242,238,0.35)'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.ellipse(fx2 - 2 * S, WL - 0.2 * S, 3.5 * S, 0.9 * S, 0, 0, 6.283); ctx.stroke();
+          salmon(fx2, WL - 0.6 * S - surf * 1.6 * S, surf * 0.25, 0.75);
+        } else if (fishAtMouth && fishLeft > 0.05) {
+          // held in the jaws: wriggles on the lift, shrinks bite by bite while eating
+          const wig = (T < 0.70) ? Math.sin(tt * 14) * 0.35 : 0;
           ctx.save();
-          ctx.translate(mX, mY); ctx.rotate(0.55); ctx.scale(remaining, 0.92);   // hangs down, shortens
-          drawSalmon(0, 0, 0, 1.0);
+          ctx.translate((headX - 4.0) * S, (headY + 2.4) * S);
+          ctx.rotate(0.9 + wig * 0.35);
+          ctx.scale(fishLeft, 1);
+          salmon(0, 0, 0, 0.75);
           ctx.restore();
         }
-        // chew flecks fly off as it bites
-        if (chewing > 0.7) {
-          ctx.fillStyle = 'rgba(228,178,142,0.85)';
-          for (let f = 0; f < 3; f++) {
-            const fa = -2.2 - f * 0.4, fr = 2 + (tt * 8 + f) % 4;
-            ctx.beginPath();
-            ctx.arc(mX + Math.cos(fa) * fr, mY + Math.sin(fa) * fr, 0.6 * S, 0, 6.283);
-            ctx.fill();
+
+        // splash on the strike + drips as the head comes up
+        if (splash > 0) {
+          ctx.fillStyle = 'rgba(240,246,240,0.9)';
+          for (let d = 0; d < 8; d++) {
+            const a2 = -0.4 - d * 0.33, rr2 = (2 + splash * 7 + (d % 3) * 1.4) * S * splash;
+            ctx.beginPath(); ctx.arc((headX - 1) * S + Math.cos(a2) * rr2, WL - 1 * S + Math.sin(a2) * rr2 * 0.55, 0.65 * S, 0, 6.283); ctx.fill();
+          }
+          ctx.strokeStyle = 'rgba(240,246,240,0.7)'; ctx.lineWidth = 1.3;
+          ctx.beginPath(); ctx.ellipse((headX - 1) * S, WL, (4 + splash * 8) * S, (1 + splash * 1.3) * S, 0, 0, 6.283); ctx.stroke();
+        }
+        if (drip > 0) {
+          ctx.fillStyle = `rgba(235,244,240,${0.75 * drip})`;
+          for (let d = 0; d < 3; d++) {
+            const dy2 = ((tt * 26 + d * 9) % 12);
+            ctx.beginPath(); ctx.arc((headX - 3 - d * 1.2) * S, (headY + 3) * S + dy2, 0.42 * S, 0, 6.283); ctx.fill();
           }
         }
-      }
-
-      // -- water disturbance: ripples + spray under the paw strike --
-      const wlY = 12 * S;
-      ctx.strokeStyle = 'rgba(240,246,238,0.85)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.ellipse(pawX, wlY, 9 * S, 2 * S, 0, 0, 6.283); ctx.stroke();
-      ctx.strokeStyle = 'rgba(240,246,238,0.45)';
-      ctx.beginPath(); ctx.ellipse(pawX, wlY, 14 * S, 3.4 * S, 0, 0, 6.283); ctx.stroke();
-      // spray flying off when the paw hits the water (strikePhase near 1)
-      if (strikePhase > 0.7) {
-        ctx.fillStyle = 'rgba(245,250,242,0.95)';
-        for (let s = 0; s < 9; s++) {
-          const sang = -0.55 - s * 0.16 - Math.sin(tt * 4 + s) * 0.06;
-          const sr = (4 + Math.abs(Math.sin(tt * 3 + s)) * 6) * S * (strikePhase - 0.6);
-          ctx.beginPath();
-          ctx.arc(pawX + Math.cos(sang) * sr, pawY + 2 * S + Math.sin(sang) * sr * 0.5, 1.0 * S, 0, 6.283);
-          ctx.fill();
-        }
-      }
-
-      ctx.restore();
+        ctx.restore();
       }
       // ---- a GREAT BLUE HERON wading: slate-blue, S-neck, dagger beak, sometimes
       //   stabbing for a fish. Anatomically tall and angular.
