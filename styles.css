@@ -7037,6 +7037,15 @@ button.gap-tr:hover { background: var(--paper-2, #f3ecdd); }
 }
 .wv-pin .wv-canvas { z-index: 1; }
 .wv-panels { position: absolute; inset: 0; z-index: 2; }
+/* The chapter panels are full-screen overlays. They must NOT swallow clicks on
+   the scene (the clan-animal touch points live on the canvas underneath), so
+   the whole overlay is click-through and only the actual chapter buttons/links
+   re-enable pointer events — and only while their chapter is on screen. */
+.wv-panels { pointer-events: none; }
+.wv-panel.wv-in .wv-btn,
+.wv-panel.wv-in .wv-action,
+.wv-panel.wv-in button,
+.wv-panel.wv-in a { pointer-events: auto; }
 .wv-panel {
   position: absolute; inset: 0; opacity: 0;
   display: flex; flex-direction: column; justify-content: center;
