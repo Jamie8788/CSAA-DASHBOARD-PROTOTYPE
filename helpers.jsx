@@ -329,6 +329,50 @@ function searchSuggest(q, all, limit) {
 }
 window.searchSuggest = searchSuggest;
 
+// Generic filler words that shouldn't drive a search. Speaking "Mohawk
+// community" should find Mohawk Nations — the word "community" is just filler.
+const _SEARCH_STOP = new Set([
+  'the', 'of', 'and', 'a', 'an', 'for', 'to', 'in',
+  'first', 'nation', 'nations', 'community', 'communities',
+  'band', 'tribe', 'people'
+]);
+
+// Does community `c` match free-text query `q`? Used by the main results list
+// (NOT just the dropdown) so voice search, multi-word queries and typos all
+// return results instead of an empty screen.
+//   - substring match across name + services + ORG TYPE + region + direction
+//   - otherwise every meaningful query word must hit by prefix / fuzzy (typo)
+//   - generic filler words ("community", "first nation") are ignored unless
+//     that's all the user typed
+function matchCommunity(c, q) {
+  q = _fnorm(q);
+  if (!q) return true;
+  const hay = _fnorm([
+    c.name, c.regionGroup, c.orgType, c.direction,
+    c.physical, c.mental, c.spiritual, c.emotional,
+    c.youth, c.survivors, c.contacts,
+  ].filter(Boolean).join(' '));
+  if (hay.includes(q)) return true;
+  // Fuzzy only against the SHORT identity fields (fast); service prose is
+  // matched by substring above, not by edit-distance.
+  const fuzzyWords = _fnorm([c.name, c.regionGroup, c.orgType, c.direction]
+    .filter(Boolean).join(' ')).split(/[^a-z0-9]+/).filter(Boolean);
+  let tokens = q.split(/[^a-z0-9]+/).filter(t => t.length >= 2);
+  const meaningful = tokens.filter(t => !_SEARCH_STOP.has(t));
+  if (meaningful.length) tokens = meaningful;
+  if (!tokens.length) return false;
+  return tokens.every(t => {
+    if (hay.includes(t)) return true;
+    const tol = t.length <= 4 ? 1 : t.length <= 7 ? 2 : 3;
+    for (const w of fuzzyWords) {
+      if (w.startsWith(t) || t.startsWith(w)) return true;
+      if (Math.abs(w.length - t.length) <= tol && levenshtein(t, w) <= tol) return true;
+    }
+    return false;
+  });
+}
+window.matchCommunity = matchCommunity;
+
 window.NA = NA;
 
 // ============================================================================
