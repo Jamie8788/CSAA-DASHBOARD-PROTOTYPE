@@ -59,6 +59,20 @@ const _LODGES = [
 ];
 // visitor taps on the lake → expanding ripples (interactive). { x, y, t } in px / ms.
 const _CLICKS = [];
+// CLAN-ANIMAL TOUCH POINTS — each of the 7 dodems registers a small pulsing
+// marker every frame; tapping it pops up the Anishinaabe name + its teaching
+// (e.g. WAAWAASHKESH · Love). Rebuilt per-frame so markers track the animals
+// and fade with the same day/night alpha as the animal itself.
+const _TP = [];
+let _TPOP = null;                       // active popup { ojib, en, x, y, t0 }
+function _tpReg(x, y, r, a, ojib, en, below) { if (a > 0.05) _TP.push({ x, y, r, a, ojib, en, below: !!below }); }
+function _tpHit(cx, cy) {
+  for (const t of _TP) {
+    const dx = cx - t.x, dy = cy - t.y;
+    if (dx * dx + dy * dy <= t.r * t.r) { _TPOP = { ojib: t.ojib, en: t.en, x: t.x, y: t.y, below: t.below, t0: performance.now() }; return true; }
+  }
+  return false;
+}
 // slow drifting clouds, tinted by the sky for atmosphere
 const _CLOUDS = [
   { x: 0.10, y: 0.34, r: 150, sp: 0.006, op: 0.5 },
@@ -428,6 +442,7 @@ function createAmbient(getP) {
 }
 
 function drawScene(ctx, W, H, p, tt, now) {
+  _TP.length = 0;                       // touch points re-register every frame
   const hY = H * 0.5;
   // Begin the story in bright MORNING (not pre-dawn dark) and end at night, so
   // the very first screen is a luminous, lit lake. The whole day still unfolds.
@@ -653,6 +668,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     const ex = ((tt * 0.016) % 1.3 - 0.15) * W;                 // crosses L→R
     const flapT = Math.sin(tt * 3.2);                           // slow, powerful beats
     const ey = hY * 0.28 + Math.sin(tt * 0.5) * 10 - flapT * 2; // body lifts on the downstroke
+    _tpReg(ex, ey - 26, 26, eagA, 'Migizii', 'Truth');
     ctx.save(); ctx.globalAlpha = eagA;
     ctx.translate(ex, ey);
     ctx.scale(-1.35, 1.35);  // mirrored: head leads the L→R flight
@@ -2192,6 +2208,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         // On the solid mid-bank between the wood-chop and the fire — a spot
         // where the green slope is high enough that it actually stands on land.
         const dxe = W * 0.76, dye = ground(W * 0.76) - 4, dsc = 2.0;
+        _tpReg(dxe, dye - 46, 24, dayA, 'Waawaashkesh', 'Love');
         ctx.save(); ctx.translate(dxe, dye); ctx.scale(dsc, dsc); ctx.globalAlpha = dayA;
         const coat = `rgb(${Math.round(_lerp(168,86,nm))},${Math.round(_lerp(120,60,nm))},${Math.round(_lerp(78,40,nm))})`;
         const alert = Math.max(0, Math.sin(tt * 0.4));                      // 0 grazing → 1 head up
@@ -2235,6 +2252,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   bushy tail, pointed face and pale throat. Scampers back and forth. ----
       {
         const logX = W * 0.82, logY = ground(logX) + 2, logLen = 34;
+        _tpReg(logX, logY - 20, 22, dayA, 'Waabizheshii', 'Bravery');
         // the fallen log it runs along
         ctx.save(); ctx.globalAlpha = dayA;   // solid through the day, fades at dusk like the villagers (not ghosty)
         ctx.fillStyle = `rgb(${Math.round(_lerp(96,52,nm))},${Math.round(_lerp(64,34,nm))},${Math.round(_lerp(36,18,nm))})`;
@@ -2321,6 +2339,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.globalAlpha = bearFade;
         ctx.translate(bx, by);
         const WL = 12 * S;                                       // waterline at the feet
+        _tpReg(bx + 8 * S, by - 5 * S, 26, bearFade, 'Mukwaa', 'Health', true);  // popup opens BELOW (the CTA buttons sit above the bear)
 
         // ---- 8s hunt cycle: WATCH -> CROUCH -> STRIKE -> LIFT -> EAT -> REST
         const T = (tt % 8) / 8;
@@ -2760,6 +2779,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       const loX = ((tt * 0.010) % 1.25 - 0.12) * W;
       const loY = hY + 30 + (H - hY) * 0.30 + Math.sin(tt * 0.8) * 1.2;
       const dip = Math.max(0, Math.sin(tt * 0.35)) * 3;                          // periodic bill-dip
+      _tpReg(loX, loY - 16, 22, wildA, 'Maang', 'Humility');
       ctx.globalAlpha = wildA;
       // SIT the loon IN the water (it was "floating in air"): a soft ripple ring
       // around the hull + a dark reflection beneath, and the wake starts AT the
@@ -2800,6 +2820,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       const crX = W * 0.86;
       const _crT = _clamp((crX - W * 0.45) / (W - W * 0.45), 0, 1);
       const crBase = (H - 6 - (H * 0.30) * (_crT * 0.6 + _crT * _crT * 0.4)) + 13;
+      _tpReg(crX, crBase - 76, 26, wildA, 'Ajijaak', 'Respect');
       ctx.save(); ctx.translate(crX, crBase); ctx.scale(1.6, 1.6); ctx.translate(-crX, -crBase);  // bigger / more prominent
       ctx.globalAlpha = wildA * 0.95;
       const bow = Math.max(0, Math.sin(tt * 0.5)) * 6;                                       // periodic bow toward the water
@@ -2830,6 +2851,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     //   important; Turtle Island). Occasionally stretches its neck. ---
     {
       const tuX = W * 0.30, tuY = hY + 18 + (H - hY) * 0.34;
+      _tpReg(tuX, tuY - 16, 22, wildA, 'Mshiikenh', 'Wisdom');
       ctx.globalAlpha = wildA * 0.95;
       // the log it rests on
       ctx.fillStyle = 'rgba(58,40,24,1)';
@@ -2965,6 +2987,56 @@ function drawScene(ctx, W, H, p, tt, now) {
   vg.addColorStop(0, 'rgba(10,8,6,0.30)'); vg.addColorStop(0.22, 'rgba(10,8,6,0)');
   vg.addColorStop(0.9, 'rgba(10,8,6,0)'); vg.addColorStop(1, 'rgba(10,8,6,0.14)');
   ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+
+  // ---- CLAN TOUCH POINTS: tiny pulsing gold rings on each dodem (subtle —
+  //   they invite a tap without cluttering the scene) + the tap popup card ----
+  for (const t of _TP) {
+    const pulse = 1 + Math.sin(tt * 2.4 + t.x * 0.02) * 0.22;
+    ctx.save(); ctx.globalAlpha = t.a * (0.55 + 0.25 * Math.sin(tt * 2.4 + t.x * 0.02));
+    ctx.strokeStyle = 'rgba(255,238,190,0.9)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(t.x, t.y, 5.5 * pulse, 0, 6.283); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,238,190,0.95)';
+    ctx.beginPath(); ctx.arc(t.x, t.y, 1.8, 0, 6.283); ctx.fill();
+    ctx.restore();
+  }
+  if (_TPOP) {
+    const age = (now - _TPOP.t0) / 1000;
+    if (age > 3.4) { _TPOP = null; }
+    else {
+      const a = Math.min(1, age * 5) * (1 - _smooth(2.6, 3.4, age));
+      const rise = Math.min(1, age * 5) * 6;
+      ctx.save(); ctx.globalAlpha = a;
+      const label = _TPOP.ojib.toUpperCase(), sub = _TPOP.en;
+      ctx.font = '600 14px "JetBrains Mono", monospace';
+      const w1 = ctx.measureText(label).width;
+      ctx.font = 'italic 15px Newsreader, Georgia, serif';
+      const w2 = ctx.measureText(sub).width;
+      const cw = Math.max(w1, w2) + 30, ch = 48;
+      const cx0 = _clamp(_TPOP.x - cw / 2, 8, W - cw - 8);
+      let cy0 = _TPOP.below ? _TPOP.y + 20 + rise : _TPOP.y - ch - 20 - rise;
+      if (cy0 < 8) cy0 = _TPOP.y + 20;
+      if (cy0 + ch > H - 8) cy0 = _TPOP.y - ch - 20;
+      // card (manual rounded rect — no ctx.roundRect dependency)
+      const rr = 9;
+      ctx.beginPath();
+      ctx.moveTo(cx0 + rr, cy0);
+      ctx.lineTo(cx0 + cw - rr, cy0); ctx.arcTo(cx0 + cw, cy0, cx0 + cw, cy0 + rr, rr);
+      ctx.lineTo(cx0 + cw, cy0 + ch - rr); ctx.arcTo(cx0 + cw, cy0 + ch, cx0 + cw - rr, cy0 + ch, rr);
+      ctx.lineTo(cx0 + rr, cy0 + ch); ctx.arcTo(cx0, cy0 + ch, cx0, cy0 + ch - rr, rr);
+      ctx.lineTo(cx0, cy0 + rr); ctx.arcTo(cx0, cy0, cx0 + rr, cy0, rr);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(26,21,15,0.88)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,238,190,0.5)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255,238,190,1)';
+      ctx.font = '600 14px "JetBrains Mono", monospace';
+      ctx.fillText(label, cx0 + cw / 2, cy0 + 20);
+      ctx.fillStyle = 'rgba(238,228,208,0.95)';
+      ctx.font = 'italic 15px Newsreader, Georgia, serif';
+      ctx.fillText(sub, cx0 + cw / 2, cy0 + 39);
+      ctx.restore();
+    }
+  }
 }
 
 function WelcomeView({ all, setView }) {
@@ -3006,13 +3078,22 @@ function WelcomeView({ all, setView }) {
   const onMoveScene = (e) => {
     _MX = (e.clientX / (window.innerWidth || 1)) * 2 - 1;
     _MY = (e.clientY / (window.innerHeight || 1)) * 2 - 1;
+    // pointer cursor over a clan-animal touch point (invites the tap)
+    const cv2 = canvasRef.current;
+    if (cv2) {
+      const r2 = cv2.getBoundingClientRect();
+      const hx = e.clientX - r2.left, hy = e.clientY - r2.top;
+      cv2.style.cursor = _TP.some((t) => (hx - t.x) * (hx - t.x) + (hy - t.y) * (hy - t.y) <= t.r * t.r) ? 'pointer' : '';
+    }
   };
   // tap the lake → an expanding ripple (ignored on buttons/links)
   const onTapLake = (e) => {
     if (e.target && e.target.closest && e.target.closest('button, a')) return;
     const cv = canvasRef.current; if (!cv) return;
     const r = cv.getBoundingClientRect();
-    _CLICKS.push({ x: e.clientX - r.left, y: e.clientY - r.top, t: performance.now() });
+    const cxp2 = e.clientX - r.left, cyp2 = e.clientY - r.top;
+    if (_tpHit(cxp2, cyp2)) return;      // tapped a clan animal → show its teaching, no ripple
+    _CLICKS.push({ x: cxp2, y: cyp2, t: performance.now() });
     if (_CLICKS.length > 24) _CLICKS.shift();
   };
   // smooth-scroll forward ~one screen each time the arrow is pressed (advances a chapter)
