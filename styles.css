@@ -905,17 +905,59 @@ body.elder-mode .contribute-note p { font-size: 13.5px; }
 }
 .drawer.open { transform: translateX(0); }
 
-/* Full-screen drawer: widen the panel but keep the reading column at its
-   normal width, centred — so formatting is untouched, just more breathing room. */
-.drawer.full { width: min(1180px, 100vw); }
+/* Visible, on-brand scrollbar (Hassan: default grey bar looks bad) */
+.drawer { scrollbar-width: thin; scrollbar-color: var(--east-deep) var(--paper-3); }
+.drawer::-webkit-scrollbar { width: 12px; }
+.drawer::-webkit-scrollbar-track { background: var(--paper-3); }
+.drawer::-webkit-scrollbar-thumb {
+  background: var(--east-deep);
+  border-radius: 8px;
+  border: 3px solid var(--paper-3);
+}
+.drawer::-webkit-scrollbar-thumb:hover { background: var(--south); }
+
+/* Full-screen drawer: widen the panel, keep the reading column at its normal
+   width and present it as a framed "page" floating on a decorated ground, so
+   the empty side margins read as intentional (Anishinaabe beadwork motif)
+   instead of dead white space. */
+.drawer.full {
+  width: min(1180px, 100vw);
+  /* Decorated ground behind the page: two soft dawn-light glows (fixed — they
+     don't scroll with the content) over a beadwork of four-direction dots. The
+     centred page below covers the middle, so only the side gutters show it. */
+  background-color: var(--paper-deep);
+  background-image:
+    linear-gradient(180deg, rgba(212,160,23,.12), rgba(184,53,30,.08)),
+    radial-gradient(circle at center, var(--east) 1.5px, transparent 2.2px),
+    radial-gradient(circle at center, var(--south) 1.5px, transparent 2.2px);
+  background-size: 100% 100%, 26px 26px, 26px 26px;
+  background-position: 0 0, 0 0, 13px 13px;
+  background-repeat: no-repeat, repeat, repeat;
+}
+.drawer.full .drawer-tools { z-index: 7; }
 .drawer.full .drawer-hero,
 .drawer.full .drawer-tabs,
 .drawer.full .drawer-body {
-  max-width: 820px;
+  position: relative; z-index: 1;
+  max-width: 860px;
   margin-left: auto; margin-right: auto;
   width: 100%;
+  background: var(--paper-card);
+  border-left: 1px solid var(--line-soft);
+  border-right: 1px solid var(--line-soft);
 }
-.drawer.full .drawer-hero { padding-left: 34px; padding-right: 34px; }
+.drawer.full .read-along {
+  /* keep it sticky at the bottom, but align/centre it over the page */
+  max-width: 860px;
+  margin-left: auto; margin-right: auto;
+  width: 100%; z-index: 8;
+}
+.drawer.full .drawer-hero {
+  padding-left: 34px; padding-right: 34px;
+  border-top: 1px solid var(--line-soft);
+  box-shadow: 0 0 40px -18px rgba(40,28,14,.5);
+}
+.drawer.full .drawer-body { padding-bottom: 40px; box-shadow: 0 24px 40px -28px rgba(40,28,14,.5); }
 
 /* Top-right control cluster: Listen · Full screen · Close */
 .drawer-tools {
