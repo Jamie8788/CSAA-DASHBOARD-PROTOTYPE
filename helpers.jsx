@@ -249,6 +249,86 @@ function highlight(text, q) {
   return parts.map((p, i) => re.test(p) ? <mark key={i} className="search-hit">{p}</mark> : <span key={i}>{p}</span>);
 }
 window.highlight = highlight;
+
+// ============================================================================
+// Fuzzy search — typo-tolerant "did you mean" + Google-style autocomplete.
+//   Elders and community members rarely type the exact legal name of a Nation
+//   ("Mohawk Council of Kanesatake"). They type "mohawk", "kanesatake", or a
+//   misspelling like "mohoawk". This scores every community name against the
+//   query so we can (a) rank live suggestions and (b) offer a correction.
+// ============================================================================
+function _fnorm(s) {
+  return String(s || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+window._fnorm = _fnorm;
+
+// Classic Levenshtein edit distance (two-row DP). Powers the typo tolerance.
+function levenshtein(a, b) {
+  a = _fnorm(a); b = _fnorm(b);
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+window.levenshtein = levenshtein;
+
+// Score how well `q` matches `name`. Higher = better; -1 = no match at all.
+//   1000  exact          900  name starts with query
+//   700   name contains  600  a word starts with query   550  acronym match
+//   <500  fuzzy (typo, within an edit-distance tolerance)
+function nameMatchScore(q, name) {
+  const nq = _fnorm(q), nn = _fnorm(name);
+  if (!nq) return -1;
+  if (nn === nq) return 1000;
+  if (nn.startsWith(nq)) return 900 - nn.length * 0.1;
+  const idx = nn.indexOf(nq);
+  if (idx >= 0) return 700 - idx - nn.length * 0.05;
+  const words = nn.split(/[^a-z0-9]+/).filter(Boolean);
+  for (const w of words) if (w.startsWith(nq)) return 600 - nn.length * 0.05;
+  const acro = words.map(w => w[0]).join('');
+  if (acro.startsWith(nq)) return 550;
+  // Typo tolerance: compare the query to the whole name and to each word,
+  // keep the closest. Allow more slack for longer queries.
+  let best = levenshtein(nq, nn);
+  for (const w of words) best = Math.min(best, levenshtein(nq, w));
+  const tol = nq.length <= 3 ? 1 : nq.length <= 6 ? 2 : nq.length <= 9 ? 3 : 4;
+  if (best <= tol) return 400 - best * 30 - Math.abs(nn.length - nq.length) * 0.05;
+  return -1;
+}
+window.nameMatchScore = nameMatchScore;
+
+// Rank communities for the search dropdown. Returns { list, didYouMean }.
+//   list       → up to `limit` best matches (each { c, score })
+//   didYouMean → a community to suggest as a spelling correction, only when
+//                nothing matched by substring/prefix but a close typo exists.
+function searchSuggest(q, all, limit) {
+  q = String(q || '').trim();
+  if (q.length < 2 || !Array.isArray(all)) return { list: [], didYouMean: null };
+  const scored = [];
+  for (const c of all) {
+    if (!c || !c.name) continue;
+    const s = nameMatchScore(q, c.name);
+    if (s > -1) scored.push({ c, score: s });
+  }
+  scored.sort((a, b) => b.score - a.score || a.c.name.trim().localeCompare(b.c.name.trim()));
+  const list = scored.slice(0, limit || 8);
+  const anyStrong = scored.some(x => x.score >= 600);
+  const top = scored[0];
+  const didYouMean = (!anyStrong && top && top.score < 500) ? top.c : null;
+  return { list, didYouMean };
+}
+window.searchSuggest = searchSuggest;
+
 window.NA = NA;
 
 // ============================================================================
