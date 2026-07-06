@@ -2256,45 +2256,75 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   sleek weasel that darts ALONG A FALLEN LOG, low and quick, with a long
       //   bushy tail, pointed face and pale throat. Scampers back and forth. ----
       {
-        const logX = W * 0.82, logY = ground(logX) + 2, logLen = 34;
-        _tpReg(logX, logY - 12, 32, dayA, 'Waabizheshii', 'Bravery');   // on the marten itself
-        // the fallen log it runs along
+        const logX = W * 0.82, logY = ground(logX) + 2, logLen = 40;
+        // marten scampers along the log; the touch point RIDES ON the marten
+        const MS = 3.0;                                                     // marten unit scale (big, clan-prominent)
+        const run = Math.sin(tt * 0.9);
+        const mxp = logX + run * (logLen / 2 - 6);
+        const mdir = Math.cos(tt * 0.9) >= 0 ? -1 : 1;                      // face the travel direction
+        const gallop = Math.abs(Math.sin(tt * 7)) * 1.6;                    // bounding arch of the back
+        const bodyY = logY - 2 - gallop * MS * 0.4;
+        _tpReg(mxp - mdir * 4 * MS, bodyY - 3 * MS, 30, dayA, 'Waabizheshii', 'Bravery');   // rides the shoulders
         ctx.save(); ctx.globalAlpha = dayA;
-        ctx.translate(logX, logY); ctx.scale(2.2, 2.2); ctx.translate(-logX, -logY);   // bigger, clan-prominent   // solid through the day, fades at dusk like the villagers (not ghosty)
-        ctx.fillStyle = `rgb(${Math.round(_lerp(96,52,nm))},${Math.round(_lerp(64,34,nm))},${Math.round(_lerp(36,18,nm))})`;
-        ctx.beginPath(); ctx.ellipse(logX, logY, logLen / 2, 3.2, -0.05, 0, 6.283); ctx.fill();
-        ctx.strokeStyle = `rgba(${Math.round(_lerp(40,22,nm))},${Math.round(_lerp(26,14,nm))},${Math.round(_lerp(14,8,nm))},0.7)`;
-        ctx.lineWidth = 0.6;
-        ctx.beginPath(); ctx.arc(logX - logLen / 2, logY, 2.4, 0, 6.283); ctx.stroke();   // log end-grain
-        // the marten scampers back and forth along the log
-        const run = Math.sin(tt * 1.1);
-        const mxp = logX + run * (logLen / 2 - 5);
-        const mdir = Math.cos(tt * 1.1) >= 0 ? -1 : 1;   // body is drawn head-LEFT, so invert to face travel
-        const gallop = Math.abs(Math.sin(tt * 9)) * 1.4;                                  // bounding body arch
-        ctx.save(); ctx.translate(mxp, logY - 3); ctx.scale(mdir, 1);
-        const fur = `rgb(${Math.round(_lerp(132,68,nm))},${Math.round(_lerp(78,40,nm))},${Math.round(_lerp(38,20,nm))})`;
-        // long bushy tail
-        ctx.strokeStyle = fur; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(6, 0); ctx.quadraticCurveTo(12, -2 - gallop, 15, -5 - gallop * 2); ctx.stroke();
-        // low arched body
+        // the fallen mossy log it runs along
+        const logCol = `rgb(${Math.round(_lerp(96,52,nm))},${Math.round(_lerp(64,34,nm))},${Math.round(_lerp(36,18,nm))})`;
+        ctx.fillStyle = logCol;
+        ctx.beginPath(); ctx.ellipse(logX, logY, logLen / 2, 4.0, -0.04, 0, 6.283); ctx.fill();
+        ctx.fillStyle = `rgba(${Math.round(_lerp(70,40,nm))},${Math.round(_lerp(92,50,nm))},${Math.round(_lerp(46,26,nm))},0.6)`;  // moss
+        ctx.beginPath(); ctx.ellipse(logX - 4, logY - 2.5, logLen / 2 - 6, 1.6, -0.04, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(40,22,nm))},${Math.round(_lerp(26,14,nm))},${Math.round(_lerp(14,8,nm))},0.8)`;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.arc(logX - logLen / 2, logY, 3.0, 0, 6.283); ctx.stroke();   // end-grain rings
+        ctx.beginPath(); ctx.arc(logX - logLen / 2, logY, 1.4, 0, 6.283); ctx.stroke();
+        // ---- the marten: a long low PINE MARTEN — rich chestnut, cream throat
+        //   bib, pointed face, rounded ears, long bushy tail; low bounding run ----
+        const S2 = MS;
+        ctx.save(); ctx.translate(mxp, bodyY); ctx.scale(mdir * S2, S2);
+        const fur   = `rgb(${Math.round(_lerp(124,66,nm))},${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(34,18,nm))})`;
+        const furDk = `rgb(${Math.round(_lerp(86,44,nm))},${Math.round(_lerp(48,24,nm))},${Math.round(_lerp(20,10,nm))})`;
+        const arch = gallop * 0.5;
+        // long bushy tail sweeping up behind (drawn first)
+        ctx.strokeStyle = furDk; ctx.lineCap = 'round';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath(); ctx.moveTo(6.5, -0.6);
+        ctx.quadraticCurveTo(11, -1 - arch, 13.5, -4 - arch * 1.6);
+        ctx.quadraticCurveTo(15, -6 - arch, 14, -8 - arch); ctx.stroke();
+        ctx.lineWidth = 1.4;                                                              // tapered bushy tip
+        ctx.beginPath(); ctx.moveTo(13.5, -4 - arch * 1.6); ctx.quadraticCurveTo(16, -6 - arch, 15.5, -9 - arch); ctx.stroke();
+        // long low body with an arched back
         ctx.fillStyle = fur;
         ctx.beginPath();
-        ctx.moveTo(-7, 0); ctx.quadraticCurveTo(-2, -3 - gallop, 4, -2); ctx.quadraticCurveTo(7, -1, 7, 1);
-        ctx.quadraticCurveTo(0, 2, -7, 0); ctx.closePath(); ctx.fill();
-        // little legs (bounding)
-        ctx.strokeStyle = fur; ctx.lineWidth = 1.0;
-        ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(-6, 3 + gallop); ctx.moveTo(4, 0); ctx.lineTo(5, 3 - gallop); ctx.stroke();
-        // pointed head + pale throat + dark eye
+        ctx.moveTo(-8, 0.4);
+        ctx.quadraticCurveTo(-3, -3.4 - arch, 3, -3.0 - arch);      // arched back
+        ctx.quadraticCurveTo(7, -2.6, 7.5, -0.6);                    // rump
+        ctx.quadraticCurveTo(7, 1.6, 2, 1.8);                        // belly
+        ctx.quadraticCurveTo(-4, 2.0, -8, 0.4);
+        ctx.closePath(); ctx.fill();
+        // legs — front pair reaches, back pair pushes (bounding gait)
+        ctx.strokeStyle = furDk; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+        const fl = 3.0 - arch, bl = 3.0 + arch;
+        ctx.beginPath(); ctx.moveTo(-6, 1.2); ctx.lineTo(-7 - arch * 0.6, 3.4); ctx.stroke();   // front near
+        ctx.beginPath(); ctx.moveTo(-4.4, 1.4); ctx.lineTo(-4.6, 3.4); ctx.stroke();            // front far
+        ctx.beginPath(); ctx.moveTo(5, 1.4); ctx.lineTo(6 + arch * 0.6, 3.4); ctx.stroke();     // back near
+        ctx.beginPath(); ctx.moveTo(3.4, 1.5); ctx.lineTo(3.6, 3.4); ctx.stroke();              // back far
+        // neck + pointed head reaching forward-low
         ctx.fillStyle = fur;
-        ctx.beginPath(); ctx.ellipse(-8, -1, 2.4, 1.6, -0.2, 0, 6.283); ctx.fill();
-        ctx.fillStyle = 'rgba(228,214,180,0.9)';
-        ctx.beginPath(); ctx.ellipse(-8, 0.4, 1.0, 0.7, 0, 0, 6.283); ctx.fill();           // throat patch
-        ctx.fillStyle = 'rgba(16,12,8,1)';
-        ctx.beginPath(); ctx.arc(-9, -1.4, 0.5, 0, 6.283); ctx.fill();                       // eye
-        ctx.beginPath(); ctx.arc(-10, -0.6, 0.4, 0, 6.283); ctx.fill();                      // nose
-        // tiny round ears
+        ctx.beginPath();
+        ctx.moveTo(-6, -1.4);
+        ctx.quadraticCurveTo(-9.5, -1.8, -11.5, -0.4);              // muzzle tip
+        ctx.quadraticCurveTo(-9.6, 1.2, -6.5, 1.2);
+        ctx.closePath(); ctx.fill();
+        // cream throat bib (marten signature)
+        ctx.fillStyle = 'rgba(236,214,150,0.95)';
+        ctx.beginPath(); ctx.ellipse(-6.5, 1.0, 2.4, 1.2, -0.15, 0, 6.283); ctx.fill();
+        // rounded ears
         ctx.fillStyle = fur;
-        ctx.beginPath(); ctx.arc(-7.5, -2.6, 0.7, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(-6.6, -2.2, 1.0, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(-8.4, -1.7, 0.9, 0, 6.283); ctx.fill();
+        // eye + dark nose
+        ctx.fillStyle = 'rgba(14,10,6,1)';
+        ctx.beginPath(); ctx.arc(-8.6, -0.9, 0.55, 0, 6.283); ctx.fill();                 // eye
+        ctx.beginPath(); ctx.arc(-11.2, -0.3, 0.55, 0, 6.283); ctx.fill();                // nose
         ctx.restore();
         ctx.restore();
       }
@@ -2401,6 +2431,17 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.translate(bx, by + breath);
       ctx.rotate(bodyPitch);
 
+      // ---- NEAR-PAW KINEMATICS (Hassan: the bear should reach with its CLAW,
+      //   grab the fish, then bring the paw down). One smooth path through the
+      //   whole cycle: planted -> scoops down-forward into the water -> lifts the
+      //   pinned fish up toward the mouth -> lowers back to a planted stand. ----
+      let pawTX, pawTY, fishOnPaw = false;
+      if (phase === 'watch')      { pawTX = -2.0 * S;                    pawTY = 12.0 * S; }
+      else if (phase === 'lunge') { const u = (huntT - watchEnd) / (lungeEnd - watchEnd); pawTX = -2.0 * S - u * 3 * S; pawTY = 12.0 * S - u * 1.5 * S; }
+      else if (phase === 'strike'){ const u = (huntT - lungeEnd) / (strikeEnd - lungeEnd); pawTX = -5.0 * S - u * 9 * S; pawTY = 10.5 * S + u * u * 3 * S; fishOnPaw = true; }
+      else if (phase === 'carry') { const u = carryT * carryT;          pawTX = -14.0 * S + u * 9 * S; pawTY = 13.5 * S - u * 11 * S; fishOnPaw = true; }
+      else                        { const u = devourT;                   pawTX = -5.0 * S + u * 3 * S; pawTY = 3.0 * S + u * 9 * S; }
+
       // ---- WATER INLET at the bear's feet: the shallows it is fishing in, so it
       //   reads as a bear hunting IN water (Nat-Geo), not standing on grass. Drawn
       //   first, behind the bear. Colour tracks day→night like the lake. ----
@@ -2471,31 +2512,41 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.fillStyle = 'rgba(8,5,3,1)';
       ctx.beginPath(); ctx.ellipse(-8 * S, 12.2 * S, 2.6 * S, 1.2 * S, 0, 0, 6.283); ctx.fill();
 
-      // -- NEAR FRONT LEG (normal planted leg — NO raised arm. A real bear catches
-      //   fish with its MOUTH, head down in the water; the legs just stand.) --
-      ctx.fillStyle = furG;
-      ctx.beginPath();
-      ctx.moveTo(-3 * S, 4 * S); ctx.quadraticCurveTo(-5 * S, 8 * S, -4 * S, 12 * S);
-      ctx.lineTo(0 * S, 12 * S); ctx.quadraticCurveTo(0 * S, 8 * S, 0 * S, 4 * S);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(8,5,3,1)';
-      ctx.beginPath(); ctx.ellipse(-2 * S, 12.2 * S, 2.6 * S, 1.2 * S, 0, 0, 6.283); ctx.fill();
-      // a dummy "paw" reference kept at the water for splash/fish code below
-      const pawX = -16 * S, pawY = 13 * S;
+      // -- NEAR FRONT LEG (ANIMATED ARM) — a two-segment limb: shoulder at
+      //   (-3,3), an elbow, and the paw that travels along pawTX/pawTY, so the
+      //   bear visibly reaches out, scoops, and lowers its claw. --
+      {
+        const shX = -3 * S, shY = 3 * S;
+        const elX = (shX + pawTX) / 2 - 1.5 * S, elY = (shY + pawTY) / 2 - 1.0 * S;  // elbow bows forward
+        ctx.strokeStyle = furG; ctx.lineCap = 'round'; ctx.lineWidth = 4.4 * S;
+        ctx.beginPath(); ctx.moveTo(shX, shY); ctx.quadraticCurveTo(elX, elY, pawTX, pawTY); ctx.stroke();
+        // paw + claws at the tip
+        ctx.fillStyle = 'rgba(20,13,7,1)';
+        ctx.beginPath(); ctx.ellipse(pawTX, pawTY, 2.6 * S, 1.9 * S, 0.2, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = 'rgba(228,220,206,0.85)'; ctx.lineWidth = 0.6 * S; ctx.lineCap = 'round';
+        for (let cl = -1; cl <= 1; cl++) {
+          ctx.beginPath();
+          ctx.moveTo(pawTX - 2.4 * S + cl * 0.3 * S, pawTY + 0.6 * S);
+          ctx.lineTo(pawTX - 3.4 * S + cl * 0.6 * S, pawTY + 1.6 * S);
+          ctx.stroke();
+        }
+      }
+      // paw reference for splash/ripple at the water contact
+      const pawX = pawTX, pawY = pawTY;
 
       // -- NECK + HEAD — the bear DIPS its head down into the water to grab the
       //   fish in its MOUTH on the strike, then lifts it back up. A natural
       //   fishing motion, not an arm thrown overhead.
-      const headFwd = strikePhase * 2.5 * S;                    // muzzle reaches forward over the water
-      const headDip = strikePhase * strikePhase * 9 * S;        // head plunges DOWN to the water on strike
-      // HEAD TRACKS THE FISH while watching — the muzzle follows the swimming
-      // fish left→right, exactly like a bear locked onto prey in a documentary.
-      let track = 0;
-      if (phase === 'watch' || phase === 'lunge') {
-        const swimU2 = (huntT / lungeEnd);
-        track = (swimU2 - 0.5) * 2.2 * S;                        // follows the fish across the pool
-      }
-      const hcX = -16 * S - headFwd + track, hcY = 1 * S + headDip + Math.abs(track) * 0.12;
+      const headFwd = strikePhase * 1.4 * S;                    // head just LEANS in — the paw does the catching now
+      const headDip = strikePhase * strikePhase * 3.0 * S;
+      // HEAD TRACKS THE FISH while watching — smooth sweep that FADES OUT as the
+      // strike begins (multiplying by 1-strikePhase removes the old hard snap
+      // that made the whole head jump = the "earthquake" judder).
+      const swimU2 = _clamp(huntT / lungeEnd, 0, 1);
+      const track = (swimU2 - 0.5) * 2.4 * S * (1 - strikePhase);
+      // during CARRY the head dips to meet the paw bringing the fish up
+      const carryDip = phase === 'carry' ? Math.sin(carryT * Math.PI) * 3.5 * S : 0;
+      const hcX = -16 * S - headFwd + track, hcY = 1 * S + headDip + carryDip + Math.abs(track) * 0.12;
       // thick crouching neck
       ctx.fillStyle = furG;
       ctx.beginPath();
@@ -2584,15 +2635,13 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.beginPath(); ctx.ellipse(sx - 3 * S, 13.6 * S, 4 * S, 1.2 * S, 0, 0, 6.283); ctx.stroke();
         drawSalmon(sx, sy, surface * 0.3, 0.95);
       } else if (phase === 'strike') {
-        // fish darts under, mostly hidden, just below the descending paw
-        drawSalmon(pawX - 2 * S, 13 * S, 0.1, 0.55);
+        // the fish is PINNED UNDER THE PAW as it scoops down into the water
+        const wrig = Math.sin(tt * 20) * 0.5;
+        drawSalmon(pawX - 1 * S, pawY - 1 * S, 0.2 + wrig, 0.85);
       } else if (phase === 'carry') {
-        // FIX (Hassan): the fish is gripped IN THE JAWS from the moment the head
-        // comes up out of the water — no more floating from paw to mouth. It just
-        // wriggles in the mouth while the head lifts.
-        const wrig = Math.sin(tt * 16) * 0.4;
-        const mX = hcX - 3.6 * S, mY = hcY + 2.6 * S;           // mouth / snout tip
-        drawSalmon(mX, mY + 0.4 * S, -0.5 + wrig, 1.0);
+        // the fish rides the PAW as it lifts up toward the mouth, wriggling
+        const wrig = Math.sin(tt * 16) * 0.5;
+        drawSalmon(pawX - 0.5 * S, pawY - 1.5 * S, -0.5 + wrig, 1.0);
       } else if (phase === 'devour') {
         // fish hangs from the JAWS and is EATEN IN BITES — it shortens in four
         // discrete chunks (synced to the chewing) until it's gone, instead of
@@ -3016,36 +3065,67 @@ function drawScene(ctx, W, H, p, tt, now) {
     //   important; Turtle Island). Occasionally stretches its neck. ---
     {
       const tuX = W * 0.30, tuY = hY + 18 + (H - hY) * 0.34;
-      _tpReg(tuX, tuY - 10, 32, wildA, 'Mshiikenh', 'Wisdom');   // on the shell
+      const TS = 2.9;                                                     // turtle unit scale (big, clan-prominent)
+      const neck = Math.max(0, Math.sin(tt * 0.4)) * 5;                   // head stretches out periodically
+      _tpReg(tuX, tuY - 4 * TS, 30, wildA, 'Mshiikenh', 'Wisdom');        // on the shell dome
       ctx.save();
-      ctx.translate(tuX, tuY); ctx.scale(2.2, 2.2); ctx.translate(-tuX, -tuY);   // bigger, clan-prominent
       ctx.globalAlpha = wildA * 0.95;
-      // the log it rests on
+      ctx.translate(tuX, tuY); ctx.scale(TS, TS);
+      // the mossy half-sunk log it basks on
       ctx.fillStyle = 'rgba(58,40,24,1)';
-      ctx.beginPath(); ctx.ellipse(tuX, tuY + 2, 22, 3.4, -0.04, 0, 6.283); ctx.fill();
-      ctx.strokeStyle = 'rgba(34,22,12,0.7)'; ctx.lineWidth = 0.6;
-      ctx.beginPath(); ctx.moveTo(tuX - 18, tuY + 1.5); ctx.lineTo(tuX + 18, tuY + 1); ctx.stroke();
-      // reflection under the log
-      ctx.fillStyle = 'rgba(20,16,12,0.18)';
-      ctx.beginPath(); ctx.ellipse(tuX, tuY + 6, 20, 2.2, 0, 0, 6.283); ctx.fill();
-      // shell (domed, with scute lines + a warm rim)
-      const shell = ctx.createLinearGradient(tuX, tuY - 6, tuX, tuY + 1);
-      shell.addColorStop(0, 'rgba(70,86,52,1)'); shell.addColorStop(1, 'rgba(36,46,26,1)');
+      ctx.beginPath(); ctx.ellipse(0, 3.2, 15, 2.6, -0.03, 0, 6.283); ctx.fill();
+      ctx.fillStyle = `rgba(${Math.round(_lerp(70,40,nm))},${Math.round(_lerp(92,50,nm))},${Math.round(_lerp(46,26,nm))},0.55)`;
+      ctx.beginPath(); ctx.ellipse(-2, 2.2, 11, 1.1, -0.03, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(20,16,12,0.16)';                              // reflection
+      ctx.beginPath(); ctx.ellipse(0, 6, 13, 1.6, 0, 0, 6.283); ctx.fill();
+      // ---- four clawed legs first (behind the shell) ----
+      const legPad = 'rgba(74,86,52,1)';
+      ctx.fillStyle = legPad;
+      ctx.beginPath(); ctx.ellipse(-5.5, 2.4, 2.2, 1.5, 0.5, 0, 6.283); ctx.fill();   // front leg
+      ctx.beginPath(); ctx.ellipse(5.5, 2.4, 2.2, 1.5, -0.5, 0, 6.283); ctx.fill();   // back leg
+      // ---- tail ----
+      ctx.beginPath(); ctx.moveTo(8, 0.6); ctx.quadraticCurveTo(11, 0.8, 11.6, 2.0); ctx.quadraticCurveTo(9.5, 1.6, 8, 1.6); ctx.closePath(); ctx.fill();
+      // ---- HEAD on an outstretched neck (painted-turtle yellow stripes + eye) ----
+      const hx = -9 - neck, hy = -0.6;
+      ctx.strokeStyle = legPad; ctx.lineWidth = 2.8; ctx.lineCap = 'round';           // neck
+      ctx.beginPath(); ctx.moveTo(-5, -0.4); ctx.lineTo(hx + 1.5, hy); ctx.stroke();
+      ctx.fillStyle = legPad;
+      ctx.beginPath(); ctx.ellipse(hx, hy, 2.6, 1.9, -0.1, 0, 6.283); ctx.fill();     // head
+      ctx.strokeStyle = 'rgba(226,196,70,0.95)'; ctx.lineWidth = 0.6;                 // yellow neck stripes
+      ctx.beginPath(); ctx.moveTo(hx + 1.5, hy - 0.8); ctx.lineTo(-5, -1.0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(hx + 1.5, hy + 0.8); ctx.lineTo(-5, 0.2); ctx.stroke();
+      ctx.strokeStyle = 'rgba(210,80,54,0.9)'; ctx.lineWidth = 0.7;                   // red ear patch
+      ctx.beginPath(); ctx.moveTo(hx + 1.2, hy - 1.1); ctx.lineTo(hx + 2.4, hy - 0.6); ctx.stroke();
+      ctx.fillStyle = 'rgba(12,10,6,1)';
+      ctx.beginPath(); ctx.arc(hx - 1.2, hy - 0.4, 0.55, 0, 6.283); ctx.fill();       // eye
+      // ---- CARAPACE: a smooth high dome with a hexagonal scute pattern + rim ----
+      const shell = ctx.createLinearGradient(0, -7, 0, 1.5);
+      shell.addColorStop(0, `rgb(${Math.round(_lerp(96,58,nm))},${Math.round(_lerp(120,72,nm))},${Math.round(_lerp(72,42,nm))})`);
+      shell.addColorStop(1, `rgb(${Math.round(_lerp(52,30,nm))},${Math.round(_lerp(66,38,nm))},${Math.round(_lerp(36,20,nm))})`);
       ctx.fillStyle = shell;
-      ctx.beginPath(); ctx.ellipse(tuX, tuY - 1, 8, 4.4, 0, Math.PI, 2 * Math.PI); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(tuX, tuY - 1, 8, 2.2, 0, 0, 6.283); ctx.fill();
-      ctx.strokeStyle = 'rgba(30,38,20,0.8)'; ctx.lineWidth = 0.5;
-      for (let sl = -2; sl <= 2; sl++) { ctx.beginPath(); ctx.moveTo(tuX + sl * 3, tuY - 5); ctx.lineTo(tuX + sl * 3.4, tuY - 1); ctx.stroke(); }
-      // head stretches out periodically + red ear-stripe of a painted turtle
-      const neck = Math.max(0, Math.sin(tt * 0.4)) * 4;
-      ctx.fillStyle = 'rgba(58,70,40,1)';
-      ctx.beginPath(); ctx.ellipse(tuX - 8 - neck, tuY - 1, 2.4, 1.6, 0, 0, 6.283); ctx.fill();
-      ctx.strokeStyle = 'rgba(200,70,50,0.9)'; ctx.lineWidth = 0.7;
-      ctx.beginPath(); ctx.moveTo(tuX - 8 - neck, tuY - 2); ctx.lineTo(tuX - 6 - neck, tuY - 1); ctx.stroke();
-      // little legs
-      ctx.fillStyle = 'rgba(50,62,34,1)';
-      ctx.beginPath(); ctx.ellipse(tuX - 5, tuY + 1, 2, 1.1, 0.4, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(tuX + 5, tuY + 1, 2, 1.1, -0.4, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, -0.8, 9.5, 6.2, 0, Math.PI, 2 * Math.PI); ctx.fill();   // domed top
+      ctx.beginPath(); ctx.ellipse(0, -0.8, 9.5, 2.0, 0, 0, Math.PI); ctx.fill();             // underside curve
+      // marginal-scute rim
+      ctx.strokeStyle = 'rgba(206,176,96,0.55)'; ctx.lineWidth = 0.7;
+      ctx.beginPath(); ctx.ellipse(0, -0.8, 9.5, 6.2, 0, Math.PI, 2 * Math.PI); ctx.stroke();
+      // scute pattern: a central row of hexagons + side scutes
+      ctx.strokeStyle = 'rgba(28,36,20,0.7)'; ctx.lineWidth = 0.6;
+      for (let c = -2; c <= 2; c++) {                                                 // central scutes
+        const cxs = c * 3.4;
+        ctx.beginPath();
+        ctx.moveTo(cxs - 1.7, -1.0); ctx.lineTo(cxs - 1.0, -5.0); ctx.lineTo(cxs + 1.0, -5.0); ctx.lineTo(cxs + 1.7, -1.0);
+        ctx.stroke();
+      }
+      ctx.beginPath(); ctx.moveTo(-8.6, -1.0); ctx.lineTo(8.6, -1.0); ctx.stroke();   // scute baseline
+      ctx.beginPath(); ctx.moveTo(-6.5, -4.6); ctx.lineTo(6.5, -4.6); ctx.stroke();   // vertebral ridge
+      // warm keel highlight
+      ctx.strokeStyle = 'rgba(224,200,120,0.4)'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(-6, -5.2); ctx.quadraticCurveTo(0, -6.6, 6, -5.2); ctx.stroke();
+      // front near foot in front of the shell (with claws)
+      ctx.fillStyle = legPad;
+      ctx.beginPath(); ctx.ellipse(-6.5, 1.8, 2.4, 1.6, 0.4, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = 'rgba(30,26,16,0.8)'; ctx.lineWidth = 0.5;
+      for (let cl = -1; cl <= 1; cl++) { ctx.beginPath(); ctx.moveTo(-8 + cl * 0.8, 2.6); ctx.lineTo(-8.4 + cl * 0.8, 3.5); ctx.stroke(); }
       ctx.restore();
     }
     ctx.globalAlpha = 1;
@@ -3303,12 +3383,12 @@ function WelcomeView({ all, setView }) {
     else {
       const frame = (time) => {
         raf = requestAnimationFrame(frame);
-        if (time - last < 32) return; last = time; if (t0 == null) t0 = time;
+        if (time - last < 16) return; last = time; if (t0 == null) t0 = time;
         drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000, time);
       };
       raf = requestAnimationFrame(frame);
     }
-    function onVis() { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = null; } else if (!document.hidden && !raf && !reduce) { last = 0; raf = requestAnimationFrame((t) => { t0 = null; const f = (time) => { raf = requestAnimationFrame(f); if (time - last < 32) return; last = time; if (t0 == null) t0 = time; drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000, time); }; f(t); }); } }
+    function onVis() { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = null; } else if (!document.hidden && !raf && !reduce) { last = 0; raf = requestAnimationFrame((t) => { t0 = null; const f = (time) => { raf = requestAnimationFrame(f); if (time - last < 16) return; last = time; if (t0 == null) t0 = time; drawScene(ctx, W, H, progressRef.current, (time - t0) / 1000, time); }; f(t); }); } }
     document.addEventListener('visibilitychange', onVis);
     return () => { if (raf) cancelAnimationFrame(raf); if (ro) ro.disconnect(); else window.removeEventListener('resize', resize); document.removeEventListener('visibilitychange', onVis); };
   }, [reduce]);
