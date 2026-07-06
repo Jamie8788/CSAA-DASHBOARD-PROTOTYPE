@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "image": "fish_swim_320x160_spritesheet.png",
+    "frame_width": 320,
+    "frame_height": 160,
+    "columns": 6,
+    "rows": 1,
+    "fps": 8,
+    "notes": "Dashboard-style transparent spritesheet."
+  },
+  "frames": {
+    "fish_swim_01.png": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 160
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 125
+    },
+    "fish_swim_02.png": {
+      "frame": {
+        "x": 320,
+        "y": 0,
+        "w": 320,
+        "h": 160
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 125
+    },
+    "fish_swim_03.png": {
+      "frame": {
+        "x": 640,
+        "y": 0,
+        "w": 320,
+        "h": 160
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 125
+    },
+    "fish_swim_04.png": {
+      "frame": {
+        "x": 960,
+        "y": 0,
+        "w": 320,
+        "h": 160
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 125
+    },
+    "fish_swim_05.png": {
+      "frame": {
+        "x": 1280,
+        "y": 0,
+        "w": 320,
+        "h": 160
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 125
+    },
+    "fish_swim_06.png": {
+      "frame": {
+        "x": 1600,
+        "y": 0,
+        "w": 320,
+        "h": 160
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "duration_ms": 125
+    }
+  }
+}

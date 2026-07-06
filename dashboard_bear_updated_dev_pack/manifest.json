@@ -1,0 +1,33 @@
+{
+  "pack_name": "dashboard_bear_updated_dev_pack",
+  "style": "flat muted dashboard illustration, less realistic, web-friendly",
+  "recommended_static_asset": "01_web_ready_transparent_pngs/hero_bear_scene_with_fish_768.png",
+  "recommended_code": [
+    "04_dev_code_snippets/BearHero.jsx",
+    "04_dev_code_snippets/bearHero.css"
+  ],
+  "web_assets": [
+    "01_web_ready_transparent_pngs/fish_near_bear_256.png",
+    "01_web_ready_transparent_pngs/fish_simple_dashboard_style_320x160.png",
+    "01_web_ready_transparent_pngs/hero_bear_only_512x256.png",
+    "01_web_ready_transparent_pngs/hero_bear_only_768x384.png",
+    "01_web_ready_transparent_pngs/hero_bear_scene_with_fish_1024.png",
+    "01_web_ready_transparent_pngs/hero_bear_scene_with_fish_768.png",
+    "01_web_ready_transparent_pngs/water_contact_shadow_512x256.png",
+    "01_web_ready_transparent_pngs/water_ripple_dashboard_style_512x256.png"
+  ],
+  "spritesheets": [
+    "03_spritesheets_with_json/bear_idle_768x384_spritesheet.png",
+    "03_spritesheets_with_json/bear_slow_walk_768x384_spritesheet.png",
+    "03_spritesheets_with_json/fish_swim_320x160_spritesheet.png",
+    "03_spritesheets_with_json/hero_bear_combined_loop_768x384_spritesheet.png",
+    "03_spritesheets_with_json/water_ripple_loop_512x256_spritesheet.png"
+  ],
+  "animation_frame_folders": [
+    "02_animation_frames/bear_idle_768x384",
+    "02_animation_frames/bear_slow_walk_768x384",
+    "02_animation_frames/combined_hero_loop_768x384",
+    "02_animation_frames/fish_swim_320x160",
+    "02_animation_frames/water_ripple_loop_512x256"
+  ]
+}

@@ -1,0 +1,14 @@
+<!-- Simple no-framework version -->
+<div class="hero-section">
+  <!-- existing hero content -->
+  <img class="bear-hero-static" src="/assets/bear/hero_bear_scene_with_fish_768.png" alt="" />
+</div>
+
+<script>
+  const bear = document.querySelector(".bear-hero-static");
+  window.addEventListener("scroll", () => {
+    const progress = Math.min(1, window.scrollY / 420);
+    bear.style.opacity = String(1 - progress);
+    bear.style.transform = `translateY(${progress * 32}px) scale(${1 - progress * 0.04})`;
+  }, { passive: true });
+</script>
