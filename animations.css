@@ -929,6 +929,11 @@ input:focus-visible,
 .od-metric.accent {
   border-color: var(--clay, #b8351e);
 }
+/* Missing-population tile: light, quiet, but clearly legible (was a black box
+   with a faint dash that people could not read). */
+.od-metric-na { background: var(--paper-card); border-style: dashed; }
+.od-metric-na .od-na-n { color: var(--ink-3); font-style: italic; }
+.od-metric-na .od-metric-l { color: var(--ink-3); }
 .od-metric-n {
   font-family: var(--serif); font-style: italic; font-weight: 500;
   font-size: clamp(20px, 2vw, 28px);

@@ -53,107 +53,173 @@ function readerSummary(c) {
   return parts.join(' ');
 }
 
-// The controller (one per open drawer). Handles speech + karaoke boundaries +
-// fetching linked documents to read.
+// ---- In-place karaoke: highlight the ACTUAL text on the page as it's read
+// (via the CSS Custom Highlight API), instead of popping a black caption bar
+// that confused people. Where the API isn't available the reader still works —
+// the speak button simply shows its stop state while speaking.
+const _HL_OK = typeof window !== 'undefined' && typeof window.Highlight === 'function' && window.CSS && window.CSS.highlights;
+function _hlClear() {
+  if (_HL_OK) { try { CSS.highlights.delete('wv-read-word'); CSS.highlights.delete('wv-read-done'); } catch (e) {} }
+}
+function _skipNode(node) {
+  const el = node.parentElement;
+  return !node.textContent.trim() ||
+    (el && el.closest && el.closest('[data-noread], button, script, style, .pc-quickbar, .pc-links, .field-link, .editable-field'));
+}
+// All readable text nodes under `root`, in document order.
+function _collectSegs(root) {
+  const segs = [];
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let n;
+  while ((n = w.nextNode())) {
+    if (_skipNode(n)) continue;
+    segs.push({ node: n, s: 0, e: n.textContent.length });
+  }
+  return segs;
+}
+// Readable text nodes intersecting a user Selection range (clamped at ends).
+function _rangeSegs(range) {
+  let root = range.commonAncestorContainer;
+  if (root.nodeType === 3) root = root.parentElement;
+  if (!root) return [];
+  const segs = [];
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let n;
+  while ((n = w.nextNode())) {
+    if (_skipNode(n)) continue;
+    let ok = false;
+    try { ok = range.intersectsNode(n); } catch (e) { ok = false; }
+    if (!ok) continue;
+    let s = 0, e = n.textContent.length;
+    if (n === range.startContainer) s = range.startOffset;
+    if (n === range.endContainer) e = range.endOffset;
+    if (s < e) segs.push({ node: n, s, e });
+  }
+  return segs;
+}
+
+// The controller (one per open drawer): speech + in-place word highlighting.
 function useReaderProvider() {
   const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
-  const [st, setSt] = useState({ status: 'idle', text: '', from: 0, to: 0, label: '' });
+  const [st, setSt] = useState({ status: 'idle', label: '' });
+  const scrollTsRef = React.useRef(0);
+
   function stop() {
     if (supported) window.speechSynthesis.cancel();
-    setSt({ status: 'idle', text: '', from: 0, to: 0, label: '' });
+    _hlClear();
+    setSt({ status: 'idle', label: '' });
   }
+
+  function _speak(clean, label, onWord) {
+    window.speechSynthesis.cancel();
+    _hlClear();
+    let u;
+    try { u = new SpeechSynthesisUtterance(clean); } catch (e) { return; }
+    u.rate = 0.96; u.pitch = 1;
+    if (onWord) u.onboundary = onWord;
+    u.onend = () => { _hlClear(); setSt({ status: 'idle', label: '' }); };
+    u.onerror = () => { _hlClear(); setSt({ status: 'idle', label: '' }); };
+    setSt({ status: 'speaking', label: label || '' });
+    window.speechSynthesis.speak(u);
+  }
+
+  // Plain speech, no on-page text to highlight (the profile summary).
   function speakText(text, label) {
     if (!supported) return;
     const clean = String(text || '').replace(/\s+/g, ' ').trim();
     if (!clean) return;
-    window.speechSynthesis.cancel();
-    let u;
-    try { u = new SpeechSynthesisUtterance(clean); } catch (e) { return; }
-    u.rate = 0.96; u.pitch = 1;
-    u.onboundary = (e) => {
-      const ci = e.charIndex || 0;
-      const m = clean.slice(ci).match(/^\S+/);
-      setSt(s => (s.status === 'speaking' ? { ...s, from: ci, to: ci + (m ? m[0].length : 1) } : s));
-    };
-    u.onend = () => setSt(s => ({ ...s, status: 'idle', from: 0, to: 0 }));
-    u.onerror = () => setSt(s => ({ ...s, status: 'idle' }));
-    setSt({ status: 'speaking', text: clean, from: 0, to: 0, label: label || '' });
-    window.speechSynthesis.speak(u);
+    _speak(clean, label, null);
   }
-  async function speakDoc(url, label) {
-    if (!supported || !url) return;
-    if (supported) window.speechSynthesis.cancel();
-    setSt({ status: 'loading', text: '', from: 0, to: 0, label: label || 'document' });
-    try {
-      const res = await fetch('/api/read-doc?url=' + encodeURIComponent(url));
-      const data = await res.json();
-      if (data && data.ok && data.text) {
-        speakText((data.title ? data.title + '. ' : '') + data.text, label || 'document');
-      } else {
-        speakText((data && data.message) ? data.message
-          : 'Sorry, this document could not be read automatically. Please open the link to view it.', label || 'document');
-      }
-    } catch (e) {
-      speakText('Sorry, the document could not be opened right now.', label || 'document');
+
+  // Speak a list of text-node segments, highlighting each word IN PLACE.
+  function speakSegments(segs, label) {
+    if (!supported || !segs.length) return;
+    let g = 0;
+    const parts = [];
+    for (const seg of segs) {
+      seg.g = g;
+      const t = seg.node.textContent.slice(seg.s, seg.e);
+      parts.push(t);
+      g += t.length + 1;                      // +1 for the join separator
     }
+    const full = parts.join(' ');
+    if (!full.trim()) return;
+    const findSeg = (ci) => {
+      for (const seg of segs) {
+        const len = seg.e - seg.s;
+        if (ci >= seg.g && ci < seg.g + len) return seg;
+      }
+      return null;
+    };
+    const onWord = (e) => {
+      const ci = e.charIndex || 0;
+      const m = full.slice(ci).match(/^\S+/);
+      const seg = findSeg(ci) || findSeg(ci + 1);
+      if (!seg || !_HL_OK) return;
+      const len = seg.e - seg.s;
+      const local = Math.max(0, Math.min(ci - seg.g, len));
+      const wlen = m ? m[0].length : 1;
+      const localEnd = Math.min(local + wlen, len);
+      try {
+        const word = document.createRange();
+        word.setStart(seg.node, seg.s + local);
+        word.setEnd(seg.node, seg.s + localEnd);
+        const done = document.createRange();
+        done.setStart(segs[0].node, segs[0].s);
+        done.setEnd(seg.node, seg.s + local);
+        CSS.highlights.set('wv-read-done', new window.Highlight(done));
+        CSS.highlights.set('wv-read-word', new window.Highlight(word));
+        // keep the reading position on screen (gentle, throttled)
+        const now = performance.now();
+        if (now - scrollTsRef.current > 700) {
+          const rect = word.getBoundingClientRect();
+          if (rect && (rect.top < 90 || rect.bottom > (window.innerHeight - 130))) {
+            scrollTsRef.current = now;
+            const el = seg.node.parentElement;
+            if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          }
+        }
+      } catch (err) { /* never let highlighting break the speech */ }
+    };
+    _speak(full, label, onWord);
   }
-  useEffect(() => () => { if (supported) window.speechSynthesis.cancel(); }, [supported]);
-  return { supported, status: st.status, text: st.text, from: st.from, to: st.to, label: st.label, speakText, speakDoc, stop };
+
+  // Read everything inside a DOM element (a section body), karaoke-style.
+  function speakEl(el, label) {
+    if (!el) return;
+    speakSegments(_collectSegs(el), label);
+  }
+
+  useEffect(() => () => { if (supported) { window.speechSynthesis.cancel(); _hlClear(); } }, [supported]);
+  return { supported, status: st.status, label: st.label, speakText, speakSegments, speakEl, stop };
 }
 
-// The scrolling caption bar that highlights each spoken word (Kobo-style).
-function ReadAlongBar() {
-  const r = React.useContext(ReaderCtx);
-  const markRef = React.useRef(null);
-  useEffect(() => { if (markRef.current) markRef.current.scrollIntoView({ block: 'nearest' }); });
-  if (!r || (r.status !== 'speaking' && r.status !== 'loading')) return null;
-  return (
-    <div className="read-along" role="status" aria-live="polite">
-      <button className="read-along-stop" onClick={r.stop} title="Stop reading" aria-label="Stop reading">◼</button>
-      {r.status === 'loading'
-        ? <div className="read-along-text loading">Fetching the document to read aloud…</div>
-        : <div className="read-along-text">
-            <span>{r.text.slice(0, r.from)}</span>
-            <mark ref={markRef}>{r.text.slice(r.from, r.to)}</mark>
-            <span>{r.text.slice(r.to)}</span>
-          </div>}
-    </div>
-  );
-}
-
-// Small speaker button for a section. `text` may be a string or a getter.
-function SpeakButton({ text, label, className }) {
+// Small speaker button for a section. Pass `target` (a ref to the section's
+// text container) for in-place highlighting; `text` is the spoken fallback.
+function SpeakButton({ target, text, label, className }) {
   const r = React.useContext(ReaderCtx);
   if (!r || !r.supported) return null;
   const t = typeof text === 'function' ? text() : text;
   if (!t || !String(t).trim()) return null;
   const active = r.status === 'speaking' && r.label === label;
+  const go = () => {
+    const el = target && target.current;
+    if (el && _HL_OK) r.speakEl(el, label);
+    else if (el) r.speakSegments(_collectSegs(el), label);  // still reads the real text
+    else r.speakText(t, label);
+  };
   return (
     <button
       className={`speak-btn ${active ? 'on' : ''} ${className || ''}`}
       title={active ? 'Stop reading' : 'Read this aloud'}
       aria-label={active ? 'Stop reading' : 'Read this section aloud'}
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); active ? r.stop() : r.speakText(t, label); }}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); active ? r.stop() : go(); }}
     >{active ? '◼' : '🔊'}</button>
   );
 }
 
-// Speaker button for a linked document (PDF / web page) — reads its contents.
-function ReadDocButton({ url, label }) {
-  const r = React.useContext(ReaderCtx);
-  if (!r || !r.supported || !url) return null;
-  const busy = r.status === 'loading' && r.label === label;
-  return (
-    <button
-      className={`speak-btn doc ${busy ? 'busy' : ''}`}
-      title="Read this document aloud"
-      aria-label="Read this document aloud"
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); r.speakDoc(url, label); }}
-    >{busy ? '⋯' : '🔊'}</button>
-  );
-}
-
 // Floating "Read selection" button that appears when the user highlights text.
+// Reads the selection with the same in-place karaoke highlight.
 function SelectionReader({ containerRef }) {
   const r = React.useContext(ReaderCtx);
   const [sel, setSel] = useState(null);
@@ -167,7 +233,7 @@ function SelectionReader({ containerRef }) {
       if (!el || !containerRef.current.contains(el)) { setSel(null); return; }
       const rect = s.getRangeAt(0).getBoundingClientRect();
       if (!rect || (!rect.width && !rect.height)) { setSel(null); return; }
-      setSel({ text, x: rect.left + rect.width / 2, y: rect.top });
+      setSel({ text, range: s.getRangeAt(0).cloneRange(), x: rect.left + rect.width / 2, y: rect.top });
     }
     document.addEventListener('mouseup', update);
     document.addEventListener('keyup', update);
@@ -179,7 +245,12 @@ function SelectionReader({ containerRef }) {
       className="selection-read"
       style={{ left: sel.x + 'px', top: (sel.y - 46) + 'px' }}
       onMouseDown={(e) => e.preventDefault()}
-      onClick={() => { r.speakText(sel.text, 'selection'); setSel(null); if (window.getSelection) window.getSelection().removeAllRanges(); }}
+      onClick={() => {
+        const segs = _rangeSegs(sel.range);
+        if (segs.length) r.speakSegments(segs, 'selection'); else r.speakText(sel.text, 'selection');
+        setSel(null);
+        if (window.getSelection) window.getSelection().removeAllRanges();
+      }}
     >🔊 Read selection</button>
   );
 }
@@ -300,7 +371,6 @@ function CommunityDrawer({ community, onClose, searchQuery }) {
           {tab==='people' && <PeopleTab c={c} searchQuery={searchQuery} />}
           {tab==='contact' && <ContactTab c={c} />}
         </div>
-        <ReadAlongBar />
       </aside>
       <SelectionReader containerRef={drawerRef} />
     </ReaderCtx.Provider>
@@ -328,15 +398,14 @@ function FieldLinkOne({ url, label }) {
   let host = url;
   try { host = new URL(url).hostname.replace(/^www\./, ''); } catch {}
   const isPdf = /\.pdf(\?|#|$)/i.test(url);
+  // NOTE: no read-aloud on document links (by request) — people should open
+  // and read PDFs/sources themselves; the reader is for on-page text only.
   return (
-    <div className="field-link-row">
-      <a className="field-link" href={url} target="_blank" rel="noopener noreferrer">
-        <span className="fl-icon">{isPdf ? '⤓' : '↗'}</span>
-        <span className="fl-text">{label || 'Open source'}</span>
-        <span className="fl-host">{isPdf ? 'PDF · ' : ''}{host}</span>
-      </a>
-      <ReadDocButton url={url} label={'doc:' + url} />
-    </div>
+    <a className="field-link" href={url} target="_blank" rel="noopener noreferrer">
+      <span className="fl-icon">{isPdf ? '⤓' : '↗'}</span>
+      <span className="fl-text">{label || 'Open source'}</span>
+      <span className="fl-host">{isPdf ? 'PDF · ' : ''}{host}</span>
+    </a>
   );
 }
 // A field can carry SEVERAL source links — render them all, numbered when >1.
@@ -432,6 +501,7 @@ function PendingNotice({ status, c, fieldKey }) {
 function Section({ title, swatch, children, value, eyebrow, searchQuery, communityId, fieldKey, anchor, community }) {
   const status = window.fieldStatus(community, fieldKey, value);
   const empty = status !== 'ok' && !children;
+  const bodyRef = React.useRef(null);
   return (
     <div className="section" data-section={anchor || undefined}>
       {(swatch || eyebrow) && (
@@ -442,11 +512,11 @@ function Section({ title, swatch, children, value, eyebrow, searchQuery, communi
       )}
       <h3 className="section-title">
         {title}
-        {status === 'ok' && value && <SpeakButton text={() => _readerClean(value)} label={'sec:' + (fieldKey || title)} className="inline" />}
+        {status === 'ok' && value && <SpeakButton target={bodyRef} text={() => _readerClean(value)} label={'sec:' + (fieldKey || title)} className="inline" />}
       </h3>
       {empty
         ? <PendingNotice status={status} c={community} fieldKey={fieldKey} />
-        : status === 'ok' && value && <div className="section-body">{window.richText(value, searchQuery)}</div>}
+        : status === 'ok' && value && <div className="section-body" ref={bodyRef}>{window.richText(value, searchQuery)}</div>}
       {status === 'ok' && <FieldLink urls={fieldLinksFor(community, fieldKey)} label={FIELD_LINK_LABEL[fieldKey]} />}
       {children}
       {communityId && fieldKey && <window.EditableField communityId={communityId} fieldKey={fieldKey} value={value} label={title} />}
@@ -558,10 +628,19 @@ function OverviewTab({ c, dirInfo, setTab }) {
         </div>
 
         <div className="od-metrics">
-          <div className="od-metric primary">
-            <div className="od-metric-n">{nPop ? nPop.toLocaleString() : '—'}</div>
-            <div className="od-metric-l">members</div>
-          </div>
+          {/* Only use the dark "hero" tile when there IS a number — a black box
+              with a faint dash was unreadable for missing populations. */}
+          {c.population != null ? (
+            <div className="od-metric primary">
+              <div className="od-metric-n">{nPop.toLocaleString()}</div>
+              <div className="od-metric-l">members</div>
+            </div>
+          ) : (
+            <div className="od-metric od-metric-na">
+              <div className="od-metric-n od-na-n">n/a</div>
+              <div className="od-metric-l">members · not on file</div>
+            </div>
+          )}
           <div className="od-metric">
             <div className="od-metric-n">{nPillars}<span className="od-metric-of">/4</span></div>
             <div className="od-metric-l">service pillars</div>
@@ -738,6 +817,7 @@ function ServicesTab({ c, searchQuery }) {
 
 function PillarServiceCard({ pillar, value, on, c, searchQuery }) {
   const [open, setOpen] = useState(true);
+  const bodyRef = React.useRef(null);
 
   // Extract links + word count for the meta line, but DO NOT drop any text.
   // Also surface structured contact info (phone, email, bare domains) as
@@ -805,7 +885,7 @@ function PillarServiceCard({ pillar, value, on, c, searchQuery }) {
               {meta.links.length > 0 && ` · ${meta.links.length} link${meta.links.length===1?'':'s'}`}
             </div>
           </div>
-          <SpeakButton text={() => _readerClean(value)} label={'pillar:' + pillar.key} className="pc-speak" />
+          <SpeakButton target={bodyRef} text={() => _readerClean(value)} label={'pillar:' + pillar.key} className="pc-speak" />
           <button className="pc-status on" onClick={() => setOpen(o => !o)} aria-expanded={open}>
             {open ? '— Collapse' : '+ Expand'}
           </button>
@@ -838,7 +918,7 @@ function PillarServiceCard({ pillar, value, on, c, searchQuery }) {
                 })}
               </div>
             )}
-            <div className="pc-fullbody" style={{ borderLeftColor: pillar.hex }}>
+            <div className="pc-fullbody" ref={bodyRef} style={{ borderLeftColor: pillar.hex }}>
               {display}
             </div>
 
