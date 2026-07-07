@@ -1576,7 +1576,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     const RIBBON = ['#c93a1e', '#1f4e8f', '#d68a1f', '#5a7d3a', '#7c2f6b', '#b04a2a'];
     const fig = (px, py, sc, kind, ph, opt) => {
       opt = opt || {};
-      sc *= 1.2;                                               // Hassan: villagers more prominent — enlarge every figure ~20% in place (rooted at the feet, so no re-layout)
+      sc *= 1.3;                                               // Hassan: villagers more prominent — enlarge every figure ~30% in place (rooted at the feet, so no re-layout)
       const dir = opt.dir || 1;                                // facing 1=right, -1=left
       const skin = opt.skin || '#a3704a';
       const hair = opt.hair || '#1a0e08';
@@ -2264,26 +2264,29 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   sleek weasel that darts ALONG A FALLEN LOG, low and quick, with a long
       //   bushy tail, pointed face and pale throat. Scampers back and forth. ----
       {
-        const logX = W * 0.82, logY = ground(logX) + 2, logLen = 40;
+        const MS = 3.4;                                                     // marten unit scale (big, clan-prominent)
+        // relocated to the OPEN lower-left bank — at W*0.82 it was jammed between
+        // the hide frame (0.79) and the crane (0.86) with a 40px twig for a log
+        const logX = W * 0.52, logY = ground(logX) + 2;
+        const logLen = 40 * MS;                                             // log sized to MATCH the marten
         // marten scampers along the log; the touch point RIDES ON the marten
-        const MS = 3.0;                                                     // marten unit scale (big, clan-prominent)
         const run = Math.sin(tt * 0.9);
-        const mxp = logX + run * (logLen / 2 - 6);
+        const mxp = logX + run * (logLen / 2 - 10 * MS);
         const mdir = Math.cos(tt * 0.9) >= 0 ? -1 : 1;                      // face the travel direction
         const gallop = Math.abs(Math.sin(tt * 7)) * 1.6;                    // bounding arch of the back
-        const bodyY = logY - 2 - gallop * MS * 0.4;
+        const bodyY = logY - 5 - gallop * MS * 0.4;
         _tpReg(mxp - mdir * 4 * MS, bodyY - 3 * MS, 30, dayA, 'Waabizheshii', 'Bravery');   // rides the shoulders
         ctx.save(); ctx.globalAlpha = dayA;
         // the fallen mossy log it runs along
         const logCol = `rgb(${Math.round(_lerp(96,52,nm))},${Math.round(_lerp(64,34,nm))},${Math.round(_lerp(36,18,nm))})`;
         ctx.fillStyle = logCol;
-        ctx.beginPath(); ctx.ellipse(logX, logY, logLen / 2, 4.0, -0.04, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(logX, logY, logLen / 2, 7.0, -0.04, 0, 6.283); ctx.fill();
         ctx.fillStyle = `rgba(${Math.round(_lerp(70,40,nm))},${Math.round(_lerp(92,50,nm))},${Math.round(_lerp(46,26,nm))},0.6)`;  // moss
-        ctx.beginPath(); ctx.ellipse(logX - 4, logY - 2.5, logLen / 2 - 6, 1.6, -0.04, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(logX - 8, logY - 4, logLen / 2 - 14, 2.6, -0.04, 0, 6.283); ctx.fill();
         ctx.strokeStyle = `rgba(${Math.round(_lerp(40,22,nm))},${Math.round(_lerp(26,14,nm))},${Math.round(_lerp(14,8,nm))},0.8)`;
-        ctx.lineWidth = 0.8;
-        ctx.beginPath(); ctx.arc(logX - logLen / 2, logY, 3.0, 0, 6.283); ctx.stroke();   // end-grain rings
-        ctx.beginPath(); ctx.arc(logX - logLen / 2, logY, 1.4, 0, 6.283); ctx.stroke();
+        ctx.lineWidth = 1.0;
+        ctx.beginPath(); ctx.arc(logX - logLen / 2, logY, 5.4, 0, 6.283); ctx.stroke();   // end-grain rings
+        ctx.beginPath(); ctx.arc(logX - logLen / 2, logY, 2.6, 0, 6.283); ctx.stroke();
         // ---- the marten: a long low PINE MARTEN — rich chestnut, cream throat
         //   bib, pointed face, rounded ears, long bushy tail; low bounding run ----
         const S2 = MS;
@@ -2334,6 +2337,39 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.beginPath(); ctx.arc(-8.6, -0.9, 0.55, 0, 6.283); ctx.fill();                 // eye
         ctx.beginPath(); ctx.arc(-11.2, -0.3, 0.55, 0, 6.283); ctx.fill();                // nose
         ctx.restore();
+        ctx.restore();
+      }
+
+      // ---- VILLAGE DOG chasing a laughing CHILD along the bank (day) — a loop
+      //   of pure play that makes the village feel alive. ----
+      {
+        ctx.save(); ctx.globalAlpha = dayA;
+        const u = tt * 0.5;
+        const cxr = W * 0.585 + Math.sin(u) * W * 0.026;
+        const cdir = Math.cos(u) >= 0 ? 1 : -1;
+        fig(cxr, ground(cxr) + 6, 0.9, 'walk', 0.3, { shirt: '#d68a1f', hairStyle: 'braid', dir: cdir });
+        // the dog bounds a little ahead of the child
+        const dxr = cxr + cdir * 30, hop = Math.abs(Math.sin(tt * 6)) * 3;
+        ctx.translate(dxr, ground(dxr) + 6 - hop); ctx.scale(cdir * 1.7, 1.7);
+        const dogC = `rgb(${Math.round(_lerp(122,62,nm))},${Math.round(_lerp(96,50,nm))},${Math.round(_lerp(70,36,nm))})`;
+        ctx.fillStyle = dogC;
+        ctx.beginPath(); ctx.ellipse(0, -5, 7, 3.2, 0, 0, 6.283); ctx.fill();          // body
+        ctx.beginPath(); ctx.arc(7.5, -7.5, 2.6, 0, 6.283); ctx.fill();                // head
+        ctx.beginPath(); ctx.moveTo(8.6, -9.6); ctx.lineTo(9.8, -12.2); ctx.lineTo(10.8, -9.4); ctx.closePath(); ctx.fill();  // pricked ear
+        ctx.beginPath(); ctx.ellipse(10.4, -7.0, 1.9, 1.1, 0.1, 0, 6.283); ctx.fill(); // muzzle
+        const wag = Math.sin(tt * 9) * 0.5;                                            // happy wagging tail
+        ctx.strokeStyle = dogC; ctx.lineWidth = 1.7; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-6.5, -6); ctx.quadraticCurveTo(-10, -9 + wag * 3, -12, -7 + wag * 5); ctx.stroke();
+        const g2 = Math.sin(tt * 6) * 2.4;                                             // galloping legs
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(4, -2.6); ctx.lineTo(4 + g2, 0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(5.6, -2.6); ctx.lineTo(5.6 - g2, 0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-3.5, -2.6); ctx.lineTo(-3.5 - g2, 0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-5, -2.6); ctx.lineTo(-5 + g2, 0); ctx.stroke();
+        ctx.fillStyle = 'rgba(14,10,6,1)';
+        ctx.beginPath(); ctx.arc(8.2, -8.1, 0.5, 0, 6.283); ctx.fill();                // eye
+        ctx.fillStyle = 'rgba(214,90,80,0.95)';                                        // tongue out, mid-run
+        ctx.beginPath(); ctx.ellipse(11.6, -6.0, 0.9, 0.5, 0.5, 0, 6.283); ctx.fill();
         ctx.restore();
       }
 
@@ -2770,6 +2806,14 @@ function drawScene(ctx, W, H, p, tt, now) {
       // community sits AROUND in a ring facing the flames. Calm and spaced — the
       // only night gathering, nothing else cluttering the bank.
       {
+        // warm firelight pool on the GRASS first, so the circle clearly reads as
+        // sitting on land (Hassan: "wtf are they in water") — the glow anchors them
+        const gpr = 95;
+        const gp = ctx.createRadialGradient(fx, fy + 2, 4, fx, fy + 2, gpr);
+        gp.addColorStop(0, 'rgba(255,150,60,0.28)');
+        gp.addColorStop(1, 'rgba(255,150,60,0)');
+        ctx.fillStyle = gp;
+        ctx.beginPath(); ctx.ellipse(fx, fy + 4, gpr, gpr * 0.32, 0, 0, 6.283); ctx.fill();
         // a male ELDER seated just behind the fire, gesturing as he tells a story
         // (short hair so he reads as an older man, not a girl)
         fig(fx, fy - 2, 1.5, 'wave', 1.0, { shirt: '#5a3a2a', hairStyle: 'short', dir: 1 });
@@ -2791,13 +2835,14 @@ function drawScene(ctx, W, H, p, tt, now) {
           fig(fx + dxx, seatY, sc, 'sit', i,
               { dir: dxx < 0 ? 1 : -1, shirt: styles[i % styles.length].shirt, hairStyle: hair });
         });
-        // one drummer keeping a soft beat, set a little apart
-        fig(fx - 66, ground(fx - 66) + 4, 1.25, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
+        // one drummer keeping a soft beat, set a little apart — UP the bank on the
+        // right (down-left put him at the waterline: "wtf are they in water")
+        fig(fx + 62, ground(fx + 62) + 4, 1.25, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: -1 });
       }
-      // two CHILDREN asleep on a hide, set well AWAY from the fire (left), so the
-      // night reads as spread out, not one big crowd.
+      // two CHILDREN asleep on a hide beside the wigwam (up the bank, clearly on
+      // dry land — they used to sleep down by the waterline).
       {
-        const slX = fx - 150, slY = ground(fx - 150) + 8;
+        const slX = fx + 98, slY = ground(fx + 98) + 6;
         ctx.fillStyle = 'rgba(120,84,52,0.9)';
         ctx.beginPath(); ctx.ellipse(slX, slY + 2, 16, 4, 0, 0, 6.283); ctx.fill();
         for (let s = 0; s < 2; s++) {
@@ -2986,7 +3031,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.strokeStyle = 'rgba(235,242,238,0.5)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.ellipse(loX, loY + 2.4, 8 + sink * 16, 2 + sink * 3.4, 0, 0, 6.283); ctx.stroke();
       }
-      ctx.translate(loX, loY); ctx.scale(2.0, 2.0); ctx.translate(-loX, -loY);   // bigger, clan-prominent
+      ctx.translate(loX, loY); ctx.scale(2.6, 2.6); ctx.translate(-loX, -loY);   // bigger, clan-prominent
       ctx.translate(0, sink * 9);                                                // slips down as it dives
       ctx.globalAlpha = wildA * (1 - sink);
       // SIT the loon IN the water (it was "floating in air"): a soft ripple ring
@@ -3020,60 +3065,94 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.beginPath(); ctx.arc(loX + 11, loY - 8.5 + dip, 0.5, 0, 6.283); ctx.fill();
       ctx.restore();
     }
-    // --- CRANE / heron standing tall on the near shore, occasionally bowing ---
+    // --- SANDHILL CRANE (ajijaak) — FULLY REDRAWN so it's unmistakably a crane
+    //   (Hassan: "no one can tell it's a crane"): tall jointed legs, teardrop
+    //   body with a bustle tail, thick-to-thin S-neck, RED CROWN + white cheek,
+    //   dagger bill. It hunts a shallow pool at its feet: slow scan → STAB. ---
     {
       // NOTE: `ground` is village-block-scoped and NOT available here, so compute
       // the shore Y inline (same formula: lx0=W*0.45, RISE=H*0.30, +9 ground, +4).
-      // Using `ground` here was throwing "ground is not defined" every frame and
-      // crashing the whole render — which is why the scene looked frozen/stale.
       const crX = W * 0.86;
       const _crT = _clamp((crX - W * 0.45) / (W - W * 0.45), 0, 1);
       const crBase = (H - 6 - (H * 0.30) * (_crT * 0.6 + _crT * _crT * 0.4)) + 13;
-      _tpReg(crX + 6, crBase - 50, 34, wildA, 'Ajijaak', 'Respect');   // on the crane's body/neck
-      ctx.save(); ctx.translate(crX, crBase); ctx.scale(2.0, 2.0); ctx.translate(-crX, -crBase);  // bigger / more prominent
-      ctx.globalAlpha = wildA * 0.95;
-      // real hunting: slow scanning bow, then a lightning STAB (~every 8s)
+      const CS = 3.0;                                        // crane unit scale (big, clan-prominent)
+      _tpReg(crX - 6, crBase - 17 * CS, 34, wildA, 'Ajijaak', 'Respect');   // on the crane's body
+      // hunting cycle: slow scanning bow, then a lightning STAB (~every 8s)
       const cyc = (tt % 8) / 8;
       let bow;
-      if (cyc < 0.72)      bow = Math.max(0, Math.sin(cyc / 0.72 * Math.PI)) * 5;          // slow scan
-      else if (cyc < 0.80) { const u = (cyc - 0.72) / 0.08; bow = 5 + u * u * 9; }          // STAB down
+      if (cyc < 0.72)      bow = Math.max(0, Math.sin(cyc / 0.72 * Math.PI)) * 4;          // slow scan
+      else if (cyc < 0.80) { const u = (cyc - 0.72) / 0.08; bow = 4 + u * u * 10; }         // STAB down
       else                 { const u = (cyc - 0.80) / 0.20; bow = 14 - u * 14; }            // recover
       const stabbing = cyc >= 0.73 && cyc < 0.84;
-      const col = `rgba(${Math.round(_lerp(150,80,nm))},${Math.round(_lerp(160,92,nm))},${Math.round(_lerp(170,104,nm))},1)`;
-      // long legs
-      ctx.strokeStyle = 'rgba(50,40,32,1)'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(crX - 1, crBase - 16); ctx.lineTo(crX - 2, crBase); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(crX + 2, crBase - 16); ctx.lineTo(crX + 3, crBase); ctx.stroke();
-      // body
-      ctx.fillStyle = col;
-      ctx.beginPath(); ctx.ellipse(crX, crBase - 19, 5, 3.2, -0.1, 0, 6.283); ctx.fill();
-      // tail plume
-      ctx.beginPath(); ctx.moveTo(crX - 4, crBase - 20); ctx.lineTo(crX - 9, crBase - 22); ctx.lineTo(crX - 4, crBase - 18); ctx.fill();
-      // S-neck + head (bows down toward the water periodically)
-      ctx.strokeStyle = col; ctx.lineWidth = 1.6;
-      ctx.beginPath();
-      ctx.moveTo(crX + 3, crBase - 21);
-      ctx.quadraticCurveTo(crX + 7, crBase - 27, crX + 5, crBase - 30 + bow);
-      ctx.stroke();
-      ctx.fillStyle = col;
-      ctx.beginPath(); ctx.arc(crX + 5, crBase - 30 + bow, 1.5, 0, 6.283); ctx.fill();
-      // dagger bill
-      ctx.strokeStyle = 'rgba(210,180,90,1)'; ctx.lineWidth = 1.0;
-      ctx.beginPath(); ctx.moveTo(crX + 5, crBase - 30 + bow); ctx.lineTo(crX + 11, crBase - 29 + bow); ctx.stroke();
+      ctx.save(); ctx.globalAlpha = wildA * 0.95;
+      ctx.translate(crX, crBase); ctx.scale(CS, CS);         // all coords below are LOCAL units, y-up negative
+      const body   = `rgb(${Math.round(_lerp(148,82,nm))},${Math.round(_lerp(152,90,nm))},${Math.round(_lerp(158,100,nm))})`;   // sandhill grey
+      const bodyDk = `rgb(${Math.round(_lerp(112,60,nm))},${Math.round(_lerp(116,66,nm))},${Math.round(_lerp(122,74,nm))})`;
+      // the shallow pool it hunts (drawn first, under the feet)
+      ctx.fillStyle = `rgba(${Math.round(_lerp(40,16,nm))},${Math.round(_lerp(70,30,nm))},${Math.round(_lerp(86,44,nm))},0.55)`;
+      ctx.beginPath(); ctx.ellipse(2, 1.2, 13, 2.6, 0, 0, 6.283); ctx.fill();
+      // idle ripple rings drifting out from the legs
+      ctx.strokeStyle = 'rgba(230,240,238,0.30)'; ctx.lineWidth = 0.4;
+      const rw = (tt % 2.4) / 2.4;
+      ctx.beginPath(); ctx.ellipse(0.5, 0.8, 3 + rw * 8, 0.8 + rw * 1.6, 0, 0, 6.283); ctx.stroke();
+      // long JOINTED legs (knee bends slightly with the bow)
+      ctx.strokeStyle = 'rgba(46,38,30,1)'; ctx.lineWidth = 0.9; ctx.lineCap = 'round';
+      const kneeBend = bow * 0.12;
+      ctx.beginPath(); ctx.moveTo(-2.5, -13); ctx.lineTo(-1.5 + kneeBend, -6.5); ctx.lineTo(-2.2, 0.6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0.5, -13);  ctx.lineTo(1.5 + kneeBend, -6.5);  ctx.lineTo(1.2, 0.6); ctx.stroke();
+      // toes
+      ctx.lineWidth = 0.6;
+      ctx.beginPath(); ctx.moveTo(-3.6, 0.7); ctx.lineTo(-0.8, 0.7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-0.2, 0.7);  ctx.lineTo(2.6, 0.7);  ctx.stroke();
+      // teardrop BODY, tilting forward as it bows
+      const tilt = -0.12 - bow * 0.014;
+      ctx.fillStyle = body;
+      ctx.beginPath(); ctx.ellipse(-1.5, -16, 7.2, 4.2, tilt, 0, 6.283); ctx.fill();
+      // folded wing (darker) over the back
+      ctx.fillStyle = bodyDk;
+      ctx.beginPath(); ctx.ellipse(-2.5, -16.6, 4.8, 2.6, tilt, 0, 6.283); ctx.fill();
+      // BUSTLE TAIL — the droopy feather pouf at the rump (a crane signature)
+      ctx.strokeStyle = bodyDk; ctx.lineWidth = 1.0;
+      for (let f = 0; f < 4; f++) {
+        ctx.beginPath();
+        ctx.moveTo(-7.5, -15.5 - f * 0.4);
+        ctx.quadraticCurveTo(-10.5 - f * 0.6, -15 - f * 0.9, -11.5 - f * 0.7, -12.2 - f * 0.5);
+        ctx.stroke();
+      }
+      // S-NECK — thick at the base, thin at the top (two tapered strokes)
+      const hx = 7 + bow * 0.4, hy = -30 + bow;               // head position (drops on the stab)
+      ctx.strokeStyle = body; ctx.lineCap = 'round';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(3.2, -17.5); ctx.quadraticCurveTo(6.8, -20.5, 6.2, -24.5 + bow * 0.4); ctx.stroke();
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(6.2, -24.5 + bow * 0.4); ctx.quadraticCurveTo(5.4, -28 + bow * 0.7, hx, hy); ctx.stroke();
+      // HEAD: small, with the sandhill's RED CROWN + white cheek
+      ctx.fillStyle = body;
+      ctx.beginPath(); ctx.ellipse(hx, hy, 2.0, 1.5, 0.15, 0, 6.283); ctx.fill();
+      ctx.fillStyle = `rgba(${Math.round(_lerp(196,120,nm))},${Math.round(_lerp(38,24,nm))},${Math.round(_lerp(30,18,nm))},1)`;  // red crown
+      ctx.beginPath(); ctx.ellipse(hx + 0.3, hy - 1.1, 1.5, 0.75, 0.15, Math.PI, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = `rgba(${Math.round(_lerp(238,150,nm))},${Math.round(_lerp(238,152,nm))},${Math.round(_lerp(232,150,nm))},1)`;  // white cheek
+      ctx.beginPath(); ctx.ellipse(hx + 0.9, hy + 0.3, 0.9, 0.65, 0.1, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(14,10,6,1)';
+      ctx.beginPath(); ctx.arc(hx + 0.8, hy - 0.3, 0.35, 0, 6.283); ctx.fill();   // eye
+      // DAGGER BILL, angling down as it bows
+      ctx.strokeStyle = 'rgba(60,52,40,1)'; ctx.lineWidth = 0.75;
+      ctx.beginPath(); ctx.moveTo(hx + 1.8, hy + 0.1); ctx.lineTo(hx + 6.6, hy + 1.4 + bow * 0.22); ctx.stroke();
       // splash flick at the bill tip on the stab
       if (stabbing) {
-        ctx.strokeStyle = 'rgba(240,246,240,0.75)'; ctx.lineWidth = 0.8;
-        ctx.beginPath(); ctx.ellipse(crX + 11, crBase - 28 + bow, 3.5, 1.0, 0, 0, 6.283); ctx.stroke();
-        ctx.fillStyle = 'rgba(240,246,240,0.8)';
-        for (let dd = 0; dd < 3; dd++) { ctx.beginPath(); ctx.arc(crX + 9 + dd * 2, crBase - 31 + bow - dd, 0.5, 0, 6.283); ctx.fill(); }
+        const bx = hx + 6.6, by = hy + 1.6 + bow * 0.22;
+        ctx.strokeStyle = 'rgba(240,246,240,0.8)'; ctx.lineWidth = 0.5;
+        ctx.beginPath(); ctx.ellipse(bx, by, 2.6, 0.8, 0, 0, 6.283); ctx.stroke();
+        ctx.fillStyle = 'rgba(240,246,240,0.85)';
+        for (let dd = 0; dd < 3; dd++) { ctx.beginPath(); ctx.arc(bx - 1 + dd * 1.4, by - 1.6 - dd * 0.7, 0.35, 0, 6.283); ctx.fill(); }
       }
-      ctx.restore();                                                           // close the scale wrap
+      ctx.restore();
     }
     // --- PAINTED TURTLE basking on a half-sunk log (mikinaak — culturally
     //   important; Turtle Island). Occasionally stretches its neck. ---
     {
       const tuX = W * 0.30, tuY = hY + 18 + (H - hY) * 0.34;
-      const TS = 2.9;                                                     // turtle unit scale (big, clan-prominent)
+      const TS = 3.4;                                                     // turtle unit scale (big, clan-prominent)
       const neck = Math.max(0, Math.sin(tt * 0.4)) * 5;                   // head stretches out periodically
       _tpReg(tuX, tuY - 4 * TS, 30, wildA, 'Mshiikenh', 'Wisdom');        // on the shell dome
       ctx.save();
