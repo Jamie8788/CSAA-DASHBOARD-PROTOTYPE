@@ -1290,7 +1290,7 @@ function drawScene(ctx, W, H, p, tt, now) {
   // ============================================================================
   {
     const nm = _smooth(0.52, 0.9, p);                     // nightness 0..1
-    const lx0 = W * 0.45;                                  // shore starts much earlier — bigger village land (Hassan)
+    const lx0 = W * 0.40;                                  // shore starts even earlier — bigger village land (Hassan ×2)
     const RISE = H * 0.30;                                  // taller, deeper bank — far more room for activity
     const shoreY = (x) => { const t = _clamp((x - lx0) / (W - lx0), 0, 1); return H - 6 - RISE * (t * 0.6 + t * t * 0.4); };
     const ground = (x) => shoreY(x) + 9;
@@ -2267,8 +2267,8 @@ function drawScene(ctx, W, H, p, tt, now) {
         const MS = 3.4;                                                     // marten unit scale (big, clan-prominent)
         // relocated to the OPEN lower-left bank — at W*0.82 it was jammed between
         // the hide frame (0.79) and the crane (0.86) with a 40px twig for a log
-        const logX = W * 0.52, logY = ground(logX) + 2;
-        const logLen = 40 * MS;                                             // log sized to MATCH the marten
+        const logX = W * 0.505, logY = ground(logX) + 2;
+        const logLen = 32 * MS;                                             // log sized to MATCH the marten
         // marten scampers along the log; the touch point RIDES ON the marten
         const run = Math.sin(tt * 0.9);
         const mxp = logX + run * (logLen / 2 - 10 * MS);
@@ -2340,12 +2340,53 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.restore();
       }
 
+      // ---- TWO MEN CARRYING A CANOE down the newly-open lower bank toward the
+      //   water (day) — classic launch scene, fills the widened shore. ----
+      {
+        ctx.save(); ctx.globalAlpha = dayA;
+        const ccx = W * 0.43, ccy = ground(W * 0.43) + 6;
+        const bob2 = Math.sin(tt * 2.2) * 0.8;
+        fig(ccx - 16, ccy, 1.3, 'carry', 0.9, { shirt: '#1f4e8f', hairStyle: 'short', dir: -1 });
+        fig(ccx + 16, ccy + 2, 1.3, 'carry', 2.2, { shirt: '#b04a2a', hairStyle: 'braid', dir: -1 });
+        // the birchbark canoe up on their shoulders
+        const cy2 = ccy - 36 + bob2;
+        ctx.fillStyle = `rgb(${Math.round(_lerp(178,90,nm))},${Math.round(_lerp(96,50,nm))},${Math.round(_lerp(44,24,nm))})`;
+        ctx.beginPath();
+        ctx.moveTo(ccx - 34, cy2);
+        ctx.quadraticCurveTo(ccx, cy2 + 9, ccx + 34, cy2);
+        ctx.quadraticCurveTo(ccx + 38, cy2 - 3, ccx + 34, cy2 - 4);
+        ctx.quadraticCurveTo(ccx, cy2 + 4, ccx - 34, cy2 - 4);
+        ctx.quadraticCurveTo(ccx - 38, cy2 - 3, ccx - 34, cy2);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(60,34,16,0.8)'; ctx.lineWidth = 0.8;   // sheer line
+        ctx.beginPath(); ctx.moveTo(ccx - 33, cy2 - 3); ctx.quadraticCurveTo(ccx, cy2 + 5, ccx + 33, cy2 - 3); ctx.stroke();
+        ctx.restore();
+      }
+
+      // ---- A MOTHER gently rocking a CRADLEBOARD (dikinaagan) — quiet care
+      //   at the edge of the working village. ----
+      {
+        ctx.save(); ctx.globalAlpha = dayA;
+        const mx2 = W * 0.555, my2 = ground(W * 0.555) + 5;
+        fig(mx2, my2, 1.35, 'sit', 0.5, { shirt: '#7c2f6b', hairStyle: 'long', dir: 1 });
+        const rock = Math.sin(tt * 1.6) * 0.06;
+        ctx.translate(mx2 + 18, my2 - 8); ctx.rotate(rock);
+        ctx.fillStyle = `rgb(${Math.round(_lerp(150,78,nm))},${Math.round(_lerp(108,58,nm))},${Math.round(_lerp(62,32,nm))})`;
+        ctx.beginPath();                                                              // rounded-top board
+        ctx.moveTo(-4.5, 10); ctx.lineTo(-4.5, -6); ctx.quadraticCurveTo(0, -11, 4.5, -6); ctx.lineTo(4.5, 10); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#c93a1e'; ctx.fillRect(-3.2, -2, 6.4, 9);                    // wrapped baby
+        ctx.strokeStyle = 'rgba(246,238,220,0.9)'; ctx.lineWidth = 0.9;               // wrap bands
+        for (let bnd = 0; bnd < 3; bnd++) { ctx.beginPath(); ctx.moveTo(-3.2, 0.5 + bnd * 2.6); ctx.lineTo(3.2, 0.5 + bnd * 2.6); ctx.stroke(); }
+        ctx.fillStyle = '#b7855a'; ctx.beginPath(); ctx.arc(0, -4.5, 2.1, 0, 6.283); ctx.fill();  // little face
+        ctx.restore();
+      }
+
       // ---- VILLAGE DOG chasing a laughing CHILD along the bank (day) — a loop
       //   of pure play that makes the village feel alive. ----
       {
         ctx.save(); ctx.globalAlpha = dayA;
         const u = tt * 0.5;
-        const cxr = W * 0.585 + Math.sin(u) * W * 0.026;
+        const cxr = W * 0.60 + Math.sin(u) * W * 0.024;
         const cdir = Math.cos(u) >= 0 ? 1 : -1;
         fig(cxr, ground(cxr) + 6, 0.9, 'walk', 0.3, { shirt: '#d68a1f', hairStyle: 'braid', dir: cdir });
         // the dog bounds a little ahead of the child
@@ -2401,11 +2442,11 @@ function drawScene(ctx, W, H, p, tt, now) {
       // a slight drop + shrink during the fade). The hand-drawn bear below stays
       // as the automatic fallback while frames load (or if any frame fails).
       //
-      // bearFade: NOTE drawScene remaps p to 0.30..1.00 (story starts mid-morning),
-      // and dusk begins at p≈0.52 (nm = _smooth(0.52,...)). So fade the bear out
-      // across p 0.34→0.50: fully visible at the top, completely gone BEFORE the
-      // first hint of evening — the bear only exists in the day.
-      const bearFade = 1 - _smooth(0.34, 0.50, p);
+      // bearFade: the bear is SOLID for the whole day and exits in one quick,
+      // clean fade right as dusk starts (p 0.50→0.58). The old long fade
+      // (0.34→0.50) left a half-transparent "ghost bear" on screen for a sixth
+      // of the scroll — that's the invisible/double-looking bear Hassan saw.
+      const bearFade = 1 - _smooth(0.50, 0.58, p);
       // ================= BEAR — the ORIGINAL story75 bear, fixed ==============
       // Same beloved big bear from the pre-asset-pack deploys, verbatim, with
       // exactly two fixes: (1) the oversized shoulder hump is flattened into a
@@ -2425,7 +2466,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       // of the centred hero text + scroll prompt, hunting in real water.
       const bx = W * 0.30;
       const by = H * 0.80;
-      _tpReg(bx + 6 * S, by - 4 * S, 34, bearFade, 'Mukwaa', 'Health', true);
+      _tpReg(bx + 6 * S, by - 4 * S, 34, bearFade * bearFade, 'Mukwaa', 'Health', true);   // ring dies FIRST during the fade (no ring floating over a ghost)
       // strike rhythm: paw cocks up, then slams down
       // ---- HUNT CYCLE (full 7-second loop): 4 phases →
       //   0.00-0.40  WATCH   — fish swims past, bear tracks it
@@ -2971,32 +3012,34 @@ function drawScene(ctx, W, H, p, tt, now) {
     clumps.forEach((c, i) => {
       const baseX = c[0] + pxX * 40;                    // foreground parallax
       for (let s = 0; s < c[1]; s++) {
-        const rx = baseX + (s - c[1] / 2) * 7;
-        const tall = 120 + (s % 3) * 26;
-        const sway = Math.sin(tt * 1.1 + i + s * 0.6) * (8 + s);
+        const rx = baseX + (s - c[1] / 2) * 6;
+        // HALVED — the old 120-170px stalks towered over the villagers and read
+        // as giant fake "sea plants" (Hassan). Now waist-height accents.
+        const tall = 58 + (s % 3) * 14;
+        const sway = Math.sin(tt * 1.1 + i + s * 0.6) * (4 + s * 0.6);
         const topX = rx + sway, topY = H - tall;
         // slim stem
-        ctx.strokeStyle = stemCol; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+        ctx.strokeStyle = stemCol; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(rx, H);
         ctx.quadraticCurveTo(rx + sway * 0.4, H - tall * 0.55, topX, topY);
         ctx.stroke();
-        // a couple of long tapering leaves peeling off the stem
-        ctx.lineWidth = 1.6;
+        // a couple of short tapering leaves peeling off the stem
+        ctx.lineWidth = 1.1;
         for (const lf of [0.45, 0.7]) {
           const lx = rx + sway * lf * 0.5, ly = H - tall * lf;
           ctx.beginPath();
           ctx.moveTo(lx, ly);
-          ctx.quadraticCurveTo(lx + 16 - s * 3, ly - 8, lx + 26 - s * 4, ly + 6);
+          ctx.quadraticCurveTo(lx + 8 - s * 1.5, ly - 4, lx + 13 - s * 2, ly + 3);
           ctx.stroke();
         }
         // feathery seed-head — a soft fan of fine lines at the top (manoomin)
-        ctx.strokeStyle = headCol; ctx.lineWidth = 1.0;
+        ctx.strokeStyle = headCol; ctx.lineWidth = 0.8;
         for (let f = 0; f < 6; f++) {
           const fa = -1.3 + f * 0.16;
           ctx.beginPath();
           ctx.moveTo(topX, topY);
-          ctx.lineTo(topX + Math.cos(fa) * 14, topY + Math.sin(fa) * 16 + 4);
+          ctx.lineTo(topX + Math.cos(fa) * 7, topY + Math.sin(fa) * 8 + 2);
           ctx.stroke();
         }
       }
@@ -3070,11 +3113,11 @@ function drawScene(ctx, W, H, p, tt, now) {
     //   body with a bustle tail, thick-to-thin S-neck, RED CROWN + white cheek,
     //   dagger bill. It hunts a shallow pool at its feet: slow scan → STAB. ---
     {
-      // NOTE: `ground` is village-block-scoped and NOT available here, so compute
-      // the shore Y inline (same formula: lx0=W*0.45, RISE=H*0.30, +9 ground, +4).
-      const crX = W * 0.86;
-      const _crT = _clamp((crX - W * 0.45) / (W - W * 0.45), 0, 1);
-      const crBase = (H - 6 - (H * 0.30) * (_crT * 0.6 + _crT * _crT * 0.4)) + 13;
+      // The crane WADES in the open shallows on the lake side, well away from
+      // the village crowd — at W*0.86 it stood in the middle of the villagers
+      // and read as "merging with a girl". Waders hunt in open water anyway.
+      const crX = W * 0.38;
+      const crBase = H - 30;
       const CS = 3.0;                                        // crane unit scale (big, clan-prominent)
       _tpReg(crX - 6, crBase - 17 * CS, 34, wildA, 'Ajijaak', 'Respect');   // on the crane's body
       // hunting cycle: slow scanning bow, then a lightning STAB (~every 8s)
