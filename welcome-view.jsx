@@ -1805,7 +1805,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     // fire-circle previously both rendered with low alpha across a wide nm range,
     // making villagers look ghostly. Now they hand over over a narrow ~10% window
     // centred at nm=0.5, so figures cleanly fade out / in at scene change.
-    const dayA   = _clamp((0.55 - nm) / 0.10, 0, 1);   // 1 below 0.45, 0 above 0.55
+    const dayA   = _clamp((0.45 - nm) / 0.10, 0, 1);   // day is OVER by nm 0.45 — evening then owns the bank until the night circle forms
     const nightA = _clamp((nm - 0.45) / 0.10, 0, 1);   // 0 below 0.45, 1 above 0.55
     if (dayA > 0.02) {
       ctx.save(); ctx.globalAlpha = dayA;
@@ -2149,7 +2149,8 @@ function drawScene(ctx, W, H, p, tt, now) {
       // grazing horse moved to the OPEN left bank so it no longer stands in
       // front of the fish-drying rack (Hassan: the hide-dryers were hidden
       // behind the horse). Second horse stays at the far end.
-      drawHorse(W * 0.555, ground(W * 0.555) - 7, 1.7, 0.0, true);          // grazing, open left bank
+      // (left horse removed — it occupied the same spot as the mother+cradleboard
+      //  and the two drew merged into each other; the far-end horse remains)
       drawHorse(W * 0.95, ground(W * 0.95) - 9, 2.0, 2.3, false);          // standing watch, far end
 
       // ---- CANADA GEESE on the ground (LHS bank) — brown body, pale breast,
@@ -2465,13 +2466,13 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   the hind legs, ONE front paw raised in a striking arc, big shoulder
       //   hump, round head with two round ears, short tan snout, dark nose, eye.
       ctx.save(); ctx.globalAlpha = bearFade;
-      const S = 4.4;                                            // big, but fully on-screen
+      const S = 3.8;                                            // big, but ducks under the hero button row
       // Bear stands in the OPEN FOREGROUND LAKE WATER on the left (the area left
       // of the village bank is open water). FIXED y — NOT the clamped shoreline —
       // so it is always FULLY visible (Hassan: bear was cut in half), well clear
       // of the centred hero text + scroll prompt, hunting in real water.
-      const bx = W * 0.32;
-      const by = H * 0.87;                                    // dropped below the hero text/buttons (it was hiding behind them on wide screens)
+      const bx = W * 0.33;
+      const by = H * 0.88;                                    // dropped below the hero text/buttons (it was hiding behind them on wide screens)
       _tpReg(bx + 6 * S, by - 4 * S, 34, bearFade * bearFade, 'Mukwaa', 'Health', true);   // ring dies FIRST during the fade (no ring floating over a ghost)
       // strike rhythm: paw cocks up, then slams down
       // ---- HUNT CYCLE (full 7-second loop): 4 phases →
@@ -2853,12 +2854,14 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   tools brought home to the lodge, one figure pausing to watch the
       //   sunset over the water. Fades out as the bonfire circle forms. ----
       {
-        const evA = _clamp((nm - 0.28) / 0.12, 0, 1) * (1 - _clamp((nm - 0.50) / 0.10, 0, 1));
+        const evA = _clamp((nm - 0.35) / 0.08, 0, 1) * (1 - _clamp((nm - 0.52) / 0.08, 0, 1));
         if (evA > 0.04) {
           ctx.save(); ctx.globalAlpha = evA;
           fig(W * 0.671, ground(W * 0.671) + 5, 1.35, 'carry', 0.7, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });   // fish off the rack
           fig(W * 0.725, ground(W * 0.725) + 5, 1.3, 'carry', 2.9, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });     // tools home to the lodge
-          fig(W * 0.60, ground(W * 0.60) + 5, 1.4, 'wave', 1.6, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 });      // pausing to watch the sunset
+          fig(W * 0.70, ground(W * 0.70) + 5, 1.4, 'wave', 1.6, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 });      // pausing to watch the sunset (up-bank, so he doesn't silhouette into the lake)
+          fig(W * 0.775, ground(W * 0.775) + 5, 1.3, 'carry', 3.7, { shirt: '#7c2f6b', hairStyle: 'long', dir: -1 });     // hide bundles carried home from the frame
+          fig(W * 0.645, ground(W * 0.645) + 5, 0.9, 'walk', 1.2, { shirt: '#d68a1f', hairStyle: 'braid', dir: 1 });      // child being shepherded home
           ctx.restore();
         }
       }
@@ -2878,7 +2881,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.beginPath(); ctx.ellipse(fx, fy + 4, gpr, gpr * 0.32, 0, 0, 6.283); ctx.fill();
         // a male ELDER seated just behind the fire, gesturing as he tells a story
         // (short hair so he reads as an older man, not a girl)
-        fig(fx, fy - 2, 1.5, 'wave', 1.0, { shirt: '#5a3a2a', hairStyle: 'short', dir: 1 });
+        fig(fx, fy - 2, 1.5, 'sit', 1.0, { shirt: '#5a3a2a', hairStyle: 'short', dir: 1 });   // SEATED — standing, his head poked above the bank line into the lake
         // listeners seated AROUND the fire — a MIXED community: tall adults,
         // medium youths and small children (per-seat size + hair + shirt vary).
         // every seat sits on the UP-SLOPE side of the fire — the old spread
@@ -3152,7 +3155,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       // The crane WADES in the open shallows on the lake side, well away from
       // the village crowd — at W*0.86 it stood in the middle of the villagers
       // and read as "merging with a girl". Waders hunt in open water anyway.
-      const crX = W * 0.09;                                   // far-left shallows: nowhere near the bear's tap zone
+      const crX = W * 0.06;                                   // far-left shallows: nowhere near the bear's tap zone or the scroll cue
       const crBase = H - 30;
       const CS = 3.0;                                        // crane unit scale (big, clan-prominent)
       _tpReg(crX - 6, crBase - 17 * CS, 34, wildA, 'Ajijaak', 'Respect');   // on the crane's body
