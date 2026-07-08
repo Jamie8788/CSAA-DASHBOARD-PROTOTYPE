@@ -66,7 +66,7 @@ const _CLICKS = [];
 const _TP = [];
 let _TPOP = null;                       // active popup { ojib, en, x, y, t0 }
 function _tpReg(x, y, r, a, ojib, en, below) { if (a > 0.05) _TP.push({ x, y, r, a, ojib, en, below: !!below }); }
-const _TP_PAD = 22;   // generous tap padding — animals move, so forgive near-misses
+const _TP_PAD = 28;   // generous tap padding — animals move, so forgive near-misses
 function _tpHit(cx, cy) {
   // Pick the CLOSEST touch point within (radius + padding), not just the first,
   // so overlapping animals resolve to whichever you actually aimed at.
@@ -2223,6 +2223,9 @@ function drawScene(ctx, W, H, p, tt, now) {
         const dxe = W * 0.76, dye = ground(W * 0.76) - 4, dsc = 2.6;
         _tpReg(dxe, dye - 34, 34, dayA, 'Waawaashkesh', 'Love');   // on the deer's body
         ctx.save(); ctx.translate(dxe, dye); ctx.scale(dsc, dsc); ctx.globalAlpha = dayA;
+        // soft ground shadow so the deer doesn't float
+        ctx.fillStyle = 'rgba(10,8,5,0.18)';
+        ctx.beginPath(); ctx.ellipse(-4, 11.5, 12, 2.2, 0, 0, 6.283); ctx.fill();
         const coat = `rgb(${Math.round(_lerp(168,86,nm))},${Math.round(_lerp(120,60,nm))},${Math.round(_lerp(78,40,nm))})`;
         const alert = Math.max(0, Math.sin(tt * 0.4));                      // 0 grazing → 1 head up
         const headY = 4 - alert * 12, headX = -11 + alert * 3;             // head lifts & draws back when alert
@@ -2325,9 +2328,10 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.quadraticCurveTo(-9.5, -1.8, -11.5, -0.4);              // muzzle tip
         ctx.quadraticCurveTo(-9.6, 1.2, -6.5, 1.2);
         ctx.closePath(); ctx.fill();
-        // cream throat bib (marten signature)
-        ctx.fillStyle = 'rgba(236,214,150,0.95)';
-        ctx.beginPath(); ctx.ellipse(-6.5, 1.0, 2.4, 1.2, -0.15, 0, 6.283); ctx.fill();
+        // cream throat bib (marten signature) — on the CHEST, small; at the old
+        // size/position it looked like the marten had an egg in its mouth
+        ctx.fillStyle = 'rgba(236,214,150,0.8)';
+        ctx.beginPath(); ctx.ellipse(-4.2, 1.1, 1.5, 0.8, -0.1, 0, 6.283); ctx.fill();
         // rounded ears
         ctx.fillStyle = fur;
         ctx.beginPath(); ctx.arc(-6.6, -2.2, 1.0, 0, 6.283); ctx.fill();
@@ -2393,6 +2397,8 @@ function drawScene(ctx, W, H, p, tt, now) {
         const dxr = cxr + cdir * 30, hop = Math.abs(Math.sin(tt * 6)) * 3;
         ctx.translate(dxr, ground(dxr) + 6 - hop); ctx.scale(cdir * 1.7, 1.7);
         const dogC = `rgb(${Math.round(_lerp(122,62,nm))},${Math.round(_lerp(96,50,nm))},${Math.round(_lerp(70,36,nm))})`;
+        ctx.fillStyle = 'rgba(10,8,5,0.16)';                                           // soft ground shadow
+        ctx.beginPath(); ctx.ellipse(0, 0.8, 9, 1.8, 0, 0, 6.283); ctx.fill();
         ctx.fillStyle = dogC;
         ctx.beginPath(); ctx.ellipse(0, -5, 7, 3.2, 0, 0, 6.283); ctx.fill();          // body
         ctx.beginPath(); ctx.arc(7.5, -7.5, 2.6, 0, 6.283); ctx.fill();                // head
@@ -2842,6 +2848,21 @@ function drawScene(ctx, W, H, p, tt, now) {
         { shirt: '#1f4e8f', hairStyle: 'long' },
         { shirt: '#d68a1f', hairStyle: 'braid' },
       ];
+      // ---- EVENING PACK-UP (a REAL evening, distinct from night): as the sun
+      //   drops, the village packs the day away — fish carried off the rack,
+      //   tools brought home to the lodge, one figure pausing to watch the
+      //   sunset over the water. Fades out as the bonfire circle forms. ----
+      {
+        const evA = _clamp((nm - 0.28) / 0.12, 0, 1) * (1 - _clamp((nm - 0.50) / 0.10, 0, 1));
+        if (evA > 0.04) {
+          ctx.save(); ctx.globalAlpha = evA;
+          fig(W * 0.671, ground(W * 0.671) + 5, 1.35, 'carry', 0.7, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });   // fish off the rack
+          fig(W * 0.725, ground(W * 0.725) + 5, 1.3, 'carry', 2.9, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });     // tools home to the lodge
+          fig(W * 0.60, ground(W * 0.60) + 5, 1.4, 'wave', 1.6, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 });      // pausing to watch the sunset
+          ctx.restore();
+        }
+      }
+
       // NIGHT = ONE clean BONFIRE CIRCLE (Hassan: "elder in the middle and all
       // around him in a circle"). An elder sits at the fire telling stories; the
       // community sits AROUND in a ring facing the flames. Calm and spaced — the
@@ -2850,7 +2871,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         // warm firelight pool on the GRASS first, so the circle clearly reads as
         // sitting on land (Hassan: "wtf are they in water") — the glow anchors them
         const gpr = 95;
-        const gp = ctx.createRadialGradient(fx, fy + 2, 4, fx, fy + 2, gpr);
+        const gp = ctx.createRadialGradient(fx + 14, fy + 2, 4, fx + 14, fy + 2, gpr);
         gp.addColorStop(0, 'rgba(255,150,60,0.28)');
         gp.addColorStop(1, 'rgba(255,150,60,0)');
         ctx.fillStyle = gp;
@@ -2860,13 +2881,15 @@ function drawScene(ctx, W, H, p, tt, now) {
         fig(fx, fy - 2, 1.5, 'wave', 1.0, { shirt: '#5a3a2a', hairStyle: 'short', dir: 1 });
         // listeners seated AROUND the fire — a MIXED community: tall adults,
         // medium youths and small children (per-seat size + hair + shirt vary).
+        // every seat sits on the UP-SLOPE side of the fire — the old spread
+        // (-44..+44) put the left arc at the waterline ("people inside water")
         const seats = [
-          [-44, -3, 1.45, 'braid'],   // tall adult (left)
-          [-28, 2, 0.85, 'long'],     // small child
-          [-13, 5, 1.30, 'long'],     // youth (front-left)
-          [13, 5, 0.95, 'braid'],     // small child (front-right)
-          [28, 2, 1.45, 'short'],     // tall adult (man)
-          [44, -3, 1.15, 'long'],     // medium (right)
+          [-22, -1, 1.45, 'braid'],   // tall adult (left, closest to the fire)
+          [-9, 3, 0.85, 'long'],      // small child
+          [5, 5, 1.30, 'long'],       // youth (front)
+          [20, 4, 0.95, 'braid'],     // small child
+          [35, 1, 1.45, 'short'],     // tall adult (man)
+          [50, -2, 1.15, 'long'],     // medium (right, highest up the bank)
         ];
         seats.forEach(([dxx, dyy, sc, hair], i) => {
           const bob = Math.sin(tt * 1.3 + i) * 0.5;
@@ -3049,7 +3072,10 @@ function drawScene(ctx, W, H, p, tt, now) {
   // ---- LAKE WILDLIFE — the CLAN ANIMALS of the water: a LOON (maang, a leader
   //   clan) gliding calmly, and the CRANE (ajijaak, also a leader clan) on the
   //   shore. The old fake-looking ducks/beaver were removed. Gated to daylight. ----
-  const wildA = (1 - _smooth(0.62, 0.86, p));
+  // Day-gated HARD: the water animals used to linger half-faded deep into the
+  // night as unreadable dark blobs with rings ("little animal looks like shit").
+  // Now they exit cleanly as dusk begins.
+  const wildA = (1 - _smooth(0.50, 0.62, p));
   // `nm` (nightness) is village-block-scoped; define it locally here too so the
   // wildlife colours don't throw "nm is not defined" and crash the render.
   const nm = _smooth(0.52, 0.9, p);
@@ -3057,8 +3083,13 @@ function drawScene(ctx, W, H, p, tt, now) {
     // --- LOON (maang): black head, checkerboard back, white breast, red eye.
     //   Glides slowly across the lake with a soft wake; dips its bill now & then. ---
     {
-      const loX = ((tt * 0.010) % 1.25 - 0.12) * W;
-      const loY = hY + 30 + (H - hY) * 0.30 + Math.sin(tt * 0.8) * 1.2;
+      // Confined to the OPEN WATER band (it used to glide across the WHOLE
+      // screen, sailing over the village grass like a lost submarine) and set
+      // lower, clear of the chapter cards, with a soft fade at each end.
+      const loFrac = 0.05 + ((tt * 0.008) % 0.30);
+      const loX = loFrac * W;
+      const loY = hY + (H - hY) * 0.48 + Math.sin(tt * 0.8) * 1.2;
+      const loEdge = _clamp(Math.min((loFrac - 0.05) / 0.04, (0.35 - loFrac) / 0.04) * 2, 0, 1);
       const dip = Math.max(0, Math.sin(tt * 0.35)) * 3;                          // periodic bill-dip
       // real loon behaviour: every ~14s it DIVES — slips under leaving an
       // expanding ring, stays down a moment, then pops back up
@@ -3067,16 +3098,16 @@ function drawScene(ctx, W, H, p, tt, now) {
       if (dcyc > 0.70 && dcyc < 0.78) sink = (dcyc - 0.70) / 0.08;
       else if (dcyc >= 0.78 && dcyc < 0.92) sink = 1;
       else if (dcyc >= 0.92) sink = 1 - (dcyc - 0.92) / 0.08;
-      _tpReg(loX, loY - 12, 32, wildA * (1 - sink), 'Maang', 'Humility');   // on the loon's back
+      _tpReg(loX, loY - 12, 32, wildA * (1 - sink) * loEdge, 'Maang', 'Humility');   // on the loon's back
       ctx.save();
       if (sink > 0) {
-        ctx.globalAlpha = wildA;
+        ctx.globalAlpha = wildA * loEdge;
         ctx.strokeStyle = 'rgba(235,242,238,0.5)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.ellipse(loX, loY + 2.4, 8 + sink * 16, 2 + sink * 3.4, 0, 0, 6.283); ctx.stroke();
       }
       ctx.translate(loX, loY); ctx.scale(2.6, 2.6); ctx.translate(-loX, -loY);   // bigger, clan-prominent
       ctx.translate(0, sink * 9);                                                // slips down as it dives
-      ctx.globalAlpha = wildA * (1 - sink);
+      ctx.globalAlpha = wildA * (1 - sink) * loEdge;
       // SIT the loon IN the water (it was "floating in air"): a soft ripple ring
       // around the hull + a dark reflection beneath, and the wake starts AT the
       // waterline instead of hanging off mid-air.
@@ -3096,16 +3127,21 @@ function drawScene(ctx, W, H, p, tt, now) {
       // checkerboard hint on the back
       ctx.fillStyle = 'rgba(210,214,214,0.7)';
       for (let cb = 0; cb < 4; cb++) { ctx.beginPath(); ctx.arc(loX - 4 + cb * 3, loY - 2, 0.5, 0, 6.283); ctx.fill(); }
-      // upright neck + head (black), dipping bill
-      ctx.strokeStyle = 'rgba(20,18,22,1)'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(loX + 7, loY - 1); ctx.quadraticCurveTo(loX + 10, loY - 7, loX + 11, loY - 8 + dip); ctx.stroke();
+      // upright neck + head — SLIM neck (it was drawn thicker than the head,
+      // which is exactly what made it read as a tiny plesiosaur), round head,
+      // the loon's WHITE NECKLACE band, dagger bill, red eye.
+      ctx.strokeStyle = 'rgba(20,18,22,1)'; ctx.lineWidth = 1.7; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(loX + 7, loY - 1); ctx.quadraticCurveTo(loX + 10, loY - 6.5, loX + 10.6, loY - 8.5 + dip); ctx.stroke();
+      // white necklace band across the neck
+      ctx.strokeStyle = 'rgba(228,232,230,0.9)'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(loX + 8.0, loY - 4.2); ctx.lineTo(loX + 9.8, loY - 3.4); ctx.stroke();
       ctx.fillStyle = 'rgba(20,18,22,1)';
-      ctx.beginPath(); ctx.arc(loX + 11, loY - 8 + dip, 2.2, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(loX + 11, loY - 9 + dip, 2.6, 2.1, 0.15, 0, 6.283); ctx.fill();
       // dagger bill + red eye
-      ctx.strokeStyle = 'rgba(20,18,22,1)'; ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.moveTo(loX + 12.5, loY - 8.5 + dip); ctx.lineTo(loX + 16, loY - 8 + dip); ctx.stroke();
+      ctx.strokeStyle = 'rgba(20,18,22,1)'; ctx.lineWidth = 1.0;
+      ctx.beginPath(); ctx.moveTo(loX + 13.2, loY - 9 + dip); ctx.lineTo(loX + 17.4, loY - 8.2 + dip); ctx.stroke();
       ctx.fillStyle = 'rgba(190,40,30,1)';
-      ctx.beginPath(); ctx.arc(loX + 11, loY - 8.5 + dip, 0.5, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(loX + 11.6, loY - 9.5 + dip, 0.6, 0, 6.283); ctx.fill();
       ctx.restore();
     }
     // --- SANDHILL CRANE (ajijaak) — FULLY REDRAWN so it's unmistakably a crane
@@ -3194,7 +3230,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     // --- PAINTED TURTLE basking on a half-sunk log (mikinaak — culturally
     //   important; Turtle Island). Occasionally stretches its neck. ---
     {
-      const tuX = W * 0.30, tuY = hY + 18 + (H - hY) * 0.34;
+      const tuX = W * 0.17, tuY = hY + 18 + (H - hY) * 0.58;   // low-left open water: below the chapter cards (they were blocking its taps on laptops)
       const TS = 3.4;                                                     // turtle unit scale (big, clan-prominent)
       const neck = Math.max(0, Math.sin(tt * 0.4)) * 5;                   // head stretches out periodically
       _tpReg(tuX, tuY - 4 * TS, 30, wildA, 'Mshiikenh', 'Wisdom');        // on the shell dome
