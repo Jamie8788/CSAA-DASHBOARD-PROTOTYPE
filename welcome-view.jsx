@@ -1360,7 +1360,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     //  The bank now has only the cattails + wild rice + low ground tone.)
     // ---- BULL RUSH (cattail) stand on the bank: tall stems with sausage-shaped
     //   brown seed-heads. A signature Anishinaabe-territory wetland plant. ----
-    const cattailClumps = [[W * 0.68, 5], [W * 0.86, 6]];
+    const cattailClumps = [[W * 0.44, 5], [W * 0.86, 6]];   // moved off the fire-circle spot to the wet shoreline where cattails actually grow
     cattailClumps.forEach(([cxC, n], ci) => {
       for (let k = 0; k < n; k++) {
         const sx0 = cxC + (k - n / 2) * 6 + Math.sin(ci + k) * 2;
@@ -1551,7 +1551,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     // (No dwellings/houses in this scene — Hassan: houses are not allowed here.
     //  The bank shows only outdoor work + activity, water, animals and plants.)
     // village fire
-    const fx = W * 0.625, fy = ground(fx) + 6, fa = 0.45 + 0.55 * nm;
+    const fx = W * 0.66, fy = ground(fx) + 6, fa = 0.45 + 0.55 * nm;   // moved up-bank: the land is ~50% taller here, so the fire circle sits fully ON land
     const gl = ctx.createRadialGradient(fx, fy - 6, 0, fx, fy - 6, 64 * (0.6 + nm));
     gl.addColorStop(0, `rgba(255,162,82,${0.34 * fa})`); gl.addColorStop(1, 'rgba(255,150,60,0)');
     ctx.fillStyle = gl; ctx.fillRect(fx - 80, fy - 80, 160, 110);
@@ -2470,8 +2470,8 @@ function drawScene(ctx, W, H, p, tt, now) {
       // of the village bank is open water). FIXED y — NOT the clamped shoreline —
       // so it is always FULLY visible (Hassan: bear was cut in half), well clear
       // of the centred hero text + scroll prompt, hunting in real water.
-      const bx = W * 0.30;
-      const by = H * 0.80;
+      const bx = W * 0.32;
+      const by = H * 0.87;                                    // dropped below the hero text/buttons (it was hiding behind them on wide screens)
       _tpReg(bx + 6 * S, by - 4 * S, 34, bearFade * bearFade, 'Mukwaa', 'Health', true);   // ring dies FIRST during the fade (no ring floating over a ghost)
       // strike rhythm: paw cocks up, then slams down
       // ---- HUNT CYCLE (full 7-second loop): 4 phases →
@@ -3152,7 +3152,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       // The crane WADES in the open shallows on the lake side, well away from
       // the village crowd — at W*0.86 it stood in the middle of the villagers
       // and read as "merging with a girl". Waders hunt in open water anyway.
-      const crX = W * 0.38;
+      const crX = W * 0.09;                                   // far-left shallows: nowhere near the bear's tap zone
       const crBase = H - 30;
       const CS = 3.0;                                        // crane unit scale (big, clan-prominent)
       _tpReg(crX - 6, crBase - 17 * CS, 34, wildA, 'Ajijaak', 'Respect');   // on the crane's body
