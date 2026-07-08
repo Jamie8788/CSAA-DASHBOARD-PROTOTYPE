@@ -7084,7 +7084,7 @@ button.gap-tr:hover { background: var(--paper-2, #f3ecdd); }
 .wv-scrollcue {
   /* parked over the OPEN WATER at 22% — dead centre put it right on top of the
      villager bank ("names merged on scroll-down button") */
-  position: absolute; bottom: 26px; left: 20%; transform: translateX(-50%); z-index: 3;
+  position: absolute; bottom: 26px; left: 17%; transform: translateX(-50%); z-index: 3;
   display: flex; flex-direction: column; align-items: center; gap: 6px; color: rgba(251,246,236,.82);
   font-family: var(--mono, monospace); font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
   background: none; border: 0; cursor: pointer; padding: 10px 16px; border-radius: 999px;
