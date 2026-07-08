@@ -64,6 +64,7 @@ const _CLICKS = [];
 // (e.g. WAAWAASHKESH · Love). Rebuilt per-frame so markers track the animals
 // and fade with the same day/night alpha as the animal itself.
 const _TP = [];
+if (typeof window !== 'undefined') window._TP = _TP;   // exposed for automated click-testing
 let _TPOP = null;                       // active popup { ojib, en, x, y, t0 }
 function _tpReg(x, y, r, a, ojib, en, below) { if (a > 0.05) _TP.push({ x, y, r, a, ojib, en, below: !!below }); }
 const _TP_PAD = 28;   // generous tap padding — animals move, so forgive near-misses
@@ -77,7 +78,7 @@ function _tpHit(cx, cy) {
     const d2 = dx * dx + dy * dy;
     if (d2 <= R * R && d2 < bestD) { bestD = d2; best = t; }
   }
-  if (best) { _TPOP = { ojib: best.ojib, en: best.en, x: best.x, y: best.y, below: best.below, t0: performance.now() }; return true; }
+  if (best) { _TPOP = { ojib: best.ojib, en: best.en, x: best.x, y: best.y, below: best.below, t0: performance.now() }; if (typeof window !== 'undefined') window._lastTap = _TPOP; return true; }
   return false;
 }
 // slow drifting clouds, tinted by the sky for atmosphere
@@ -683,15 +684,18 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.translate(ex, ey);
     ctx.scale(-1.7, 1.7);  // mirrored: head leads the L→R flight
     const dark = 'rgba(52,36,22,1)';
-    // FAR WING (behind the body, half a beat out of phase visually smaller)
+    // FAR WING (behind the body, visually smaller). The trailing edge FOLLOWS
+    // the beat at a fixed chord so the wing stays a broad blade all the way
+    // down — it used to collapse into a sliver at the bottom of the stroke.
     {
       const lift = flapT * 14;
       ctx.fillStyle = 'rgba(38,26,16,1)';
       ctx.beginPath();
       ctx.moveTo(2, -3);
-      ctx.quadraticCurveTo(10, -8 - lift * 0.7, 22, -6 - lift);          // leading edge up/back
-      ctx.quadraticCurveTo(24, -2 - lift, 18, 1 - lift * 0.4);           // wingtip
-      ctx.quadraticCurveTo(9, 2, 2, 0);                                   // trailing edge back to body
+      ctx.quadraticCurveTo(10, -8 - lift * 0.7, 20, -6 - lift);          // leading edge to the wrist
+      ctx.quadraticCurveTo(24, -5 - lift, 24, -2.5 - lift);              // BLUNT rounded tip
+      ctx.quadraticCurveTo(20, -1 - lift * 0.75, 12, -1 - lift * 0.45);  // trailing edge follows the beat
+      ctx.quadraticCurveTo(6, 0.5, 2, 0);
       ctx.closePath(); ctx.fill();
     }
     // BODY — sleek horizontal fuselage, dark brown
@@ -717,30 +721,34 @@ function drawScene(ctx, W, H, p, tt, now) {
     // sweeps through a full beat: raised high over the back → level → swept
     // down below the belly. Broad inner wing + 4 long fingered primaries.
     {
-      const lift = flapT * 22;                                              // -22 (down) .. +22 (up)
+      // REBUILT so the wing NEVER collapses into a needle at the bottom of the
+      // stroke (Hassan: "when its wings come fully down it looks like a needle"):
+      // the trailing edge now follows the beat at a constant chord, the tip is
+      // BLUNT and rounded, and the primaries are short broad feather lobes.
+      const lift = flapT * 20;                                              // -20 (down) .. +20 (up)
       const wx = -2, wy = -3;
+      const tipX = wx + 18, tipY = wy - lift;                               // wrist position through the beat
       ctx.fillStyle = dark;
       ctx.beginPath();
-      ctx.moveTo(wx, wy);
-      ctx.quadraticCurveTo(wx - 6, wy - 6 - lift * 0.55, wx - 4, wy - lift);        // inner wing rises
-      ctx.quadraticCurveTo(wx - 2 , wy - lift - 3, wx + 8, wy - lift - 2);           // mid-wing
-      ctx.quadraticCurveTo(wx + 18, wy - lift, wx + 20, wy - lift + 2);              // to the wrist
-      ctx.quadraticCurveTo(wx + 12, wy + 2, wx + 4, wy + 3);                          // trailing edge home
+      ctx.moveTo(wx - 3, wy - 1);                                           // shoulder
+      ctx.quadraticCurveTo(wx + 2, wy - 5 - lift * 0.6, tipX - 2, tipY - 3);  // leading edge out to the wrist
+      ctx.quadraticCurveTo(tipX + 4, tipY - 3, tipX + 5, tipY - 0.5);         // BLUNT rounded tip (no point)
+      ctx.quadraticCurveTo(tipX + 2, tipY + 2.5, tipX - 4, tipY + 3);         // squared-off feather end
+      ctx.quadraticCurveTo(wx + 8, wy + 3 - lift * 0.35, wx + 2, wy + 3.5);   // trailing edge follows the beat home
       ctx.closePath(); ctx.fill();
-      // fingered primaries splaying from the wrist
-      ctx.strokeStyle = dark; ctx.lineWidth = 2.0; ctx.lineCap = 'round';
+      // splayed primaries: SHORT, BROAD feather lobes off the tip (not needles)
+      ctx.strokeStyle = dark; ctx.lineWidth = 3.0; ctx.lineCap = 'round';
       for (let ftr = 0; ftr < 4; ftr++) {
-        const baseX2 = wx + 20, baseY2 = wy - lift + 2;
         ctx.beginPath();
-        ctx.moveTo(baseX2, baseY2);
-        ctx.lineTo(baseX2 + 7 + ftr * 1.5, baseY2 + 2 + ftr * 2.5 - lift * 0.25);
+        ctx.moveTo(tipX - 1 + ftr * 1.4, tipY - 1 + ftr * 1.3);
+        ctx.lineTo(tipX + 4 + ftr * 1.6, tipY + ftr * 1.9);
         ctx.stroke();
       }
       // pale feather-edge along the inner wing (subtle woodland-art accent)
       ctx.strokeStyle = 'rgba(210,218,228,0.5)'; ctx.lineWidth = 1.0;
       ctx.beginPath();
       ctx.moveTo(wx - 2, wy - lift * 0.8);
-      ctx.quadraticCurveTo(wx + 8, wy - lift - 1, wx + 18, wy - lift + 1);
+      ctx.quadraticCurveTo(wx + 6, wy - lift - 1, tipX - 3, tipY);
       ctx.stroke();
     }
     // WHITE HEAD — forward of the chest, level gaze
@@ -1291,7 +1299,7 @@ function drawScene(ctx, W, H, p, tt, now) {
   {
     const nm = _smooth(0.52, 0.9, p);                     // nightness 0..1
     const lx0 = W * 0.40;                                  // shore starts even earlier — bigger village land (Hassan ×2)
-    const RISE = H * 0.30;                                  // taller, deeper bank — far more room for activity
+    const RISE = H * 0.36;                                  // TALLER bank (Hassan x3): standing figures now fit inside the land everywhere
     const shoreY = (x) => { const t = _clamp((x - lx0) / (W - lx0), 0, 1); return H - 6 - RISE * (t * 0.6 + t * t * 0.4); };
     const ground = (x) => shoreY(x) + 9;
     // ---- REALISTIC SMOKE: a column of soft puffs that rise, expand, drift on a
@@ -2345,9 +2353,9 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.restore();
       }
 
-      // ---- TWO MEN CARRYING A CANOE down the newly-open lower bank toward the
-      //   water (day) — classic launch scene, fills the widened shore. ----
-      {
+      // (canoe-carriers vignette removed — at the shore start the bank has no
+      //  height, so they always read as walking IN the water)
+      if (false) {
         ctx.save(); ctx.globalAlpha = dayA;
         const ccx = W * 0.43, ccy = ground(W * 0.43) + 6;
         const bob2 = Math.sin(tt * 2.2) * 0.8;
@@ -2391,7 +2399,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       {
         ctx.save(); ctx.globalAlpha = dayA;
         const u = tt * 0.5;
-        const cxr = W * 0.60 + Math.sin(u) * W * 0.024;
+        const cxr = W * 0.59 + Math.sin(u) * W * 0.014;
         const cdir = Math.cos(u) >= 0 ? 1 : -1;
         fig(cxr, ground(cxr) + 6, 0.9, 'walk', 0.3, { shirt: '#d68a1f', hairStyle: 'braid', dir: cdir });
         // the dog bounds a little ahead of the child
@@ -2471,7 +2479,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       // of the village bank is open water). FIXED y — NOT the clamped shoreline —
       // so it is always FULLY visible (Hassan: bear was cut in half), well clear
       // of the centred hero text + scroll prompt, hunting in real water.
-      const bx = W * 0.33;
+      const bx = W * 0.345;
       const by = H * 0.88;                                    // dropped below the hero text/buttons (it was hiding behind them on wide screens)
       _tpReg(bx + 6 * S, by - 4 * S, 34, bearFade * bearFade, 'Mukwaa', 'Health', true);   // ring dies FIRST during the fade (no ring floating over a ghost)
       // strike rhythm: paw cocks up, then slams down
@@ -2854,13 +2862,13 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   tools brought home to the lodge, one figure pausing to watch the
       //   sunset over the water. Fades out as the bonfire circle forms. ----
       {
-        const evA = _clamp((nm - 0.35) / 0.08, 0, 1) * (1 - _clamp((nm - 0.52) / 0.08, 0, 1));
+        const evA = _clamp((nm - 0.35) / 0.08, 0, 1) * (1 - _clamp((nm - 0.44) / 0.08, 0, 1));
         if (evA > 0.04) {
           ctx.save(); ctx.globalAlpha = evA;
           fig(W * 0.671, ground(W * 0.671) + 5, 1.35, 'carry', 0.7, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });   // fish off the rack
           fig(W * 0.725, ground(W * 0.725) + 5, 1.3, 'carry', 2.9, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });     // tools home to the lodge
           fig(W * 0.70, ground(W * 0.70) + 5, 1.4, 'wave', 1.6, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 });      // pausing to watch the sunset (up-bank, so he doesn't silhouette into the lake)
-          fig(W * 0.775, ground(W * 0.775) + 5, 1.3, 'carry', 3.7, { shirt: '#7c2f6b', hairStyle: 'long', dir: -1 });     // hide bundles carried home from the frame
+          fig(W * 0.84, ground(W * 0.84) + 5, 1.3, 'carry', 3.7, { shirt: '#7c2f6b', hairStyle: 'long', dir: -1 });     // hide bundles carried home (clear stretch, off the deer)
           fig(W * 0.645, ground(W * 0.645) + 5, 0.9, 'walk', 1.2, { shirt: '#d68a1f', hairStyle: 'braid', dir: 1 });      // child being shepherded home
           ctx.restore();
         }
@@ -2919,6 +2927,77 @@ function drawScene(ctx, W, H, p, tt, now) {
           ctx.fillStyle = '#b7855a';
           ctx.beginPath(); ctx.arc(bx2 - 6, slY - 1, 1.8, 0, 6.283); ctx.fill();
         }
+      }
+
+      // ---- NIGHT LIFE beyond the fire (Hassan: "at night nothing is happening —
+      //   add stuff Anishinaabe people do at night"): ----
+      // (1) FLAMBEAU TORCH-FISHING — a canoe out on the dark water, a torch
+      //     burning at the bow drawing fish, the fisher poised with a spear.
+      //     A real, documented Anishinaabe night practice.
+      {
+        const tfx = W * 0.15 + Math.sin(tt * 0.15) * 12;                // drifts gently
+        const tfy = hY + (H - hY) * 0.66;
+        const bobT = Math.sin(tt * 1.1) * 1.2;
+        ctx.save(); ctx.translate(tfx, tfy + bobT);
+        // torchlight pool on the water (warm, flickering)
+        const fl = 0.85 + Math.sin(tt * 9) * 0.1 + Math.sin(tt * 23) * 0.05;
+        const tg = ctx.createRadialGradient(26, -2, 2, 26, -2, 52 * fl);
+        tg.addColorStop(0, 'rgba(255,170,70,0.35)');
+        tg.addColorStop(1, 'rgba(255,170,70,0)');
+        ctx.fillStyle = tg;
+        ctx.beginPath(); ctx.ellipse(26, 4, 52 * fl, 14 * fl, 0, 0, 6.283); ctx.fill();
+        // canoe hull
+        ctx.fillStyle = 'rgb(74,42,22)';
+        ctx.beginPath();
+        ctx.moveTo(-30, 0); ctx.quadraticCurveTo(0, 7, 30, 0);
+        ctx.quadraticCurveTo(33, -3, 30, -4); ctx.quadraticCurveTo(0, 2, -30, -4);
+        ctx.quadraticCurveTo(-33, -3, -30, 0); ctx.closePath(); ctx.fill();
+        // torch on the bow: pole + flame
+        ctx.strokeStyle = 'rgb(52,30,14)'; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.moveTo(24, -3); ctx.lineTo(27, -18); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,190,80,0.95)';
+        ctx.beginPath(); ctx.ellipse(27.4, -21, 2.6, 4.2 * fl, 0.1, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(255,240,170,0.9)';
+        ctx.beginPath(); ctx.ellipse(27.4, -20, 1.2, 2.2 * fl, 0.1, 0, 6.283); ctx.fill();
+        // the fisher: seated silhouette, spear poised over the lit water
+        ctx.fillStyle = 'rgb(30,20,12)';
+        ctx.beginPath(); ctx.ellipse(6, -7, 5, 6.5, 0, 0, 6.283); ctx.fill();     // torso
+        ctx.beginPath(); ctx.arc(6, -15.5, 3.4, 0, 6.283); ctx.fill();            // head
+        const poise = Math.sin(tt * 0.9) * 1.5;
+        ctx.strokeStyle = 'rgb(30,20,12)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(9, -10); ctx.lineTo(20, -14 - poise); ctx.stroke();   // arm
+        ctx.strokeStyle = 'rgb(64,44,26)'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(14, -22 - poise); ctx.lineTo(26, 2 - poise * 0.4); ctx.stroke();  // fish spear
+        // a fish flicker in the torch pool now and then
+        if ((tt % 6) < 1.2) {
+          const fu = (tt % 6) / 1.2;
+          ctx.globalAlpha = Math.sin(fu * Math.PI) * 0.8;
+          ctx.fillStyle = 'rgba(200,210,205,0.9)';
+          ctx.beginPath(); ctx.ellipse(30 + fu * 10, 3, 3.4, 1.1, 0.3, 0, 6.283); ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+        ctx.restore();
+      }
+      // (2) STARGAZERS — two figures lying back on the high bank, one arm
+      //     raised, tracing the star stories across the night sky.
+      {
+        const sgx = W * 0.845, sgy = ground(W * 0.845) + 4;
+        ctx.save();
+        ctx.fillStyle = 'rgba(120,84,52,0.9)';                                    // the blanket
+        ctx.beginPath(); ctx.ellipse(sgx, sgy + 2, 20, 4.5, -0.06, 0, 6.283); ctx.fill();
+        for (let g2 = 0; g2 < 2; g2++) {
+          const gx2 = sgx - 8 + g2 * 16;
+          ctx.fillStyle = ['#3a4658', '#7c2f6b'][g2];
+          ctx.beginPath(); ctx.ellipse(gx2, sgy - 1, 7.5, 2.8, -0.06, 0, 6.283); ctx.fill();   // lying body
+          ctx.fillStyle = '#b7855a';
+          ctx.beginPath(); ctx.arc(gx2 - 8, sgy - 2.5, 2.2, 0, 6.283); ctx.fill();             // head
+        }
+        // one arm points up, slowly sweeping across the constellations
+        const pt = Math.sin(tt * 0.35) * 0.5;
+        ctx.strokeStyle = '#b7855a'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(sgx - 2, sgy - 3);
+        ctx.lineTo(sgx - 2 + Math.sin(pt) * 10, sgy - 14 - Math.cos(pt) * 3); ctx.stroke();
+        ctx.restore();
       }
       ctx.restore();
       // ---- WOLVES on the ridge — REMOVED (Hassan: read as "black dinosaurs").
