@@ -3408,6 +3408,7 @@ function drawScene(ctx, W, H, p, tt, now) {
   // ---- CLAN TOUCH POINTS: tiny pulsing gold rings on each dodem (subtle —
   //   they invite a tap without cluttering the scene) + the tap popup card ----
   for (const t of _TP) {
+   try {                                   // one bad marker must NEVER abort the loop / the popup below
     const ph = tt * 2.2 + t.x * 0.02;
     const pulse = 1 + Math.sin(ph) * 0.22;
     ctx.save(); ctx.globalAlpha = t.a;
@@ -3418,9 +3419,15 @@ function drawScene(ctx, W, H, p, tt, now) {
     gl.addColorStop(1, 'rgba(255,238,190,0)');
     ctx.fillStyle = gl;
     ctx.beginPath(); ctx.arc(t.x, t.y, 22 * pulse, 0, 6.283); ctx.fill();
-    // an expanding "ping" ring that radiates outward, clearly saying "tap me"
-    const pingT = (ph * 0.5) % 3.14159;
-    const pingR = 8 + (pingT / 3.14159) * 18;
+    // an expanding "ping" ring that radiates outward, clearly saying "tap me".
+    // CRITICAL: ph depends on t.x, and the eagle's touch point can have a
+    // NEGATIVE x (drawn mirrored / off-screen). JS `%` returns a negative
+    // remainder for negative input, which made pingR negative → ctx.arc() threw
+    // EVERY FRAME, right here inside the touch-point loop, BEFORE the popup
+    // block below ever ran — so tapping any animal drew no card ("nothing
+    // happens when I click"). Force pingT into [0, π) and clamp the radius.
+    const pingT = (((ph * 0.5) % 3.14159) + 3.14159) % 3.14159;
+    const pingR = Math.max(0.5, 8 + (pingT / 3.14159) * 18);
     ctx.globalAlpha = t.a * Math.max(0, 1 - pingT / 3.14159) * 0.7;
     ctx.strokeStyle = 'rgba(255,240,196,0.9)'; ctx.lineWidth = 1.4;
     ctx.beginPath(); ctx.arc(t.x, t.y, pingR, 0, 6.283); ctx.stroke();
@@ -3432,6 +3439,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.fillStyle = 'rgba(255,240,196,1)';
     ctx.beginPath(); ctx.arc(t.x, t.y, 3.2, 0, 6.283); ctx.fill();
     ctx.restore();
+   } catch (e) { try { ctx.restore(); } catch (_) {} }
   }
   if (_TPOP) {
     const age = (now - _TPOP.t0) / 1000;
