@@ -1298,7 +1298,7 @@ function drawScene(ctx, W, H, p, tt, now) {
   // ============================================================================
   {
     const nm = _smooth(0.52, 0.9, p);                     // nightness 0..1
-    const lx0 = W * 0.40;                                  // shore starts even earlier — bigger village land (Hassan ×2)
+    const lx0 = W * 0.37;                                  // shore starts even earlier — bigger village land (Hassan ×3, all directions)
     const RISE = H * 0.42;                                  // TALLER bank (Hassan x4): even standing adults at the fire stay fully inside the land
     const shoreY = (x) => { const t = _clamp((x - lx0) / (W - lx0), 0, 1); return H - 6 - RISE * (t * 0.6 + t * t * 0.4); };
     const ground = (x) => shoreY(x) + 9;
@@ -1370,33 +1370,39 @@ function drawScene(ctx, W, H, p, tt, now) {
     //   behind the whole gathering — heads are now against grass, never lake. ----
     {
       const kL = W * 0.595, kR = W * 0.755, kx = W * 0.672, kh = 74;
-      const kg2 = ctx.createLinearGradient(0, shoreY(kx) - kh, 0, shoreY(kx) + 40);
-      kg2.addColorStop(0, `rgb(${et.join(',')})`);
-      kg2.addColorStop(1, `rgb(${eb.join(',')})`);
-      ctx.fillStyle = kg2;
+      // CRITICAL: paint with the SAME gradient object as the bank (lgr) — a
+      // separate gradient had a different vertical range, so everything below
+      // the crest was a slightly different shade = a visible "patch" with two
+      // hard vertical seams running down the hill.
+      ctx.fillStyle = lgr;
       ctx.beginPath();
       ctx.moveTo(kL, shoreY(kL) + 1);
       ctx.quadraticCurveTo(kx - (kx - kL) * 0.45, shoreY(kx) - kh, kx, shoreY(kx) - kh);      // up the left shoulder to the crest
       ctx.quadraticCurveTo(kx + (kR - kx) * 0.5, shoreY(kx) - kh * 0.92, kR, shoreY(kR) + 1); // down the right shoulder into the rising bank
       ctx.lineTo(kR, H); ctx.lineTo(kL, H);
       ctx.closePath(); ctx.fill();
-      // soft lit crest line + a few grass tufts so the knoll reads as a real rise
-      ctx.strokeStyle = `rgba(${Math.round(_lerp(120,58,nm))},${Math.round(_lerp(130,64,nm))},${Math.round(_lerp(84,40,nm))},0.5)`;
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.moveTo(kL + 4, shoreY(kL) - 1);
-      ctx.quadraticCurveTo(kx - (kx - kL) * 0.45, shoreY(kx) - kh - 1, kx, shoreY(kx) - kh - 1);
-      ctx.quadraticCurveTo(kx + (kR - kx) * 0.5, shoreY(kx) - kh * 0.92 - 1, kR - 4, shoreY(kR) - 1);
-      ctx.stroke();
+      // The SANDY SHORE STRIP and horizon tint must CONTINUE over the knoll —
+      // the main strip runs along the old line and the knoll fill covers it,
+      // which looked like a patch boundary. Re-stroke both along the crest.
+      const knollPath = (dy) => {
+        ctx.beginPath();
+        ctx.moveTo(kL + 2, shoreY(kL) + dy);
+        ctx.quadraticCurveTo(kx - (kx - kL) * 0.45, shoreY(kx) - kh + dy, kx, shoreY(kx) - kh + dy);
+        ctx.quadraticCurveTo(kx + (kR - kx) * 0.5, shoreY(kx) - kh * 0.92 + dy, kR - 2, shoreY(kR) + dy);
+      };
+      ctx.save(); ctx.globalAlpha = 0.5; ctx.lineCap = 'round';
+      ctx.strokeStyle = `rgb(${Math.round(_lerp(120, 58, nm))},${Math.round(_lerp(112, 54, nm))},${Math.round(_lerp(84, 40, nm))})`;
+      ctx.lineWidth = 4; knollPath(3); ctx.stroke();
+      ctx.restore();
+      const hzc2 = _rampA(SKY_HORIZ, p);
+      ctx.strokeStyle = `rgba(${hzc2[0]},${hzc2[1]},${hzc2[2]},0.28)`; ctx.lineWidth = 1.6;
+      knollPath(0); ctx.stroke();
+      // a few swaying grass tufts on the crest itself
       ctx.strokeStyle = `rgba(${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(120,62,nm))},${Math.round(_lerp(46,26,nm))},0.9)`;
       ctx.lineWidth = 1.1; ctx.lineCap = 'round';
-      for (let g3 = 0; g3 < 9; g3++) {
-        const gx3 = kL + 14 + g3 * ((kR - kL - 28) / 8);
-        const gyTop = (() => { // approximate the knoll surface y at gx3
-          const u2 = (gx3 - kL) / (kR - kL);
-          const lift2 = Math.sin(u2 * Math.PI) * kh * (u2 < 0.5 ? 1 : 0.95);
-          return Math.min(shoreY(gx3), shoreY(kx)) - lift2 * 0.9 + 6;
-        })();
+      for (let g3 = 0; g3 < 5; g3++) {
+        const gx3 = kx - 26 + g3 * 13;
+        const gyTop = shoreY(kx) - kh + 3 + Math.abs(g3 - 2) * 2;
         const sw3 = Math.sin(tt * 1.3 + g3) * 1.6;
         ctx.beginPath(); ctx.moveTo(gx3, gyTop + 6);
         ctx.quadraticCurveTo(gx3 + sw3 * 0.5, gyTop + 1, gx3 + sw3, gyTop - 4);
@@ -1599,7 +1605,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     // (No dwellings/houses in this scene — Hassan: houses are not allowed here.
     //  The bank shows only outdoor work + activity, water, animals and plants.)
     // village fire
-    const fx = W * 0.66, fy = ground(fx) + 6, fa = 0.45 + 0.55 * nm;   // moved up-bank: the land is ~50% taller here, so the fire circle sits fully ON land
+    const fx = W * 0.66, fy = ground(fx) + 16, fa = 0.45 + 0.55 * nm;   // pulled INWARD: the circle sits well inside the land, in front of the gathering knoll
     // ---- THE BONFIRE, rebuilt properly ----
     // flicker: two incommensurate sines + a slow breath = organic firelight
     const flk = 0.82 + 0.10 * Math.sin(tt * 8.7) + 0.06 * Math.sin(tt * 23.3) + 0.06 * Math.sin(tt * 1.7);
@@ -3010,7 +3016,7 @@ function drawScene(ctx, W, H, p, tt, now) {
           const hairCol = i === 0 ? '#8d8478' : undefined;   // the left tall adult is a grey-haired elder
           // PER-SEAT ground: the bank slopes DOWN to the left, so seats left of
           // the fire were rendering below the grass line ("sitting in water").
-          const seatY = ground(fx + dxx) + 2 + dyy * 0.4 + bob;
+          const seatY = ground(fx + dxx) + 10 + dyy * 0.4 + bob;   // seated deeper inside the land, in front of the knoll
           fig(fx + dxx, seatY, sc, 'sit', i,
               { dir: dxx < 0 ? 1 : -1, shirt: styles[i % styles.length].shirt, hairStyle: hair, hair: hairCol });
         });
