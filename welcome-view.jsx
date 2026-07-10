@@ -103,15 +103,15 @@ const _FLIES = Array.from({ length: 9 }, () => ({
   x: Math.random(), y: 0.66 + Math.random() * 0.3, r: 0.8 + Math.random() * 1.0,
   sp: 0.2 + Math.random() * 0.5, ph: Math.random() * 6.28, blink: 0.3 + Math.random() * 0.6,
 }));
-// leaping-fish events (a fish arcs out of the water now and then)
+// leaping-fish events (a fish arcs out of the water now and then).
+// ALL x < 0.36 — the village land starts at W*0.40, and the old 0.44-0.80
+// entries leapt out of the GRASS ("fish floating in mid-air over the village").
 const _FISH = [
   { x: 0.34, yb: 0.34, period: 8,  phase: 2,   dir: 1 },
-  { x: 0.70, yb: 0.50, period: 10, phase: 9,   dir: -1 },
+  { x: 0.10, yb: 0.50, period: 10, phase: 9,   dir: -1 },
   { x: 0.22, yb: 0.62, period: 9,  phase: 4,   dir: 1 },
-  { x: 0.52, yb: 0.42, period: 7,  phase: 5.5, dir: 1 },
-  { x: 0.80, yb: 0.36, period: 11, phase: 1.2, dir: -1 },
-  { x: 0.44, yb: 0.58, period: 8.5,phase: 7.1, dir: -1 },
-  { x: 0.62, yb: 0.66, period: 9.5,phase: 3.3, dir: 1 },
+  { x: 0.28, yb: 0.42, period: 7,  phase: 5.5, dir: 1 },
+  { x: 0.16, yb: 0.36, period: 11, phase: 1.2, dir: -1 },
 ];
 
 // ============================================================================
@@ -1299,7 +1299,7 @@ function drawScene(ctx, W, H, p, tt, now) {
   {
     const nm = _smooth(0.52, 0.9, p);                     // nightness 0..1
     const lx0 = W * 0.40;                                  // shore starts even earlier — bigger village land (Hassan ×2)
-    const RISE = H * 0.36;                                  // TALLER bank (Hassan x3): standing figures now fit inside the land everywhere
+    const RISE = H * 0.42;                                  // TALLER bank (Hassan x4): even standing adults at the fire stay fully inside the land
     const shoreY = (x) => { const t = _clamp((x - lx0) / (W - lx0), 0, 1); return H - 6 - RISE * (t * 0.6 + t * t * 0.4); };
     const ground = (x) => shoreY(x) + 9;
     // ---- REALISTIC SMOKE: a column of soft puffs that rise, expand, drift on a
@@ -1364,6 +1364,46 @@ function drawScene(ctx, W, H, p, tt, now) {
     ctx.strokeStyle = `rgba(${hzc[0]},${hzc[1]},${hzc[2]},0.28)`; ctx.lineWidth = 1.6; ctx.beginPath();
     for (let x = lx0; x <= W; x += 8) { const y = shoreY(x) + Math.sin(x * 0.05 + tt * 1.5) * 1.2; x === lx0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
     ctx.stroke();
+    // ---- GATHERING KNOLL: a grassy rise BEHIND the fire circle. Figures on a
+    //   2D shoreline always have the lake directly above the bank line, so any
+    //   standing person's head reads as "in the water". This knoll puts LAND
+    //   behind the whole gathering — heads are now against grass, never lake. ----
+    {
+      const kL = W * 0.595, kR = W * 0.755, kx = W * 0.672, kh = 74;
+      const kg2 = ctx.createLinearGradient(0, shoreY(kx) - kh, 0, shoreY(kx) + 40);
+      kg2.addColorStop(0, `rgb(${et.join(',')})`);
+      kg2.addColorStop(1, `rgb(${eb.join(',')})`);
+      ctx.fillStyle = kg2;
+      ctx.beginPath();
+      ctx.moveTo(kL, shoreY(kL) + 1);
+      ctx.quadraticCurveTo(kx - (kx - kL) * 0.45, shoreY(kx) - kh, kx, shoreY(kx) - kh);      // up the left shoulder to the crest
+      ctx.quadraticCurveTo(kx + (kR - kx) * 0.5, shoreY(kx) - kh * 0.92, kR, shoreY(kR) + 1); // down the right shoulder into the rising bank
+      ctx.lineTo(kR, H); ctx.lineTo(kL, H);
+      ctx.closePath(); ctx.fill();
+      // soft lit crest line + a few grass tufts so the knoll reads as a real rise
+      ctx.strokeStyle = `rgba(${Math.round(_lerp(120,58,nm))},${Math.round(_lerp(130,64,nm))},${Math.round(_lerp(84,40,nm))},0.5)`;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(kL + 4, shoreY(kL) - 1);
+      ctx.quadraticCurveTo(kx - (kx - kL) * 0.45, shoreY(kx) - kh - 1, kx, shoreY(kx) - kh - 1);
+      ctx.quadraticCurveTo(kx + (kR - kx) * 0.5, shoreY(kx) - kh * 0.92 - 1, kR - 4, shoreY(kR) - 1);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(120,62,nm))},${Math.round(_lerp(46,26,nm))},0.9)`;
+      ctx.lineWidth = 1.1; ctx.lineCap = 'round';
+      for (let g3 = 0; g3 < 9; g3++) {
+        const gx3 = kL + 14 + g3 * ((kR - kL - 28) / 8);
+        const gyTop = (() => { // approximate the knoll surface y at gx3
+          const u2 = (gx3 - kL) / (kR - kL);
+          const lift2 = Math.sin(u2 * Math.PI) * kh * (u2 < 0.5 ? 1 : 0.95);
+          return Math.min(shoreY(gx3), shoreY(kx)) - lift2 * 0.9 + 6;
+        })();
+        const sw3 = Math.sin(tt * 1.3 + g3) * 1.6;
+        ctx.beginPath(); ctx.moveTo(gx3, gyTop + 6);
+        ctx.quadraticCurveTo(gx3 + sw3 * 0.5, gyTop + 1, gx3 + sw3, gyTop - 4);
+        ctx.stroke();
+      }
+    }
+
     // (Removed the tall blade/sweetgrass strokes — they read as seaweed.
     //  The bank now has only the cattails + wild rice + low ground tone.)
     // ---- BULL RUSH (cattail) stand on the bank: tall stems with sausage-shaped
@@ -1560,18 +1600,67 @@ function drawScene(ctx, W, H, p, tt, now) {
     //  The bank shows only outdoor work + activity, water, animals and plants.)
     // village fire
     const fx = W * 0.66, fy = ground(fx) + 6, fa = 0.45 + 0.55 * nm;   // moved up-bank: the land is ~50% taller here, so the fire circle sits fully ON land
-    const gl = ctx.createRadialGradient(fx, fy - 6, 0, fx, fy - 6, 64 * (0.6 + nm));
-    gl.addColorStop(0, `rgba(255,162,82,${0.34 * fa})`); gl.addColorStop(1, 'rgba(255,150,60,0)');
-    ctx.fillStyle = gl; ctx.fillRect(fx - 80, fy - 80, 160, 110);
+    // ---- THE BONFIRE, rebuilt properly ----
+    // flicker: two incommensurate sines + a slow breath = organic firelight
+    const flk = 0.82 + 0.10 * Math.sin(tt * 8.7) + 0.06 * Math.sin(tt * 23.3) + 0.06 * Math.sin(tt * 1.7);
+    const fscl = (0.85 + 0.75 * nm) * flk;                 // fire grows toward night, breathes always
+    // (a) BIG soft glow — the fillRect is far larger than the gradient radius,
+    //     so the halo can never be clipped into a rectangle again
+    {
+      const gr = 78 * (0.6 + nm) * flk;
+      const gl = ctx.createRadialGradient(fx, fy - 8, 0, fx, fy - 8, gr);
+      gl.addColorStop(0, `rgba(255,168,86,${0.36 * fa * flk})`);
+      gl.addColorStop(0.6, `rgba(255,150,60,${0.14 * fa})`);
+      gl.addColorStop(1, 'rgba(255,150,60,0)');
+      ctx.fillStyle = gl; ctx.fillRect(fx - 130, fy - 130, 260, 190);
+    }
+    // (b) LOG TEEPEE — four crossed logs, fire-lit on top, ember-glow at the heart
+    ctx.lineCap = 'round';
+    const logsF = [[-11, 2, -2, -9], [11, 2, 2, -9], [-7, 3, 4, -8], [8, 3, -4, -8]];
+    for (const [x0, y0, x1, y1] of logsF) {
+      ctx.strokeStyle = 'rgb(44,26,14)'; ctx.lineWidth = 3.2;
+      ctx.beginPath(); ctx.moveTo(fx + x0, fy + y0); ctx.lineTo(fx + x1, fy + y1); ctx.stroke();
+      ctx.strokeStyle = `rgba(255,140,60,${0.5 * fa * flk})`; ctx.lineWidth = 1.1;   // firelit top edge
+      ctx.beginPath(); ctx.moveTo(fx + x0 * 0.8, fy + y0 * 0.8 - 1); ctx.lineTo(fx + x1 * 0.8, fy + y1 * 0.8 - 1); ctx.stroke();
+    }
+    // (c) EMBER BED — pulsing molten heart between the logs
+    {
+      const eg = ctx.createRadialGradient(fx, fy - 1, 0, fx, fy - 1, 9 * flk);
+      eg.addColorStop(0, `rgba(255,220,140,${0.9 * fa * flk})`);
+      eg.addColorStop(0.6, `rgba(255,120,40,${0.55 * fa})`);
+      eg.addColorStop(1, 'rgba(200,60,20,0)');
+      ctx.fillStyle = eg;
+      ctx.beginPath(); ctx.ellipse(fx, fy - 1, 10 * flk, 4.5 * flk, 0, 0, 6.283); ctx.fill();
+    }
+    // (d) FLAMES — additive, three layers, each a main tongue + two side
+    //     tongues that lick and split like a real fire
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    const fcols = ['255,110,34', '255,165,58', '255,224,130'];
+    const fcols = ['255,104,30', '255,166,58', '255,230,150'];
     for (let i = 0; i < 3; i++) {
-      const fw = (7.5 - i * 1.9) * (0.7 + 0.6 * nm), fh = (18 - i * 3.4) * (0.7 + 0.6 * nm) * (0.8 + 0.3 * Math.sin(tt * (9 + i * 4) + i));
-      ctx.fillStyle = `rgba(${fcols[i]},${0.8 * fa})`;
-      ctx.beginPath(); ctx.moveTo(fx - fw, fy);
-      ctx.quadraticCurveTo(fx - fw * 0.5 + Math.sin(tt * 8 + i) * 2, fy - fh * 0.6, fx, fy - fh);
-      ctx.quadraticCurveTo(fx + fw * 0.5 + Math.sin(tt * 8 + i + 2) * 2, fy - fh * 0.6, fx + fw, fy);
+      const fw = (10.5 - i * 2.6) * fscl;
+      const fh = (30 - i * 6.5) * fscl * (0.82 + 0.26 * Math.sin(tt * (7.5 + i * 3.7) + i * 2.1));
+      const swayF = Math.sin(tt * 5.2 + i * 1.7) * 2.4 * fscl;
+      ctx.fillStyle = `rgba(${fcols[i]},${0.78 * fa})`;
+      ctx.beginPath();
+      ctx.moveTo(fx - fw, fy);
+      // left side tongue
+      ctx.quadraticCurveTo(fx - fw * 1.15 + Math.sin(tt * 9 + i) * 1.5, fy - fh * 0.38, fx - fw * 0.42 + swayF * 0.4, fy - fh * 0.46);
+      // up the left flank to the wavering tip
+      ctx.quadraticCurveTo(fx - fw * 0.30 + swayF, fy - fh * 0.78, fx + swayF, fy - fh);
+      // down the right flank via the right side tongue
+      ctx.quadraticCurveTo(fx + fw * 0.30 + swayF, fy - fh * 0.78, fx + fw * 0.42 + swayF * 0.4, fy - fh * 0.46);
+      ctx.quadraticCurveTo(fx + fw * 1.15 + Math.sin(tt * 9 + i + 3) * 1.5, fy - fh * 0.38, fx + fw, fy);
       ctx.closePath(); ctx.fill();
+    }
+    // (e) SPARKS — glowing embers spiral up off the fire and wink out
+    for (let sp = 0; sp < 7; sp++) {
+      const life = ((tt * (0.55 + (sp % 3) * 0.14) + sp * 0.37) % 1);
+      const sy = fy - 6 - life * (52 + (sp % 4) * 10) * (0.7 + 0.5 * nm);
+      const sx = fx + Math.sin(life * 9 + sp * 2.2) * (4 + life * 9) + (sp - 3.5) * 1.1;
+      const sa = fa * (1 - life) * (0.55 + 0.45 * Math.sin(tt * 17 + sp * 5));
+      if (sa <= 0.03) continue;
+      ctx.fillStyle = `rgba(255,${190 - Math.round(life * 90)},${90 - Math.round(life * 60)},${sa})`;
+      ctx.beginPath(); ctx.arc(sx, sy, 0.9 + (1 - life) * 0.7, 0, 6.283); ctx.fill();
     }
     ctx.restore();
     // realistic rising smoke from the fire (taller column)
