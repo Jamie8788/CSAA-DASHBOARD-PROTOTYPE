@@ -1357,6 +1357,29 @@ function drawScene(ctx, W, H, p, tt, now) {
     const eb = [Math.round(_lerp(42, 17, nm)), Math.round(_lerp(48, 22, nm)), Math.round(_lerp(28, 14, nm))];
     const lgr = ctx.createLinearGradient(0, H * 0.66, 0, H);
     lgr.addColorStop(0, `rgb(${et.join(',')})`); lgr.addColorStop(1, `rgb(${eb.join(',')})`);
+    // ---- BACK BANK (the structural fix for "people in the water"): a second,
+    //   HIGHER band of land running the WHOLE shoreline, drawn BEHIND everyone.
+    //   Raising the walk-line itself never works — people stand ON the line, so
+    //   they always poke above it. This terrace puts grass behind their bodies
+    //   everywhere, exactly like the knoll did locally. Slightly darker for
+    //   depth, like a far bank rising behind the near one. ----
+    const backLift = (x) => 62 * _clamp((x - lx0) / (W * 0.07), 0, 1);
+    {
+      const etB = et.map(v => Math.round(v * 0.86));
+      const ebB = eb.map(v => Math.round(v * 0.86));
+      const lgrB = ctx.createLinearGradient(0, H * 0.58, 0, H);
+      lgrB.addColorStop(0, `rgb(${etB.join(',')})`); lgrB.addColorStop(1, `rgb(${ebB.join(',')})`);
+      ctx.fillStyle = lgrB;
+      ctx.beginPath(); ctx.moveTo(lx0, H);
+      for (let x = lx0; x <= W; x += 10) ctx.lineTo(x, shoreY(x) - backLift(x));
+      ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+      // soft lit edge along the back-bank crest (matches the shore treatment)
+      const hzB = _rampA(SKY_HORIZ, p);
+      ctx.strokeStyle = `rgba(${hzB[0]},${hzB[1]},${hzB[2]},0.22)`; ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      for (let x = lx0 + 8; x <= W; x += 10) { const y = shoreY(x) - backLift(x) + Math.sin(x * 0.045 + tt * 1.2) * 1.0; x === lx0 + 8 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+      ctx.stroke();
+    }
     ctx.fillStyle = lgr;
     ctx.beginPath(); ctx.moveTo(lx0, H);
     for (let x = lx0; x <= W; x += 10) ctx.lineTo(x, shoreY(x));
