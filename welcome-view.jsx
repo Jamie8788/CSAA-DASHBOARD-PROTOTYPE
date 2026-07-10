@@ -1300,7 +1300,14 @@ function drawScene(ctx, W, H, p, tt, now) {
     const nm = _smooth(0.52, 0.9, p);                     // nightness 0..1
     const lx0 = W * 0.37;                                  // shore starts even earlier — bigger village land (Hassan ×3, all directions)
     const RISE = H * 0.42;                                  // TALLER bank (Hassan x4): even standing adults at the fire stay fully inside the land
-    const shoreY = (x) => { const t = _clamp((x - lx0) / (W - lx0), 0, 1); return H - 6 - RISE * (t * 0.6 + t * t * 0.4); };
+    const shoreY = (x) => {
+      const t = _clamp((x - lx0) / (W - lx0), 0, 1);
+      // a LOW GREEN BANK (~30px) along the ENTIRE waterline (Hassan: raise the
+      // full shoreline, not one spot) — tapers in over the first 5% so the
+      // shore still meets the water gracefully at its tip
+      const bluff = 30 * _clamp((x - lx0) / (W * 0.05), 0, 1);
+      return H - 6 - bluff - RISE * (t * 0.6 + t * t * 0.4);
+    };
     const ground = (x) => shoreY(x) + 9;
     // ---- REALISTIC SMOKE: a column of soft puffs that rise, expand, drift on a
     //   light breeze and fade out. baseScale sets the column height; alpha scales
@@ -1717,14 +1724,17 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.beginPath(); ctx.ellipse(px - 1.6 * sc + legL, py - bodyBob, 1.7 * sc, 0.9 * sc, 0, 0, 6.283); ctx.fill();
         ctx.beginPath(); ctx.ellipse(px + 1.6 * sc + legR, py - bodyBob, 1.7 * sc, 0.9 * sc, 0, 0, 6.283); ctx.fill();
       } else {
-        // cross-legged seated: a small, low crossed-legs base (NOT a big round
-        // "butt" — Hassan). One slim crossed-leg shape tucked under the torso.
-        ctx.fillStyle = leg;
-        ctx.beginPath(); ctx.ellipse(px, hipY + 1.6 * sc, 3.6 * sc, 1.5 * sc, 0, 0, 6.283); ctx.fill();
-        // a couple of short shins crossing in front
-        ctx.strokeStyle = leg; ctx.lineWidth = 1.6 * sc; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(px - 3 * sc, hipY + 2.2 * sc); ctx.lineTo(px + 1.5 * sc, hipY + 1.2 * sc); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(px + 3 * sc, hipY + 2.2 * sc); ctx.lineTo(px - 1.5 * sc, hipY + 1.2 * sc); ctx.stroke();
+        // seated: legs clearly BENT — thigh out to the knee, shin tucked back
+        // under, small moccasin at the end. (The old ellipse "base" + blob
+        // shins read as eggs sitting next to the person — Hassan.)
+        for (const sdir of [-1, 1]) {
+          const kneeX = px + sdir * 3.8 * sc, kneeY = hipY + 0.7 * sc;
+          const footX = px + sdir * 1.1 * sc, footY = hipY + 2.7 * sc;
+          limb(px + sdir * 0.8 * sc, hipY - 0.4 * sc, kneeX, kneeY, 2.5 * sc, leg);   // thigh out to the knee
+          limb(kneeX, kneeY, footX, footY, 1.9 * sc, leg);                            // shin tucked back in
+          ctx.fillStyle = boot;
+          ctx.beginPath(); ctx.ellipse(footX, footY + 0.3 * sc, 1.2 * sc, 0.65 * sc, 0, 0, 6.283); ctx.fill();
+        }
       }
 
       // ---- TORSO: ribbon shirt with a contrast hem ----
@@ -2374,8 +2384,8 @@ function drawScene(ctx, W, H, p, tt, now) {
         const MS = 3.4;                                                     // marten unit scale (big, clan-prominent)
         // relocated to the OPEN lower-left bank — at W*0.82 it was jammed between
         // the hide frame (0.79) and the crane (0.86) with a 40px twig for a log
-        const logX = W * 0.505, logY = ground(logX) + 2;
-        const logLen = 32 * MS;                                             // log sized to MATCH the marten
+        const logX = W * 0.425, logY = ground(logX) + 2;                    // the open lower-left bank — nothing else lives here now
+        const logLen = 30 * MS;                                             // log sized to MATCH the marten
         // marten scampers along the log; the touch point RIDES ON the marten
         const run = Math.sin(tt * 0.9);
         const mxp = logX + run * (logLen / 2 - 10 * MS);
@@ -2397,7 +2407,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         // ---- the marten: a long low PINE MARTEN — rich chestnut, cream throat
         //   bib, pointed face, rounded ears, long bushy tail; low bounding run ----
         const S2 = MS;
-        ctx.save(); ctx.translate(mxp, bodyY); ctx.scale(mdir * S2, S2);
+        ctx.save(); ctx.translate(mxp, bodyY); ctx.scale(mdir * S2 * 1.22, S2 * 0.88);   // stretched long + low: the true weasel silhouette
         const fur   = `rgb(${Math.round(_lerp(124,66,nm))},${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(34,18,nm))})`;
         const furDk = `rgb(${Math.round(_lerp(86,44,nm))},${Math.round(_lerp(48,24,nm))},${Math.round(_lerp(20,10,nm))})`;
         const arch = gallop * 0.5;
@@ -2405,10 +2415,10 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.strokeStyle = furDk; ctx.lineCap = 'round';
         ctx.lineWidth = 2.6;
         ctx.beginPath(); ctx.moveTo(6.5, -0.6);
-        ctx.quadraticCurveTo(11, -1 - arch, 13.5, -4 - arch * 1.6);
-        ctx.quadraticCurveTo(15, -6 - arch, 14, -8 - arch); ctx.stroke();
+        ctx.quadraticCurveTo(11.5, -1.5 - arch, 15, -2.5 - arch);
+        ctx.quadraticCurveTo(17.5, -3.2 - arch, 18.5, -2.2 - arch * 0.6); ctx.stroke();   // long LOW flowing tail
         ctx.lineWidth = 1.4;                                                              // tapered bushy tip
-        ctx.beginPath(); ctx.moveTo(13.5, -4 - arch * 1.6); ctx.quadraticCurveTo(16, -6 - arch, 15.5, -9 - arch); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(15, -2.5 - arch); ctx.quadraticCurveTo(19, -3.5 - arch, 20.5, -1.8 - arch * 0.5); ctx.stroke();
         // long low body with an arched back
         ctx.fillStyle = fur;
         ctx.beginPath();
