@@ -2159,7 +2159,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       // behind the horse). Second horse stays at the far end.
       // (left horse removed — it occupied the same spot as the mother+cradleboard
       //  and the two drew merged into each other; the far-end horse remains)
-      drawHorse(W * 0.95, ground(W * 0.95) - 9, 2.0, 2.3, false);          // standing watch, far end
+      // (far horse removed — the deer now stands watch at the high end instead)
 
       // ---- CANADA GEESE on the ground (LHS bank) — brown body, pale breast,
       //   black S-neck, white cheek patch. One honks (neck up), others graze
@@ -2229,7 +2229,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       {
         // On the solid mid-bank between the wood-chop and the fire — a spot
         // where the green slope is high enough that it actually stands on land.
-        const dxe = W * 0.76, dye = ground(W * 0.76) - 4, dsc = 2.6;
+        const dxe = W * 0.945, dye = ground(W * 0.945) - 4, dsc = 2.6;   // far high end — replaces the horse; tall land, no villagers anywhere near
         _tpReg(dxe, dye - 34, 34, dayA, 'Waawaashkesh', 'Love');   // on the deer's body
         ctx.save(); ctx.translate(dxe, dye); ctx.scale(dsc, dsc); ctx.globalAlpha = dayA;
         // soft ground shadow so the deer doesn't float
@@ -2399,33 +2399,44 @@ function drawScene(ctx, W, H, p, tt, now) {
       {
         ctx.save(); ctx.globalAlpha = dayA;
         const u = tt * 0.5;
-        const cxr = W * 0.59 + Math.sin(u) * W * 0.014;
-        const cdir = Math.cos(u) >= 0 ? 1 : -1;
+        // the child stays put and the dog ORBITS around them (a tight play
+        // circle) — a travelling run kept crossing into the mother on one side
+        // and the wood-chopper on the other; this fits the one free gap exactly
+        const cxr = W * 0.593 + Math.sin(u) * W * 0.004;
+        const orb = Math.sin(u * 1.7) * 12;
+        const cdir = Math.cos(u * 1.7) >= 0 ? 1 : -1;
         fig(cxr, ground(cxr) + 6, 0.9, 'walk', 0.3, { shirt: '#d68a1f', hairStyle: 'braid', dir: cdir });
-        // the dog bounds a little ahead of the child
-        const dxr = cxr + cdir * 30, hop = Math.abs(Math.sin(tt * 6)) * 3;
+        const dxr = cxr + orb, hop = Math.abs(Math.sin(tt * 6)) * 2.5;
         ctx.translate(dxr, ground(dxr) + 6 - hop); ctx.scale(cdir * 1.7, 1.7);
+        // REDESIGNED as a proper rez dog: deeper chest, shorter muzzle, perked
+        // ear + the spitz CURLED TAIL over the back (it read as a tiny raptor)
         const dogC = `rgb(${Math.round(_lerp(122,62,nm))},${Math.round(_lerp(96,50,nm))},${Math.round(_lerp(70,36,nm))})`;
+        const dogC2 = `rgb(${Math.round(_lerp(96,48,nm))},${Math.round(_lerp(74,38,nm))},${Math.round(_lerp(52,26,nm))})`;
         ctx.fillStyle = 'rgba(10,8,5,0.16)';                                           // soft ground shadow
         ctx.beginPath(); ctx.ellipse(0, 0.8, 9, 1.8, 0, 0, 6.283); ctx.fill();
+        // curled tail FIRST (behind the rump): a loop over the back, gently bobbing
+        const wag = Math.sin(tt * 7) * 0.35;
+        ctx.strokeStyle = dogC2; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(-6.5, -8.5 + wag, 2.8, 0.6, 5.2); ctx.stroke();
         ctx.fillStyle = dogC;
-        ctx.beginPath(); ctx.ellipse(0, -5, 7, 3.2, 0, 0, 6.283); ctx.fill();          // body
-        ctx.beginPath(); ctx.arc(7.5, -7.5, 2.6, 0, 6.283); ctx.fill();                // head
-        ctx.beginPath(); ctx.moveTo(8.6, -9.6); ctx.lineTo(9.8, -12.2); ctx.lineTo(10.8, -9.4); ctx.closePath(); ctx.fill();  // pricked ear
-        ctx.beginPath(); ctx.ellipse(10.4, -7.0, 1.9, 1.1, 0.1, 0, 6.283); ctx.fill(); // muzzle
-        const wag = Math.sin(tt * 9) * 0.5;                                            // happy wagging tail
+        ctx.beginPath(); ctx.ellipse(0, -5.2, 7, 3.8, 0, 0, 6.283); ctx.fill();        // deeper-chested body
+        ctx.beginPath(); ctx.ellipse(6.2, -8, 3.0, 2.6, 0.1, 0, 6.283); ctx.fill();    // head
+        ctx.beginPath(); ctx.moveTo(6.4, -10.4); ctx.lineTo(7.4, -13); ctx.lineTo(8.6, -10.2); ctx.closePath(); ctx.fill();  // perked ear
+        ctx.beginPath(); ctx.ellipse(9.4, -7.2, 1.5, 1.0, 0.15, 0, 6.283); ctx.fill(); // SHORT muzzle
+        // pale chest/underside (classic dog marking — instantly reads "dog")
+        ctx.fillStyle = 'rgba(230,214,184,0.85)';
+        ctx.beginPath(); ctx.ellipse(3.2, -3.4, 3.2, 1.6, 0.15, 0, 6.283); ctx.fill();
+        const g2 = Math.sin(tt * 6) * 2.2;                                             // galloping legs
         ctx.strokeStyle = dogC; ctx.lineWidth = 1.7; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(-6.5, -6); ctx.quadraticCurveTo(-10, -9 + wag * 3, -12, -7 + wag * 5); ctx.stroke();
-        const g2 = Math.sin(tt * 6) * 2.4;                                             // galloping legs
-        ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(4, -2.6); ctx.lineTo(4 + g2, 0); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(5.6, -2.6); ctx.lineTo(5.6 - g2, 0); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(-3.5, -2.6); ctx.lineTo(-3.5 - g2, 0); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(-5, -2.6); ctx.lineTo(-5 + g2, 0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(4, -2.4); ctx.lineTo(4 + g2, 0.4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(5.6, -2.4); ctx.lineTo(5.6 - g2, 0.4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-3.5, -2.4); ctx.lineTo(-3.5 - g2, 0.4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-5, -2.4); ctx.lineTo(-5 + g2, 0.4); ctx.stroke();
         ctx.fillStyle = 'rgba(14,10,6,1)';
-        ctx.beginPath(); ctx.arc(8.2, -8.1, 0.5, 0, 6.283); ctx.fill();                // eye
+        ctx.beginPath(); ctx.arc(6.8, -8.6, 0.55, 0, 6.283); ctx.fill();               // eye
+        ctx.beginPath(); ctx.arc(10.6, -7.4, 0.5, 0, 6.283); ctx.fill();               // nose tip
         ctx.fillStyle = 'rgba(214,90,80,0.95)';                                        // tongue out, mid-run
-        ctx.beginPath(); ctx.ellipse(11.6, -6.0, 0.9, 0.5, 0.5, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(10.2, -6.0, 0.8, 0.45, 0.5, 0, 6.283); ctx.fill();
         ctx.restore();
       }
 
@@ -2867,8 +2878,8 @@ function drawScene(ctx, W, H, p, tt, now) {
           ctx.save(); ctx.globalAlpha = evA;
           fig(W * 0.671, ground(W * 0.671) + 5, 1.35, 'carry', 0.7, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });   // fish off the rack
           fig(W * 0.725, ground(W * 0.725) + 5, 1.3, 'carry', 2.9, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });     // tools home to the lodge
-          fig(W * 0.70, ground(W * 0.70) + 5, 1.4, 'wave', 1.6, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 });      // pausing to watch the sunset (up-bank, so he doesn't silhouette into the lake)
-          fig(W * 0.84, ground(W * 0.84) + 5, 1.3, 'carry', 3.7, { shirt: '#7c2f6b', hairStyle: 'long', dir: -1 });     // hide bundles carried home (clear stretch, off the deer)
+          fig(W * 0.70, ground(W * 0.70) + 5, 1.4, 'wave', 1.6, { shirt: '#c93a1e', hairStyle: 'braid', hair: '#938a7d', dir: -1 });      // grey-haired elder pausing to watch the sunset
+          fig(W * 0.865, ground(W * 0.865) + 5, 1.3, 'carry', 3.7, { shirt: '#7c2f6b', hairStyle: 'long', dir: -1 });     // hide bundles carried home from the smokehouse end
           fig(W * 0.645, ground(W * 0.645) + 5, 0.9, 'walk', 1.2, { shirt: '#d68a1f', hairStyle: 'braid', dir: 1 });      // child being shepherded home
           ctx.restore();
         }
@@ -2882,14 +2893,17 @@ function drawScene(ctx, W, H, p, tt, now) {
         // warm firelight pool on the GRASS first, so the circle clearly reads as
         // sitting on land (Hassan: "wtf are they in water") — the glow anchors them
         const gpr = 95;
-        const gp = ctx.createRadialGradient(fx + 14, fy + 2, 4, fx + 14, fy + 2, gpr);
-        gp.addColorStop(0, 'rgba(255,150,60,0.28)');
+        ctx.save();
+        ctx.translate(fx + 14, fy + 4); ctx.scale(1, 0.32);       // squash space, then draw a CIRCLE:
+        const gp = ctx.createRadialGradient(0, 0, 4, 0, 0, gpr);  // the gradient now fades to 0 exactly
+        gp.addColorStop(0, 'rgba(255,150,60,0.28)');              // at the pool's edge — no hard box line
         gp.addColorStop(1, 'rgba(255,150,60,0)');
         ctx.fillStyle = gp;
-        ctx.beginPath(); ctx.ellipse(fx, fy + 4, gpr, gpr * 0.32, 0, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(0, 0, gpr, 0, 6.283); ctx.fill();
+        ctx.restore();
         // a male ELDER seated just behind the fire, gesturing as he tells a story
         // (short hair so he reads as an older man, not a girl)
-        fig(fx, fy - 2, 1.5, 'sit', 1.0, { shirt: '#5a3a2a', hairStyle: 'short', dir: 1 });   // SEATED — standing, his head poked above the bank line into the lake
+        fig(fx, fy - 2, 1.5, 'sit', 1.0, { shirt: '#5a3a2a', hairStyle: 'short', hair: '#8d8478', dir: 1 });   // grey-haired ELDER, seated — standing, his head poked above the bank line
         // listeners seated AROUND the fire — a MIXED community: tall adults,
         // medium youths and small children (per-seat size + hair + shirt vary).
         // every seat sits on the UP-SLOPE side of the fire — the old spread
@@ -2904,11 +2918,12 @@ function drawScene(ctx, W, H, p, tt, now) {
         ];
         seats.forEach(([dxx, dyy, sc, hair], i) => {
           const bob = Math.sin(tt * 1.3 + i) * 0.5;
+          const hairCol = i === 0 ? '#8d8478' : undefined;   // the left tall adult is a grey-haired elder
           // PER-SEAT ground: the bank slopes DOWN to the left, so seats left of
           // the fire were rendering below the grass line ("sitting in water").
           const seatY = ground(fx + dxx) + 2 + dyy * 0.4 + bob;
           fig(fx + dxx, seatY, sc, 'sit', i,
-              { dir: dxx < 0 ? 1 : -1, shirt: styles[i % styles.length].shirt, hairStyle: hair });
+              { dir: dxx < 0 ? 1 : -1, shirt: styles[i % styles.length].shirt, hairStyle: hair, hair: hairCol });
         });
         // one drummer keeping a soft beat, set a little apart — UP the bank on the
         // right (down-left put him at the waterline: "wtf are they in water")
@@ -2946,12 +2961,18 @@ function drawScene(ctx, W, H, p, tt, now) {
         tg.addColorStop(1, 'rgba(255,170,70,0)');
         ctx.fillStyle = tg;
         ctx.beginPath(); ctx.ellipse(26, 4, 52 * fl, 14 * fl, 0, 0, 6.283); ctx.fill();
-        // canoe hull
-        ctx.fillStyle = 'rgb(74,42,22)';
+        // long warm reflection streak under the canoe (anchors it ON the water)
+        ctx.fillStyle = 'rgba(255,170,80,0.10)';
+        ctx.beginPath(); ctx.ellipse(6, 9, 34, 4, 0, 0, 6.283); ctx.fill();
+        // canoe hull — pale BIRCHBARK, clearly visible against the dark water
+        ctx.fillStyle = 'rgb(148,112,74)';
         ctx.beginPath();
-        ctx.moveTo(-30, 0); ctx.quadraticCurveTo(0, 7, 30, 0);
-        ctx.quadraticCurveTo(33, -3, 30, -4); ctx.quadraticCurveTo(0, 2, -30, -4);
-        ctx.quadraticCurveTo(-33, -3, -30, 0); ctx.closePath(); ctx.fill();
+        ctx.moveTo(-30, 0); ctx.quadraticCurveTo(0, 8, 30, 0);
+        ctx.quadraticCurveTo(34, -4, 30, -5.5); ctx.quadraticCurveTo(0, 2, -30, -5.5);
+        ctx.quadraticCurveTo(-34, -4, -30, 0); ctx.closePath(); ctx.fill();
+        // firelit top rim (the torch catches the gunwale)
+        ctx.strokeStyle = 'rgba(255,196,110,0.85)'; ctx.lineWidth = 1.1;
+        ctx.beginPath(); ctx.moveTo(-29, -4.5); ctx.quadraticCurveTo(0, 1, 29, -4.5); ctx.stroke();
         // torch on the bow: pole + flame
         ctx.strokeStyle = 'rgb(52,30,14)'; ctx.lineWidth = 1.6;
         ctx.beginPath(); ctx.moveTo(24, -3); ctx.lineTo(27, -18); ctx.stroke();
@@ -2959,10 +2980,12 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.beginPath(); ctx.ellipse(27.4, -21, 2.6, 4.2 * fl, 0.1, 0, 6.283); ctx.fill();
         ctx.fillStyle = 'rgba(255,240,170,0.9)';
         ctx.beginPath(); ctx.ellipse(27.4, -20, 1.2, 2.2 * fl, 0.1, 0, 6.283); ctx.fill();
-        // the fisher: seated silhouette, spear poised over the lit water
-        ctx.fillStyle = 'rgb(30,20,12)';
-        ctx.beginPath(); ctx.ellipse(6, -7, 5, 6.5, 0, 0, 6.283); ctx.fill();     // torso
-        ctx.beginPath(); ctx.arc(6, -15.5, 3.4, 0, 6.283); ctx.fill();            // head
+        // the fisher: seated low IN the hull, firelit on the torch side
+        ctx.fillStyle = 'rgb(44,30,18)';
+        ctx.beginPath(); ctx.ellipse(6, -5, 5, 6, 0, 0, 6.283); ctx.fill();       // torso
+        ctx.beginPath(); ctx.arc(6, -13, 3.2, 0, 6.283); ctx.fill();              // head
+        ctx.fillStyle = 'rgba(255,180,90,0.30)';                                  // firelight on his front
+        ctx.beginPath(); ctx.ellipse(8.4, -6, 2, 5.2, 0.1, 0, 6.283); ctx.fill();
         const poise = Math.sin(tt * 0.9) * 1.5;
         ctx.strokeStyle = 'rgb(30,20,12)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(9, -10); ctx.lineTo(20, -14 - poise); ctx.stroke();   // arm
@@ -3380,7 +3403,8 @@ function drawScene(ctx, W, H, p, tt, now) {
   }
 
   // ---- LEAPING FISH: a proper parabolic arc, the body curls/bends as it goes ----
-  for (const fi of _FISH) {
+  const fishA = 1 - _smooth(0.46, 0.58, p);        // leaps are DAYLIGHT-only: at dusk the upper water reads as sky ("fish flying in air")
+  if (fishA > 0.04) for (const fi of _FISH) {
     const loc = ((tt + fi.phase) % fi.period) / fi.period;
     if (loc >= 0.22) continue;                       // a longer, slower, more readable leap
     const k = loc / 0.22;                            // 0..1 through the arc
@@ -3393,7 +3417,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     const fy = baseY - Math.sin(k * Math.PI) * arcH;
     // splash crown when LEAVING the water (k just above 0)
     if (k < 0.18) {
-      ctx.fillStyle = 'rgba(240,246,238,0.85)';
+      ctx.fillStyle = `rgba(240,246,238,${0.85 * fishA})`;
       for (let s = 0; s < 6; s++) {
         const ang = -Math.PI / 2 + (s - 2.5) * 0.35;
         const r = 8 + k * 30;
@@ -3401,12 +3425,12 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.arc(fx0 - 10 * dir + Math.cos(ang) * r, baseY + Math.sin(ang) * r * 0.6, 1.0, 0, 6.283);
         ctx.fill();
       }
-      ctx.strokeStyle = 'rgba(235,240,232,0.5)'; ctx.lineWidth = 1.0;
+      ctx.strokeStyle = `rgba(235,240,232,${0.5 * fishA})`; ctx.lineWidth = 1.0;
       ctx.beginPath(); ctx.ellipse(fx0 - 10 * dir, baseY, 9, 2.6, 0, 0, 6.283); ctx.stroke();
     }
     // body — orientation follows the tangent of the arc (not a stiff rotation)
     const ang = Math.atan2(-Math.cos(k * Math.PI) * arcH * Math.PI, span * dir);
-    const bodyA = 0.85 * (1 - Math.abs(k - 0.5) * 0.5);
+    const bodyA = 0.85 * (1 - Math.abs(k - 0.5) * 0.5) * fishA;
     ctx.save(); ctx.translate(fx, fy); ctx.rotate(ang);
     // curl: the fish bends slightly as if mid-flex
     const curl = Math.sin(tt * 14) * 0.2;
