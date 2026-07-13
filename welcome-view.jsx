@@ -3021,39 +3021,31 @@ function drawScene(ctx, W, H, p, tt, now) {
         fig(fx, fy - 2, 1.5, 'sit', 1.0, { shirt: '#5a3a2a', hairStyle: 'short', hair: '#8d8478', dir: 1 });   // grey-haired ELDER, seated — standing, his head poked above the bank line
         // listeners seated AROUND the fire — a MIXED community: tall adults,
         // medium youths and small children (per-seat size + hair + shirt vary).
-        // every seat sits on the UP-SLOPE side of the fire — the old spread
-        // (-44..+44) put the left arc at the waterline ("people inside water")
+        // seats form a real RING around the fire with 2D depth — back row
+        // drawn first (higher on the hill, behind the flames), front row
+        // deeper/in front — instead of everyone standing in one straight line
         const seats = [
-          [-22, -1, 1.45, 'braid'],   // tall adult (left, closest to the fire)
-          [-9, 3, 0.85, 'long'],      // small child
-          [5, 5, 1.30, 'long'],       // youth (front)
-          [20, 4, 0.95, 'braid'],     // small child
-          [35, 1, 1.45, 'short'],     // tall adult (man)
-          [50, -2, 1.15, 'long'],     // medium (right, highest up the bank)
+          [-14, -14, 1.15, 'long'],   // back row, left of the smoke
+          [16, -12, 0.95, 'braid'],   // back row, right (child)
+          [-34, 2, 1.45, 'braid'],    // mid ring, left
+          [38, 4, 1.45, 'short'],     // mid ring, right (man)
+          [-16, 20, 1.30, 'long'],    // front row, deeper into the land
+          [18, 24, 0.85, 'long'],     // front row (small child, closest to us)
         ];
         seats.forEach(([dxx, dyy, sc, hair], i) => {
           const bob = Math.sin(tt * 1.3 + i) * 0.5;
           const hairCol = i === 0 ? '#8d8478' : undefined;   // the left tall adult is a grey-haired elder
           // PER-SEAT ground: the bank slopes DOWN to the left, so seats left of
           // the fire were rendering below the grass line ("sitting in water").
-          const seatY = ground(fx + dxx) + 10 + dyy * 0.4 + bob;   // seated deeper inside the land, in front of the knoll
+          const seatY = ground(fx + dxx) + 12 + dyy + bob;   // full 2D depth: the ring wraps AROUND the fire
           fig(fx + dxx, seatY, sc, 'sit', i,
               { dir: dxx < 0 ? 1 : -1, shirt: styles[i % styles.length].shirt, hairStyle: hair, hair: hairCol });
         });
-        // the drummer sits close beside the fire, keeping the night song
-        fig(fx - 34, ground(fx - 34) + 12, 1.35, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
-        // ROUND DANCE — two dancers step slowly around the fire to the drum
-        // (a night-only scene; the day and evening never dance)
-        {
-          const da = tt * 0.45;
-          for (let dn = 0; dn < 2; dn++) {
-            const ang = da + dn * Math.PI;
-            const dxr2 = fx + Math.cos(ang) * 40;
-            const dyr2 = ground(dxr2) + 12 + Math.sin(ang) * 5;   // slight ellipse = depth around the fire
-            const ddir = Math.sin(ang) >= 0 ? -1 : 1;             // face the direction of travel
-            fig(dxr2, dyr2, [1.35, 1.2][dn], 'dance', dn * 2.1, { shirt: ['#c93a1e', '#d68a1f'][dn], hairStyle: dn ? 'long' : 'braid', dir: ddir });
-          }
-        }
+        // the drummer sits close beside the fire, keeping the night song,
+        // set slightly DEEPER into the land (2D depth, not the straight line)
+        fig(fx - 38, ground(fx - 38) + 22, 1.35, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
+        // (the two round-dance figures were removed — Hassan: it read as
+        //  disrespectful. The night is the seated story circle and the drum.)
       }
       // two CHILDREN asleep on a hide beside the wigwam (up the bank, clearly on
       // dry land — they used to sleep down by the waterline).
@@ -3136,7 +3128,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //     over a blanket, four moccasins hiding the marked bullet, the
       //     guesser's striker stick swinging as the drum keeps time.
       {
-        const mgx = W * 0.615, mgy = ground(W * 0.615) + 10;
+        const mgx = W * 0.585, mgy = ground(W * 0.585) + 34;   // deep in the open field — not on the walk line
         ctx.fillStyle = 'rgba(74,42,30,0.85)';                                       // the game blanket (muted — bright red glowed across the whole scene)
         ctx.beginPath(); ctx.ellipse(mgx, mgy + 1, 10, 2.8, 0, 0, 6.283); ctx.fill();
         ctx.fillStyle = 'rgb(64,44,26)';                                             // the four moccasins
