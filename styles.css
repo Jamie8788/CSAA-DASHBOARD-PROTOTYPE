@@ -7348,3 +7348,35 @@ body.elder-mode .j-btn { font-size: 16px; padding: 14px 26px; }
 }
 .j-audio:hover { transform: scale(1.08); }
 body.elder-mode .j-route b { font-size: 19px; }
+
+/* ---- The Living Globe (map view) ---- */
+.map-globe-btn {
+  position: absolute; top: 128px; right: 20px; z-index: 640;
+  background: var(--ink); color: var(--paper); border: 1px solid var(--east, #d4a017);
+  border-radius: 999px; padding: 9px 16px; cursor: pointer;
+  font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  box-shadow: 0 8px 22px -10px rgba(0,0,0,.6);
+}
+.map-globe-btn:hover { background: var(--east-deep, #8c6614); }
+.globe-overlay { position: fixed; inset: 0; z-index: 4000; background: radial-gradient(120% 120% at 50% 30%, #0b1424 0%, #05080f 70%, #03040a 100%); animation: contribIn .3s ease; }
+.globe-canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+.globe-canvas:active { cursor: grabbing; }
+.globe-head { position: absolute; top: 26px; left: 30px; color: #eaf0fb; pointer-events: none; }
+.gh-eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: #7fb0d8; margin-bottom: 6px; }
+.gh-title { font-family: var(--serif); font-size: clamp(20px, 2.4vw, 30px); }
+.gh-sub { font-family: var(--sans); font-size: 12.5px; color: rgba(220,230,245,.6); margin-top: 4px; }
+.globe-close {
+  position: absolute; top: 26px; right: 30px; z-index: 2;
+  background: rgba(255,255,255,.1); color: #eaf0fb; border: 1px solid rgba(255,255,255,.25);
+  border-radius: 999px; padding: 9px 18px; cursor: pointer; font-family: var(--sans); font-size: 13px;
+}
+.globe-close:hover { background: rgba(255,255,255,.2); }
+.globe-legend { position: absolute; bottom: 24px; left: 30px; display: flex; gap: 16px; }
+.globe-legend span { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: rgba(220,230,245,.7); }
+.globe-legend i { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+.globe-tip {
+  position: absolute; z-index: 3; pointer-events: none;
+  background: rgba(8,14,26,.92); color: #eaf0fb; border: 1px solid rgba(127,176,216,.4);
+  border-radius: 8px; padding: 6px 12px; font-family: var(--serif); font-size: 14px; white-space: nowrap;
+  transform: translateY(-50%);
+}

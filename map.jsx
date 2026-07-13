@@ -199,6 +199,7 @@ function CanadaMap({ communities, allCommunities, selectedId, onSelect, onHover,
   const [hoverPanel, setHoverPanel] = useState(null);   // persistent info panel
   const [rulerMode, setRulerMode] = useState(false);    // measure-distance tool
   const [show3D, setShow3D] = useState(false);          // 3D globe overlay
+  const [showGlobe, setShowGlobe] = useState(false);    // the Living Globe hologram
   const [rulerPoints, setRulerPoints] = useState([]);   // [[lat,lng], [lat,lng]]
   const rulerLineRef = useRef(null);
   const rulerMarkersRef = useRef([]);
@@ -599,7 +600,6 @@ function CanadaMap({ communities, allCommunities, selectedId, onSelect, onHover,
   return (
     <div className={`map-wrap ${selectedId ? 'drawer-open' : ''}`}>
       <div ref={containerRef} className="leaflet-container-wrap"></div>
-      <MapAmbient getMap={() => mapRef.current} coords={ambientCoords} />
 
       <div className="map-overlay map-eyebrow">
         <span className="sub">Atlas · 01</span>
@@ -638,6 +638,13 @@ function CanadaMap({ communities, allCommunities, selectedId, onSelect, onHover,
       </button>
       {show3D && window.Map3D && (
         <window.Map3D all={allCommunities} onSelect={onSelect} onClose={() => setShow3D(false)} />
+      )}
+      <button className="map-globe-btn" onClick={() => setShowGlobe(true)}
+              title="The Living Globe — a rotating hologram of every community">
+        ◐ Living Globe
+      </button>
+      {showGlobe && window.LivingGlobe && (
+        <window.LivingGlobe all={allCommunities} onSelect={onSelect} onClose={() => setShowGlobe(false)} />
       )}
       <button className={`map-tour-btn ${tourActive?'on':''}`} onClick={() => tourActive ? stopTour() : startTour()} title="Sky tour: auto-fly between visible communities">
         {tourActive ? '■ Stop tour' : '✦ Sky tour'}
@@ -905,3 +912,176 @@ window.REGION_HEX = {
   South: '#b8351e', West: '#1a1612', North: '#cabd9c',
 };
 window.CanadaMap = CanadaMap;
+
+// ============================================================================
+// THE LIVING GLOBE — a state-of-the-art, no-API hologram Earth of Turtle
+// Island. Dotted continents on a dark ocean sphere; every community glows as a
+// light in its four-direction colour; drag to spin, click a light to open it.
+// Deliberately unlike the flat Directory map and unlike the satellite 3D view.
+// ============================================================================
+const _GLOBE_LAND = [
+  // North America (the detailed one — everything lives here)
+  [[-168,66],[-165,55],[-153,58],[-135,58],[-128,50],[-124,40],[-117,32],[-110,23],[-105,20],[-97,16],[-88,15],[-83,22],[-90,29],[-84,30],[-81,25],[-80,31],[-75,35],[-70,41],[-66,44],[-60,46],[-64,52],[-78,52],[-80,62],[-95,58],[-88,66],[-100,68],[-115,69],[-130,70],[-145,70],[-160,71]],
+  [[-46,60],[-40,66],[-24,70],[-18,76],[-30,83],[-50,82],[-58,76],[-54,66]],                          // Greenland
+  [[-80,9],[-77,1],[-81,-5],[-72,-17],[-71,-30],[-74,-45],[-66,-55],[-58,-52],[-50,-32],[-40,-22],[-35,-8],[-48,-1],[-60,5],[-72,11]],  // South America
+  [[-10,36],[-5,44],[3,43],[13,45],[20,40],[28,36],[36,36],[45,40],[50,44],[60,42],[70,30],[78,22],[90,22],[100,15],[108,20],[122,32],[130,34],[142,45],[155,58],[168,66],[140,73],[100,77],[60,72],[35,70],[15,60],[5,58],[-5,52]],  // Eurasia
+  [[-16,15],[-16,25],[-6,32],[10,33],[22,32],[32,31],[37,20],[43,12],[51,12],[42,-2],[40,-15],[33,-24],[25,-34],[18,-35],[12,-18],[9,4],[-7,5]],  // Africa
+  [[113,-22],[122,-18],[130,-12],[142,-11],[147,-20],[153,-28],[150,-38],[140,-38],[130,-32],[120,-34],[114,-30]],  // Australia
+];
+function _ptInRing(lng, lat, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+    if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+const _RAD = Math.PI / 180;
+function _toVec(lat, lng) {
+  const la = lat * _RAD, lo = lng * _RAD;
+  return [Math.cos(la) * Math.sin(lo), Math.sin(la), Math.cos(la) * Math.cos(lo)];
+}
+
+function LivingGlobe({ all, onSelect, onClose }) {
+  const canvasRef = useRef(null);
+  const stRef = useRef({ yaw: 84 * _RAD, pitch: 40 * _RAD, drag: false, lx: 0, ly: 0, moved: 0, autor: true, mx: -1, my: -1 });
+  const [hover, setHover] = useState(null);
+
+  // precompute the dotted land grid (unit vectors) once
+  const landDots = useMemo(() => {
+    const out = [];
+    for (let lat = -84; lat <= 84; lat += 2.6) {
+      for (let lng = -180; lng < 180; lng += 2.6) {
+        for (const ring of _GLOBE_LAND) { if (_ptInRing(lng, lat, ring)) { out.push(_toVec(lat, lng)); break; } }
+      }
+    }
+    return out;
+  }, []);
+  const sites = useMemo(() => all.filter(c => c.lat != null && c.lng != null).map(c => ({
+    c, v: _toVec(c.lat, c.lng),
+    col: (window.DIRECTION[c.direction || 'AllDirections'] || {}).color || '#d4a017',
+    r: 2.2 + Math.min(6, Math.sqrt((c.population || 300) / 500)),
+  })), [all]);
+  const stars = useMemo(() => Array.from({ length: 160 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.3 + 0.2, tw: Math.random() * 6.28 })), []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const DPR = Math.min(2, window.devicePixelRatio || 1);
+    let raf = null, W = 0, H = 0, cx = 0, cy = 0, R = 0;
+    function resize() {
+      W = canvas.clientWidth; H = canvas.clientHeight;
+      canvas.width = W * DPR; canvas.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      cx = W / 2; cy = H / 2; R = Math.min(W, H) * 0.36;
+    }
+    resize();
+    const ro = new ResizeObserver(resize); ro.observe(canvas);
+
+    function rot(v) {
+      const st = stRef.current, cy2 = Math.cos(st.yaw), sy2 = Math.sin(st.yaw), cp = Math.cos(st.pitch), sp = Math.sin(st.pitch);
+      const x1 = v[0] * cy2 + v[2] * sy2, z1 = -v[0] * sy2 + v[2] * cy2, y1 = v[1];
+      return [x1, y1 * cp - z1 * sp, y1 * sp + z1 * cp];
+    }
+    let t = 0;
+    function frame() {
+      raf = requestAnimationFrame(frame); t += 0.016;
+      const st = stRef.current;
+      if (st.autor && !st.drag) st.yaw += 0.0015;
+      ctx.clearRect(0, 0, W, H);
+      // starfield
+      for (const s of stars) {
+        ctx.globalAlpha = 0.25 + 0.55 * (0.5 + 0.5 * Math.sin(t * 1.5 + s.tw));
+        ctx.fillStyle = '#e9edf7';
+        ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, 6.283); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      // atmosphere halo
+      const atm = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.22);
+      atm.addColorStop(0, 'rgba(90,150,200,0.28)'); atm.addColorStop(1, 'rgba(90,150,200,0)');
+      ctx.fillStyle = atm; ctx.beginPath(); ctx.arc(cx, cy, R * 1.22, 0, 6.283); ctx.fill();
+      // ocean sphere, lit from upper-left
+      const oc = ctx.createRadialGradient(cx - R * 0.4, cy - R * 0.4, R * 0.1, cx, cy, R);
+      oc.addColorStop(0, '#1f3a52'); oc.addColorStop(0.6, '#14283a'); oc.addColorStop(1, '#0a1622');
+      ctx.fillStyle = oc; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.fill();
+      // graticule
+      ctx.strokeStyle = 'rgba(120,170,210,0.14)'; ctx.lineWidth = 0.8;
+      for (let la = -60; la <= 60; la += 30) {
+        ctx.beginPath(); let started = false;
+        for (let lo = -180; lo <= 180; lo += 6) { const p = rot(_toVec(la, lo)); if (p[2] > 0) { const sx = cx + R * p[0], sy = cy - R * p[1]; started ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); started = true; } else started = false; }
+        ctx.stroke();
+      }
+      for (let lo = -180; lo < 180; lo += 30) {
+        ctx.beginPath(); let started = false;
+        for (let la = -85; la <= 85; la += 5) { const p = rot(_toVec(la, lo)); if (p[2] > 0) { const sx = cx + R * p[0], sy = cy - R * p[1]; started ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); started = true; } else started = false; }
+        ctx.stroke();
+      }
+      // land dots (brighter on the lit day-side, toward upper-left)
+      for (const v of landDots) {
+        const p = rot(v); if (p[2] <= 0) continue;
+        const lit = 0.35 + 0.65 * Math.max(0, (-p[0] * 0.5 + p[1] * 0.5 + p[2] * 0.6));
+        ctx.fillStyle = `rgba(${Math.round(70 + 40 * lit)},${Math.round(150 + 60 * lit)},${Math.round(120 + 50 * lit)},${0.5 + 0.4 * p[2]})`;
+        ctx.beginPath(); ctx.arc(cx + R * p[0], cy - R * p[1], 1.05, 0, 6.283); ctx.fill();
+      }
+      // community lights (additive glow)
+      ctx.globalCompositeOperation = 'lighter';
+      let near = null, nd = 1e9;
+      for (const s of sites) {
+        const p = rot(s.v); if (p[2] <= 0.02) continue;
+        const sx = cx + R * p[0], sy = cy - R * p[1];
+        const pulse = 0.82 + 0.18 * Math.sin(t * 2 + s.v[0] * 10);
+        const gr = s.r * 2.1 * pulse;
+        const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, gr);
+        g.addColorStop(0, s.col + 'cc'); g.addColorStop(0.45, s.col + '55'); g.addColorStop(1, s.col + '00');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, gr, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.arc(sx, sy, 1.1, 0, 6.283); ctx.fill();
+        if (st.mx >= 0) { const dd = (sx - st.mx) ** 2 + (sy - st.my) ** 2; if (dd < nd && dd < 400) { nd = dd; near = { c: s.c, sx, sy }; } }
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      if (near && (!hover || hover.c.id !== near.c.id)) setHover(near);
+      else if (!near && hover) setHover(null);
+      canvas.__near = near;
+    }
+    raf = requestAnimationFrame(frame);
+    return () => { if (raf) cancelAnimationFrame(raf); ro.disconnect(); };
+  }, [landDots, sites, stars]);
+
+  const onDown = (e) => { const st = stRef.current; st.drag = true; st.moved = 0; st.lx = e.clientX; st.ly = e.clientY; };
+  const onMove = (e) => {
+    const st = stRef.current, rc = canvasRef.current.getBoundingClientRect();
+    st.mx = e.clientX - rc.left; st.my = e.clientY - rc.top;
+    if (st.drag) {
+      const dx = e.clientX - st.lx, dy = e.clientY - st.ly; st.moved += Math.abs(dx) + Math.abs(dy);
+      st.yaw += dx * 0.006; st.pitch = Math.max(-1.3, Math.min(1.3, st.pitch + dy * 0.006));
+      st.lx = e.clientX; st.ly = e.clientY;
+    }
+  };
+  const onUp = () => {
+    const st = stRef.current; const wasClick = st.moved < 6; st.drag = false;
+    if (wasClick) { const near = canvasRef.current && canvasRef.current.__near; if (near) { onSelect(near.c.id); onClose(); } }
+  };
+
+  return (
+    <div className="globe-overlay">
+      <canvas ref={canvasRef} className="globe-canvas"
+        onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
+        onPointerLeave={() => { stRef.current.drag = false; stRef.current.mx = -1; }} />
+      <div className="globe-head">
+        <div className="gh-eyebrow">The Living Globe</div>
+        <div className="gh-title">{sites.length} communities across Turtle Island</div>
+        <div className="gh-sub">Drag to spin · click a light to open a community</div>
+      </div>
+      <button className="globe-close" onClick={onClose} title="Back to the map">✕ Back to map</button>
+      <div className="globe-legend">
+        {['East','South','West','North'].map(d => (
+          <span key={d}><i style={{ background: window.DIRECTION[d].color }}></i>{window.DIRECTION[d].label}</span>
+        ))}
+      </div>
+      {hover && (
+        <div className="globe-tip" style={{ left: hover.sx + 14, top: hover.sy - 8 }}>
+          {hover.c.name.trim()}
+        </div>
+      )}
+    </div>
+  );
+}
+window.LivingGlobe = LivingGlobe;
