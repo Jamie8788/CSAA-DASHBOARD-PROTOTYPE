@@ -921,11 +921,14 @@ input:focus-visible,
   to   { opacity: 1; transform: translateY(0); }
 }
 .od-metric.primary {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
+  /* light + high-contrast: the old black tile with a gold-gradient number was
+     hard to read (Hassan) */
+  background: var(--east-glaze, #f7e8b6);
+  color: var(--ink);
+  border-color: var(--east, #d4a017);
+  border-width: 2px;
 }
-.od-metric.primary .od-metric-l { color: rgba(245,237,224,0.6); }
+.od-metric.primary .od-metric-l { color: var(--ink-3); }
 .od-metric.accent {
   border-color: var(--clay, #b8351e);
 }
@@ -943,10 +946,8 @@ input:focus-visible,
   letter-spacing: -0.02em;
 }
 .od-metric.primary .od-metric-n {
-  background: linear-gradient(180deg, #fbf6ec 0%, #d4a017 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--ink);
+  font-weight: 600;
 }
 .od-metric-of {
   font-size: 14px;
@@ -954,7 +955,7 @@ input:focus-visible,
   font-style: normal;
   margin-left: 2px;
 }
-.od-metric.primary .od-metric-of { color: rgba(245,237,224,0.5); }
+.od-metric.primary .od-metric-of { color: var(--ink-3); }
 .od-metric-l {
   font-family: var(--mono); font-size: 9.5px;
   letter-spacing: 0.14em; text-transform: uppercase;
