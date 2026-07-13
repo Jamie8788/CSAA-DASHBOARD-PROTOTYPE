@@ -1901,7 +1901,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     // making villagers look ghostly. Now they hand over over a narrow ~10% window
     // centred at nm=0.5, so figures cleanly fade out / in at scene change.
     const dayA   = _clamp((0.45 - nm) / 0.10, 0, 1);   // day is OVER by nm 0.45 — evening then owns the bank until the night circle forms
-    const nightA = _clamp((nm - 0.52) / 0.10, 0, 1);   // the story circle forms only AFTER the evening pack-up ends (was overlapping = dusk and night looked identical)
+    const nightA = _clamp((nm - 0.62) / 0.10, 0, 1);   // the story circle waits for TRUE DARK — under the red sunset sky only the supper/pack-up scene plays
     if (dayA > 0.02) {
       ctx.save(); ctx.globalAlpha = dayA;
       // ---- VILLAGE STAGED AS WORK VIGNETTES ----
@@ -2494,7 +2494,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         const cxr = W * 0.593 + Math.sin(u) * W * 0.004;
         const orb = Math.sin(u * 1.7) * 12;
         const cdir = Math.cos(u * 1.7) >= 0 ? 1 : -1;
-        fig(cxr, ground(cxr) + 6, 0.9, 'walk', 0.3, { shirt: '#d68a1f', hairStyle: 'braid', dir: cdir });
+        fig(cxr, ground(cxr) + 6, 0.9, 'walk', 0.3, { shirt: '#d68a1f', hairStyle: 'short', dir: cdir });
         const dxr = cxr + orb, hop = Math.abs(Math.sin(tt * 6)) * 2.5;
         ctx.translate(dxr, ground(dxr) + 6 - hop); ctx.scale(cdir * 1.7, 1.7);
         // REDESIGNED as a proper rez dog: deeper chest, shorter muzzle, perked
@@ -2566,7 +2566,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         const fromI = Math.floor(cycT), toI = (fromI + 1) % 3, u3 = cycT - fromI;
         pts.forEach(([px3, py3], i3) => {
           const isCatching = i3 === toI && u3 > 0.6;
-          fig(px3, py3, 0.95, 'wave', i3 * 1.7, { shirt: ['#c93a1e', '#1f4e8f', '#d68a1f'][i3], hairStyle: i3 % 2 ? 'braid' : 'long', dir: px3 < pts[toI][0] ? 1 : -1 });
+          fig(px3, py3, 0.95, 'wave', i3 * 1.7, { shirt: ['#c93a1e', '#1f4e8f', '#d68a1f'][i3], hairStyle: ['short', 'braid', 'short'][i3], dir: px3 < pts[toI][0] ? 1 : -1 });
           void isCatching;
           // the netted lacrosse stick, held up
           const sx3 = px3 + 8, sy3 = py3 - 26;
@@ -2615,7 +2615,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       {
         ctx.save(); ctx.globalAlpha = dayA;
         const rpx = W * 0.925, rpy = ground(W * 0.925) + 40;
-        fig(rpx, rpy, 0.95, 'wave', 0.8, { shirt: '#1f4e8f', hairStyle: 'braid', dir: 1 });
+        fig(rpx, rpy, 0.95, 'wave', 0.8, { shirt: '#1f4e8f', hairStyle: 'short', dir: 1 });
         const hx3 = rpx + 8, hy3 = rpy - 24;                                            // hand with the pin
         ctx.strokeStyle = 'rgb(120,88,50)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(hx3, hy3); ctx.lineTo(hx3 + 7, hy3 - 6); ctx.stroke();  // the pin (stick)
@@ -2625,6 +2625,63 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.beginPath(); ctx.moveTo(hx3 + 7, hy3 - 6); ctx.lineTo(ringX, ringY); ctx.stroke();  // the cord
         ctx.strokeStyle = 'rgb(160,120,70)'; ctx.lineWidth = 1.4;
         ctx.beginPath(); ctx.arc(ringX, ringY, 2.6, 0, 6.283); ctx.stroke();            // the ring
+        ctx.restore();
+      }
+
+      // (4) HOOP GAME — a boy ROLLS a hoop across the grass while his friend
+      //     throws a short spear at it as it passes (documented practice for
+      //     hunting accuracy). The hoop actually rolls and spins.
+      {
+        ctx.save(); ctx.globalAlpha = dayA;
+        const hgy0 = ground(W * 0.73) + 52;
+        const roll = Math.sin(tt * 0.6);
+        const hoopX = W * 0.73 + roll * 46, hoopY = hgy0 - 5;
+        // the roller boy chases the hoop
+        const chX = hoopX - 22 * Math.sign(Math.cos(tt * 0.6) || 1);
+        fig(chX, hgy0, 0.95, 'walk', 0.6, { shirt: '#5a7d3a', hairStyle: 'short', dir: Math.cos(tt * 0.6) >= 0 ? 1 : -1 });
+        // the thrower boy waits mid-field
+        fig(W * 0.73, hgy0 + 14, 1.0, 'wave', 1.9, { shirt: '#c93a1e', hairStyle: 'short', dir: hoopX > W * 0.73 ? 1 : -1 });
+        // the rolling, spinning hoop
+        ctx.save(); ctx.translate(hoopX, hoopY); ctx.rotate(tt * 4 * (Math.cos(tt * 0.6) >= 0 ? 1 : -1));
+        ctx.strokeStyle = 'rgb(150,110,64)'; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.arc(0, 0, 6, 0, 6.283); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(6, 0); ctx.stroke();     // the sinew cross
+        ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(0, 6); ctx.stroke();
+        ctx.restore();
+        // the short spear flies at the hoop when it crosses the middle
+        const spT = Math.abs(roll) < 0.25 ? (0.25 - Math.abs(roll)) / 0.25 : 0;
+        if (spT > 0) {
+          ctx.strokeStyle = 'rgb(120,88,50)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+          const spx = W * 0.73 + 8, spy = hgy0 - 4 - spT * 16;
+          ctx.beginPath(); ctx.moveTo(spx, spy + 5); ctx.lineTo(spx + 2, spy - 5); ctx.stroke();
+        }
+        ctx.restore();
+      }
+      // (5) MEDICINE GATHERING — two women with a basket, kneeling among the
+      //     flowering bushes, picking and sorting (the plants have a purpose).
+      {
+        ctx.save(); ctx.globalAlpha = dayA;
+        const mgx3 = W * 0.565, mgy3 = ground(W * 0.565) + 50;
+        fig(mgx3 - 10, mgy3, 1.2, 'scrape', 0.7, { shirt: '#7c2f6b', hairStyle: 'braid', dir: 1 });   // kneeling, picking
+        fig(mgx3 + 14, mgy3 - 2, 1.3, 'carry', 2.2, { shirt: '#5a7d3a', hairStyle: 'long', dir: -1 }); // holding the basket
+        ctx.fillStyle = 'rgb(140,100,58)';                                                            // the gathering basket
+        ctx.beginPath(); ctx.ellipse(mgx3 + 20, mgy3 - 22, 4.5, 3, 0, 0, Math.PI); ctx.fill();
+        ctx.restore();
+      }
+      // (6) CARVING TEACHING — an elder man shows a boy how to carve; small
+      //     strokes of the knife, shavings on the ground between them.
+      {
+        ctx.save(); ctx.globalAlpha = dayA;
+        const cvx = W * 0.645, cvy = ground(W * 0.645) + 54;
+        fig(cvx - 11, cvy, 1.35, 'sit', 0.5, { shirt: '#5a3a2a', hairStyle: 'short', hair: '#8d8478', dir: 1 });  // the elder
+        fig(cvx + 12, cvy, 0.95, 'sit', 1.7, { shirt: '#1f4e8f', hairStyle: 'short', dir: -1 });                  // the boy, watching
+        const kv = Math.sin(tt * 3.2) * 2;                                        // the knife strokes
+        ctx.strokeStyle = 'rgb(120,88,50)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(cvx - 5, cvy - 12); ctx.lineTo(cvx + 1 + kv, cvy - 15); ctx.stroke();   // the workpiece
+        ctx.strokeStyle = 'rgb(190,170,130)'; ctx.lineWidth = 0.9;
+        for (let sh2 = 0; sh2 < 4; sh2++) {                                       // shavings
+          ctx.beginPath(); ctx.arc(cvx - 2 + sh2 * 2.5, cvy + 3, 1.0, 0, Math.PI); ctx.stroke();
+        }
         ctx.restore();
       }
 
@@ -3061,14 +3118,14 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   tools brought home to the lodge, one figure pausing to watch the
       //   sunset over the water. Fades out as the bonfire circle forms. ----
       {
-        const evA = _clamp((nm - 0.30) / 0.08, 0, 1) * (1 - _clamp((nm - 0.50) / 0.08, 0, 1));   // full from nm 0.38-0.50: a REAL evening act before the night circle forms at 0.52
+        const evA = _clamp((nm - 0.30) / 0.08, 0, 1) * (1 - _clamp((nm - 0.55) / 0.10, 0, 1));   // evening OWNS the red-sky window (nm 0.38-0.55); the circle only forms in true dark (0.62+)
         if (evA > 0.04) {
           ctx.save(); ctx.globalAlpha = evA;
           fig(W * 0.671, ground(W * 0.671) + 5, 1.35, 'carry', 0.7, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });   // fish off the rack
           fig(W * 0.725, ground(W * 0.725) + 5, 1.3, 'carry', 2.9, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });     // tools home to the lodge
           fig(W * 0.70, ground(W * 0.70) + 5, 1.4, 'wave', 1.6, { shirt: '#c93a1e', hairStyle: 'braid', hair: '#938a7d', dir: -1 });      // grey-haired elder pausing to watch the sunset
           fig(W * 0.865, ground(W * 0.865) + 5, 1.3, 'carry', 3.7, { shirt: '#7c2f6b', hairStyle: 'long', dir: -1 });     // hide bundles carried home from the smokehouse end
-          fig(W * 0.645, ground(W * 0.645) + 5, 0.9, 'walk', 1.2, { shirt: '#d68a1f', hairStyle: 'braid', dir: 1 });      // child being shepherded home
+          fig(W * 0.645, ground(W * 0.645) + 5, 0.9, 'walk', 1.2, { shirt: '#d68a1f', hairStyle: 'short', dir: 1 });      // young boy being shepherded home
           // SUPPER AT THE FIRE (evening's own scene — the seated story circle
           // only assembles later, at night): cook tripod + hanging pot + steam
           {
