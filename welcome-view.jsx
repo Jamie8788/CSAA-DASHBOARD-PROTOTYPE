@@ -1365,17 +1365,16 @@ function drawScene(ctx, W, H, p, tt, now) {
     //   depth, like a far bank rising behind the near one. ----
     const backLift = (x) => 62 * _clamp((x - lx0) / (W * 0.07), 0, 1);
     {
-      const etB = et.map(v => Math.round(v * 0.86));
-      const ebB = eb.map(v => Math.round(v * 0.86));
-      const lgrB = ctx.createLinearGradient(0, H * 0.58, 0, H);
-      lgrB.addColorStop(0, `rgb(${etB.join(',')})`); lgrB.addColorStop(1, `rgb(${ebB.join(',')})`);
-      ctx.fillStyle = lgrB;
+      // SAME paint as the front bank — a darker variant read as a weird
+      // off-colour band ("patch"); the terrace now shows only as a soft
+      // crest line, like one continuous hill stepping down to the water
+      ctx.fillStyle = lgr;
       ctx.beginPath(); ctx.moveTo(lx0, H);
       for (let x = lx0; x <= W; x += 10) ctx.lineTo(x, shoreY(x) - backLift(x));
       ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
       // soft lit edge along the back-bank crest (matches the shore treatment)
       const hzB = _rampA(SKY_HORIZ, p);
-      ctx.strokeStyle = `rgba(${hzB[0]},${hzB[1]},${hzB[2]},0.22)`; ctx.lineWidth = 1.4;
+      ctx.strokeStyle = `rgba(${hzB[0]},${hzB[1]},${hzB[2]},0.34)`; ctx.lineWidth = 1.6;
       ctx.beginPath();
       for (let x = lx0 + 8; x <= W; x += 10) { const y = shoreY(x) - backLift(x) + Math.sin(x * 0.045 + tt * 1.2) * 1.0; x === lx0 + 8 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
       ctx.stroke();
@@ -1942,7 +1941,7 @@ function drawScene(ctx, W, H, p, tt, now) {
     // making villagers look ghostly. Now they hand over over a narrow ~10% window
     // centred at nm=0.5, so figures cleanly fade out / in at scene change.
     const dayA   = _clamp((0.45 - nm) / 0.10, 0, 1);   // day is OVER by nm 0.45 — evening then owns the bank until the night circle forms
-    const nightA = _clamp((nm - 0.45) / 0.10, 0, 1);   // 0 below 0.45, 1 above 0.55
+    const nightA = _clamp((nm - 0.52) / 0.10, 0, 1);   // the story circle forms only AFTER the evening pack-up ends (was overlapping = dusk and night looked identical)
     if (dayA > 0.02) {
       ctx.save(); ctx.globalAlpha = dayA;
       // ---- VILLAGE STAGED AS WORK VIGNETTES ----
@@ -2414,7 +2413,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         const mxp = logX + run * (logLen / 2 - 10 * MS);
         const mdir = Math.cos(tt * 0.9) >= 0 ? -1 : 1;                      // face the travel direction
         const gallop = Math.abs(Math.sin(tt * 7)) * 1.6;                    // bounding arch of the back
-        const bodyY = logY - 5 - gallop * MS * 0.4;
+        const bodyY = logY - 5 - gallop * MS * 0.08;                        // body stays LEVEL; the legs do the running (it used to bounce like a pogo)
         _tpReg(mxp - mdir * 4 * MS, bodyY - 3 * MS, 30, dayA, 'Waabizheshii', 'Bravery');   // rides the shoulders
         ctx.save(); ctx.globalAlpha = dayA;
         // the fallen mossy log it runs along
@@ -2451,13 +2450,15 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.quadraticCurveTo(7, 1.6, 2, 1.8);                        // belly
         ctx.quadraticCurveTo(-4, 2.0, -8, 0.4);
         ctx.closePath(); ctx.fill();
-        // legs — front pair reaches, back pair pushes (bounding gait)
+        // legs — a real RUN CYCLE: each pair swings reach->push, front and
+        // back pairs in opposite phase (this is the animation; the body only
+        // whispers up and down)
         ctx.strokeStyle = furDk; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
-        const fl = 3.0 - arch, bl = 3.0 + arch;
-        ctx.beginPath(); ctx.moveTo(-6, 1.2); ctx.lineTo(-7 - arch * 0.6, 3.4); ctx.stroke();   // front near
-        ctx.beginPath(); ctx.moveTo(-4.4, 1.4); ctx.lineTo(-4.6, 3.4); ctx.stroke();            // front far
-        ctx.beginPath(); ctx.moveTo(5, 1.4); ctx.lineTo(6 + arch * 0.6, 3.4); ctx.stroke();     // back near
-        ctx.beginPath(); ctx.moveTo(3.4, 1.5); ctx.lineTo(3.6, 3.4); ctx.stroke();              // back far
+        const runC = Math.sin(tt * 7);
+        ctx.beginPath(); ctx.moveTo(-6, 1.2); ctx.lineTo(-6 - runC * 2.4, 3.4); ctx.stroke();     // front near swings
+        ctx.beginPath(); ctx.moveTo(-4.4, 1.4); ctx.lineTo(-4.4 + runC * 2.0, 3.4); ctx.stroke(); // front far opposes
+        ctx.beginPath(); ctx.moveTo(5, 1.4); ctx.lineTo(5 + runC * 2.4, 3.4); ctx.stroke();       // back near pushes
+        ctx.beginPath(); ctx.moveTo(3.4, 1.5); ctx.lineTo(3.4 - runC * 2.0, 3.4); ctx.stroke();   // back far opposes
         // neck + pointed head reaching forward-low
         ctx.fillStyle = fur;
         ctx.beginPath();
@@ -3001,7 +3002,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   tools brought home to the lodge, one figure pausing to watch the
       //   sunset over the water. Fades out as the bonfire circle forms. ----
       {
-        const evA = _clamp((nm - 0.35) / 0.08, 0, 1) * (1 - _clamp((nm - 0.44) / 0.08, 0, 1));
+        const evA = _clamp((nm - 0.30) / 0.08, 0, 1) * (1 - _clamp((nm - 0.50) / 0.08, 0, 1));   // full from nm 0.38-0.50: a REAL evening act before the night circle forms at 0.52
         if (evA > 0.04) {
           ctx.save(); ctx.globalAlpha = evA;
           fig(W * 0.671, ground(W * 0.671) + 5, 1.35, 'carry', 0.7, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });   // fish off the rack
@@ -3009,6 +3010,32 @@ function drawScene(ctx, W, H, p, tt, now) {
           fig(W * 0.70, ground(W * 0.70) + 5, 1.4, 'wave', 1.6, { shirt: '#c93a1e', hairStyle: 'braid', hair: '#938a7d', dir: -1 });      // grey-haired elder pausing to watch the sunset
           fig(W * 0.865, ground(W * 0.865) + 5, 1.3, 'carry', 3.7, { shirt: '#7c2f6b', hairStyle: 'long', dir: -1 });     // hide bundles carried home from the smokehouse end
           fig(W * 0.645, ground(W * 0.645) + 5, 0.9, 'walk', 1.2, { shirt: '#d68a1f', hairStyle: 'braid', dir: 1 });      // child being shepherded home
+          // SUPPER AT THE FIRE (evening's own scene — the seated story circle
+          // only assembles later, at night): cook tripod + hanging pot + steam
+          {
+            const tpx = fx, tpy = ground(fx) + 16;
+            ctx.strokeStyle = 'rgb(52,32,16)'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(tpx - 12, tpy); ctx.lineTo(tpx, tpy - 26); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(tpx + 12, tpy); ctx.lineTo(tpx, tpy - 26); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(tpx + 2, tpy - 2); ctx.lineTo(tpx, tpy - 26); ctx.stroke();
+            ctx.strokeStyle = 'rgb(30,22,14)'; ctx.lineWidth = 1.0;
+            ctx.beginPath(); ctx.moveTo(tpx, tpy - 24); ctx.lineTo(tpx, tpy - 15); ctx.stroke();   // hanger
+            ctx.fillStyle = 'rgb(40,36,34)';
+            ctx.beginPath(); ctx.ellipse(tpx, tpy - 11, 6.5, 4.5, 0, 0, Math.PI); ctx.fill();      // the pot
+            ctx.fillRect(tpx - 6.5, tpy - 13.5, 13, 3);
+            puffSmoke(tpx, tpy - 16, 0.4, evA * 0.5);                                              // supper steam
+            fig(fx - 20, ground(fx - 20) + 12, 1.35, 'stir', 0.4, { shirt: '#d68a1f', hairStyle: 'braid', dir: 1 });   // the cook
+            fig(fx + 26, ground(fx + 26) + 10, 1.3, 'carry', 2.0, { shirt: '#3a4658', hairStyle: 'short', dir: -1 }); // wood for the night fire
+          }
+          // EVENING SMUDGE — an elder stands quietly with the smudge bowl as
+          // the sun goes down, sweetgrass smoke curling up (dusk-only)
+          {
+            const smX = W * 0.60, smY = ground(W * 0.60) + 6;
+            fig(smX, smY, 1.4, 'carry', 0.9, { shirt: '#5a3a2a', hairStyle: 'long', hair: '#938a7d', dir: -1 });
+            ctx.fillStyle = 'rgb(60,44,26)';
+            ctx.beginPath(); ctx.ellipse(smX - 9, smY - 26, 2.6, 1.2, 0, 0, Math.PI); ctx.fill();  // the bowl in his hands
+            puffSmoke(smX - 9, smY - 28, 0.28, evA * 0.55);                                         // sweetgrass wisp
+          }
           ctx.restore();
         }
       }
@@ -3078,6 +3105,9 @@ function drawScene(ctx, W, H, p, tt, now) {
       //     burning at the bow drawing fish, the fisher poised with a spear.
       //     A real, documented Anishinaabe night practice.
       {
+        const tfA = 1 - _smooth(0.86, 0.95, p);                          // paddles home before deep night
+        if (tfA < 0.04) { /* gone for the night */ } else {
+        ctx.save(); ctx.globalAlpha *= tfA;                              // scoped: must not dim anything after this block
         const tfx = W * 0.15 + Math.sin(tt * 0.15) * 12;                // drifts gently
         const tfy = hY + (H - hY) * 0.66;
         const bobT = Math.sin(tt * 1.1) * 1.2;
@@ -3128,8 +3158,28 @@ function drawScene(ctx, W, H, p, tt, now) {
           ctx.globalAlpha = 1;
         }
         ctx.restore();
+        ctx.restore();                                                 // (pop the curfew alpha scope)
+        }                                                              // (end torch-fisher curfew gate)
       }
-      // (2) STARGAZERS — two figures lying back on the high bank, one arm
+      // (2) THE MOCCASIN GAME — a favourite Anishinaabe night game: two players
+      //     over a blanket, four moccasins hiding the marked bullet, the
+      //     guesser's striker stick swinging as the drum keeps time.
+      {
+        const mgx = W * 0.615, mgy = ground(W * 0.615) + 10;
+        ctx.fillStyle = 'rgba(122,44,34,0.9)';                                       // the game blanket
+        ctx.beginPath(); ctx.ellipse(mgx, mgy + 1, 12, 3.4, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgb(64,44,26)';                                             // the four moccasins
+        for (let m2 = 0; m2 < 4; m2++) {
+          ctx.beginPath(); ctx.ellipse(mgx - 6 + m2 * 4, mgy - 0.5, 1.7, 1.0, 0, 0, 6.283); ctx.fill();
+        }
+        fig(mgx - 15, mgy, 1.3, 'sit', 0.6, { shirt: '#1f4e8f', hairStyle: 'short', dir: 1 });   // the hider
+        fig(mgx + 15, mgy, 1.35, 'sit', 1.8, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 }); // the guesser
+        const strike = Math.sin(tt * 2.6) * 0.55;                                    // striker stick swings as he guesses
+        ctx.strokeStyle = 'rgb(120,90,50)'; ctx.lineWidth = 1.3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(mgx + 9, mgy - 8);
+        ctx.lineTo(mgx + 9 - Math.cos(strike) * 9, mgy - 8 - Math.sin(strike + 0.7) * 8); ctx.stroke();
+      }
+      // (3) STARGAZERS — two figures lying back on the high bank, one arm
       //     raised, tracing the star stories across the night sky.
       {
         const sgx = W * 0.845, sgy = ground(W * 0.845) + 4;
