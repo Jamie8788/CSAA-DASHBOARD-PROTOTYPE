@@ -2529,6 +2529,105 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.restore();
       }
 
+      // ---- FIELD PLANTS: low bushes + flowering clumps scattered through the
+      //   open land at varied DEPTHS (not along any line) so the big green
+      //   field reads as living ground, never empty. Sparse on purpose. ----
+      {
+        const bushes = [                       // [xFrac, depth, size, flowered]
+          [0.475, 30, 1.0, 1], [0.545, 46, 0.8, 0], [0.615, 52, 1.1, 1],
+          [0.685, 40, 0.85, 0], [0.755, 55, 1.15, 1], [0.815, 30, 0.8, 0],
+          [0.875, 48, 1.0, 1], [0.955, 40, 0.9, 0],
+        ];
+        for (const [bxf, bd, bs, fl3] of bushes) {
+          const bx3 = W * bxf, by3 = ground(bx3) + bd;
+          const g1 = `rgb(${Math.round(_lerp(58,28,nm))},${Math.round(_lerp(96,48,nm))},${Math.round(_lerp(40,22,nm))})`;
+          const g2 = `rgb(${Math.round(_lerp(74,36,nm))},${Math.round(_lerp(116,58,nm))},${Math.round(_lerp(50,28,nm))})`;
+          ctx.fillStyle = g1;
+          ctx.beginPath(); ctx.ellipse(bx3, by3, 13 * bs, 6 * bs, 0, 0, 6.283); ctx.fill();
+          ctx.fillStyle = g2;
+          ctx.beginPath(); ctx.ellipse(bx3 - 4 * bs, by3 - 3 * bs, 8 * bs, 4.5 * bs, 0, 0, 6.283); ctx.fill();
+          if (fl3) {                                            // a few berry/flower dots
+            ctx.fillStyle = `rgba(${Math.round(_lerp(216,110,nm))},${Math.round(_lerp(120,60,nm))},${Math.round(_lerp(140,70,nm))},0.9)`;
+            for (let fd = 0; fd < 3; fd++) {
+              ctx.beginPath(); ctx.arc(bx3 - 6 * bs + fd * 5 * bs, by3 - 4 * bs + (fd % 2) * 2, 1.3, 0, 6.283); ctx.fill();
+            }
+          }
+        }
+      }
+
+      // ---- AFTERNOON GAMES in the open field (from documented Anishinaabe
+      //   life-skills games — NPS teaching materials): ----
+      // (1) BAAGA'ADOWE (traditional lacrosse): three kids pass a ball between
+      //     netted sticks — the ball ARCS from player to player.
+      {
+        ctx.save(); ctx.globalAlpha = dayA;
+        const pts = [[W * 0.805, ground(W * 0.805) + 42], [W * 0.85, ground(W * 0.85) + 56], [W * 0.885, ground(W * 0.885) + 38]];
+        const cycT = (tt * 0.55) % 3;
+        const fromI = Math.floor(cycT), toI = (fromI + 1) % 3, u3 = cycT - fromI;
+        pts.forEach(([px3, py3], i3) => {
+          const isCatching = i3 === toI && u3 > 0.6;
+          fig(px3, py3, 0.95, 'wave', i3 * 1.7, { shirt: ['#c93a1e', '#1f4e8f', '#d68a1f'][i3], hairStyle: i3 % 2 ? 'braid' : 'long', dir: px3 < pts[toI][0] ? 1 : -1 });
+          void isCatching;
+          // the netted lacrosse stick, held up
+          const sx3 = px3 + 8, sy3 = py3 - 26;
+          ctx.strokeStyle = 'rgb(110,78,42)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(px3 + 4, py3 - 12); ctx.lineTo(sx3, sy3); ctx.stroke();
+          ctx.strokeStyle = 'rgba(214,196,160,0.9)'; ctx.lineWidth = 1.1;
+          ctx.beginPath(); ctx.arc(sx3 + 1, sy3 - 2, 3.4, 0, 6.283); ctx.stroke();      // the net hoop
+          ctx.beginPath(); ctx.moveTo(sx3 - 1.5, sy3 - 3.5); ctx.lineTo(sx3 + 3.5, sy3 - 0.5); ctx.stroke();
+        });
+        // the ball in flight — a true arc between the two active sticks
+        const [fx3, fy3] = pts[fromI], [tx3, ty3] = pts[toI];
+        const bx4 = _lerp(fx3 + 9, tx3 + 9, u3);
+        const by4 = _lerp(fy3 - 28, ty3 - 28, u3) - Math.sin(u3 * Math.PI) * 26;
+        ctx.fillStyle = 'rgb(214,186,140)';
+        ctx.beginPath(); ctx.arc(bx4, by4, 2.4, 0, 6.283); ctx.fill();
+        ctx.restore();
+      }
+      // (2) STICK DICE — a game of chance: two players over a hide, six flat
+      //     sticks TOSSED UP on a cycle, tumbling, then read where they land.
+      {
+        ctx.save(); ctx.globalAlpha = dayA;
+        const sdx = W * 0.505, sdy = ground(W * 0.505) + 34;
+        ctx.fillStyle = 'rgba(150,116,78,0.85)';                                       // the hide they play on
+        ctx.beginPath(); ctx.ellipse(sdx, sdy + 2, 11, 3, 0, 0, 6.283); ctx.fill();
+        fig(sdx - 14, sdy, 1.15, 'sit', 0.4, { shirt: '#5a7d3a', hairStyle: 'short', dir: 1 });
+        fig(sdx + 14, sdy, 1.1, 'sit', 1.6, { shirt: '#7c2f6b', hairStyle: 'braid', dir: -1 });
+        const tossT = (tt % 3.5) / 3.5;                                                 // toss every ~3.5s
+        for (let st2 = 0; st2 < 6; st2++) {
+          const lx3 = sdx - 5 + st2 * 2;
+          if (tossT < 0.22) {                                                           // sticks in the AIR, tumbling
+            const h3 = Math.sin(tossT / 0.22 * Math.PI) * 16;
+            ctx.save(); ctx.translate(lx3, sdy - 2 - h3); ctx.rotate(tossT * 12 + st2);
+            ctx.strokeStyle = 'rgb(200,172,128)'; ctx.lineWidth = 1.2;
+            ctx.beginPath(); ctx.moveTo(-2.6, 0); ctx.lineTo(2.6, 0); ctx.stroke();
+            ctx.restore();
+          } else {                                                                      // landed flat on the hide
+            ctx.strokeStyle = st2 % 2 ? 'rgb(200,172,128)' : 'rgb(120,84,48)';          // marked / blank sides
+            ctx.lineWidth = 1.2;
+            ctx.beginPath(); ctx.moveTo(lx3 - 2.4, sdy + 1); ctx.lineTo(lx3 + 2.4, sdy + 1); ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
+      // (3) RING AND PIN — one kid practicing the classic catch: the ring
+      //     swings up on its cord toward the pin, again and again.
+      {
+        ctx.save(); ctx.globalAlpha = dayA;
+        const rpx = W * 0.925, rpy = ground(W * 0.925) + 40;
+        fig(rpx, rpy, 0.95, 'wave', 0.8, { shirt: '#1f4e8f', hairStyle: 'braid', dir: 1 });
+        const hx3 = rpx + 8, hy3 = rpy - 24;                                            // hand with the pin
+        ctx.strokeStyle = 'rgb(120,88,50)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(hx3, hy3); ctx.lineTo(hx3 + 7, hy3 - 6); ctx.stroke();  // the pin (stick)
+        const sw4 = Math.sin(tt * 2.4);                                                 // the ring swings up on its cord
+        const ringX = hx3 + 7 + Math.sin(sw4) * 8, ringY = hy3 - 6 + Math.abs(Math.cos(sw4)) * 9;
+        ctx.strokeStyle = 'rgba(214,196,160,0.8)'; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(hx3 + 7, hy3 - 6); ctx.lineTo(ringX, ringY); ctx.stroke();  // the cord
+        ctx.strokeStyle = 'rgb(160,120,70)'; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.arc(ringX, ringY, 2.6, 0, 6.283); ctx.stroke();            // the ring
+        ctx.restore();
+      }
+
       // ---- LAND PLANTS on the LHS bank (Hassan: "where are the plants on the
       //   land? they can all be on LHS"): clumps of green grass/sedge tufts and
       //   a few flowering stems, swaying. ----
