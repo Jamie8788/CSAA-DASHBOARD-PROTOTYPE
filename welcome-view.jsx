@@ -1357,86 +1357,46 @@ function drawScene(ctx, W, H, p, tt, now) {
     const eb = [Math.round(_lerp(42, 17, nm)), Math.round(_lerp(48, 22, nm)), Math.round(_lerp(28, 14, nm))];
     const lgr = ctx.createLinearGradient(0, H * 0.66, 0, H);
     lgr.addColorStop(0, `rgb(${et.join(',')})`); lgr.addColorStop(1, `rgb(${eb.join(',')})`);
-    // ---- BACK BANK (the structural fix for "people in the water"): a second,
-    //   HIGHER band of land running the WHOLE shoreline, drawn BEHIND everyone.
-    //   Raising the walk-line itself never works — people stand ON the line, so
-    //   they always poke above it. This terrace puts grass behind their bodies
-    //   everywhere, exactly like the knoll did locally. Slightly darker for
-    //   depth, like a far bank rising behind the near one. ----
-    const backLift = (x) => 62 * _clamp((x - lx0) / (W * 0.07), 0, 1);
-    {
-      // SAME paint as the front bank — a darker variant read as a weird
-      // off-colour band ("patch"); the terrace now shows only as a soft
-      // crest line, like one continuous hill stepping down to the water
-      ctx.fillStyle = lgr;
-      ctx.beginPath(); ctx.moveTo(lx0, H);
-      for (let x = lx0; x <= W; x += 10) ctx.lineTo(x, shoreY(x) - backLift(x));
-      ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
-      // soft lit edge along the back-bank crest (matches the shore treatment)
-      const hzB = _rampA(SKY_HORIZ, p);
-      ctx.strokeStyle = `rgba(${hzB[0]},${hzB[1]},${hzB[2]},0.34)`; ctx.lineWidth = 1.6;
-      ctx.beginPath();
-      for (let x = lx0 + 8; x <= W; x += 10) { const y = shoreY(x) - backLift(x) + Math.sin(x * 0.045 + tt * 1.2) * 1.0; x === lx0 + 8 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
-      ctx.stroke();
-    }
+    // ---- THE LAND — ONE unified silhouette ----
+    // The whole-shore terrace (62px, so bodies are always against grass) and
+    // the gathering knoll are folded into a SINGLE curve, drawn as ONE fill
+    // with ONE waterline strip along its true edge. No second fill, no strips
+    // crossing mid-hill ("gap line"), no knoll patch, and the path closes with
+    // an explicit corner point so no wedge is ever missing at the right edge.
+    const kL = W * 0.595, kR = W * 0.755;
+    const backLift = (x) => {
+      const terrace = 62 * _clamp((x - lx0) / (W * 0.07), 0, 1);
+      const knoll = (x > kL && x < kR) ? 74 * Math.sin(((x - kL) / (kR - kL)) * Math.PI) : 0;
+      return Math.max(terrace, knoll);
+    };
+    const silY = (x) => shoreY(x) - backLift(x);
     ctx.fillStyle = lgr;
     ctx.beginPath(); ctx.moveTo(lx0, H);
-    for (let x = lx0; x <= W; x += 10) ctx.lineTo(x, shoreY(x));
+    for (let x = lx0; x <= W; x += 8) ctx.lineTo(x, silY(x));
+    ctx.lineTo(W, silY(W));                                  // explicit final edge point
     ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
-    // a paler sandy strip + lit waterline blend the lake into the land
+    // the sandy waterline strip + lit edge hug the TRUE silhouette only
     ctx.save(); ctx.globalAlpha = 0.5; ctx.lineCap = 'round';
     ctx.strokeStyle = `rgb(${Math.round(_lerp(120, 58, nm))},${Math.round(_lerp(112, 54, nm))},${Math.round(_lerp(84, 40, nm))})`;
     ctx.lineWidth = 4; ctx.beginPath();
-    for (let x = lx0; x <= W; x += 8) { const y = shoreY(x) + 3 + Math.sin(x * 0.05 + tt * 1.5) * 1.2; x === lx0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+    for (let x = lx0; x <= W; x += 8) { const y = silY(x) + 3 + Math.sin(x * 0.05 + tt * 1.5) * 1.2; x === lx0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+    ctx.lineTo(W, silY(W) + 3);
     ctx.stroke(); ctx.restore();
     const hzc = _rampA(SKY_HORIZ, p);
     ctx.strokeStyle = `rgba(${hzc[0]},${hzc[1]},${hzc[2]},0.28)`; ctx.lineWidth = 1.6; ctx.beginPath();
-    for (let x = lx0; x <= W; x += 8) { const y = shoreY(x) + Math.sin(x * 0.05 + tt * 1.5) * 1.2; x === lx0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+    for (let x = lx0; x <= W; x += 8) { const y = silY(x) + Math.sin(x * 0.05 + tt * 1.5) * 1.2; x === lx0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+    ctx.lineTo(W, silY(W));
     ctx.stroke();
-    // ---- GATHERING KNOLL: a grassy rise BEHIND the fire circle. Figures on a
-    //   2D shoreline always have the lake directly above the bank line, so any
-    //   standing person's head reads as "in the water". This knoll puts LAND
-    //   behind the whole gathering — heads are now against grass, never lake. ----
-    {
-      const kL = W * 0.595, kR = W * 0.755, kx = W * 0.672, kh = 74;
-      // CRITICAL: paint with the SAME gradient object as the bank (lgr) — a
-      // separate gradient had a different vertical range, so everything below
-      // the crest was a slightly different shade = a visible "patch" with two
-      // hard vertical seams running down the hill.
-      ctx.fillStyle = lgr;
-      ctx.beginPath();
-      ctx.moveTo(kL, shoreY(kL) + 1);
-      ctx.quadraticCurveTo(kx - (kx - kL) * 0.45, shoreY(kx) - kh, kx, shoreY(kx) - kh);      // up the left shoulder to the crest
-      ctx.quadraticCurveTo(kx + (kR - kx) * 0.5, shoreY(kx) - kh * 0.92, kR, shoreY(kR) + 1); // down the right shoulder into the rising bank
-      ctx.lineTo(kR, H); ctx.lineTo(kL, H);
-      ctx.closePath(); ctx.fill();
-      // The SANDY SHORE STRIP and horizon tint must CONTINUE over the knoll —
-      // the main strip runs along the old line and the knoll fill covers it,
-      // which looked like a patch boundary. Re-stroke both along the crest.
-      const knollPath = (dy) => {
-        ctx.beginPath();
-        ctx.moveTo(kL + 2, shoreY(kL) + dy);
-        ctx.quadraticCurveTo(kx - (kx - kL) * 0.45, shoreY(kx) - kh + dy, kx, shoreY(kx) - kh + dy);
-        ctx.quadraticCurveTo(kx + (kR - kx) * 0.5, shoreY(kx) - kh * 0.92 + dy, kR - 2, shoreY(kR) + dy);
-      };
-      ctx.save(); ctx.globalAlpha = 0.5; ctx.lineCap = 'round';
-      ctx.strokeStyle = `rgb(${Math.round(_lerp(120, 58, nm))},${Math.round(_lerp(112, 54, nm))},${Math.round(_lerp(84, 40, nm))})`;
-      ctx.lineWidth = 4; knollPath(3); ctx.stroke();
-      ctx.restore();
-      const hzc2 = _rampA(SKY_HORIZ, p);
-      ctx.strokeStyle = `rgba(${hzc2[0]},${hzc2[1]},${hzc2[2]},0.28)`; ctx.lineWidth = 1.6;
-      knollPath(0); ctx.stroke();
-      // a few swaying grass tufts on the crest itself
-      ctx.strokeStyle = `rgba(${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(120,62,nm))},${Math.round(_lerp(46,26,nm))},0.9)`;
-      ctx.lineWidth = 1.1; ctx.lineCap = 'round';
-      for (let g3 = 0; g3 < 5; g3++) {
-        const gx3 = kx - 26 + g3 * 13;
-        const gyTop = shoreY(kx) - kh + 3 + Math.abs(g3 - 2) * 2;
-        const sw3 = Math.sin(tt * 1.3 + g3) * 1.6;
-        ctx.beginPath(); ctx.moveTo(gx3, gyTop + 6);
-        ctx.quadraticCurveTo(gx3 + sw3 * 0.5, gyTop + 1, gx3 + sw3, gyTop - 4);
-        ctx.stroke();
-      }
+    // a few swaying grass tufts on the knoll crest (kept from the old knoll)
+    ctx.strokeStyle = `rgba(${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(120,62,nm))},${Math.round(_lerp(46,26,nm))},0.9)`;
+    ctx.lineWidth = 1.1; ctx.lineCap = 'round';
+    for (let g3 = 0; g3 < 5; g3++) {
+      const gx3 = W * 0.672 - 26 + g3 * 13;
+      const gyTop = silY(gx3) + 4;
+      const sw3 = Math.sin(tt * 1.3 + g3) * 1.6;
+      ctx.beginPath(); ctx.moveTo(gx3, gyTop + 6);
+      ctx.quadraticCurveTo(gx3 + sw3 * 0.5, gyTop + 1, gx3 + sw3, gyTop - 4);
+      ctx.stroke();
     }
 
     // (Removed the tall blade/sweetgrass strokes — they read as seaweed.
@@ -3080,9 +3040,20 @@ function drawScene(ctx, W, H, p, tt, now) {
           fig(fx + dxx, seatY, sc, 'sit', i,
               { dir: dxx < 0 ? 1 : -1, shirt: styles[i % styles.length].shirt, hairStyle: hair, hair: hairCol });
         });
-        // one drummer keeping a soft beat, set a little apart — UP the bank on the
-        // right (down-left put him at the waterline: "wtf are they in water")
-        fig(fx + 62, ground(fx + 62) + 4, 1.25, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: -1 });
+        // the drummer sits close beside the fire, keeping the night song
+        fig(fx - 34, ground(fx - 34) + 12, 1.35, 'drum', 2, { shirt: '#3a4658', hairStyle: 'braid', dir: 1 });
+        // ROUND DANCE — two dancers step slowly around the fire to the drum
+        // (a night-only scene; the day and evening never dance)
+        {
+          const da = tt * 0.45;
+          for (let dn = 0; dn < 2; dn++) {
+            const ang = da + dn * Math.PI;
+            const dxr2 = fx + Math.cos(ang) * 40;
+            const dyr2 = ground(dxr2) + 12 + Math.sin(ang) * 5;   // slight ellipse = depth around the fire
+            const ddir = Math.sin(ang) >= 0 ? -1 : 1;             // face the direction of travel
+            fig(dxr2, dyr2, [1.35, 1.2][dn], 'dance', dn * 2.1, { shirt: ['#c93a1e', '#d68a1f'][dn], hairStyle: dn ? 'long' : 'braid', dir: ddir });
+          }
+        }
       }
       // two CHILDREN asleep on a hide beside the wigwam (up the bank, clearly on
       // dry land — they used to sleep down by the waterline).
@@ -3166,18 +3137,18 @@ function drawScene(ctx, W, H, p, tt, now) {
       //     guesser's striker stick swinging as the drum keeps time.
       {
         const mgx = W * 0.615, mgy = ground(W * 0.615) + 10;
-        ctx.fillStyle = 'rgba(122,44,34,0.9)';                                       // the game blanket
-        ctx.beginPath(); ctx.ellipse(mgx, mgy + 1, 12, 3.4, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(74,42,30,0.85)';                                       // the game blanket (muted — bright red glowed across the whole scene)
+        ctx.beginPath(); ctx.ellipse(mgx, mgy + 1, 10, 2.8, 0, 0, 6.283); ctx.fill();
         ctx.fillStyle = 'rgb(64,44,26)';                                             // the four moccasins
         for (let m2 = 0; m2 < 4; m2++) {
           ctx.beginPath(); ctx.ellipse(mgx - 6 + m2 * 4, mgy - 0.5, 1.7, 1.0, 0, 0, 6.283); ctx.fill();
         }
         fig(mgx - 15, mgy, 1.3, 'sit', 0.6, { shirt: '#1f4e8f', hairStyle: 'short', dir: 1 });   // the hider
         fig(mgx + 15, mgy, 1.35, 'sit', 1.8, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 }); // the guesser
-        const strike = Math.sin(tt * 2.6) * 0.55;                                    // striker stick swings as he guesses
+        const strike = 0.5 + Math.sin(tt * 2.6) * 0.45;                              // striker stick swings, always HELD UP from the hand
         ctx.strokeStyle = 'rgb(120,90,50)'; ctx.lineWidth = 1.3; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(mgx + 9, mgy - 8);
-        ctx.lineTo(mgx + 9 - Math.cos(strike) * 9, mgy - 8 - Math.sin(strike + 0.7) * 8); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(mgx + 10, mgy - 10);
+        ctx.lineTo(mgx + 10 - Math.sin(strike) * 7, mgy - 10 - Math.cos(strike) * 8); ctx.stroke();
       }
       // (3) STARGAZERS — two figures lying back on the high bank, one arm
       //     raised, tracing the star stories across the night sky.
