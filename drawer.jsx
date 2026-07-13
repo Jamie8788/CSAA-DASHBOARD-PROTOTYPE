@@ -270,6 +270,32 @@ function ListenButton({ c }) {
   );
 }
 
+// An obvious scroll-down button inside the drawer — many visitors never find
+// the scrollbar. Sticky at the bottom; hides itself when the end is reached.
+function DrawerScrollCue({ drawerRef, communityId }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const el = drawerRef.current;
+    if (!el) return;
+    const upd = () => setShow(el.scrollTop + el.clientHeight < el.scrollHeight - 140);
+    upd();
+    el.addEventListener('scroll', upd, { passive: true });
+    const ro = ('ResizeObserver' in window) ? new ResizeObserver(upd) : null;
+    if (ro) ro.observe(el);
+    const t = setTimeout(upd, 400);          // after content/tab settles
+    return () => { el.removeEventListener('scroll', upd); if (ro) ro.disconnect(); clearTimeout(t); };
+  }, [drawerRef, communityId]);
+  if (!show) return null;
+  return (
+    <button
+      className="drawer-scrollcue"
+      onClick={() => { const el = drawerRef.current; if (el) el.scrollBy({ top: el.clientHeight * 0.8, behavior: 'smooth' }); }}
+      title="Scroll down"
+      aria-label="Scroll down through this profile"
+    >↓</button>
+  );
+}
+
 function CommunityDrawer({ community, onClose, searchQuery }) {
   const reader = useReaderProvider();
   const drawerRef = React.useRef(null);
@@ -371,6 +397,7 @@ function CommunityDrawer({ community, onClose, searchQuery }) {
           {tab==='people' && <PeopleTab c={c} searchQuery={searchQuery} />}
           {tab==='contact' && <ContactTab c={c} />}
         </div>
+        <DrawerScrollCue drawerRef={drawerRef} communityId={c.id} />
       </aside>
       <SelectionReader containerRef={drawerRef} />
     </ReaderCtx.Provider>

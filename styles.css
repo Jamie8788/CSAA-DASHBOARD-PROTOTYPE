@@ -392,6 +392,16 @@ body.elder-mode .contribute-note p { font-size: 13.5px; }
   border-radius: 0;
 }
 .chip:hover { border-color: var(--ink); }
+/* While a community drawer is open, the app's floating pills (Accessibility,
+   Editor sign-in) would sit ON TOP of the drawer's own Listen/expand/close
+   buttons — hide them until the drawer closes. */
+body:has(.drawer.open) .a11y-pill,
+body:has(.drawer.open) .admin-slot { opacity: 0; pointer-events: none; transition: opacity .2s; }
+
+/* zero-result filter options grey out (live facet counts) */
+.chip.dim, .toggle.dim { opacity: .42; }
+.chip.dim:hover, .toggle.dim:hover { opacity: .8; }
+
 .chip.on {
   background: var(--ink);
   color: var(--paper);
@@ -925,21 +935,20 @@ body.elder-mode .contribute-note p { font-size: 13.5px; }
   /* Decorated ground behind the page: two soft dawn-light glows (fixed — they
      don't scroll with the content) over a beadwork of four-direction dots. The
      centred page below covers the middle, so only the side gutters show it. */
+  /* calm woven-cloth gutters (the beadwork dots read as a "weird" pattern):
+     a soft warm wash + fine horizontal weave lines, like trade-cloth */
   background-color: var(--paper-deep);
   background-image:
-    linear-gradient(180deg, rgba(212,160,23,.12), rgba(184,53,30,.08)),
-    radial-gradient(circle at center, var(--east) 1.5px, transparent 2.2px),
-    radial-gradient(circle at center, var(--south) 1.5px, transparent 2.2px);
-  background-size: 100% 100%, 26px 26px, 26px 26px;
-  background-position: 0 0, 0 0, 13px 13px;
-  background-repeat: no-repeat, repeat, repeat;
+    linear-gradient(180deg, rgba(212,160,23,.10), rgba(184,53,30,.06)),
+    repeating-linear-gradient(180deg, rgba(140,102,20,.05) 0 1px, transparent 1px 9px);
+  background-repeat: no-repeat, repeat;
 }
-.drawer.full .drawer-tools { z-index: 7; }
+.drawer.full .drawer-tools { z-index: 7; top: 62px; }   /* below the global Accessibility pill — they used to overlap */
 .drawer.full .drawer-hero,
 .drawer.full .drawer-tabs,
 .drawer.full .drawer-body {
   position: relative; z-index: 1;
-  max-width: 860px;
+  max-width: 940px;
   margin-left: auto; margin-right: auto;
   width: 100%;
   background: var(--paper-card);
@@ -947,9 +956,9 @@ body.elder-mode .contribute-note p { font-size: 13.5px; }
   border-right: 1px solid var(--line-soft);
 }
 .drawer.full .drawer-hero {
-  padding-left: 34px; padding-right: 34px;
-  border-top: 1px solid var(--line-soft);
-  box-shadow: 0 0 40px -18px rgba(40,28,14,.5);
+  padding-left: 44px; padding-right: 44px; padding-top: 96px;
+  border-top: 3px solid var(--east, #d4a017);   /* a fine golden top rule crowns the page */
+  box-shadow: 0 0 46px -16px rgba(40,28,14,.45);
 }
 .drawer.full .drawer-body { padding-bottom: 40px; box-shadow: 0 24px 40px -28px rgba(40,28,14,.5); }
 
@@ -1017,6 +1026,29 @@ body.elder-mode .speak-btn.inline { width: 30px; height: 30px; }
   animation: contribIn .15s ease;
 }
 .selection-read:hover { background: var(--south); border-color: var(--south); }
+
+/* ---- Drawer scroll-down cue: an obvious, friendly way to move through a
+   profile (people couldn't find the scrollbar). Sticky at the bottom of the
+   drawer; hides itself at the end. ---- */
+.drawer-scrollcue {
+  position: sticky; bottom: 18px;
+  align-self: center;
+  width: 46px; height: 46px; border-radius: 50%;
+  border: 2px solid var(--east, #d4a017);
+  background: var(--paper-card);
+  color: var(--ink);
+  font-size: 18px; line-height: 1;
+  cursor: pointer; z-index: 9;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 18px -6px rgba(40,28,14,.45);
+  transition: background .2s, transform .15s;
+  animation: cueBob 2s ease-in-out infinite;
+  margin-top: -46px;             /* floats over the content instead of adding page height */
+}
+.drawer-scrollcue:hover { background: var(--east-glaze, #f7e8b6); transform: translateY(2px); }
+@keyframes cueBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .drawer-scrollcue { animation: none; } }
+body.elder-mode .drawer-scrollcue { width: 54px; height: 54px; font-size: 22px; }
 
 .drawer-hero {
   padding: 32px 36px 22px;

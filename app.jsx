@@ -132,17 +132,43 @@ function AppInner() {
     return selected.name.toLowerCase().includes(q.toLowerCase()) ? '' : q;
   }, [search, selected]);
 
+  // LIVE facet counts ("million-dollar filters"): each count answers
+  // "how many results would I get if I picked THIS value?", respecting every
+  // OTHER active filter (a value's own facet is excluded so multi-select
+  // within a facet stays additive). Zero-count options grey out in the rail.
   const counts = useMemo(() => {
-    const r = {}, o = {}, p = {}, d = {};
-    all.forEach(c => {
-      r[c.regionGroup] = (r[c.regionGroup] || 0) + 1;
-      o[c.orgType] = (o[c.orgType] || 0) + 1;
-      const dir = c.direction || 'Central';
-      d[dir] = (d[dir] || 0) + 1;
-    });
-    window.POP_BUCKETS.forEach(b => { p[b.key] = all.filter(c => b.test(c.population)).length; });
-    return { regions: r, orgs: o, pops: p, dirs: d };
-  }, [all]);
+    const q = search.trim().toLowerCase();
+    const passes = (c, skip) => {
+      if (q) {
+        if (window.matchCommunity ? !window.matchCommunity(c, q) : !(c.name + ' ' + (c.regionGroup || '')).toLowerCase().includes(q)) return false;
+      }
+      if (skip !== 'regions' && regions.size > 0 && !regions.has(c.regionGroup)) return false;
+      if (skip !== 'dirs' && directions.size > 0 && !directions.has(c.direction || 'Central')) return false;
+      if (skip !== 'orgs' && orgTypes.size > 0 && !orgTypes.has(c.orgType)) return false;
+      if (skip !== 'pops' && popBuckets.size > 0) {
+        const b = window.popBucket(c.population);
+        if (!b || !popBuckets.has(b)) return false;
+      }
+      if (skip !== 'pillars' && pillars.size > 0) {
+        let any = false;
+        for (const p2 of pillars) { if (window.pillarOn(c, p2)) { any = true; break; } }
+        if (!any) return false;
+      }
+      if (hasYouth && !c.hasYouth) return false;
+      if (hasSurvivor && !c.hasSurvivors) return false;
+      if (completeOnly && c.completeness < 0.7) return false;
+      return true;
+    };
+    const r = {}, o = {}, p = {}, d = {}, pil = {};
+    for (const c of all) {
+      if (passes(c, 'regions')) r[c.regionGroup] = (r[c.regionGroup] || 0) + 1;
+      if (passes(c, 'orgs')) o[c.orgType] = (o[c.orgType] || 0) + 1;
+      if (passes(c, 'dirs')) { const dir = c.direction || 'Central'; d[dir] = (d[dir] || 0) + 1; }
+      if (passes(c, 'pops')) { const b = window.popBucket(c.population); if (b) p[b] = (p[b] || 0) + 1; }
+      if (passes(c, 'pillars')) { for (const pl of window.PILLARS) if (window.pillarOn(c, pl.key)) pil[pl.key] = (pil[pl.key] || 0) + 1; }
+    }
+    return { regions: r, orgs: o, pops: p, dirs: d, pillars: pil };
+  }, [all, search, regions, directions, orgTypes, popBuckets, pillars, hasYouth, hasSurvivor, completeOnly]);
 
   const totalPop = useMemo(() => filtered.reduce((s, c) => s + (c.population || 0), 0), [filtered]);
   const anyFilters = search || regions.size || directions.size || orgTypes.size || popBuckets.size || pillars.size || hasYouth || hasSurvivor || completeOnly;
@@ -680,7 +706,7 @@ function FilterRail(props) {
           {DIR_KEYS.map(d => {
             const info = window.DIRECTION[d];
             return (
-              <label key={d} className={`toggle ${directions.has(d)?'on':''}`} onClick={() => toggle(setDirections, directions, d)}>
+              <label key={d} className={`toggle ${directions.has(d)?'on':''} ${!counts.dirs[d] && !directions.has(d) ? 'dim' : ''}`} onClick={() => toggle(setDirections, directions, d)}>
                 <span className="toggle-mark" style={{borderLeft:`3px solid ${info.color}`}}></span>
                 <span>{dirLabels[d]}</span>
                 <span className="toggle-count">{counts.dirs[d] || 0}</span>
@@ -693,9 +719,9 @@ function FilterRail(props) {
       <FilterGroup label="Service pillar" onClear={pillars.size ? () => setPillars(new Set()) : null}>
         <div className="chips">
           {window.PILLARS.map(p => (
-            <button key={p.key} className={`chip ${pillars.has(p.key)?'on':''}`} onClick={() => toggle(setPillars, pillars, p.key)}>
+            <button key={p.key} className={`chip ${pillars.has(p.key)?'on':''} ${!counts.pillars[p.key] && !pillars.has(p.key) ? 'dim' : ''}`} onClick={() => toggle(setPillars, pillars, p.key)}>
               <span className="chip-dot" style={{background: p.hex}}></span>
-              {p.icon} {p.label.split(' ')[0]}
+              {p.icon} {p.label.split(' ')[0]}<span className="ct">{counts.pillars[p.key] || 0}</span>
             </button>
           ))}
         </div>
@@ -704,8 +730,8 @@ function FilterRail(props) {
       <FilterGroup label="Population" onClear={popBuckets.size ? () => setPopBuckets(new Set()) : null}>
         <div className="chips">
           {window.POP_BUCKETS.map(b => (
-            <button key={b.key} className={`chip ${popBuckets.has(b.key)?'on':''}`} onClick={() => toggle(setPopBuckets, popBuckets, b.key)}>
-              {b.label}<span className="ct">{counts.pops[b.key]}</span>
+            <button key={b.key} className={`chip ${popBuckets.has(b.key)?'on':''} ${!counts.pops[b.key] && !popBuckets.has(b.key) ? 'dim' : ''}`} onClick={() => toggle(setPopBuckets, popBuckets, b.key)}>
+              {b.label}<span className="ct">{counts.pops[b.key] || 0}</span>
             </button>
           ))}
         </div>
@@ -713,8 +739,8 @@ function FilterRail(props) {
 
       <FilterGroup label="Sub-region" onClear={regions.size ? () => setRegions(new Set()) : null}>
         <div className="chips">
-          {REGION_KEYS.filter(r => counts.regions[r]).map(r => (
-            <button key={r} className={`chip ${regions.has(r)?'on':''}`} onClick={() => toggle(setRegions, regions, r)}>
+          {REGION_KEYS.map(r => (
+            <button key={r} className={`chip ${regions.has(r)?'on':''} ${!counts.regions[r] && !regions.has(r) ? 'dim' : ''}`} onClick={() => toggle(setRegions, regions, r)}>
               {r}<span className="ct">{counts.regions[r] || 0}</span>
             </button>
           ))}
@@ -723,8 +749,8 @@ function FilterRail(props) {
 
       <FilterGroup label="Organization type" onClear={orgTypes.size ? () => setOrgTypes(new Set()) : null}>
         <div className="toggle-row">
-          {(window.ORG_TYPES || []).filter(o => counts.orgs[o]).map(o => (
-            <label key={o} className={`toggle ${orgTypes.has(o)?'on':''}`} onClick={() => toggle(setOrgTypes, orgTypes, o)}>
+          {(window.ORG_TYPES || []).map(o => (
+            <label key={o} className={`toggle ${orgTypes.has(o)?'on':''} ${!counts.orgs[o] && !orgTypes.has(o) ? 'dim' : ''}`} onClick={() => toggle(setOrgTypes, orgTypes, o)}>
               <span className="toggle-mark"></span>
               <span>{o}</span>
               <span className="toggle-count">{counts.orgs[o] || 0}</span>
