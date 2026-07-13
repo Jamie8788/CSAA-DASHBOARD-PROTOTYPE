@@ -310,11 +310,59 @@ const _J_DIR = {
   Central: { season: 'All seasons',      col: '#7c2f6b', guide: 'Maang circles — this one serves communities in every direction.' },
 };
 
+// ---- the journey soundscape: soft water, a slow heartbeat drum, and an
+// occasional cedar-flute note. Started by the Begin click (a user gesture,
+// so autoplay rules are satisfied); one tap mutes it. ----
+function _makeJourneyAudio() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  const ctx = new AC();
+  const master = ctx.createGain(); master.gain.value = 0.5; master.connect(ctx.destination);
+  // water: looped brown noise through a low-pass
+  const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0); let lastO = 0;
+  for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; lastO = (lastO + 0.02 * w) / 1.02; d[i] = lastO * 3.5; }
+  const noise = ctx.createBufferSource(); noise.buffer = buf; noise.loop = true;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
+  const ng = ctx.createGain(); ng.gain.value = 0.055;
+  noise.connect(lp); lp.connect(ng); ng.connect(master); noise.start();
+  // slow heartbeat drum
+  const drumTimer = setInterval(() => {
+    if (ctx.state !== 'running') return;
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(58, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.25);
+    g.gain.setValueAtTime(0.22, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.45);
+  }, 1500);
+  // occasional cedar-flute note (soft pentatonic)
+  const NOTES = [392, 440, 523.25, 587.33, 659.25];
+  const fluteTimer = setInterval(() => {
+    if (ctx.state !== 'running' || Math.random() < 0.35) return;
+    const t = ctx.currentTime, f = NOTES[Math.floor(Math.random() * NOTES.length)];
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'triangle'; o.frequency.setValueAtTime(f, t);
+    o.frequency.linearRampToValueAtTime(f * 0.995, t + 1.4);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.05, t + 0.35);
+    g.gain.linearRampToValueAtTime(0.0001, t + 1.8);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + 1.9);
+  }, 5200);
+  return {
+    setMuted(m) { master.gain.value = m ? 0 : 0.5; },
+    stop() { clearInterval(drumTimer); clearInterval(fluteTimer); try { noise.stop(); } catch (e) {} try { ctx.close(); } catch (e) {} },
+  };
+}
+
+// the two ROUTES the paddler can choose between stops — the choice genuinely
+// changes what the scene shows on the way (Hassan: "like a Unity game")
+const _J_ROUTES = {
+  shore: { label: '🌾 Follow the shoreline', desc: 'Stay close to the cattails and the wading heron.' },
+  open:  { label: '🌊 Cross the open water', desc: 'Head through the mist where the big fish leap.' },
+};
+
 function JourneyOfCare({ all, onSelect }) {
   const reduce = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // 8 stops: the two best-documented COMMUNITIES from each direction, E→S→W→N,
-  // so the journey crosses a full day and a full year.
   const stops = useMemo(() => {
     const picks = [];
     for (const d of ['East', 'South', 'West', 'North']) {
@@ -327,26 +375,31 @@ function JourneyOfCare({ all, onSelect }) {
   }, [all]);
   const N = stops.length;
 
-  const [idx, setIdx] = useState(-1);              // -1 = the landing shore
-  const [phase, setPhase] = useState('intro');     // intro | paddling | arrived | done
-  const [received, setReceived] = useState(false); // teaching accepted at this stop
+  const [idx, setIdx] = useState(-1);
+  const [phase, setPhase] = useState('intro');     // intro | choose | paddling | arrived | done
+  const [received, setReceived] = useState(false);
   const [beads, setBeads] = useState([]);
+  const [muted, setMuted] = useState(false);
   const canvasRef = useRef(null);
+  const audioRef = useRef(null);
   const phaseRef = useRef('intro'); phaseRef.current = phase;
   const idxRef = useRef(idx); idxRef.current = idx;
-  const padRef = useRef(0);                        // paddling progress 0..1
-  const arriveRef = useRef(0);                     // shore slide-in 0..1
+  const padRef = useRef(0);
+  const arriveRef = useRef(0);
   const pendingIdxRef = useRef(0);
+  const routeRef = useRef('shore');
 
   const cur = idx >= 0 && idx < N ? stops[idx] : null;
   const truth = useMemo(() => (cur ? _journeyTruth(cur) : null), [cur]);
   const dirInfo = cur ? (_J_DIR[cur.direction || 'Central'] || _J_DIR.Central) : null;
 
-  function beginJourney() { pendingIdxRef.current = 0; padRef.current = 0; arriveRef.current = 0; setReceived(false); setPhase('paddling'); }
-  function paddleOn() {
-    if (idx + 1 >= N) { setPhase('done'); return; }
-    pendingIdxRef.current = idx + 1; padRef.current = 0; arriveRef.current = 0; setReceived(false); setPhase('paddling');
-  }
+  function startAudio() { if (!audioRef.current) audioRef.current = _makeJourneyAudio(); }
+  useEffect(() => () => { if (audioRef.current) audioRef.current.stop(); }, []);
+  useEffect(() => { if (audioRef.current) audioRef.current.setMuted(muted); }, [muted]);
+
+  function beginJourney() { startAudio(); pendingIdxRef.current = 0; routeRef.current = 'shore'; padRef.current = 0; arriveRef.current = 0; setReceived(false); setPhase('paddling'); }
+  function paddleOn() { if (idx + 1 >= N) { setPhase('done'); return; } setPhase('choose'); }
+  function chooseRoute(r) { routeRef.current = r; pendingIdxRef.current = idx + 1; padRef.current = 0; arriveRef.current = 0; setReceived(false); setPhase('paddling'); }
   function restart() { setIdx(-1); setBeads([]); setReceived(false); setPhase('intro'); padRef.current = 0; arriveRef.current = 0; }
   function receive() {
     if (received || !cur) return;
@@ -354,15 +407,15 @@ function JourneyOfCare({ all, onSelect }) {
     setReceived(true);
   }
 
-  // ---------------- the animated scene ----------------
+  // ============================ THE SCENE ============================
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let raf = null, last = 0, t0 = null;
     const DPR = Math.min(1.5, window.devicePixelRatio || 1);
     function resize() {
-      const w = canvas.clientWidth, h = canvas.clientHeight;
-      canvas.width = Math.max(1, w * DPR); canvas.height = Math.max(1, h * DPR);
+      canvas.width = Math.max(1, canvas.clientWidth * DPR);
+      canvas.height = Math.max(1, canvas.clientHeight * DPR);
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     }
     resize();
@@ -371,170 +424,342 @@ function JourneyOfCare({ all, onSelect }) {
 
     const lerp = (a, b, u) => a + (b - a) * u;
     const mixc = (c1, c2, u) => [Math.round(lerp(c1[0], c2[0], u)), Math.round(lerp(c1[1], c2[1], u)), Math.round(lerp(c1[2], c2[2], u))];
-    // four-direction day cycle: dawn gold → summer noon → autumn dusk → winter night
-    const SKY_T = [[236, 200, 130], [190, 214, 232], [226, 140, 96], [24, 26, 48]];
-    const SKY_B = [[244, 224, 176], [226, 238, 244], [130, 92, 110], [52, 48, 84]];
-    const WATER = [[176, 168, 120], [120, 168, 180], [110, 84, 96], [30, 34, 56]];
+    const SKY_T = [[233, 195, 122], [176, 208, 230], [214, 126, 84], [18, 20, 42]];
+    const SKY_B = [[246, 226, 176], [224, 238, 246], [244, 176, 118], [46, 42, 78]];
+    const WATER = [[168, 162, 116], [110, 160, 176], [122, 88, 96], [26, 30, 52]];
+    const HILL  = [[150, 138, 96],  [104, 138, 128], [110, 76, 74],  [22, 24, 40]];
 
     function scene(time) {
       const W = canvas.clientWidth, H = canvas.clientHeight;
       const tt = (time - (t0 == null ? (t0 = time) : t0)) / 1000;
-      // journey time 0..1 across all stops
       const jIdx = phaseRef.current === 'paddling' ? pendingIdxRef.current - 1 + padRef.current : Math.max(0, idxRef.current);
       const jt = N > 1 ? Math.max(0, Math.min(1, jIdx / (N - 1))) : 0;
       const seg = Math.min(2.999, jt * 3), si = Math.floor(seg), su = seg - si;
       const skyT = mixc(SKY_T[si], SKY_T[si + 1], su);
       const skyB = mixc(SKY_B[si], SKY_B[si + 1], su);
       const wat  = mixc(WATER[si], WATER[si + 1], su);
+      const hil  = mixc(HILL[si], HILL[si + 1], su);
       const night = Math.max(0, (jt - 0.66) / 0.34);
-      const hY = H * 0.56;
+      const hY = H * 0.52;
+      const paddling = phaseRef.current === 'paddling';
+      const drift = jIdx * 1100 + (paddling ? tt * 46 : 0);
 
-      // sky
+      // ---- SKY ----
       const g = ctx.createLinearGradient(0, 0, 0, hY);
       g.addColorStop(0, `rgb(${skyT.join(',')})`); g.addColorStop(1, `rgb(${skyB.join(',')})`);
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, hY);
-      // sun → moon across the journey
+      // drifting clouds (day)
+      if (night < 0.5) {
+        ctx.globalAlpha = (1 - night) * 0.5;
+        for (let i = 0; i < 3; i++) {
+          const cxc = ((tt * 5 + i * 420 - drift * 0.02) % (W + 320)) - 160;
+          const cyc = 40 + i * 46;
+          ctx.fillStyle = 'rgba(255,250,238,0.8)';
+          ctx.beginPath();
+          ctx.ellipse(cxc, cyc, 66, 13, 0, 0, 6.283);
+          ctx.ellipse(cxc + 38, cyc + 5, 44, 10, 0, 0, 6.283);
+          ctx.ellipse(cxc - 40, cyc + 6, 38, 9, 0, 0, 6.283);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+      // sun → moon with a soft halo
       const arc = Math.PI * (1 - jt * 0.92 - 0.04);
-      const sx = W * (0.15 + 0.7 * jt), sy = hY * 0.72 - Math.sin(arc) * hY * 0.5;
-      ctx.beginPath(); ctx.arc(sx, Math.max(24, sy), 20, 0, 6.283);
-      ctx.fillStyle = night > 0.4 ? 'rgba(232,238,248,0.95)' : 'rgba(255,236,190,0.95)'; ctx.fill();
-      // stars + aurora at night
+      const sx = W * (0.14 + 0.72 * jt), sy = Math.max(30, hY * 0.78 - Math.sin(arc) * hY * 0.62);
+      const halo = ctx.createRadialGradient(sx, sy, 4, sx, sy, 90);
+      halo.addColorStop(0, night > 0.4 ? 'rgba(220,230,248,0.5)' : 'rgba(255,226,150,0.55)');
+      halo.addColorStop(1, 'rgba(255,226,150,0)');
+      ctx.fillStyle = halo; ctx.fillRect(sx - 95, sy - 95, 190, 190);
+      ctx.beginPath(); ctx.arc(sx, sy, 24, 0, 6.283);
+      ctx.fillStyle = night > 0.4 ? '#e8edf8' : '#ffedbe'; ctx.fill();
+      if (night > 0.4) {                                         // moon craters
+        ctx.fillStyle = 'rgba(190,200,220,0.6)';
+        ctx.beginPath(); ctx.arc(sx - 7, sy - 4, 4, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx + 6, sy + 6, 3, 0, 6.283); ctx.fill();
+      }
+      // birds by day, stars + aurora by night
+      if (night < 0.4) {
+        ctx.strokeStyle = 'rgba(40,34,26,0.7)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+        for (let i = 0; i < 4; i++) {
+          const bxx = ((tt * 14 + i * 210) % (W + 200)) - 100;
+          const byy = 54 + i * 26 + Math.sin(tt + i) * 6;
+          const fw2 = Math.sin(tt * 6 + i) * 4;
+          ctx.beginPath(); ctx.moveTo(bxx - 6, byy - fw2 * 0.5); ctx.quadraticCurveTo(bxx, byy + fw2, bxx + 6, byy - fw2 * 0.5); ctx.stroke();
+        }
+      }
       if (night > 0.05) {
-        ctx.globalAlpha = night;
-        ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        for (let i = 0; i < 26; i++) {
-          const stx = ((i * 137.5) % W), sty = ((i * 61.8) % (hY * 0.7));
-          const tw = 0.5 + 0.5 * Math.sin(tt * 2 + i);
-          ctx.globalAlpha = night * (0.3 + 0.5 * tw);
-          ctx.fillRect(stx, sty, 1.6, 1.6);
+        for (let i = 0; i < 34; i++) {
+          const stx = ((i * 137.5) % W), sty = ((i * 61.8) % (hY * 0.75));
+          ctx.globalAlpha = night * (0.3 + 0.5 * (0.5 + 0.5 * Math.sin(tt * 2 + i)));
+          ctx.fillStyle = 'rgba(255,255,255,0.85)';
+          ctx.fillRect(stx, sty, 1.7, 1.7);
         }
         for (let a2 = 0; a2 < 3; a2++) {
-          ctx.globalAlpha = night * 0.16;
-          ctx.strokeStyle = ['#7de0b8', '#9db8ff', '#d29bff'][a2]; ctx.lineWidth = 12;
+          ctx.globalAlpha = night * 0.15;
+          ctx.strokeStyle = ['#7de0b8', '#9db8ff', '#d29bff'][a2]; ctx.lineWidth = 14;
           ctx.beginPath();
           for (let x = 0; x <= W; x += 24) {
-            const y = 26 + a2 * 22 + Math.sin(x * 0.008 + tt * 0.5 + a2 * 2) * 14;
+            const y = 30 + a2 * 24 + Math.sin(x * 0.007 + tt * 0.5 + a2 * 2) * 16;
             x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
           }
           ctx.stroke();
         }
         ctx.globalAlpha = 1;
       }
-      // far hills + treeline (parallax drift while paddling)
-      const drift = (jIdx * 900 + (phaseRef.current === 'paddling' ? tt * 30 : 0));
-      ctx.fillStyle = `rgba(${Math.round(skyB[0] * 0.55)},${Math.round(skyB[1] * 0.55)},${Math.round(skyB[2] * 0.55)},1)`;
+
+      // ---- HILLS: two parallax layers ----
+      ctx.fillStyle = `rgba(${hil.join(',')},0.55)`;
       ctx.beginPath(); ctx.moveTo(0, hY);
-      for (let x = 0; x <= W; x += 12) ctx.lineTo(x, hY - 18 - Math.sin((x + drift * 0.3) * 0.006) * 12);
+      for (let x = 0; x <= W; x += 14) ctx.lineTo(x, hY - 34 - Math.sin((x + drift * 0.18) * 0.004) * 20);
       ctx.lineTo(W, hY); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(24,28,22,0.85)';
-      for (let x = -20; x <= W + 20; x += 26) {
-        const xx = x - (drift % 26);
-        const th = 14 + ((x * 7919) % 10);
+      ctx.fillStyle = `rgb(${hil.join(',')})`;
+      ctx.beginPath(); ctx.moveTo(0, hY);
+      for (let x = 0; x <= W; x += 12) ctx.lineTo(x, hY - 16 - Math.sin((x + drift * 0.34) * 0.007) * 11);
+      ctx.lineTo(W, hY); ctx.closePath(); ctx.fill();
+      // treeline with varied trees + their reflection
+      ctx.fillStyle = 'rgba(22,26,20,0.9)';
+      for (let x = -30; x <= W + 30; x += 22) {
+        const xx = x - (drift * 0.6 % 22);
+        const th = 15 + ((x * 7919) % 13);
         ctx.beginPath(); ctx.moveTo(xx - 7, hY); ctx.lineTo(xx, hY - th); ctx.lineTo(xx + 7, hY); ctx.closePath(); ctx.fill();
       }
-      // water
-      const wg = ctx.createLinearGradient(0, hY, 0, H);
-      wg.addColorStop(0, `rgb(${wat.map(v => Math.min(255, v + 26)).join(',')})`);
-      wg.addColorStop(1, `rgb(${wat.join(',')})`);
-      ctx.fillStyle = wg; ctx.fillRect(0, hY, W, H - hY);
-      ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.lineWidth = 1;
-      for (let i = 0; i < 5; i++) {
-        const ly = hY + 14 + i * (H - hY) * 0.17;
-        const lx = ((tt * 22 + i * 160) % (W + 240)) - 120;
-        ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 60 + i * 16, ly); ctx.stroke();
-      }
-      // sun/moon glitter path on the water
-      ctx.globalAlpha = 0.25; ctx.fillStyle = night > 0.4 ? '#cdd8ee' : '#ffe2a6';
-      for (let i = 0; i < 8; i++) {
-        const gy = hY + 8 + i * 9, gw = 46 - i * 4;
-        ctx.fillRect(sx - gw / 2 + Math.sin(tt * 2 + i) * 5, gy, gw, 1.6);
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = 'rgb(16,20,16)';
+      for (let x = -30; x <= W + 30; x += 22) {
+        const xx = x - (drift * 0.6 % 22);
+        const th = (15 + ((x * 7919) % 13)) * 0.6;
+        ctx.beginPath(); ctx.moveTo(xx - 6, hY); ctx.lineTo(xx, hY + th); ctx.lineTo(xx + 6, hY); ctx.closePath(); ctx.fill();
       }
       ctx.globalAlpha = 1;
 
-      // ---- the SHORE that greets the canoe (slides in when arriving) ----
-      const at = arriveRef.current;
-      if (at > 0.01) {
-        const sxr = W - at * W * 0.34;                     // shore wedge from the right
-        ctx.fillStyle = `rgb(${Math.round(44 + 14 * (1 - night))},${Math.round(66 + 20 * (1 - night))},${Math.round(38 + 10 * (1 - night))})`;
-        ctx.beginPath();
-        ctx.moveTo(W, H); ctx.lineTo(W, hY + 14);
-        ctx.quadraticCurveTo(sxr + 60, hY + 18, sxr, hY + 44);
-        ctx.lineTo(sxr - 22, H); ctx.closePath(); ctx.fill();
-        // the lodge
-        const lx2 = sxr + 62, ly2 = hY + 40;
-        ctx.fillStyle = 'rgb(92,62,36)';
-        ctx.beginPath(); ctx.moveTo(lx2 - 20, ly2); ctx.quadraticCurveTo(lx2, ly2 - 30, lx2 + 20, ly2); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = 'rgb(40,26,14)';
-        ctx.beginPath(); ctx.ellipse(lx2, ly2 - 3, 5, 7, 0, Math.PI, 2 * Math.PI); ctx.fill();
-        // welcome fire with flicker + two greeters
-        const fx2 = sxr + 22, fy2 = hY + 52;
-        const fl2 = 0.8 + Math.sin(tt * 9) * 0.14 + Math.sin(tt * 21) * 0.06;
-        const fg2 = ctx.createRadialGradient(fx2, fy2 - 4, 2, fx2, fy2 - 4, 34 * fl2);
-        fg2.addColorStop(0, 'rgba(255,170,80,0.55)'); fg2.addColorStop(1, 'rgba(255,150,60,0)');
-        ctx.fillStyle = fg2; ctx.fillRect(fx2 - 40, fy2 - 44, 80, 66);
-        ctx.fillStyle = `rgba(255,${Math.round(150 + 60 * fl2)},60,0.95)`;
-        ctx.beginPath(); ctx.moveTo(fx2 - 5, fy2); ctx.quadraticCurveTo(fx2, fy2 - 16 * fl2, fx2 + 5, fy2); ctx.closePath(); ctx.fill();
-        for (const gdx of [-14, 12]) {
-          const wave = Math.sin(tt * 3 + gdx) * 0.4;
-          ctx.fillStyle = 'rgb(58,40,26)';
-          ctx.beginPath(); ctx.ellipse(fx2 + gdx, fy2 - 9, 4, 7, 0, 0, 6.283); ctx.fill();
-          ctx.beginPath(); ctx.arc(fx2 + gdx, fy2 - 19, 3.2, 0, 6.283); ctx.fill();
-          ctx.strokeStyle = 'rgb(58,40,26)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(fx2 + gdx + 3, fy2 - 13);
-          ctx.lineTo(fx2 + gdx + 7, fy2 - 20 - wave * 5); ctx.stroke();   // waving arm
+      // ---- WATER ----
+      const wg = ctx.createLinearGradient(0, hY, 0, H);
+      wg.addColorStop(0, `rgb(${wat.map(v => Math.min(255, v + 30)).join(',')})`);
+      wg.addColorStop(1, `rgb(${wat.map(v => Math.max(0, v - 14)).join(',')})`);
+      ctx.fillStyle = wg; ctx.fillRect(0, hY, W, H - hY);
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
+      for (let i = 0; i < 7; i++) {
+        const ly = hY + 16 + i * (H - hY) * 0.13;
+        const lx = ((tt * 26 + i * 170) % (W + 260)) - 130;
+        ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 70 + i * 14, ly); ctx.stroke();
+      }
+      ctx.globalAlpha = 0.3; ctx.fillStyle = night > 0.4 ? '#cdd8ee' : '#ffe2a6';
+      for (let i = 0; i < 10; i++) {
+        const gy = hY + 8 + i * 10, gw = 56 - i * 4.6;
+        ctx.fillRect(sx - gw / 2 + Math.sin(tt * 2 + i) * 6, gy, gw, 1.6);
+      }
+      ctx.globalAlpha = 1;
+      // dawn mist over the water on the first leg
+      if (jt < 0.22) {
+        ctx.globalAlpha = (0.22 - jt) / 0.22 * 0.35;
+        ctx.fillStyle = 'rgb(246,240,228)';
+        for (let i = 0; i < 3; i++) {
+          const mx2 = ((tt * 9 + i * 300) % (W + 300)) - 150;
+          ctx.beginPath(); ctx.ellipse(mx2, hY + 40 + i * 26, 150, 13, 0, 0, 6.283); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      // ---- ROUTE-SPECIFIC scenery while paddling (the choice matters) ----
+      if (paddling) {
+        if (routeRef.current === 'shore') {
+          // the near shoreline slides by: cattail clumps + a wading heron
+          const sxr = W - ((drift * 1.1) % (W + 420)) + 210;
+          ctx.strokeStyle = 'rgba(70,96,44,0.95)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+          for (let k = 0; k < 5; k++) {
+            const cx3 = sxr + k * 14, cy3 = H - 26;
+            const sw5 = Math.sin(tt * 1.6 + k) * 3;
+            ctx.beginPath(); ctx.moveTo(cx3, cy3 + 20); ctx.quadraticCurveTo(cx3 + sw5 * 0.5, cy3 - 6, cx3 + sw5, cy3 - 26); ctx.stroke();
+            ctx.fillStyle = 'rgb(94,62,32)';
+            ctx.beginPath(); ctx.ellipse(cx3 + sw5, cy3 - 30, 2.4, 7, 0, 0, 6.283); ctx.fill();
+          }
+          const hx4 = sxr - 90, hy4 = H - 34;
+          if (hx4 > -60 && hx4 < W + 60) {                       // the heron
+            ctx.strokeStyle = 'rgb(120,126,132)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(hx4, hy4); ctx.lineTo(hx4, hy4 + 22); ctx.stroke();
+            ctx.fillStyle = 'rgb(140,148,155)';
+            ctx.beginPath(); ctx.ellipse(hx4 + 2, hy4 - 8, 12, 7, -0.1, 0, 6.283); ctx.fill();
+            ctx.strokeStyle = 'rgb(140,148,155)'; ctx.lineWidth = 2.6;
+            ctx.beginPath(); ctx.moveTo(hx4 + 10, hy4 - 12); ctx.quadraticCurveTo(hx4 + 16, hy4 - 24, hx4 + 14, hy4 - 30); ctx.stroke();
+            ctx.fillStyle = 'rgb(140,148,155)';
+            ctx.beginPath(); ctx.arc(hx4 + 14, hy4 - 31, 3.4, 0, 6.283); ctx.fill();
+            ctx.strokeStyle = 'rgb(190,160,80)'; ctx.lineWidth = 1.4;
+            ctx.beginPath(); ctx.moveTo(hx4 + 17, hy4 - 31); ctx.lineTo(hx4 + 25, hy4 - 29); ctx.stroke();
+          }
+        } else {
+          // open water: a distant island slides past + a big fish leaps
+          const ix = W - ((drift * 0.5) % (W + 600)) + 300;
+          ctx.fillStyle = `rgba(${hil.join(',')},0.8)`;
+          ctx.beginPath(); ctx.ellipse(ix, hY - 4, 90, 16, 0, Math.PI, 2 * Math.PI); ctx.fill();
+          ctx.fillStyle = 'rgba(22,26,20,0.85)';
+          for (let k = -3; k <= 3; k++) {
+            ctx.beginPath(); ctx.moveTo(ix + k * 18 - 6, hY - 8); ctx.lineTo(ix + k * 18, hY - 26 + Math.abs(k) * 3); ctx.lineTo(ix + k * 18 + 6, hY - 8); ctx.closePath(); ctx.fill();
+          }
+          const leapT = (tt % 4) / 4;
+          if (leapT < 0.4) {
+            const u2 = leapT / 0.4;
+            const fx4 = W * 0.62 + u2 * 70, fy4 = hY + 70 - Math.sin(u2 * Math.PI) * 42;
+            ctx.save(); ctx.translate(fx4, fy4); ctx.rotate(-0.8 + u2 * 1.6);
+            ctx.fillStyle = 'rgba(196,206,208,0.95)';
+            ctx.beginPath(); ctx.ellipse(0, 0, 12, 4.4, 0, 0, 6.283); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(-11, 0); ctx.lineTo(-17, -5); ctx.lineTo(-15, 0); ctx.lineTo(-17, 5); ctx.closePath(); ctx.fill();
+            ctx.restore();
+            if (u2 > 0.85 || u2 < 0.1) {
+              ctx.strokeStyle = 'rgba(240,246,240,0.6)'; ctx.lineWidth = 1.2;
+              ctx.beginPath(); ctx.ellipse(W * 0.62 + (u2 > 0.5 ? 70 : 0), hY + 72, 14, 4, 0, 0, 6.283); ctx.stroke();
+            }
+          }
         }
       }
 
-      // ---- the CANOE (always) + Maang the loon guide ----
-      const cx2 = W * 0.36, cy2 = hY + (H - hY) * 0.44 + Math.sin(tt * 1.1) * 2;
-      const stroke2 = phaseRef.current === 'paddling' ? Math.sin(tt * 4) : Math.sin(tt * 0.8) * 0.2;
+      // ---- ARRIVAL SHORE: dock, lodge with smoke, fire, three greeters ----
+      const at = arriveRef.current;
+      if (at > 0.01) {
+        const ease = 1 - Math.pow(1 - at, 3);
+        const sxr = W - ease * W * 0.4;
+        ctx.fillStyle = `rgb(${Math.round(48 + 16 * (1 - night))},${Math.round(72 + 22 * (1 - night))},${Math.round(42 + 12 * (1 - night))})`;
+        ctx.beginPath();
+        ctx.moveTo(W, H); ctx.lineTo(W, hY + 8);
+        ctx.quadraticCurveTo(sxr + 90, hY + 12, sxr + 20, hY + 42);
+        ctx.quadraticCurveTo(sxr - 20, hY + 60, sxr - 34, H);
+        ctx.closePath(); ctx.fill();
+        // the dock: two posts + planks reaching toward the canoe
+        const dx2 = sxr - 6, dy2 = hY + 74;
+        ctx.strokeStyle = 'rgb(74,52,30)'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(dx2 - 34, dy2 - 4); ctx.lineTo(dx2 - 34, dy2 + 18); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(dx2 + 2, dy2 - 4); ctx.lineTo(dx2 + 2, dy2 + 18); ctx.stroke();
+        ctx.fillStyle = 'rgb(104,74,42)';
+        ctx.fillRect(dx2 - 46, dy2 - 8, 60, 6);
+        // the lodge + smoke
+        const lx2 = sxr + 96, ly2 = hY + 46;
+        ctx.fillStyle = 'rgb(96,64,38)';
+        ctx.beginPath(); ctx.moveTo(lx2 - 26, ly2); ctx.quadraticCurveTo(lx2, ly2 - 38, lx2 + 26, ly2); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(60,40,22,0.8)'; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.moveTo(lx2 - 14, ly2 - 6); ctx.quadraticCurveTo(lx2, ly2 - 30, lx2 + 14, ly2 - 6); ctx.stroke();
+        ctx.fillStyle = 'rgb(38,24,12)';
+        ctx.beginPath(); ctx.ellipse(lx2, ly2 - 2, 6, 9, 0, Math.PI, 2 * Math.PI); ctx.fill();
+        for (let sp2 = 0; sp2 < 4; sp2++) {                       // smoke puffs
+          const su2 = ((tt * 0.5 + sp2 * 0.25) % 1);
+          ctx.globalAlpha = (1 - su2) * 0.4;
+          ctx.fillStyle = 'rgb(226,220,208)';
+          ctx.beginPath(); ctx.arc(lx2 + Math.sin(su2 * 5) * 7, ly2 - 40 - su2 * 34, 4 + su2 * 7, 0, 6.283); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        // the welcome fire + THREE greeters (one child)
+        const fx2 = sxr + 34, fy2 = hY + 64;
+        const fl2 = 0.8 + Math.sin(tt * 9) * 0.14 + Math.sin(tt * 21) * 0.06;
+        const fg2 = ctx.createRadialGradient(fx2, fy2 - 5, 2, fx2, fy2 - 5, 44 * fl2);
+        fg2.addColorStop(0, 'rgba(255,170,80,0.55)'); fg2.addColorStop(1, 'rgba(255,150,60,0)');
+        ctx.fillStyle = fg2; ctx.fillRect(fx2 - 50, fy2 - 54, 100, 84);
+        ctx.fillStyle = `rgba(255,${Math.round(150 + 60 * fl2)},60,0.95)`;
+        ctx.beginPath(); ctx.moveTo(fx2 - 6, fy2); ctx.quadraticCurveTo(fx2, fy2 - 20 * fl2, fx2 + 6, fy2); ctx.closePath(); ctx.fill();
+        const greet = [[-20, 1.0, '#8a4a28'], [16, 1.0, '#3c5a80'], [28, 0.62, '#a06a20']];
+        for (const [gdx, gs, gc] of greet) {
+          const wave = Math.sin(tt * 3 + gdx) * 0.5;
+          ctx.fillStyle = gc;
+          ctx.beginPath(); ctx.ellipse(fx2 + gdx, fy2 - 11 * gs, 4.6 * gs, 8 * gs, 0, 0, 6.283); ctx.fill();
+          ctx.fillStyle = 'rgb(122,84,52)';
+          ctx.beginPath(); ctx.arc(fx2 + gdx, fy2 - 23 * gs, 3.6 * gs, 0, 6.283); ctx.fill();
+          ctx.strokeStyle = gc; ctx.lineWidth = 2 * gs; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(fx2 + gdx + 4 * gs, fy2 - 15 * gs);
+          ctx.lineTo(fx2 + gdx + 9 * gs, fy2 - 24 * gs - wave * 6); ctx.stroke();
+        }
+      }
+
+      // ---- THE CANOE (hero of the scene) + Maang ----
+      const cx2 = W * 0.34, cy2 = hY + (H - hY) * 0.42 + Math.sin(tt * 1.1) * 2.4;
+      const pitch = paddling ? Math.sin(tt * 2.2) * 0.02 : 0;
+      const stroke2 = paddling ? Math.sin(tt * 3.4) : Math.sin(tt * 0.8) * 0.15;
+      ctx.save(); ctx.translate(cx2, cy2); ctx.rotate(pitch);
       // wake
-      ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.moveTo(cx2 - 44, cy2 + 6); ctx.lineTo(cx2 - 84, cy2 + 12); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx2 - 44, cy2 + 6); ctx.lineTo(cx2 - 84, cy2 + 1); ctx.stroke();
-      // hull — birchbark with the four-colour band
-      ctx.fillStyle = 'rgb(214,178,128)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(-66, 8); ctx.lineTo(-126, 17); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-66, 8); ctx.lineTo(-126, 0); ctx.stroke();
+      // reflection blot
+      ctx.fillStyle = 'rgba(14,14,18,0.22)';
+      ctx.beginPath(); ctx.ellipse(0, 14, 62, 6, 0, 0, 6.283); ctx.fill();
+      // hull — birchbark, high curled stems, the four-colour band, visible ribs
+      ctx.fillStyle = 'rgb(216,182,132)';
       ctx.beginPath();
-      ctx.moveTo(cx2 - 46, cy2); ctx.quadraticCurveTo(cx2, cy2 + 14, cx2 + 46, cy2);
-      ctx.quadraticCurveTo(cx2 + 54, cy2 - 8, cx2 + 46, cy2 - 10);
-      ctx.quadraticCurveTo(cx2, cy2 + 2, cx2 - 46, cy2 - 10);
-      ctx.quadraticCurveTo(cx2 - 54, cy2 - 8, cx2 - 46, cy2);
+      ctx.moveTo(-68, 0); ctx.quadraticCurveTo(0, 20, 68, 0);
+      ctx.quadraticCurveTo(80, -12, 70, -16);
+      ctx.quadraticCurveTo(0, 2, -70, -16);
+      ctx.quadraticCurveTo(-80, -12, -68, 0);
       ctx.closePath(); ctx.fill();
       const bandCols = ['#d4a017', '#b8351e', '#1a1612', '#efe7d6'];
-      for (let b2 = 0; b2 < 4; b2++) {
-        ctx.fillStyle = bandCols[b2];
-        ctx.fillRect(cx2 - 40 + b2 * 20, cy2 - 6, 20, 4);
+      for (let b2 = 0; b2 < 4; b2++) { ctx.fillStyle = bandCols[b2]; ctx.fillRect(-58 + b2 * 29, -9, 29, 6); }
+      ctx.strokeStyle = 'rgba(140,104,62,0.55)'; ctx.lineWidth = 1;
+      for (let r2 = -50; r2 <= 50; r2 += 12) {                   // ribs
+        ctx.beginPath(); ctx.moveTo(r2, -2); ctx.quadraticCurveTo(r2 + 2, 8, r2 + 4, 12); ctx.stroke();
       }
-      // paddlers
-      for (const [pdx, ph2] of [[-16, 0], [18, Math.PI * 0.5]]) {
-        ctx.fillStyle = 'rgb(56,38,24)';
-        ctx.beginPath(); ctx.ellipse(cx2 + pdx, cy2 - 16, 5, 8, 0, 0, 6.283); ctx.fill();
-        ctx.beginPath(); ctx.arc(cx2 + pdx, cy2 - 28, 4, 0, 6.283); ctx.fill();
-        const pa = stroke2 * 0.5 + ph2 * 0.1;
-        ctx.strokeStyle = 'rgb(110,76,40)'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(cx2 + pdx + 4, cy2 - 20);
-        ctx.lineTo(cx2 + pdx + 12 + Math.sin(pa) * 8, cy2 + 6 + Math.cos(pa) * 4); ctx.stroke();
+      ctx.strokeStyle = 'rgb(120,86,48)'; ctx.lineWidth = 2;      // gunwale
+      ctx.beginPath(); ctx.moveTo(-67, -2); ctx.quadraticCurveTo(0, 14, 67, -2); ctx.stroke();
+      // two paddlers with headbands + ribbon shirts
+      for (const [pdx, shirtC, ph2] of [[-24, '#b8351e', 0], [26, '#1f4e8f', Math.PI * 0.55]]) {
+        ctx.fillStyle = shirtC;
+        ctx.beginPath(); ctx.ellipse(pdx, -22, 7, 12, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgb(122,84,52)';
+        ctx.beginPath(); ctx.arc(pdx, -39, 6, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgb(26,18,10)';                          // hair
+        ctx.beginPath(); ctx.arc(pdx, -41, 6, Math.PI, 2 * Math.PI); ctx.fill();
+        ctx.fillStyle = '#c93a1e';                                // headband
+        ctx.fillRect(pdx - 6, -42, 12, 2.4);
+        const pa = stroke2 + ph2 * 0.2;
+        ctx.strokeStyle = 'rgb(110,76,40)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(pdx + 6, -28);
+        ctx.lineTo(pdx + 17 + Math.sin(pa) * 11, 10 + Math.cos(pa) * 6); ctx.stroke();
+        ctx.fillStyle = 'rgb(110,76,40)';
+        ctx.beginPath(); ctx.ellipse(pdx + 17 + Math.sin(pa) * 11, 12 + Math.cos(pa) * 6, 3.4, 6, 0.3, 0, 6.283); ctx.fill();
       }
-      // Maang the loon, gliding ahead of the bow
-      const mgx2 = cx2 + 92 + Math.sin(tt * 0.7) * 6, mgy2 = cy2 + 4 + Math.sin(tt * 1.3) * 1.5;
-      ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(mgx2 - 8, mgy2 + 2); ctx.lineTo(mgx2 - 26, mgy2 + 5); ctx.stroke();
+      ctx.restore();
+      // Maang the loon — bigger, glides ahead, dives every ~12s
+      const dcyc = (tt % 12) / 12;
+      let sink2 = 0;
+      if (dcyc > 0.72 && dcyc < 0.79) sink2 = (dcyc - 0.72) / 0.07;
+      else if (dcyc >= 0.79 && dcyc < 0.9) sink2 = 1;
+      else if (dcyc >= 0.9) sink2 = 1 - (dcyc - 0.9) / 0.1;
+      const mgx2 = cx2 + 150 + Math.sin(tt * 0.7) * 8, mgy2 = cy2 + 6 + Math.sin(tt * 1.3) * 2 + sink2 * 14;
+      ctx.globalAlpha = 1 - sink2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(mgx2 - 12, mgy2 + 3); ctx.lineTo(mgx2 - 38, mgy2 + 8); ctx.stroke();
       ctx.fillStyle = 'rgb(24,22,26)';
-      ctx.beginPath(); ctx.ellipse(mgx2, mgy2, 9, 3, 0, 0, 6.283); ctx.fill();
-      ctx.strokeStyle = 'rgb(24,22,26)'; ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.moveTo(mgx2 + 6, mgy2 - 1); ctx.quadraticCurveTo(mgx2 + 9, mgy2 - 6, mgx2 + 9.5, mgy2 - 7.5); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(mgx2, mgy2, 14, 4.6, 0, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(214,220,220,0.85)';                   // checker back
+      for (let cb2 = 0; cb2 < 5; cb2++) { ctx.beginPath(); ctx.arc(mgx2 - 7 + cb2 * 3.4, mgy2 - 2.4, 0.8, 0, 6.283); ctx.fill(); }
+      ctx.strokeStyle = 'rgb(24,22,26)'; ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(mgx2 + 9, mgy2 - 2); ctx.quadraticCurveTo(mgx2 + 13, mgy2 - 9, mgx2 + 14, mgy2 - 12); ctx.stroke();
       ctx.fillStyle = 'rgb(24,22,26)';
-      ctx.beginPath(); ctx.ellipse(mgx2 + 10, mgy2 - 8, 2.2, 1.8, 0.2, 0, 6.283); ctx.fill();
-      ctx.strokeStyle = 'rgba(230,234,232,0.9)'; ctx.lineWidth = 0.8;
-      ctx.beginPath(); ctx.moveTo(mgx2 + 7, mgy2 - 4.5); ctx.lineTo(mgx2 + 9, mgy2 - 3.5); ctx.stroke();  // necklace
+      ctx.beginPath(); ctx.ellipse(mgx2 + 15, mgy2 - 13, 3.4, 2.8, 0.2, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = 'rgba(230,234,232,0.9)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(mgx2 + 10.5, mgy2 - 7); ctx.lineTo(mgx2 + 13.5, mgy2 - 5.5); ctx.stroke();
+      ctx.strokeStyle = 'rgb(40,36,40)'; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(mgx2 + 18, mgy2 - 13.4); ctx.lineTo(mgx2 + 25, mgy2 - 12); ctx.stroke();
+      ctx.fillStyle = 'rgb(190,40,30)';
+      ctx.beginPath(); ctx.arc(mgx2 + 16, mgy2 - 14, 0.8, 0, 6.283); ctx.fill();
+      ctx.globalAlpha = 1;
+      if (sink2 > 0 && sink2 < 1) {                               // dive ring
+        ctx.strokeStyle = 'rgba(235,242,238,0.5)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(mgx2, cy2 + 8, 10 + sink2 * 18, 3 + sink2 * 3, 0, 0, 6.283); ctx.stroke();
+      }
+      // fireflies near the shore at dusk
+      if (night > 0.15 && night < 0.85) {
+        ctx.fillStyle = 'rgba(255,224,120,0.8)';
+        for (let i = 0; i < 5; i++) {
+          const fxx = W * 0.72 + Math.sin(tt * 0.6 + i * 2) * 60 + i * 30;
+          const fyy = hY + 60 + Math.cos(tt * 0.5 + i) * 22;
+          ctx.globalAlpha = (night - 0.15) * (0.4 + 0.6 * Math.abs(Math.sin(tt * 2 + i * 3)));
+          ctx.beginPath(); ctx.arc(fxx, fyy, 1.6, 0, 6.283); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
 
-      // paddling progress + arrival easing
+      // progress + easing
       if (phaseRef.current === 'paddling') {
-        padRef.current = Math.min(1, padRef.current + (time - (last || time)) / 2400);
+        padRef.current = Math.min(1, padRef.current + (time - (last || time)) / 3000);
         if (padRef.current >= 1) { setIdx(pendingIdxRef.current); setPhase('arrived'); }
       }
       if (phaseRef.current === 'arrived' && arriveRef.current < 1) {
-        arriveRef.current = Math.min(1, arriveRef.current + (time - (last || time)) / 700);
+        arriveRef.current = Math.min(1, arriveRef.current + (time - (last || time)) / 800);
       }
       last = time;
     }
@@ -551,6 +776,11 @@ function JourneyOfCare({ all, onSelect }) {
     <div className="journey">
       <div className="journey-stage">
         <canvas ref={canvasRef} className="journey-canvas" aria-hidden="true"></canvas>
+        {audioRef.current && (
+          <button className="j-audio" onClick={() => setMuted(m => !m)} title={muted ? 'Sound on' : 'Sound off'}>
+            {muted ? '🔇' : '🔊'}
+          </button>
+        )}
 
         {phase === 'intro' && (
           <div className="j-card j-intro">
@@ -558,11 +788,25 @@ function JourneyOfCare({ all, onSelect }) {
             <h3>Step into the canoe.</h3>
             <p>
               Maang the loon will guide you through the four directions — sunrise to
-              starlight. At every shore, a real community welcomes you to its fire and
-              shares one true thing about how it cares for its people. Receive each
-              teaching, and carry {N} beads home.
+              starlight, with the water and the drum for company. At every shore a real
+              community welcomes you to its fire and shares one true thing about how it
+              cares for its people. Choose your own route between the stops.
             </p>
             <button className="j-btn" onClick={beginJourney}>🛶 Begin the journey</button>
+          </div>
+        )}
+
+        {phase === 'choose' && (
+          <div className="j-card j-choose">
+            <div className="j-eyebrow">Choose your route to the next shore</div>
+            <div className="j-routes">
+              {Object.entries(_J_ROUTES).map(([key, r]) => (
+                <button key={key} className="j-route" onClick={() => chooseRoute(key)}>
+                  <b>{r.label}</b>
+                  <span>{r.desc}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -623,7 +867,6 @@ function JourneyOfCare({ all, onSelect }) {
         )}
       </div>
 
-      {/* the beaded sash — one bead per teaching received */}
       <div className="j-sash" aria-label="Teachings received">
         {stops.map((sc, i) => {
           const done = beads.some(b => b.id === sc.id);
