@@ -2017,14 +2017,12 @@ function drawScene(ctx, W, H, p, tt, now) {
 
       // (Removed the shoreline pacing walkers — Hassan: "walking in a line then
       //  disappear". They were filler that faded oddly at the dusk crossfade.)
-      // --- POW WOW — a real dance arena, given its own clear ground so it reads
-      //   as a pow wow and not a crowd (Hassan/admin: the old "girls in a circle"
-      //   was too small; the first pow wow merged into the bank). A HOST DRUM sits
-      //   at the centre with four singers around it (the heartbeat); a handful of
-      //   DANCERS circle it clockwise in BRIGHT regalia — a colourful feather
-      //   BUSTLE fanned behind the back and a dyed ROACH on the head, bouncing on
-      //   the beat. Runs all day (the block itself fades with dayA); hands to
-      //   the fire circle at true night. ---
+      // --- POW WOW — laid out like a REAL pow wow (Hassan + Whetung/Wikipedia
+      //   layout): the dance arena belongs to the DANCERS circling the eagle
+      //   staff; the HOST DRUM sits in the ring OUTSIDE the arena under a shade
+      //   arbor; SPECTATORS ring the outside — clapping, cheering, families on
+      //   blankets, a kid dancing along at the edge. Runs all day (fades with
+      //   dayA); hands to the fire circle at true night. ---
       {
         const paX = W * 0.805, paY = H - 22, paR = 66;
         const beat = Math.abs(Math.sin(tt * 3.4));                 // shared drum heartbeat
@@ -2053,38 +2051,25 @@ function drawScene(ctx, W, H, p, tt, now) {
           ctx.restore();
         };
 
-        // ---- HOST DRUM + four singers SEATED AT the drum, sticks striking ----
-        //   (the old standing pair beside the drum read as "two girls just
-        //    standing inside the pow wow" — now everyone at the centre is
-        //    unmistakably part of the drum group)
-        const dcx = paX, dcy = paY + 2;
-        const drumR = 14 + beat * 1.2;
-        const singerCols = ['#c93a1e', '#1f4e8f', '#5a7d3a', '#7c2f6b'];
-        const singerSeats = [[-15, -9, 1], [15, -9, -1], [-23, 3, 1], [23, 3, -1]];
-        // back pair first, then the shell covers their knees → clearly seated AT it
-        singerSeats.slice(0, 2).forEach(([ox, oy, sd], i) =>
-          fig(dcx + ox, dcy + oy, 0.92, 'sit', i * 1.7, { shirt: singerCols[i], hairStyle: i % 2 ? 'braid' : 'short', dir: sd }));
-        ctx.fillStyle = nd('#7a4a22');                              // drum shell
-        ctx.beginPath(); ctx.ellipse(dcx, dcy, drumR, drumR * 0.5, 0, 0, 6.283); ctx.fill();
-        ctx.fillStyle = `rgba(${Math.round(_lerp(224,124,nm))},${Math.round(_lerp(199,106,nm))},${Math.round(_lerp(158,76,nm))},1)`;   // hide head
-        ctx.beginPath(); ctx.ellipse(dcx, dcy - 2, drumR * 0.9, drumR * 0.42, 0, 0, 6.283); ctx.fill();
-        ctx.strokeStyle = 'rgba(60,36,18,0.55)'; ctx.lineWidth = 0.7;   // sinew ties
-        for (let s = 0; s < 6; s++) { const a = s * Math.PI / 3; ctx.beginPath(); ctx.moveTo(dcx, dcy - 2); ctx.lineTo(dcx + Math.cos(a) * drumR * 0.86, dcy - 2 + Math.sin(a) * drumR * 0.4); ctx.stroke(); }
-        singerSeats.slice(2).forEach(([ox, oy, sd], i) =>
-          fig(dcx + ox, dcy + oy, 0.92, 'sit', (i + 2) * 1.7, { shirt: singerCols[i + 2], hairStyle: i % 2 ? 'long' : 'braid', dir: sd }));
-        // every singer's DRUMSTICK rises and strikes the head on the shared beat
-        singerSeats.forEach(([ox, oy, sd], i) => {
-          const lift = Math.abs(Math.sin(tt * 3.4 + i * 0.35)) * 6;      // near-unison, slightly human
-          const hx = dcx + ox * 0.45, hy = dcy - 4 - lift;
-          ctx.strokeStyle = nd('#4a2e14'); ctx.lineWidth = 1.5; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(dcx + ox * 0.8, dcy + oy * 0.5 - 8); ctx.lineTo(hx, hy); ctx.stroke();
-          ctx.fillStyle = nd('#d8c8a0');                                 // padded beater tip
-          ctx.beginPath(); ctx.arc(hx, hy, 1.6, 0, 6.283); ctx.fill();
-        });
+        // ---- EAGLE STAFF planted at the centre of the arena (the dancers own
+        //   the circle — at a real pow wow the drum groups sit in the ring
+        //   OUTSIDE the dance arena, not in the middle of it. Hassan + sources:
+        //   the arena is the dancers' blessed ground.) ----
+        {
+          const esx = paX, esy = paY + 2;
+          ctx.strokeStyle = nd('#6b4626'); ctx.lineWidth = 2; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(esx, esy); ctx.quadraticCurveTo(esx + 1, esy - 28, esx, esy - 34);
+          ctx.quadraticCurveTo(esx - 1, esy - 42, esx - 8, esy - 42); ctx.stroke();     // staff with the hooked top
+          for (let f2 = 0; f2 < 4; f2++) {                                              // eagle feathers hung down the hook
+            feather(esx - 7 + f2 * 1.1, esy - 41 + f2 * 8, 9, Math.PI + 0.25 - f2 * 0.07, 1.4, nd('#e8ddc8'), nd('#3a2410'));
+          }
+        }
 
-        // ---- DANCERS circling clockwise in bright regalia (sorted back→front) ----
-        const REG = [['#e23a1e', '#f2b81e'], ['#1f7fbf', '#f2d21e'], ['#8f2f6b', '#e2721e'], ['#2f9f4f', '#e23a7b'], ['#e2901e', '#2f5ecf']];
-        const dN = 5, spin = tt * 0.32;
+        // ---- DANCERS circling clockwise in bright regalia — six of them,
+        //   including a LITTLE ONE dancing with the grown-ups (tiny tots do). ----
+        const REG = [['#e23a1e', '#f2b81e'], ['#1f7fbf', '#f2d21e'], ['#8f2f6b', '#e2721e'], ['#2f9f4f', '#e23a7b'], ['#e2901e', '#2f5ecf'], ['#c9401e', '#2fbf9f']];
+        const SCL = [1.08, 1.08, 1.08, 1.08, 1.08, 0.82];
+        const dN = 6, spin = tt * 0.32;
         const dancers = [];
         for (let d = 0; d < dN; d++) {
           const a = spin + d * (Math.PI * 2 / dN);
@@ -2092,40 +2077,120 @@ function drawScene(ctx, W, H, p, tt, now) {
         }
         dancers.sort((A, B) => A.y - B.y);                          // depth order (back → front)
         for (const { x, y, a, d } of dancers) {
+          const scd = SCL[d];
           const ddir = Math.cos(a + 0.35) >= 0 ? 1 : -1;            // face the direction of travel
           const hop = Math.abs(Math.sin(tt * 3.4 + d * 1.1)) * 2.6;  // toe-heel bounce on the beat
           const fy = y - hop;
           const c1 = nd(REG[d][0]), c2 = nd(REG[d][1]), tip = nd('#3a2410');
           // BUSTLE — a bright fan of feathers around a rosette, behind the back
-          const bx = x - ddir * 2, by = fy - 14;
-          for (let f = 0; f < 9; f++) { const fa = -1.25 + f * (2.5 / 8); feather(bx, by, 18, fa, 2.5, f % 2 ? c1 : c2, tip); }
-          ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(bx, by, 3.4, 0, 6.283); ctx.fill();
-          ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(bx, by, 1.6, 0, 6.283); ctx.fill();
+          const bx = x - ddir * 2, by = fy - 14 * scd;
+          for (let f = 0; f < 9; f++) { const fa = -1.25 + f * (2.5 / 8); feather(bx, by, 18 * scd, fa, 2.5 * scd, f % 2 ? c1 : c2, tip); }
+          ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(bx, by, 3.4 * scd, 0, 6.283); ctx.fill();
+          ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(bx, by, 1.6 * scd, 0, 6.283); ctx.fill();
           // the dancer
-          fig(x, fy, 1.08, 'dance', d * 1.1, { shirt: REG[d][0], hairStyle: d % 2 ? 'braid' : 'short', dir: ddir });
+          fig(x, fy, scd, 'dance', d * 1.1, { shirt: REG[d][0], hairStyle: d % 2 ? 'braid' : 'short', dir: ddir });
           // ROACH — dyed deer-hair base + two upright coloured feathers on the crown
-          const headTop = fy - (1.08 * 1.3) * 36.5;
+          const headTop = fy - (scd * 1.3) * 36.5;
           ctx.fillStyle = nd('#6e2412');
-          ctx.beginPath(); ctx.ellipse(x, headTop + 2.5, 4.2, 3.2, 0, Math.PI, 2 * Math.PI); ctx.fill();
-          feather(x, headTop, 12, -0.12, 1.9, c1, tip); feather(x, headTop, 12, 0.12, 1.9, c2, tip);
+          ctx.beginPath(); ctx.ellipse(x, headTop + 2.5, 4.2 * scd, 3.2 * scd, 0, Math.PI, 2 * Math.PI); ctx.fill();
+          feather(x, headTop, 12 * scd, -0.12, 1.9 * scd, c1, tip); feather(x, headTop, 12 * scd, 0.12, 1.9 * scd, c2, tip);
         }
 
-        // ---- SPECTATORS around the rim, CLAPPING on the beat (Hassan: a pow
-        //   wow has people around it) — spaced along the FAR arc so they frame
-        //   the arena without ever crossing the dancers. ----
-        const specs = [[3.62, '#5a7d3a', 'long', 0.88], [4.35, '#1f4e8f', 'braid', 0.92], [5.05, '#7c2f6b', 'short', 0.9], [5.75, '#b04a2a', 'long', 0.86]];
-        specs.forEach(([a, sh, hs, sc2], i) => {
-          const sx2 = paX + Math.cos(a) * paR * 1.34, sy2 = paY + Math.sin(a) * paR * 0.56;   // well OUTSIDE the dancers' path — at 1.16 the left spectators merged into the circle
-          fig(sx2, sy2, sc2, 'idle', i * 2.1, { shirt: sh, hairStyle: hs, dir: sx2 < paX ? 1 : -1 });
-          // clapping: two hands meeting in front on the drum beat
-          const clap = Math.abs(Math.sin(tt * 3.4 + i * 0.2));         // on the beat
-          const chx = sx2 + (sx2 < paX ? 1 : -1) * 6 * sc2, chy = sy2 - 26 * sc2;
-          ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2 * sc2; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(sx2 + (sx2 < paX ? 1 : -1) * 3 * sc2, sy2 - 24 * sc2);
-          ctx.lineTo(chx, chy - clap * 2.5); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(sx2 + (sx2 < paX ? 1 : -1) * 3 * sc2, sy2 - 20 * sc2);
-          ctx.lineTo(chx, chy - clap * 2.5 + 1.5); ctx.stroke();
+        // ---- DRUM ARBOR — OUTSIDE the arena on its left, a shade arbor of
+        //   posts + cedar boughs with the host drum and four singers beneath
+        //   (this is where the drum sits at a real pow wow). ----
+        {
+          const abX = paX - paR * 1.62, abY = paY - 8;
+          // posts (thick enough to read at scene scale)
+          ctx.strokeStyle = nd('#5a3a1c'); ctx.lineWidth = 3; ctx.lineCap = 'round';
+          [[-26, 0, 36], [26, 0, 36], [-19, -10, 29], [19, -10, 29]].forEach(([px2, py2, ph2]) => {
+            ctx.beginPath(); ctx.moveTo(abX + px2, abY + py2); ctx.lineTo(abX + px2 * 0.94, abY + py2 - ph2); ctx.stroke();
+          });
+          // roof slab — pale birchbark/canvas so it STANDS OUT from the grass
+          // (a dark cedar roof vanished into the bank)
+          ctx.fillStyle = `rgb(${Math.round(_lerp(214,110,nm))},${Math.round(_lerp(188,94,nm))},${Math.round(_lerp(140,64,nm))})`;
+          ctx.beginPath();
+          ctx.moveTo(abX - 33, abY - 33); ctx.quadraticCurveTo(abX, abY - 40, abX + 33, abY - 33);
+          ctx.lineTo(abX + 26, abY - 45); ctx.quadraticCurveTo(abX, abY - 52, abX - 26, abY - 45);
+          ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = nd('#7a5a30'); ctx.lineWidth = 0.8;                        // bark seams
+          for (let bt = -24; bt <= 24; bt += 8) { ctx.beginPath(); ctx.moveTo(abX + bt, abY - 34); ctx.lineTo(abX + bt * 0.8, abY - 44); ctx.stroke(); }
+          // cedar-bough fringe hanging off the roof edge
+          ctx.strokeStyle = nd('#3e5230'); ctx.lineWidth = 1.6;
+          for (let fr = -30; fr <= 30; fr += 6) { ctx.beginPath(); ctx.moveTo(abX + fr, abY - 33 + Math.abs(fr) * 0.06); ctx.lineTo(abX + fr, abY - 27 + Math.abs(fr) * 0.06); ctx.stroke(); }
+          // the host drum + four singers seated around it
+          const dcx = abX, dcy = abY - 3;
+          const drumR = 11 + beat * 1.0;
+          const singerCols = ['#c93a1e', '#1f4e8f', '#5a7d3a', '#7c2f6b'];
+          const singerSeats = [[-12, -8, 1], [12, -8, -1], [-18, 2, 1], [18, 2, -1]];
+          singerSeats.slice(0, 2).forEach(([ox, oy, sd], i) =>
+            fig(dcx + ox, dcy + oy, 0.85, 'sit', i * 1.7, { shirt: singerCols[i], hairStyle: i % 2 ? 'braid' : 'short', dir: sd }));
+          ctx.fillStyle = nd('#7a4a22');                              // drum shell
+          ctx.beginPath(); ctx.ellipse(dcx, dcy, drumR, drumR * 0.5, 0, 0, 6.283); ctx.fill();
+          ctx.fillStyle = `rgba(${Math.round(_lerp(224,124,nm))},${Math.round(_lerp(199,106,nm))},${Math.round(_lerp(158,76,nm))},1)`;   // hide head
+          ctx.beginPath(); ctx.ellipse(dcx, dcy - 2, drumR * 0.9, drumR * 0.42, 0, 0, 6.283); ctx.fill();
+          ctx.strokeStyle = 'rgba(60,36,18,0.55)'; ctx.lineWidth = 0.7;   // sinew ties
+          for (let s = 0; s < 6; s++) { const a = s * Math.PI / 3; ctx.beginPath(); ctx.moveTo(dcx, dcy - 2); ctx.lineTo(dcx + Math.cos(a) * drumR * 0.86, dcy - 2 + Math.sin(a) * drumR * 0.4); ctx.stroke(); }
+          singerSeats.slice(2).forEach(([ox, oy, sd], i) =>
+            fig(dcx + ox, dcy + oy, 0.85, 'sit', (i + 2) * 1.7, { shirt: singerCols[i + 2], hairStyle: i % 2 ? 'long' : 'braid', dir: sd }));
+          // every singer's beater rises and strikes on the shared beat
+          singerSeats.forEach(([ox, oy, sd], i) => {
+            const lift = Math.abs(Math.sin(tt * 3.4 + i * 0.35)) * 5;
+            const hx = dcx + ox * 0.45, hy = dcy - 4 - lift;
+            ctx.strokeStyle = nd('#4a2e14'); ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(dcx + ox * 0.8, dcy + oy * 0.5 - 7); ctx.lineTo(hx, hy); ctx.stroke();
+            ctx.fillStyle = nd('#d8c8a0');
+            ctx.beginPath(); ctx.arc(hx, hy, 1.4, 0, 6.283); ctx.fill();
+          });
+        }
+
+        // ---- THE CROWD — real spectators ringing the arena from outside:
+        //   standing clappers, cheerers with arms up bouncing on the beat,
+        //   families seated on blankets, a little kid dancing along at the
+        //   edge. (Hassan: "real spectators clapping and cheering, OUTSIDE
+        //   the circle".) The left side belongs to the drum arbor. ----
+        const crowd = [
+          [3.95, 'cheer', 0.92, '#1f4e8f', 'braid'],
+          [4.45, 'clap', 0.95, '#7c2f6b', 'short'],
+          [4.95, 'sitfam', 1.0, '#b04a2a', 'long'],
+          [5.45, 'clap', 0.9, '#3a4658', 'braid'],
+          [5.95, 'cheer', 0.95, '#d68a1f', 'long'],
+          [0.42, 'sitfam', 1.0, '#5a7d3a', 'braid'],
+        ];
+        crowd.forEach(([a, kind2, sc2, sh, hs], i) => {
+          const rf = kind2 === 'sitfam' ? 1.28 : 1.40;
+          const sx2 = paX + Math.cos(a) * paR * rf, sy2 = paY + Math.sin(a) * paR * 0.44 * rf;
+          const facing = sx2 < paX ? 1 : -1;                        // everyone faces the dancing
+          if (kind2 === 'sitfam') {
+            // a family on a blanket: adult + child, watching
+            ctx.fillStyle = 'rgba(120,84,52,0.85)';
+            ctx.beginPath(); ctx.ellipse(sx2, sy2 + 3, 17, 4, 0, 0, 6.283); ctx.fill();
+            fig(sx2 - 6, sy2, 1.0, 'sit', i * 1.3, { shirt: sh, hairStyle: hs, dir: facing });
+            fig(sx2 + 8, sy2 + 1, 0.68, 'sit', i * 1.3 + 2, { shirt: '#d68a1f', hairStyle: 'short', dir: facing });
+          } else {
+            const bounce = kind2 === 'cheer' ? Math.abs(Math.sin(tt * 3.4 + i)) * 2.2 : 0;   // cheerers bounce on the beat
+            fig(sx2, sy2 - bounce, sc2, kind2 === 'cheer' ? 'wave' : 'idle', i * 2.1, { shirt: sh, hairStyle: hs, dir: facing });
+            if (kind2 === 'clap') {
+              // two hands meeting in front, on the drum beat
+              const clap = Math.abs(Math.sin(tt * 3.4 + i * 0.2));
+              const chx = sx2 + facing * 6 * sc2, chy = sy2 - 26 * sc2;
+              ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2 * sc2; ctx.lineCap = 'round';
+              ctx.beginPath(); ctx.moveTo(sx2 + facing * 3 * sc2, sy2 - 24 * sc2); ctx.lineTo(chx, chy - clap * 2.5); ctx.stroke();
+              ctx.beginPath(); ctx.moveTo(sx2 + facing * 3 * sc2, sy2 - 20 * sc2); ctx.lineTo(chx, chy - clap * 2.5 + 1.5); ctx.stroke();
+            } else {
+              // cheering: the second arm thrown up too
+              ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2 * sc2; ctx.lineCap = 'round';
+              ctx.beginPath(); ctx.moveTo(sx2 - facing * 3 * sc2, sy2 - bounce - 26 * sc2);
+              ctx.lineTo(sx2 - facing * 7 * sc2, sy2 - bounce - 36 * sc2); ctx.stroke();
+            }
+          }
         });
+        // a little kid dancing along OUTSIDE the ring, copying the dancers
+        {
+          const kx = paX + paR * 1.34, ky = paY - paR * 0.14;
+          const khop = Math.abs(Math.sin(tt * 3.4 + 0.6)) * 2;
+          fig(kx, ky - khop, 0.62, 'dance', 2.6, { shirt: '#2f9f4f', hairStyle: 'short', dir: -1 });
+        }
       }
       // (Removed the TATANKA chase — its runners swept across the ring-of-roses,
       //  reading as "4 girls walking straight through" the dancing children.)
@@ -2768,7 +2833,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   land? they can all be on LHS"): clumps of green grass/sedge tufts and
       //   a few flowering stems, swaying. ----
       const grassCol = `rgba(${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(120,62,nm))},${Math.round(_lerp(46,26,nm))},0.95)`;
-      [[0.16, 6], [0.24, 7], [0.32, 6], [0.40, 5], [0.46, 6], [0.49, 7], [0.52, 6]]  /* more plants across the open LHS bank; 0.55/0.585 stay clear of the horse */.forEach(([fxC, n], gi) => {
+      [[0.16, 6], [0.24, 7], [0.32, 6], [0.40, 5], [0.46, 6], [0.49, 7], [0.52, 6], [0.685, 5], [0.775, 6], [0.975, 5]]  /* plants across the whole bank; 0.55/0.585 stay clear of the horse */.forEach(([fxC, n], gi) => {
         const bx0 = W * fxC, by0 = ground(bx0) + 6;
         ctx.strokeStyle = grassCol; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
         for (let b = 0; b < n; b++) {
@@ -2781,6 +2846,21 @@ function drawScene(ctx, W, H, p, tt, now) {
         if (gi % 2 === 0) {
           ctx.fillStyle = `rgba(${Math.round(_lerp(228,120,nm))},${Math.round(_lerp(200,104,nm))},${Math.round(_lerp(120,60,nm))},0.95)`;
           ctx.beginPath(); ctx.arc(bx0 + Math.sin(tt + gi) * 2, by0 - 16, 1.4, 0, 6.283); ctx.fill();
+        }
+      });
+      // low BERRY BUSHES down the open field (Hassan: "much more vegetation in
+      // the empty area") — clustered mounds with a few berries, gently swaying,
+      // placed clear of every game/vignette station.
+      [[0.585, 26], [0.705, 22], [0.755, 42], [0.875, 20], [0.945, 32]].forEach(([bf, bd], bi) => {
+        const bx1 = W * bf, by1 = ground(bx1) + bd;
+        const swb = Math.sin(tt * 0.8 + bi) * 0.6;
+        ctx.fillStyle = `rgb(${Math.round(_lerp(52,26,nm))},${Math.round(_lerp(96,48,nm))},${Math.round(_lerp(40,22,nm))})`;
+        ctx.beginPath(); ctx.ellipse(bx1 - 4 + swb, by1 - 3, 5.5, 4, 0, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(bx1 + 4 + swb, by1 - 2.5, 5, 3.6, 0, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(bx1 + swb, by1 - 6, 4.5, 3.4, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = `rgba(${Math.round(_lerp(190,110,nm))},${Math.round(_lerp(60,40,nm))},${Math.round(_lerp(80,50,nm))},0.9)`;
+        for (let br2 = 0; br2 < 4; br2++) {
+          ctx.beginPath(); ctx.arc(bx1 - 5 + br2 * 3.2 + swb, by1 - 4 - (br2 % 2) * 3, 0.9, 0, 6.283); ctx.fill();
         }
       });
 
