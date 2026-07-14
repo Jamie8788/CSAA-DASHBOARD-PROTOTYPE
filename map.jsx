@@ -942,146 +942,193 @@ function _toVec(lat, lng) {
   return [Math.cos(la) * Math.sin(lo), Math.sin(la), Math.cos(la) * Math.cos(lo)];
 }
 
+// one TRUE sentence from a community's own records (never invented)
+function _globeTruth(c) {
+  for (const k of ['physical', 'mental', 'spiritual', 'emotional', 'youth', 'survivors']) {
+    const v = c[k]; if (!v) continue;
+    const t = String(v).replace(/https?:\/\/\S+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (t.length < 40) continue;
+    const m = t.match(/^.*?[.!?](?:\s|$)/); let out = (m ? m[0] : t).trim();
+    if (out.length > 190) out = out.slice(0, 190).replace(/\s+\S*$/, '') + '…';
+    return out;
+  }
+  return null;
+}
+function _slerp(a, b, t) {
+  let d = a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; d = Math.max(-1, Math.min(1, d));
+  const om = Math.acos(d); if (om < 1e-5) return a;
+  const s = Math.sin(om), w1 = Math.sin((1 - t) * om) / s, w2 = Math.sin(t * om) / s;
+  return [a[0]*w1 + b[0]*w2, a[1]*w1 + b[1]*w2, a[2]*w1 + b[2]*w2];
+}
+
 function LivingGlobe({ all, onSelect, onClose }) {
   const canvasRef = useRef(null);
-  const stRef = useRef({ yaw: 84 * _RAD, pitch: 40 * _RAD, drag: false, lx: 0, ly: 0, moved: 0, autor: true, mx: -1, my: -1 });
+  const st = useRef({ yaw: 84*_RAD, pitch: 40*_RAD, tYaw: 84*_RAD, tPitch: 40*_RAD, zoom: 1, tZoom: 1, drag: false, lx: 0, ly: 0, moved: 0, mx: -1, my: -1, autor: true, tour: false, tourIdx: 0, tourT: 0 });
   const [hover, setHover] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [tourOn, setTourOn] = useState(false);
 
-  // precompute the dotted land grid (unit vectors) once
   const landDots = useMemo(() => {
     const out = [];
-    for (let lat = -84; lat <= 84; lat += 2.6) {
-      for (let lng = -180; lng < 180; lng += 2.6) {
-        for (const ring of _GLOBE_LAND) { if (_ptInRing(lng, lat, ring)) { out.push(_toVec(lat, lng)); break; } }
-      }
-    }
+    for (let lat = -84; lat <= 84; lat += 2.6)
+      for (let lng = -180; lng < 180; lng += 2.6)
+        for (const ring of _GLOBE_LAND) if (_ptInRing(lng, lat, ring)) { out.push(_toVec(lat, lng)); break; }
     return out;
   }, []);
   const sites = useMemo(() => all.filter(c => c.lat != null && c.lng != null).map(c => ({
     c, v: _toVec(c.lat, c.lng),
     col: (window.DIRECTION[c.direction || 'AllDirections'] || {}).color || '#d4a017',
-    r: 2.2 + Math.min(6, Math.sqrt((c.population || 300) / 500)),
+    r: 2.4 + Math.min(5, Math.sqrt((c.population || 300) / 700)),
   })), [all]);
-  const stars = useMemo(() => Array.from({ length: 160 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() * 1.3 + 0.2, tw: Math.random() * 6.28 })), []);
+  // network of care: link each community to its nearest same-direction neighbour
+  const links = useMemo(() => {
+    const out = [];
+    const byDir = {};
+    sites.forEach(s => { const d = s.c.direction || 'AllDirections'; (byDir[d] = byDir[d] || []).push(s); });
+    for (const g of Object.values(byDir)) {
+      for (let i = 0; i < g.length; i++) {
+        let best = -1, bd = -2;
+        for (let j = 0; j < g.length; j++) { if (i === j) continue; const d = g[i].v[0]*g[j].v[0] + g[i].v[1]*g[j].v[1] + g[i].v[2]*g[j].v[2]; if (d > bd) { bd = d; best = j; } }
+        if (best >= 0 && i < best) out.push({ a: g[i].v, b: g[best].v, col: g[i].col });
+      }
+    }
+    return out;
+  }, [sites]);
+  const stars = useMemo(() => Array.from({ length: 180 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random()*1.3 + 0.2, tw: Math.random()*6.28 })), []);
+  const flyTo = (s2, z) => { const S = st.current; S.tYaw = -Math.atan2(s2.v[0], s2.v[2]); S.tPitch = Math.asin(Math.max(-1, Math.min(1, s2.v[1]))); S.tZoom = z || Math.max(2.4, S.zoom); S.autor = false; };
 
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const DPR = Math.min(2, window.devicePixelRatio || 1);
-    let raf = null, W = 0, H = 0, cx = 0, cy = 0, R = 0;
-    function resize() {
-      W = canvas.clientWidth; H = canvas.clientHeight;
-      canvas.width = W * DPR; canvas.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-      cx = W / 2; cy = H / 2; R = Math.min(W, H) * 0.36;
-    }
+    let raf = null, W = 0, H = 0, cx = 0, cy = 0, R0 = 0;
+    function resize() { W = canvas.clientWidth; H = canvas.clientHeight; canvas.width = W*DPR; canvas.height = H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); cx = W/2; cy = H/2; R0 = Math.min(W, H) * 0.40; }
     resize();
     const ro = new ResizeObserver(resize); ro.observe(canvas);
-
-    function rot(v) {
-      const st = stRef.current, cy2 = Math.cos(st.yaw), sy2 = Math.sin(st.yaw), cp = Math.cos(st.pitch), sp = Math.sin(st.pitch);
-      const x1 = v[0] * cy2 + v[2] * sy2, z1 = -v[0] * sy2 + v[2] * cy2, y1 = v[1];
-      return [x1, y1 * cp - z1 * sp, y1 * sp + z1 * cp];
-    }
     let t = 0;
+    function rotv(v, S) {
+      const cyw = Math.cos(S.yaw), syw = Math.sin(S.yaw), cp = Math.cos(S.pitch), sp = Math.sin(S.pitch);
+      const x1 = v[0]*cyw + v[2]*syw, z1 = -v[0]*syw + v[2]*cyw, y1 = v[1];
+      return [x1, y1*cp - z1*sp, y1*sp + z1*cp];
+    }
     function frame() {
       raf = requestAnimationFrame(frame); t += 0.016;
-      const st = stRef.current;
-      if (st.autor && !st.drag) st.yaw += 0.0015;
+      const S = st.current;
+      // tour: fly between communities
+      if (S.tour && sites.length) { S.tourT += 0.016; if (S.tourT > 3.6) { S.tourT = 0; S.tourIdx = (S.tourIdx + 1) % sites.length; flyTo(sites[S.tourIdx], 2.6); setSelected(sites[S.tourIdx].c); } }
+      if (S.autor && !S.drag) S.yaw += 0.0012;
+      // ease toward targets
+      S.yaw += (S.tYaw - S.yaw) * 0.08; S.pitch += (S.tPitch - S.pitch) * 0.08; S.zoom += (S.tZoom - S.zoom) * 0.08;
+      const R = R0 * S.zoom;
       ctx.clearRect(0, 0, W, H);
-      // starfield
-      for (const s of stars) {
-        ctx.globalAlpha = 0.25 + 0.55 * (0.5 + 0.5 * Math.sin(t * 1.5 + s.tw));
-        ctx.fillStyle = '#e9edf7';
-        ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, 6.283); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      // atmosphere halo
-      const atm = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.22);
-      atm.addColorStop(0, 'rgba(90,150,200,0.28)'); atm.addColorStop(1, 'rgba(90,150,200,0)');
-      ctx.fillStyle = atm; ctx.beginPath(); ctx.arc(cx, cy, R * 1.22, 0, 6.283); ctx.fill();
-      // ocean sphere, lit from upper-left
-      const oc = ctx.createRadialGradient(cx - R * 0.4, cy - R * 0.4, R * 0.1, cx, cy, R);
-      oc.addColorStop(0, '#1f3a52'); oc.addColorStop(0.6, '#14283a'); oc.addColorStop(1, '#0a1622');
-      ctx.fillStyle = oc; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.fill();
-      // graticule
-      ctx.strokeStyle = 'rgba(120,170,210,0.14)'; ctx.lineWidth = 0.8;
-      for (let la = -60; la <= 60; la += 30) {
-        ctx.beginPath(); let started = false;
-        for (let lo = -180; lo <= 180; lo += 6) { const p = rot(_toVec(la, lo)); if (p[2] > 0) { const sx = cx + R * p[0], sy = cy - R * p[1]; started ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); started = true; } else started = false; }
-        ctx.stroke();
-      }
-      for (let lo = -180; lo < 180; lo += 30) {
-        ctx.beginPath(); let started = false;
-        for (let la = -85; la <= 85; la += 5) { const p = rot(_toVec(la, lo)); if (p[2] > 0) { const sx = cx + R * p[0], sy = cy - R * p[1]; started ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); started = true; } else started = false; }
-        ctx.stroke();
-      }
-      // land dots (brighter on the lit day-side, toward upper-left)
-      for (const v of landDots) {
-        const p = rot(v); if (p[2] <= 0) continue;
-        const lit = 0.35 + 0.65 * Math.max(0, (-p[0] * 0.5 + p[1] * 0.5 + p[2] * 0.6));
-        ctx.fillStyle = `rgba(${Math.round(70 + 40 * lit)},${Math.round(150 + 60 * lit)},${Math.round(120 + 50 * lit)},${0.5 + 0.4 * p[2]})`;
-        ctx.beginPath(); ctx.arc(cx + R * p[0], cy - R * p[1], 1.05, 0, 6.283); ctx.fill();
-      }
-      // community lights (additive glow)
+      // ---- AURORA sky (four-direction curtains — the ancestors dancing) ----
+      const aucols = ['212,160,23', '184,53,30', '90,180,150', '202,189,156'];
       ctx.globalCompositeOperation = 'lighter';
+      for (let a2 = 0; a2 < 4; a2++) {
+        ctx.globalAlpha = 0.05 + 0.03 * Math.sin(t * 0.5 + a2);
+        ctx.strokeStyle = `rgb(${aucols[a2]})`; ctx.lineWidth = 26;
+        ctx.beginPath();
+        for (let x = -20; x <= W + 20; x += 22) { const y = 40 + a2 * 30 + Math.sin(x * 0.006 + t * 0.4 + a2 * 1.6) * 26 + Math.sin(x * 0.013 + t * 0.7) * 10; x === -20 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+        ctx.stroke();
+      }
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+      // starfield
+      for (const s of stars) { ctx.globalAlpha = 0.2 + 0.5 * (0.5 + 0.5*Math.sin(t*1.4 + s.tw)); ctx.fillStyle = '#e9edf7'; ctx.beginPath(); ctx.arc(s.x*W, s.y*H, s.r, 0, 6.283); ctx.fill(); }
+      ctx.globalAlpha = 1;
+      // atmosphere
+      const atm = ctx.createRadialGradient(cx, cy, R*0.92, cx, cy, R*1.2);
+      atm.addColorStop(0, 'rgba(90,150,200,0.3)'); atm.addColorStop(1, 'rgba(90,150,200,0)');
+      ctx.fillStyle = atm; ctx.beginPath(); ctx.arc(cx, cy, R*1.2, 0, 6.283); ctx.fill();
+      // ocean sphere
+      const oc = ctx.createRadialGradient(cx - R*0.4, cy - R*0.4, R*0.1, cx, cy, R);
+      oc.addColorStop(0, '#213c54'); oc.addColorStop(0.6, '#14283a'); oc.addColorStop(1, '#091320');
+      ctx.fillStyle = oc; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.fill();
+      // clip to the sphere for everything drawn ON the globe
+      ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.clip();
+      // graticule
+      ctx.strokeStyle = 'rgba(120,170,210,0.12)'; ctx.lineWidth = 0.8;
+      for (let la = -60; la <= 60; la += 30) { ctx.beginPath(); let started = false; for (let lo = -180; lo <= 180; lo += 6) { const p = rotv(_toVec(la, lo), S); if (p[2] > 0) { const sx = cx + R*p[0], sy = cy - R*p[1]; started ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); started = true; } else started = false; } ctx.stroke(); }
+      for (let lo = -180; lo < 180; lo += 30) { ctx.beginPath(); let started = false; for (let la = -85; la <= 85; la += 5) { const p = rotv(_toVec(la, lo), S); if (p[2] > 0) { const sx = cx + R*p[0], sy = cy - R*p[1]; started ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); started = true; } else started = false; } ctx.stroke(); }
+      // land dots (warm earth on the day side)
+      for (const v of landDots) { const p = rotv(v, S); if (p[2] <= 0) continue; const lit = 0.35 + 0.65 * Math.max(0, -p[0]*0.5 + p[1]*0.4 + p[2]*0.6); ctx.fillStyle = `rgba(${Math.round(96+50*lit)},${Math.round(132+50*lit)},${Math.round(96+40*lit)},${0.45 + 0.4*p[2]})`; ctx.beginPath(); ctx.arc(cx + R*p[0], cy - R*p[1], 1.05, 0, 6.283); ctx.fill(); }
+      // ---- NETWORK OF CARE threads (great-circle arcs, a light travels each) ----
+      for (const L of links) {
+        const seg = 14; let started = false; ctx.strokeStyle = L.col + '44'; ctx.lineWidth = 0.8; ctx.beginPath();
+        for (let k = 0; k <= seg; k++) { const p = rotv(_slerp(L.a, L.b, k/seg), S); if (p[2] > 0) { const sx = cx + R*p[0], sy = cy - R*p[1]; started ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); started = true; } else started = false; }
+        ctx.stroke();
+        const tp = (t * 0.25 + (L.a[0]+1)) % 1; const pp = rotv(_slerp(L.a, L.b, tp), S);
+        if (pp[2] > 0) { ctx.fillStyle = L.col; ctx.globalAlpha = 0.8; ctx.beginPath(); ctx.arc(cx + R*pp[0], cy - R*pp[1], 1.4, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1; }
+      }
+      // ---- COMMUNITY FIRES (crisp, findable; no runaway bloom) ----
       let near = null, nd = 1e9;
       for (const s of sites) {
-        const p = rot(s.v); if (p[2] <= 0.02) continue;
-        const sx = cx + R * p[0], sy = cy - R * p[1];
-        const pulse = 0.82 + 0.18 * Math.sin(t * 2 + s.v[0] * 10);
-        const gr = s.r * 2.1 * pulse;
-        const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, gr);
-        g.addColorStop(0, s.col + 'cc'); g.addColorStop(0.45, s.col + '55'); g.addColorStop(1, s.col + '00');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, gr, 0, 6.283); ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.arc(sx, sy, 1.1, 0, 6.283); ctx.fill();
-        if (st.mx >= 0) { const dd = (sx - st.mx) ** 2 + (sy - st.my) ** 2; if (dd < nd && dd < 400) { nd = dd; near = { c: s.c, sx, sy }; } }
+        const p = rotv(s.v, S); if (p[2] <= 0.02) continue;
+        const sx = cx + R*p[0], sy = cy - R*p[1];
+        const pulse = 0.82 + 0.18 * Math.sin(t*2 + s.v[0]*10);
+        const isSel = selected && selected.id === s.c.id;
+        const hr = s.r * (isSel ? 3.2 : 1.9) * pulse;
+        const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, hr);
+        g.addColorStop(0, s.col + 'dd'); g.addColorStop(0.4, s.col + '55'); g.addColorStop(1, s.col + '00');
+        ctx.globalAlpha = 0.7; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, hr, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.fillStyle = s.col; ctx.beginPath(); ctx.arc(sx, sy, s.r*0.55, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(255,250,235,0.95)'; ctx.beginPath(); ctx.arc(sx, sy, Math.min(1.6, s.r*0.28), 0, 6.283); ctx.fill();
+        if (isSel) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.4; ctx.globalAlpha = 0.6 + 0.4*Math.sin(t*4); ctx.beginPath(); ctx.arc(sx, sy, s.r*3.6, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1; }
+        if (S.mx >= 0) { const dd = (sx-S.mx)**2 + (sy-S.my)**2; if (dd < nd && dd < 320) { nd = dd; near = { c: s.c, sx, sy }; } }
       }
-      ctx.globalCompositeOperation = 'source-over';
-      if (near && (!hover || hover.c.id !== near.c.id)) setHover(near);
-      else if (!near && hover) setHover(null);
+      ctx.restore(); // unclip
+      if (near) { if (!hover || hover.c.id !== near.c.id) setHover(near); } else if (hover) setHover(null);
       canvas.__near = near;
     }
     raf = requestAnimationFrame(frame);
     return () => { if (raf) cancelAnimationFrame(raf); ro.disconnect(); };
-  }, [landDots, sites, stars]);
+  }, [landDots, sites, links, stars, selected, hover]);
 
-  const onDown = (e) => { const st = stRef.current; st.drag = true; st.moved = 0; st.lx = e.clientX; st.ly = e.clientY; };
+  const onDown = (e) => { const S = st.current; S.drag = true; S.moved = 0; S.lx = e.clientX; S.ly = e.clientY; };
   const onMove = (e) => {
-    const st = stRef.current, rc = canvasRef.current.getBoundingClientRect();
-    st.mx = e.clientX - rc.left; st.my = e.clientY - rc.top;
-    if (st.drag) {
-      const dx = e.clientX - st.lx, dy = e.clientY - st.ly; st.moved += Math.abs(dx) + Math.abs(dy);
-      st.yaw += dx * 0.006; st.pitch = Math.max(-1.3, Math.min(1.3, st.pitch + dy * 0.006));
-      st.lx = e.clientX; st.ly = e.clientY;
-    }
+    const S = st.current, rc = canvasRef.current.getBoundingClientRect();
+    S.mx = e.clientX - rc.left; S.my = e.clientY - rc.top;
+    if (S.drag) { const dx = e.clientX - S.lx, dy = e.clientY - S.ly; S.moved += Math.abs(dx) + Math.abs(dy); S.yaw += dx*0.006; S.pitch = Math.max(-1.3, Math.min(1.3, S.pitch + dy*0.006)); S.tYaw = S.yaw; S.tPitch = S.pitch; S.autor = false; S.lx = e.clientX; S.ly = e.clientY; }
   };
   const onUp = () => {
-    const st = stRef.current; const wasClick = st.moved < 6; st.drag = false;
-    if (wasClick) { const near = canvasRef.current && canvasRef.current.__near; if (near) { onSelect(near.c.id); onClose(); } }
+    const S = st.current; const wasClick = S.moved < 6; S.drag = false;
+    if (wasClick) { const nr = canvasRef.current && canvasRef.current.__near; if (nr) { const s2 = sites.find(x => x.c.id === nr.c.id); setSelected(nr.c); if (s2) flyTo(s2, Math.max(2.6, S.zoom)); } else { setSelected(null); } }
   };
+  const onWheel = (e) => { const S = st.current; S.tZoom = Math.max(1, Math.min(5.5, S.tZoom * (1 - e.deltaY * 0.0012))); if (S.tZoom < 1.4) S.autor = true; };
+  const toggleTour = () => { const S = st.current; S.tour = !S.tour; setTourOn(S.tour); if (S.tour && sites.length) { flyTo(sites[S.tourIdx], 2.6); setSelected(sites[S.tourIdx].c); } };
+  const truth = selected ? _globeTruth(selected) : null;
+  const dinfo = selected ? (window.DIRECTION[selected.direction || 'AllDirections'] || {}) : null;
 
   return (
     <div className="globe-overlay">
-      <canvas ref={canvasRef} className="globe-canvas"
-        onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
-        onPointerLeave={() => { stRef.current.drag = false; stRef.current.mx = -1; }} />
+      <canvas ref={canvasRef} className="globe-canvas" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onWheel={onWheel} onPointerLeave={() => { st.current.drag = false; st.current.mx = -1; }} />
       <div className="globe-head">
-        <div className="gh-eyebrow">The Living Globe</div>
-        <div className="gh-title">{sites.length} communities across Turtle Island</div>
-        <div className="gh-sub">Drag to spin · click a light to open a community</div>
+        <div className="gh-eyebrow">The Constellation of Care</div>
+        <div className="gh-title">{sites.length} fires across Turtle Island</div>
+        <div className="gh-sub">Every fire is a community holding its people · scroll to come closer · click a fire to listen</div>
       </div>
-      <button className="globe-close" onClick={onClose} title="Back to the map">✕ Back to map</button>
+      <div className="globe-topbtns">
+        <button className={`globe-tourbtn ${tourOn ? 'on' : ''}`} onClick={toggleTour}>{tourOn ? '■ Stop journey' : '✦ Guided journey'}</button>
+        <button className="globe-close" onClick={onClose}>✕ Back to map</button>
+      </div>
       <div className="globe-legend">
-        {['East','South','West','North'].map(d => (
-          <span key={d}><i style={{ background: window.DIRECTION[d].color }}></i>{window.DIRECTION[d].label}</span>
-        ))}
+        {['East','South','West','North'].map(d => (<span key={d}><i style={{ background: window.DIRECTION[d].color }}></i>{window.DIRECTION[d].label}</span>))}
       </div>
-      {hover && (
-        <div className="globe-tip" style={{ left: hover.sx + 14, top: hover.sy - 8 }}>
-          {hover.c.name.trim()}
+      {hover && !selected && (<div className="globe-tip" style={{ left: hover.sx + 14, top: hover.sy - 8 }}>{hover.c.name.trim()}</div>)}
+      {selected && (
+        <div className="globe-panel" style={{ borderColor: dinfo.color }}>
+          <button className="gp-x" onClick={() => setSelected(null)}>✕</button>
+          <div className="gp-eyebrow" style={{ color: dinfo.color }}>● {(selected.direction || 'Central')} · {dinfo.season} · {dinfo.stage}</div>
+          <div className="gp-name">{selected.name.trim()}</div>
+          <div className="gp-meta">
+            {selected.population != null && <span><b>{selected.population.toLocaleString()}</b> people</span>}
+            <span><b>{window.PILLARS.filter(pl => window.pillarOn(selected, pl.key)).length}</b>/4 pillars</span>
+          </div>
+          {truth && <blockquote className="gp-truth">“{truth}”<cite>— from {selected.name.trim().split(' ')[0]}'s own records</cite></blockquote>}
+          <button className="gp-open" onClick={() => { onSelect(selected.id); onClose(); }}>Open full profile →</button>
         </div>
       )}
     </div>
   );
 }
 window.LivingGlobe = LivingGlobe;
+
