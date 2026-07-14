@@ -2024,7 +2024,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   blankets, a kid dancing along at the edge. Runs all day (fades with
       //   dayA); hands to the fire circle at true night. ---
       {
-        const paX = W * 0.805, paY = H - 22, paR = 66;
+        const paX = W * 0.805, paY = H - 22, paR = 78;             // bigger arena — the pow wow is the showpiece
         const beat = Math.abs(Math.sin(tt * 3.4));                 // shared drum heartbeat
         const nd = (c) => _mix(c, '#243250', nm * 0.55);          // dim regalia toward night
         // ---- THE DANCE GROUND — a clearly LIGHTER worn clearing so the arena
@@ -2065,11 +2065,26 @@ function drawScene(ctx, W, H, p, tt, now) {
           }
         }
 
-        // ---- DANCERS circling clockwise in bright regalia — six of them,
-        //   including a LITTLE ONE dancing with the grown-ups (tiny tots do). ----
-        const REG = [['#e23a1e', '#f2b81e'], ['#1f7fbf', '#f2d21e'], ['#8f2f6b', '#e2721e'], ['#2f9f4f', '#e23a7b'], ['#e2901e', '#2f5ecf'], ['#c9401e', '#2fbf9f']];
-        const SCL = [1.08, 1.08, 1.08, 1.08, 1.08, 0.82];
-        const dN = 6, spin = tt * 0.32;
+        // ---- FOUR-DIRECTIONS FLAGS around the rim — poles with fluttering
+        //   banners in the medicine-wheel colours (gold E, red S, black W,
+        //   cream N), the way pow wow grounds are dressed. ----
+        [[5.65, '#d4a017'], [0.55, '#b8351e'], [4.15, '#2a241e'], [6.15, '#e8dcc0']].forEach(([fa2, fc], fi) => {
+          const fxp2 = paX + Math.cos(fa2) * paR * 1.06, fyp2 = paY + Math.sin(fa2) * paR * 0.42;
+          ctx.strokeStyle = nd('#5a3a1c'); ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(fxp2, fyp2); ctx.lineTo(fxp2, fyp2 - 30); ctx.stroke();
+          const flut = Math.sin(tt * 2.2 + fi * 1.7) * 2.5;                      // banner flutters
+          ctx.fillStyle = nd(fc);
+          ctx.beginPath();
+          ctx.moveTo(fxp2, fyp2 - 30); ctx.quadraticCurveTo(fxp2 + 6, fyp2 - 29 + flut * 0.4, fxp2 + 11, fyp2 - 27 + flut);
+          ctx.lineTo(fxp2 + 10, fyp2 - 22 + flut); ctx.quadraticCurveTo(fxp2 + 5, fyp2 - 24 + flut * 0.4, fxp2, fyp2 - 24);
+          ctx.closePath(); ctx.fill();
+        });
+
+        // ---- DANCERS circling clockwise in bright regalia — EIGHT men in full
+        //   bustle-and-roach fancy dress, incl. a LITTLE ONE (tiny tots do). ----
+        const REG = [['#e23a1e', '#f2b81e'], ['#1f7fbf', '#f2d21e'], ['#8f2f6b', '#e2721e'], ['#2f9f4f', '#e23a7b'], ['#e2901e', '#2f5ecf'], ['#c9401e', '#2fbf9f'], ['#3f6fdf', '#f2a01e'], ['#9f3f1e', '#f2e21e']];
+        const SCL = [1.08, 1.06, 1.1, 1.08, 1.06, 0.82, 1.08, 1.05];
+        const dN = 8, spin = tt * 0.32;
         const dancers = [];
         for (let d = 0; d < dN; d++) {
           const a = spin + d * (Math.PI * 2 / dN);
@@ -2079,16 +2094,22 @@ function drawScene(ctx, W, H, p, tt, now) {
         for (const { x, y, a, d } of dancers) {
           const scd = SCL[d];
           const ddir = Math.cos(a + 0.35) >= 0 ? 1 : -1;            // face the direction of travel
-          const hop = Math.abs(Math.sin(tt * 3.4 + d * 1.1)) * 2.6;  // toe-heel bounce on the beat
+          const step = Math.abs(Math.sin(tt * 3.4 + d * 1.1));      // toe-heel on the beat
+          const hop = step * 2.6;
           const fy = y - hop;
           const c1 = nd(REG[d][0]), c2 = nd(REG[d][1]), tip = nd('#3a2410');
+          // DUST kicked up when the foot lands (GTA polish — the ground answers)
+          if (step < 0.3) {
+            ctx.fillStyle = `rgba(${Math.round(_lerp(190,90,nm))},${Math.round(_lerp(168,78,nm))},${Math.round(_lerp(130,52,nm))},${0.30 * (1 - step / 0.3)})`;
+            ctx.beginPath(); ctx.ellipse(x - ddir * 3, y + 1, 5 + (1 - step / 0.3) * 3, 1.6, 0, 0, 6.283); ctx.fill();
+          }
           // BUSTLE — a bright fan of feathers around a rosette, behind the back
           const bx = x - ddir * 2, by = fy - 14 * scd;
           for (let f = 0; f < 9; f++) { const fa = -1.25 + f * (2.5 / 8); feather(bx, by, 18 * scd, fa, 2.5 * scd, f % 2 ? c1 : c2, tip); }
           ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(bx, by, 3.4 * scd, 0, 6.283); ctx.fill();
           ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(bx, by, 1.6 * scd, 0, 6.283); ctx.fill();
-          // the dancer
-          fig(x, fy, scd, 'dance', d * 1.1, { shirt: REG[d][0], hairStyle: d % 2 ? 'braid' : 'short', dir: ddir });
+          // the dancer — SHORT hair under the roach (they read as men, per Hassan)
+          fig(x, fy, scd, 'dance', d * 1.1, { shirt: REG[d][0], hairStyle: 'short', dir: ddir });
           // ROACH — dyed deer-hair base + two upright coloured feathers on the crown
           const headTop = fy - (scd * 1.3) * 36.5;
           ctx.fillStyle = nd('#6e2412');
@@ -2150,12 +2171,18 @@ function drawScene(ctx, W, H, p, tt, now) {
         //   edge. (Hassan: "real spectators clapping and cheering, OUTSIDE
         //   the circle".) The left side belongs to the drum arbor. ----
         const crowd = [
-          [3.95, 'cheer', 0.92, '#1f4e8f', 'braid'],
-          [4.45, 'clap', 0.95, '#7c2f6b', 'short'],
-          [4.95, 'sitfam', 1.0, '#b04a2a', 'long'],
-          [5.45, 'clap', 0.9, '#3a4658', 'braid'],
-          [5.95, 'cheer', 0.95, '#d68a1f', 'long'],
-          [0.42, 'sitfam', 1.0, '#5a7d3a', 'braid'],
+          [3.92, 'cheer', 0.92, '#1f4e8f', 'braid'],
+          [4.14, 'clap', 0.88, '#5a7d3a', 'long'],
+          [4.38, 'clap', 0.95, '#7c2f6b', 'short'],
+          [4.62, 'cheer', 0.9, '#b04a2a', 'braid'],
+          [4.88, 'sitfam', 1.0, '#b04a2a', 'long'],
+          [5.14, 'clap', 0.92, '#d68a1f', 'short'],
+          [5.38, 'clap', 0.9, '#3a4658', 'braid'],
+          [5.62, 'cheer', 0.95, '#c93a1e', 'long'],
+          [5.88, 'clap', 0.88, '#1f4e8f', 'short'],
+          [6.12, 'sitfam', 1.0, '#7c2f6b', 'braid'],
+          [0.22, 'cheer', 0.92, '#5a7d3a', 'long'],
+          [0.48, 'sitfam', 1.0, '#5a7d3a', 'braid'],
         ];
         crowd.forEach(([a, kind2, sc2, sh, hs], i) => {
           const rf = kind2 === 'sitfam' ? 1.28 : 1.40;
@@ -2190,6 +2217,25 @@ function drawScene(ctx, W, H, p, tt, now) {
           const kx = paX + paR * 1.34, ky = paY - paR * 0.14;
           const khop = Math.abs(Math.sin(tt * 3.4 + 0.6)) * 2;
           fig(kx, ky - khop, 0.62, 'dance', 2.6, { shirt: '#2f9f4f', hairStyle: 'short', dir: -1 });
+        }
+
+        // ---- PLANT RING framing the grounds (Hassan: "mad plants around") —
+        //   swaying grass tufts + a flower head just beyond the crowd, along
+        //   the top-right arc (the arbor owns the left). ----
+        for (let pr2 = 0; pr2 < 7; pr2++) {
+          const pa2 = 4.25 + pr2 * 0.34;                              // top → right arc
+          const ppx = paX + Math.cos(pa2) * paR * 1.72, ppy = paY + Math.sin(pa2) * paR * 0.46 * 1.72;
+          ctx.strokeStyle = `rgba(${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(120,62,nm))},${Math.round(_lerp(46,26,nm))},0.95)`;
+          ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+          for (let bl2 = 0; bl2 < 5; bl2++) {
+            const bx3 = ppx + (bl2 - 2) * 2.6, bh3 = 8 + (bl2 % 3) * 4;
+            const sw3 = Math.sin(tt * 1.5 + pr2 + bl2 * 0.6) * 2;
+            ctx.beginPath(); ctx.moveTo(bx3, ppy); ctx.quadraticCurveTo(bx3 + sw3 * 0.5, ppy - bh3 * 0.6, bx3 + sw3, ppy - bh3); ctx.stroke();
+          }
+          if (pr2 % 2 === 0) {
+            ctx.fillStyle = `rgba(${Math.round(_lerp(226,124,nm))},${Math.round(_lerp(168,90,nm))},${Math.round(_lerp(90,50,nm))},0.95)`;
+            ctx.beginPath(); ctx.arc(ppx + Math.sin(tt + pr2) * 2, ppy - 14, 1.5, 0, 6.283); ctx.fill();
+          }
         }
       }
       // (Removed the TATANKA chase — its runners swept across the ring-of-roses,
