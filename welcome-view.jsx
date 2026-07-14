@@ -2017,50 +2017,81 @@ function drawScene(ctx, W, H, p, tt, now) {
 
       // (Removed the shoreline pacing walkers — Hassan: "walking in a line then
       //  disappear". They were filler that faded oddly at the dusk crossfade.)
-      // --- MI'KMAQ FRIENDSHIP DANCE (foreground attraction, prominent) ---
-      //   Five children HOLD HANDS in a circle and move CLOCKWISE, taking
-      //   THREE STEPS FORWARD and ONE STEP BACK in time with the drum — the
-      //   real Friendship Dance, not random hand-waving. DAY / AFTERNOON ONLY
-      //   (Hassan: ring-of-roses belongs to the day, not the evening/night).
-      if (isMorning || isMidday) {
-        const ringX = W * 0.83, ringY = H - 24, ringR = 16;   // TIGHT ring: kids' own arms genuinely reach each other
-        // trodden grass ring
-        ctx.fillStyle = `rgba(${Math.round(_lerp(150, 70, nm))},${Math.round(_lerp(132, 60, nm))},${Math.round(_lerp(86, 36, nm))},0.45)`;
-        ctx.beginPath(); ctx.ellipse(ringX, ringY + 6, ringR + 5, (ringR + 5) * 0.4, 0, 0, 6.283); ctx.fill();
-        ctx.strokeStyle = `rgba(${Math.round(_lerp(58, 28, nm))},${Math.round(_lerp(40, 18, nm))},${Math.round(_lerp(22, 10, nm))},0.6)`;
-        ctx.lineWidth = 1.4;
-        ctx.beginPath(); ctx.ellipse(ringX, ringY + 6, ringR, ringR * 0.4, 0, 0, 6.283); ctx.stroke();
+      // --- POW WOW — a real dance arena, given its own clear ground so it reads
+      //   as a pow wow and not a crowd (Hassan/admin: the old "girls in a circle"
+      //   was too small; the first pow wow merged into the bank). A HOST DRUM sits
+      //   at the centre with four singers around it (the heartbeat); a handful of
+      //   DANCERS circle it clockwise in BRIGHT regalia — a colourful feather
+      //   BUSTLE fanned behind the back and a dyed ROACH on the head, bouncing on
+      //   the beat. Runs day → evening; hands to the fire circle at true night. ---
+      if (isMorning || isMidday || isEvening) {
+        const paX = W * 0.805, paY = H - 22, paR = 66;
+        const beat = Math.abs(Math.sin(tt * 3.4));                 // shared drum heartbeat
+        const nd = (c) => _mix(c, '#243250', nm * 0.55);          // dim regalia toward night
+        // ---- THE DANCE GROUND — a clearly LIGHTER worn clearing so the arena
+        //   stands apart from the surrounding grass (this is what makes it read). --
+        ctx.save();
+        const clr = ctx.createRadialGradient(paX, paY, 2, paX, paY, paR);
+        clr.addColorStop(0, `rgba(${Math.round(_lerp(206,104,nm))},${Math.round(_lerp(184,90,nm))},${Math.round(_lerp(140,58,nm))},0.72)`);
+        clr.addColorStop(1, `rgba(${Math.round(_lerp(178,86,nm))},${Math.round(_lerp(150,72,nm))},${Math.round(_lerp(104,44,nm))},0)`);
+        ctx.fillStyle = clr; ctx.beginPath(); ctx.ellipse(paX, paY, paR, paR * 0.40, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(120,58,nm))},${Math.round(_lerp(92,44,nm))},${Math.round(_lerp(52,26,nm))},0.75)`;
+        ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(paX, paY, paR, paR * 0.40, 0, 0, 6.283); ctx.stroke();
+        ctx.restore();
 
-        // 3-steps-forward-1-back rotation, locked to a steady drum beat
-        const stepSize = 0.32;                        // radians advanced per step
-        const beat = tt * 1.6;                        // ~1.6 steps/sec (drum tempo)
-        const idx = Math.floor(beat), frac = beat - idx;
-        const pattern = [1, 1, 1, -1];                // forward, forward, forward, back
-        let steps = Math.floor(idx / 4) * 2;          // each 4-beat measure nets +2 steps clockwise
-        for (let b = 0; b < idx % 4; b++) steps += pattern[b];
-        const rot = (steps + pattern[idx % 4] * frac) * stepSize;
-        const stepBob = Math.abs(Math.sin(beat * Math.PI)) * 2.5;   // little hop on each step
+        // one feather (COLOURED vane + contrast tip), drawn from its base at
+        // (fxp,fyp) pointing "up" (−y), rotated by `ang`.
+        const feather = (fxp, fyp, len, ang, wid, col, tip) => {
+          ctx.save(); ctx.translate(fxp, fyp); ctx.rotate(ang);
+          ctx.fillStyle = col;
+          ctx.beginPath(); ctx.ellipse(0, -len * 0.5, wid, len * 0.5, 0, 0, 6.283); ctx.fill();
+          ctx.fillStyle = tip;
+          ctx.beginPath(); ctx.ellipse(0, -len * 0.86, wid * 0.95, len * 0.18, 0, 0, 6.283); ctx.fill();
+          ctx.strokeStyle = 'rgba(30,20,10,0.5)'; ctx.lineWidth = 0.5;
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -len); ctx.stroke();
+          ctx.restore();
+        };
 
-        const N = 5;
-        const kidShirts = ['#d68a1f', '#5a7d3a', '#c93a1e', '#1f4e8f', '#7c2f6b'];
-        const kp = [];
-        for (let c = 0; c < N; c++) {
-          const a = rot + c * (Math.PI * 2 / N);
-          kp.push({
-            x: ringX + Math.cos(a) * ringR,
-            y: ringY + 6 + Math.sin(a) * ringR * 0.4 - (Math.sin(a) > 0 ? stepBob : stepBob * 0.5),
-            a,
-          });
+        // ---- HOST DRUM + four singers at the centre ----
+        const dcx = paX, dcy = paY + 2;
+        const singerCols = ['#c93a1e', '#1f4e8f', '#5a7d3a', '#7c2f6b'];
+        [[-16, -5, 1], [16, -5, -1], [-22, 5, 1], [22, 5, -1]].forEach(([ox, oy, sd], i) =>
+          fig(dcx + ox, dcy + oy, 0.92, 'drum', i * 1.7, { shirt: singerCols[i], hairStyle: i % 2 ? 'braid' : 'long', dir: sd }));
+        const drumR = 14 + beat * 1.2;
+        ctx.fillStyle = nd('#7a4a22');                              // drum shell
+        ctx.beginPath(); ctx.ellipse(dcx, dcy, drumR, drumR * 0.5, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = `rgba(${Math.round(_lerp(224,124,nm))},${Math.round(_lerp(199,106,nm))},${Math.round(_lerp(158,76,nm))},1)`;   // hide head
+        ctx.beginPath(); ctx.ellipse(dcx, dcy - 2, drumR * 0.9, drumR * 0.42, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = 'rgba(60,36,18,0.55)'; ctx.lineWidth = 0.7;   // sinew ties
+        for (let s = 0; s < 6; s++) { const a = s * Math.PI / 3; ctx.beginPath(); ctx.moveTo(dcx, dcy - 2); ctx.lineTo(dcx + Math.cos(a) * drumR * 0.86, dcy - 2 + Math.sin(a) * drumR * 0.4); ctx.stroke(); }
+
+        // ---- DANCERS circling clockwise in bright regalia (sorted back→front) ----
+        const REG = [['#e23a1e', '#f2b81e'], ['#1f7fbf', '#f2d21e'], ['#8f2f6b', '#e2721e'], ['#2f9f4f', '#e23a7b'], ['#e2901e', '#2f5ecf']];
+        const dN = 5, spin = tt * 0.32;
+        const dancers = [];
+        for (let d = 0; d < dN; d++) {
+          const a = spin + d * (Math.PI * 2 / dN);
+          dancers.push({ x: paX + Math.cos(a) * paR * 0.82, y: paY + Math.sin(a) * paR * 0.40, a, d });
         }
-        // the children, facing their clockwise direction of travel
-        for (let c = 0; c < N; c++) {
-          const { x, y, a } = kp[c];
-          const kdir = Math.cos(a) >= 0 ? 1 : -1;       // tangential facing (clockwise)
-          fig(x, y, 0.82, 'dance', c * 1.3, { shirt: kidShirts[c], hairStyle: c % 2 ? 'long' : 'braid', dir: kdir });  // clearly small CHILDREN
+        dancers.sort((A, B) => A.y - B.y);                          // depth order (back → front)
+        for (const { x, y, a, d } of dancers) {
+          const ddir = Math.cos(a + 0.35) >= 0 ? 1 : -1;            // face the direction of travel
+          const hop = Math.abs(Math.sin(tt * 3.4 + d * 1.1)) * 2.6;  // toe-heel bounce on the beat
+          const fy = y - hop;
+          const c1 = nd(REG[d][0]), c2 = nd(REG[d][1]), tip = nd('#3a2410');
+          // BUSTLE — a bright fan of feathers around a rosette, behind the back
+          const bx = x - ddir * 2, by = fy - 14;
+          for (let f = 0; f < 9; f++) { const fa = -1.25 + f * (2.5 / 8); feather(bx, by, 18, fa, 2.5, f % 2 ? c1 : c2, tip); }
+          ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(bx, by, 3.4, 0, 6.283); ctx.fill();
+          ctx.fillStyle = c2; ctx.beginPath(); ctx.arc(bx, by, 1.6, 0, 6.283); ctx.fill();
+          // the dancer
+          fig(x, fy, 1.08, 'dance', d * 1.1, { shirt: REG[d][0], hairStyle: d % 2 ? 'braid' : 'short', dir: ddir });
+          // ROACH — dyed deer-hair base + two upright coloured feathers on the crown
+          const headTop = fy - (1.08 * 1.3) * 36.5;
+          ctx.fillStyle = nd('#6e2412');
+          ctx.beginPath(); ctx.ellipse(x, headTop + 2.5, 4.2, 3.2, 0, Math.PI, 2 * Math.PI); ctx.fill();
+          feather(x, headTop, 12, -0.12, 1.9, c1, tip); feather(x, headTop, 12, 0.12, 1.9, c2, tip);
         }
-        // NO bridge lines at all (they read as "weird sticks"). The ring is now
-        // tight enough (R=16) that each child's own outstretched dance arms
-        // genuinely reach the neighbour's — the hands meet naturally.
       }
       // (Removed the TATANKA chase — its runners swept across the ring-of-roses,
       //  reading as "4 girls walking straight through" the dancing children.)
@@ -2689,7 +2720,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   land? they can all be on LHS"): clumps of green grass/sedge tufts and
       //   a few flowering stems, swaying. ----
       const grassCol = `rgba(${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(120,62,nm))},${Math.round(_lerp(46,26,nm))},0.95)`;
-      [[0.46, 6], [0.49, 7], [0.52, 6]]  /* clumps at 0.55/0.585 removed — they drew INSIDE the horse */.forEach(([fxC, n], gi) => {
+      [[0.16, 6], [0.24, 7], [0.32, 6], [0.40, 5], [0.46, 6], [0.49, 7], [0.52, 6]]  /* more plants across the open LHS bank; 0.55/0.585 stay clear of the horse */.forEach(([fxC, n], gi) => {
         const bx0 = W * fxC, by0 = ground(bx0) + 6;
         ctx.strokeStyle = grassCol; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
         for (let b = 0; b < n; b++) {
