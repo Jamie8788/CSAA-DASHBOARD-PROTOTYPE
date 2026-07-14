@@ -1916,7 +1916,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       // across phase boundaries instead of popping (Hassan: "smooth transitions")
       const wMorning = _clamp((0.22 - p) / 0.08, 0, 1);                                          // 1 until ~0.14, fades to 0 by ~0.22
       const wMidday  = _clamp((p - 0.14) / 0.08, 0, 1) * _clamp((0.40 - p) / 0.08, 0, 1);         // peaks midday
-      const wEvening = _clamp((p - 0.32) / 0.08, 0, 1);                                          // fades in from 0.32 onward
+      const wEvening = _clamp((p - 0.50) / 0.08, 0, 1);                                          // evening waits for the day shift to wind down (0.32 made day+evening figures pile up together on the mid-bank — Hassan: "too crowded, don't know who is doing what")
       const isMorning = wMorning > 0.5;
       const isMidday  = wMidday  > 0.5;
       const isEvening = wEvening > 0.5;
@@ -1992,8 +1992,8 @@ function drawScene(ctx, W, H, p, tt, now) {
       earth(smx, smy + 8, 30);
       fig(smx - 14, smy + 6, 1.40, 'stir', 0.8, { shirt: '#d68a1f', hairStyle: 'braid', dir: 1 });
       earth(dx, dyy + 8, 30);
-      fig(dx - 6, dyy + 6, 1.50, 'hang', 1.2, { shirt: '#7c2f6b', hairStyle: 'braid' });
-      fig(dx + 18, dyy + 6, 1.30, 'hang', 4.0, { shirt: '#5a7d3a', dir: -1 });
+      fig(dx - 12, dyy + 6, 1.50, 'hang', 1.2, { shirt: '#7c2f6b', hairStyle: 'braid' });
+      fig(dx + 26, dyy + 8, 1.30, 'carry', 4.0, { shirt: '#5a7d3a', dir: -1 });   // brings the next fish TO the rack (the second 'hang' stood directly inside the first — Hassan)
 
       // --- LEFT-BANK / "EMPTY TRIANGLE" group (Hassan: utilise the empty space).
       //   A shore-fishing pair on the open left of the bank: one casting a line
@@ -2023,8 +2023,9 @@ function drawScene(ctx, W, H, p, tt, now) {
       //   at the centre with four singers around it (the heartbeat); a handful of
       //   DANCERS circle it clockwise in BRIGHT regalia — a colourful feather
       //   BUSTLE fanned behind the back and a dyed ROACH on the head, bouncing on
-      //   the beat. Runs day → evening; hands to the fire circle at true night. ---
-      if (isMorning || isMidday || isEvening) {
+      //   the beat. Runs all day (the block itself fades with dayA); hands to
+      //   the fire circle at true night. ---
+      {
         const paX = W * 0.805, paY = H - 22, paR = 66;
         const beat = Math.abs(Math.sin(tt * 3.4));                 // shared drum heartbeat
         const nd = (c) => _mix(c, '#243250', nm * 0.55);          // dim regalia toward night
@@ -2052,18 +2053,34 @@ function drawScene(ctx, W, H, p, tt, now) {
           ctx.restore();
         };
 
-        // ---- HOST DRUM + four singers at the centre ----
+        // ---- HOST DRUM + four singers SEATED AT the drum, sticks striking ----
+        //   (the old standing pair beside the drum read as "two girls just
+        //    standing inside the pow wow" — now everyone at the centre is
+        //    unmistakably part of the drum group)
         const dcx = paX, dcy = paY + 2;
-        const singerCols = ['#c93a1e', '#1f4e8f', '#5a7d3a', '#7c2f6b'];
-        [[-16, -5, 1], [16, -5, -1], [-22, 5, 1], [22, 5, -1]].forEach(([ox, oy, sd], i) =>
-          fig(dcx + ox, dcy + oy, 0.92, 'drum', i * 1.7, { shirt: singerCols[i], hairStyle: i % 2 ? 'braid' : 'long', dir: sd }));
         const drumR = 14 + beat * 1.2;
+        const singerCols = ['#c93a1e', '#1f4e8f', '#5a7d3a', '#7c2f6b'];
+        const singerSeats = [[-15, -9, 1], [15, -9, -1], [-23, 3, 1], [23, 3, -1]];
+        // back pair first, then the shell covers their knees → clearly seated AT it
+        singerSeats.slice(0, 2).forEach(([ox, oy, sd], i) =>
+          fig(dcx + ox, dcy + oy, 0.92, 'sit', i * 1.7, { shirt: singerCols[i], hairStyle: i % 2 ? 'braid' : 'short', dir: sd }));
         ctx.fillStyle = nd('#7a4a22');                              // drum shell
         ctx.beginPath(); ctx.ellipse(dcx, dcy, drumR, drumR * 0.5, 0, 0, 6.283); ctx.fill();
         ctx.fillStyle = `rgba(${Math.round(_lerp(224,124,nm))},${Math.round(_lerp(199,106,nm))},${Math.round(_lerp(158,76,nm))},1)`;   // hide head
         ctx.beginPath(); ctx.ellipse(dcx, dcy - 2, drumR * 0.9, drumR * 0.42, 0, 0, 6.283); ctx.fill();
         ctx.strokeStyle = 'rgba(60,36,18,0.55)'; ctx.lineWidth = 0.7;   // sinew ties
         for (let s = 0; s < 6; s++) { const a = s * Math.PI / 3; ctx.beginPath(); ctx.moveTo(dcx, dcy - 2); ctx.lineTo(dcx + Math.cos(a) * drumR * 0.86, dcy - 2 + Math.sin(a) * drumR * 0.4); ctx.stroke(); }
+        singerSeats.slice(2).forEach(([ox, oy, sd], i) =>
+          fig(dcx + ox, dcy + oy, 0.92, 'sit', (i + 2) * 1.7, { shirt: singerCols[i + 2], hairStyle: i % 2 ? 'long' : 'braid', dir: sd }));
+        // every singer's DRUMSTICK rises and strikes the head on the shared beat
+        singerSeats.forEach(([ox, oy, sd], i) => {
+          const lift = Math.abs(Math.sin(tt * 3.4 + i * 0.35)) * 6;      // near-unison, slightly human
+          const hx = dcx + ox * 0.45, hy = dcy - 4 - lift;
+          ctx.strokeStyle = nd('#4a2e14'); ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(dcx + ox * 0.8, dcy + oy * 0.5 - 8); ctx.lineTo(hx, hy); ctx.stroke();
+          ctx.fillStyle = nd('#d8c8a0');                                 // padded beater tip
+          ctx.beginPath(); ctx.arc(hx, hy, 1.6, 0, 6.283); ctx.fill();
+        });
 
         // ---- DANCERS circling clockwise in bright regalia (sorted back→front) ----
         const REG = [['#e23a1e', '#f2b81e'], ['#1f7fbf', '#f2d21e'], ['#8f2f6b', '#e2721e'], ['#2f9f4f', '#e23a7b'], ['#e2901e', '#2f5ecf']];
@@ -2092,6 +2109,23 @@ function drawScene(ctx, W, H, p, tt, now) {
           ctx.beginPath(); ctx.ellipse(x, headTop + 2.5, 4.2, 3.2, 0, Math.PI, 2 * Math.PI); ctx.fill();
           feather(x, headTop, 12, -0.12, 1.9, c1, tip); feather(x, headTop, 12, 0.12, 1.9, c2, tip);
         }
+
+        // ---- SPECTATORS around the rim, CLAPPING on the beat (Hassan: a pow
+        //   wow has people around it) — spaced along the FAR arc so they frame
+        //   the arena without ever crossing the dancers. ----
+        const specs = [[3.62, '#5a7d3a', 'long', 0.88], [4.35, '#1f4e8f', 'braid', 0.92], [5.05, '#7c2f6b', 'short', 0.9], [5.75, '#b04a2a', 'long', 0.86]];
+        specs.forEach(([a, sh, hs, sc2], i) => {
+          const sx2 = paX + Math.cos(a) * paR * 1.34, sy2 = paY + Math.sin(a) * paR * 0.56;   // well OUTSIDE the dancers' path — at 1.16 the left spectators merged into the circle
+          fig(sx2, sy2, sc2, 'idle', i * 2.1, { shirt: sh, hairStyle: hs, dir: sx2 < paX ? 1 : -1 });
+          // clapping: two hands meeting in front on the drum beat
+          const clap = Math.abs(Math.sin(tt * 3.4 + i * 0.2));         // on the beat
+          const chx = sx2 + (sx2 < paX ? 1 : -1) * 6 * sc2, chy = sy2 - 26 * sc2;
+          ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2 * sc2; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(sx2 + (sx2 < paX ? 1 : -1) * 3 * sc2, sy2 - 24 * sc2);
+          ctx.lineTo(chx, chy - clap * 2.5); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(sx2 + (sx2 < paX ? 1 : -1) * 3 * sc2, sy2 - 20 * sc2);
+          ctx.lineTo(chx, chy - clap * 2.5 + 1.5); ctx.stroke();
+        });
       }
       // (Removed the TATANKA chase — its runners swept across the ring-of-roses,
       //  reading as "4 girls walking straight through" the dancing children.)
@@ -2130,7 +2164,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       // --- ELDER STORYTELLER + listening child — appears in the EVENING when
       //   work winds down. Replaces day-bustle with quieter gathering energy.
       if (isEvening) {
-        const stX = fx - 50, stY = ground(stX) + 6;
+        const stX = W * 0.56, stY = ground(stX) + 6;   // its OWN open ground — fx-50 sat right on top of the chop/fire/smokehouse cluster
         earth(stX + 4, stY + 6, 26);
         fig(stX, stY, 1.45, 'wave', 1.1, { shirt: '#5a7d3a', hairStyle: 'long', dir: 1 });
         fig(stX + 18, stY + 2, 0.85, 'sit', 0.4, { shirt: '#d68a1f', hairStyle: 'long', dir: -1 });
@@ -2161,7 +2195,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       // --- TALKING CIRCLE (Mi'kmaq) — EVENING: people sit in a circle and a
       //   TALKING STICK passes clockwise; only the holder "speaks" (gestures).
       //   Placed on the open left of the bank, its own clear space.
-      if (isMidday || isEvening) {
+      if (isEvening) {                                          // evening ONLY — at midday it crowded the fishing pair + dice on the same stretch
         const tcX = W * 0.515, tcY = ground(W * 0.515) + 12, tcR = 24;
         earth(tcX, tcY + 4, tcR + 6);
         const M = 6;                                            // six seated participants
@@ -2619,7 +2653,7 @@ function drawScene(ctx, W, H, p, tt, now) {
       //     sticks TOSSED UP on a cycle, tumbling, then read where they land.
       {
         ctx.save(); ctx.globalAlpha = dayA;
-        const sdx = W * 0.505, sdy = ground(W * 0.505) + 34;
+        const sdx = W * 0.61, sdy = ground(W * 0.61) + 44;   // moved off the 0.505 stretch — it stacked onto the fishing pair + talking circle
         ctx.fillStyle = 'rgba(150,116,78,0.85)';                                       // the hide they play on
         ctx.beginPath(); ctx.ellipse(sdx, sdy + 2, 11, 3, 0, 0, 6.283); ctx.fill();
         fig(sdx - 14, sdy, 1.15, 'sit', 0.4, { shirt: '#5a7d3a', hairStyle: 'short', dir: 1 });
@@ -2659,32 +2693,46 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.restore();
       }
 
-      // (4) HOOP GAME — a boy ROLLS a hoop across the grass while his friend
-      //     throws a short spear at it as it passes (documented practice for
-      //     hunting accuracy). The hoop actually rolls and spins.
+      // (4) HOOP GAME — the boy LAUNCHES the hoop from his own hand: while he
+      //     pushes, his arm is ON the hoop; it rolls away with TRUE rolling spin
+      //     (rotation = distance/radius), slows, wobbles flat, and the next
+      //     launch starts back at his hand. (Hassan: "the wheel is moving on its
+      //     own, her hand isn't even touching it" — no more self-moving wheel.)
       {
         ctx.save(); ctx.globalAlpha = dayA;
-        const hgy0 = ground(W * 0.73) + 52;
-        const roll = Math.sin(tt * 0.6);
-        const hoopX = W * 0.73 + roll * 46, hoopY = hgy0 - 5;
-        // the roller boy chases the hoop
-        const chX = hoopX - 22 * Math.sign(Math.cos(tt * 0.6) || 1);
-        fig(chX, hgy0, 0.95, 'walk', 0.6, { shirt: '#5a7d3a', hairStyle: 'short', dir: Math.cos(tt * 0.6) >= 0 ? 1 : -1 });
-        // the thrower boy waits mid-field
-        fig(W * 0.73, hgy0 + 14, 1.0, 'wave', 1.9, { shirt: '#c93a1e', hairStyle: 'short', dir: hoopX > W * 0.73 ? 1 : -1 });
-        // the rolling, spinning hoop
-        ctx.save(); ctx.translate(hoopX, hoopY); ctx.rotate(tt * 4 * (Math.cos(tt * 0.6) >= 0 ? 1 : -1));
+        const hgX = W * 0.50, hgy0 = ground(W * 0.50) + 30;
+        const dist = W * 0.045;                                   // how far each roll travels
+        const T = (tt % 5) / 5;                                   // one launch every 5 s
+        const eas = 1 - (1 - Math.min(1, T / 0.7)) ** 2;          // fast off the hand, easing to a stop
+        const hoopR = 6;
+        const hoopX = hgX + 10 + eas * dist;
+        const fall = _clamp((T - 0.74) / 0.12, 0, 1);             // wobbles over once it stops
+        const gone = _clamp((T - 0.90) / 0.08, 0, 1);             // fades before resetting to the hand
+        const hoopY = hgy0 - hoopR + fall * 3;
+        // the roller boy, planted at the launch spot
+        fig(hgX, hgy0, 0.95, 'wave', 0.6, { shirt: '#5a7d3a', hairStyle: 'short', dir: 1 });
+        // while pushing, HIS ARM reaches to the hoop — visible hand-to-hoop contact
+        if (T < 0.14) {
+          ctx.strokeStyle = 'rgb(163,112,74)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(hgX + 5, hgy0 - 22); ctx.lineTo(hoopX - 1, hoopY - 2); ctx.stroke();
+        }
+        // the hoop: rotation tied EXACTLY to ground covered (real rolling)
+        ctx.save(); ctx.globalAlpha = dayA * (1 - gone);
+        ctx.translate(hoopX, hoopY); ctx.rotate((eas * dist) / hoopR);
+        ctx.scale(1, 1 - fall * 0.72);                            // tips over as it dies
         ctx.strokeStyle = 'rgb(150,110,64)'; ctx.lineWidth = 1.6;
-        ctx.beginPath(); ctx.arc(0, 0, 6, 0, 6.283); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(6, 0); ctx.stroke();     // the sinew cross
-        ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(0, 6); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, hoopR, 0, 6.283); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-hoopR, 0); ctx.lineTo(hoopR, 0); ctx.stroke();   // the sinew cross
+        ctx.beginPath(); ctx.moveTo(0, -hoopR); ctx.lineTo(0, hoopR); ctx.stroke();
         ctx.restore();
-        // the short spear flies at the hoop when it crosses the middle
-        const spT = Math.abs(roll) < 0.25 ? (0.25 - Math.abs(roll)) / 0.25 : 0;
+        // his friend downfield throws the short spear as the hoop passes him
+        const thX = hgX + dist * 0.62, thY = hgy0 + 16;
+        fig(thX, thY, 1.0, 'wave', 1.9, { shirt: '#c93a1e', hairStyle: 'short', dir: hoopX > thX ? 1 : -1 });
+        const spT = Math.abs(hoopX - thX) < 12 ? 1 - Math.abs(hoopX - thX) / 12 : 0;
         if (spT > 0) {
           ctx.strokeStyle = 'rgb(120,88,50)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-          const spx = W * 0.73 + 8, spy = hgy0 - 4 - spT * 16;
-          ctx.beginPath(); ctx.moveTo(spx, spy + 5); ctx.lineTo(spx + 2, spy - 5); ctx.stroke();
+          const spx = _lerp(thX + 4, hoopX, spT), spy = _lerp(thY - 18, hoopY, spT);
+          ctx.beginPath(); ctx.moveTo(spx - 2, spy + 4); ctx.lineTo(spx + 2, spy - 4); ctx.stroke();
         }
         ctx.restore();
       }
@@ -3131,6 +3179,61 @@ function drawScene(ctx, W, H, p, tt, now) {
       ctx.beginPath(); ctx.ellipse(otX + 4, otY + 1, 4, 1.2, 0, 0, 6.283); ctx.stroke();
       ctx.restore();
     }
+    // ---- EVENING PACK-UP — TOP-LEVEL, no longer trapped inside the nightA
+    //   gate. It used to require nightA>0.02 AND evA>0.04 (a sliver at nm
+    //   .62-.65), so through the whole red-sky window the bank stood EMPTY —
+    //   that was the "nothing happening at dusk" dead zone. ----
+    {
+      const evA = _clamp((nm - 0.30) / 0.08, 0, 1) * (1 - _clamp((nm - 0.60) / 0.10, 0, 1));   // owns the red-sky window; hands to the night circle at true dark
+      if (evA > 0.04) {
+        ctx.save(); ctx.globalAlpha = evA;
+        fig(W * 0.671, ground(W * 0.671) + 5, 1.35, 'carry', 0.7, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });   // fish off the rack
+        fig(W * 0.725, ground(W * 0.725) + 5, 1.3, 'carry', 2.9, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });     // tools home to the lodge
+        fig(W * 0.70, ground(W * 0.70) + 5, 1.4, 'wave', 1.6, { shirt: '#c93a1e', hairStyle: 'braid', hair: '#938a7d', dir: -1 });      // grey-haired elder pausing to watch the sunset
+        fig(W * 0.865, ground(W * 0.865) + 5, 1.3, 'carry', 3.7, { shirt: '#7c2f6b', hairStyle: 'long', dir: -1 });     // hide bundles carried home from the smokehouse end
+        fig(W * 0.645, ground(W * 0.645) + 5, 0.9, 'walk', 1.2, { shirt: '#d68a1f', hairStyle: 'short', dir: 1 });      // young boy being shepherded home
+        // SUPPER AT THE FIRE (evening's own scene — the seated story circle
+        // only assembles later, at night): cook tripod + hanging pot + steam
+        {
+          const tpx = fx, tpy = ground(fx) + 16;
+          ctx.strokeStyle = 'rgb(52,32,16)'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(tpx - 12, tpy); ctx.lineTo(tpx, tpy - 26); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(tpx + 12, tpy); ctx.lineTo(tpx, tpy - 26); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(tpx + 2, tpy - 2); ctx.lineTo(tpx, tpy - 26); ctx.stroke();
+          ctx.strokeStyle = 'rgb(30,22,14)'; ctx.lineWidth = 1.0;
+          ctx.beginPath(); ctx.moveTo(tpx, tpy - 24); ctx.lineTo(tpx, tpy - 15); ctx.stroke();   // hanger
+          ctx.fillStyle = 'rgb(40,36,34)';
+          ctx.beginPath(); ctx.ellipse(tpx, tpy - 11, 6.5, 4.5, 0, 0, Math.PI); ctx.fill();      // the pot
+          ctx.fillRect(tpx - 6.5, tpy - 13.5, 13, 3);
+          puffSmoke(tpx, tpy - 16, 0.4, evA * 0.5);                                              // supper steam
+          fig(fx - 20, ground(fx - 20) + 12, 1.35, 'stir', 0.4, { shirt: '#d68a1f', hairStyle: 'braid', dir: 1 });   // the cook
+          fig(fx + 26, ground(fx + 26) + 10, 1.3, 'carry', 2.0, { shirt: '#3a4658', hairStyle: 'short', dir: -1 }); // wood for the night fire
+        }
+        // EVENING SMUDGE — an elder stands quietly with the smudge bowl as
+        // the sun goes down, sweetgrass smoke curling up (dusk-only)
+        {
+          const smX = W * 0.60, smY = ground(W * 0.60) + 6;
+          fig(smX, smY, 1.4, 'carry', 0.9, { shirt: '#5a3a2a', hairStyle: 'long', hair: '#938a7d', dir: -1 });
+          ctx.fillStyle = 'rgb(60,44,26)';
+          ctx.beginPath(); ctx.ellipse(smX - 9, smY - 26, 2.6, 1.2, 0, 0, Math.PI); ctx.fill();  // the bowl in his hands
+          puffSmoke(smX - 9, smY - 28, 0.28, evA * 0.55);                                         // sweetgrass wisp
+        }
+        // EVENING STICK-DICE by the packing racks — the day's last game before
+        // the fire circle forms (more life in the red-sky window)
+        {
+          const edx = W * 0.545, edy = ground(W * 0.545) + 30;
+          ctx.fillStyle = 'rgba(150,116,78,0.85)';
+          ctx.beginPath(); ctx.ellipse(edx, edy + 2, 10, 2.8, 0, 0, 6.283); ctx.fill();
+          fig(edx - 13, edy, 1.1, 'sit', 0.9, { shirt: '#b04a2a', hairStyle: 'short', dir: 1 });
+          fig(edx + 13, edy, 1.05, 'sit', 2.3, { shirt: '#1f4e8f', hairStyle: 'braid', dir: -1 });
+          ctx.strokeStyle = 'rgb(200,172,128)'; ctx.lineWidth = 1.2;
+          for (let st3 = 0; st3 < 6; st3++) {
+            ctx.beginPath(); ctx.moveTo(edx - 6 + st3 * 2.2, edy + 1); ctx.lineTo(edx - 3.6 + st3 * 2.2, edy + 1); ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
+    }
     if (nightA > 0.02) {
       ctx.save(); ctx.globalAlpha = nightA;
       // night: a fuller circle around the fire, varied dress + hair, gently breathing
@@ -3144,48 +3247,9 @@ function drawScene(ctx, W, H, p, tt, now) {
         { shirt: '#1f4e8f', hairStyle: 'long' },
         { shirt: '#d68a1f', hairStyle: 'braid' },
       ];
-      // ---- EVENING PACK-UP (a REAL evening, distinct from night): as the sun
-      //   drops, the village packs the day away — fish carried off the rack,
-      //   tools brought home to the lodge, one figure pausing to watch the
-      //   sunset over the water. Fades out as the bonfire circle forms. ----
-      {
-        const evA = _clamp((nm - 0.30) / 0.08, 0, 1) * (1 - _clamp((nm - 0.55) / 0.10, 0, 1));   // evening OWNS the red-sky window (nm 0.38-0.55); the circle only forms in true dark (0.62+)
-        if (evA > 0.04) {
-          ctx.save(); ctx.globalAlpha = evA;
-          fig(W * 0.671, ground(W * 0.671) + 5, 1.35, 'carry', 0.7, { shirt: '#5a7d3a', hairStyle: 'braid', dir: 1 });   // fish off the rack
-          fig(W * 0.725, ground(W * 0.725) + 5, 1.3, 'carry', 2.9, { shirt: '#1f4e8f', hairStyle: 'long', dir: 1 });     // tools home to the lodge
-          fig(W * 0.70, ground(W * 0.70) + 5, 1.4, 'wave', 1.6, { shirt: '#c93a1e', hairStyle: 'braid', hair: '#938a7d', dir: -1 });      // grey-haired elder pausing to watch the sunset
-          fig(W * 0.865, ground(W * 0.865) + 5, 1.3, 'carry', 3.7, { shirt: '#7c2f6b', hairStyle: 'long', dir: -1 });     // hide bundles carried home from the smokehouse end
-          fig(W * 0.645, ground(W * 0.645) + 5, 0.9, 'walk', 1.2, { shirt: '#d68a1f', hairStyle: 'short', dir: 1 });      // young boy being shepherded home
-          // SUPPER AT THE FIRE (evening's own scene — the seated story circle
-          // only assembles later, at night): cook tripod + hanging pot + steam
-          {
-            const tpx = fx, tpy = ground(fx) + 16;
-            ctx.strokeStyle = 'rgb(52,32,16)'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
-            ctx.beginPath(); ctx.moveTo(tpx - 12, tpy); ctx.lineTo(tpx, tpy - 26); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(tpx + 12, tpy); ctx.lineTo(tpx, tpy - 26); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(tpx + 2, tpy - 2); ctx.lineTo(tpx, tpy - 26); ctx.stroke();
-            ctx.strokeStyle = 'rgb(30,22,14)'; ctx.lineWidth = 1.0;
-            ctx.beginPath(); ctx.moveTo(tpx, tpy - 24); ctx.lineTo(tpx, tpy - 15); ctx.stroke();   // hanger
-            ctx.fillStyle = 'rgb(40,36,34)';
-            ctx.beginPath(); ctx.ellipse(tpx, tpy - 11, 6.5, 4.5, 0, 0, Math.PI); ctx.fill();      // the pot
-            ctx.fillRect(tpx - 6.5, tpy - 13.5, 13, 3);
-            puffSmoke(tpx, tpy - 16, 0.4, evA * 0.5);                                              // supper steam
-            fig(fx - 20, ground(fx - 20) + 12, 1.35, 'stir', 0.4, { shirt: '#d68a1f', hairStyle: 'braid', dir: 1 });   // the cook
-            fig(fx + 26, ground(fx + 26) + 10, 1.3, 'carry', 2.0, { shirt: '#3a4658', hairStyle: 'short', dir: -1 }); // wood for the night fire
-          }
-          // EVENING SMUDGE — an elder stands quietly with the smudge bowl as
-          // the sun goes down, sweetgrass smoke curling up (dusk-only)
-          {
-            const smX = W * 0.60, smY = ground(W * 0.60) + 6;
-            fig(smX, smY, 1.4, 'carry', 0.9, { shirt: '#5a3a2a', hairStyle: 'long', hair: '#938a7d', dir: -1 });
-            ctx.fillStyle = 'rgb(60,44,26)';
-            ctx.beginPath(); ctx.ellipse(smX - 9, smY - 26, 2.6, 1.2, 0, 0, Math.PI); ctx.fill();  // the bowl in his hands
-            puffSmoke(smX - 9, smY - 28, 0.28, evA * 0.55);                                         // sweetgrass wisp
-          }
-          ctx.restore();
-        }
-      }
+      // (the EVENING PACK-UP moved to its own top-level gate above — inside this
+      //  nightA block it could only ever appear for a sliver at nm .62-.65,
+      //  leaving the whole red-sky window empty)
 
       // NIGHT = ONE clean BONFIRE CIRCLE (Hassan: "elder in the middle and all
       // around him in a circle"). An elder sits at the fire telling stories; the
@@ -3247,6 +3311,36 @@ function drawScene(ctx, W, H, p, tt, now) {
           ctx.fillStyle = '#b7855a';
           ctx.beginPath(); ctx.arc(bx2 - 6, slY - 1, 1.8, 0, 6.283); ctx.fill();
         }
+      }
+      // BEADWORK BY FIRELIGHT — a woman near the sleeping children works beads
+      // onto a bandolier strap by a tiny work-fire (quill- and beadwork were
+      // night-and-winter work). Her needle hand rises and dips; beads glint.
+      {
+        const bwX = fx + 138, bwY = ground(fx + 138) + 6;
+        const bwf = 0.8 + Math.sin(tt * 7.7) * 0.12;                              // small flame breath
+        const bwp = ctx.createRadialGradient(bwX - 14, bwY - 2, 1, bwX - 14, bwY - 2, 30 * bwf);
+        bwp.addColorStop(0, 'rgba(255,160,70,0.28)'); bwp.addColorStop(1, 'rgba(255,160,70,0)');
+        ctx.fillStyle = bwp;
+        ctx.beginPath(); ctx.ellipse(bwX - 6, bwY, 36 * bwf, 13 * bwf, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(255,185,85,0.95)';                                  // the work-fire
+        ctx.beginPath(); ctx.ellipse(bwX - 14, bwY - 4, 2.0, 3.8 * bwf, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(255,240,180,0.9)';
+        ctx.beginPath(); ctx.ellipse(bwX - 14, bwY - 3, 0.9, 1.8 * bwf, 0, 0, 6.283); ctx.fill();
+        fig(bwX, bwY, 1.3, 'sit', 0.9, { shirt: '#7c2f6b', hairStyle: 'braid', dir: -1 });
+        // the strap across her lap + the needle hand rising and dipping
+        ctx.strokeStyle = 'rgb(150,116,72)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(bwX - 9, bwY - 8); ctx.lineTo(bwX + 8, bwY - 6); ctx.stroke();
+        const stitch = Math.abs(Math.sin(tt * 2.2));
+        ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 1.8;
+        ctx.beginPath(); ctx.moveTo(bwX - 4, bwY - 16); ctx.lineTo(bwX - 7 + stitch * 3, bwY - 9 - stitch * 5); ctx.stroke();
+        // beads glinting on the strap in the firelight
+        const beadCols = ['rgba(120,180,255,0.9)', 'rgba(255,120,90,0.9)', 'rgba(255,220,120,0.9)'];
+        for (let bd = 0; bd < 5; bd++) {
+          ctx.fillStyle = beadCols[bd % 3];
+          ctx.globalAlpha = 0.5 + 0.5 * Math.abs(Math.sin(tt * 3 + bd * 1.7));
+          ctx.beginPath(); ctx.arc(bwX - 8 + bd * 3.6, bwY - 7.6 + bd * 0.4, 0.8, 0, 6.283); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
       }
 
       // ---- NIGHT LIFE beyond the fire (Hassan: "at night nothing is happening —
@@ -3316,18 +3410,36 @@ function drawScene(ctx, W, H, p, tt, now) {
       //     guesser's striker stick swinging as the drum keeps time.
       {
         const mgx = W * 0.585, mgy = ground(W * 0.585) + 34;   // deep in the open field — not on the walk line
-        ctx.fillStyle = 'rgba(74,42,30,0.85)';                                       // the game blanket (muted — bright red glowed across the whole scene)
-        ctx.beginPath(); ctx.ellipse(mgx, mgy + 1, 10, 2.8, 0, 0, 6.283); ctx.fill();
-        ctx.fillStyle = 'rgb(64,44,26)';                                             // the four moccasins
+        // a SMALL GAME FIRE beside the blanket — they play by its light. Without
+        // it the props vanished into the dark and the pair read as "two girls
+        // just sitting at night doing nothing" (Hassan).
+        const gfx2 = mgx - 30, gfy2 = mgy + 1;
+        const gflk = 0.8 + Math.sin(tt * 8.5) * 0.12 + Math.sin(tt * 21) * 0.06;
+        const gfp = ctx.createRadialGradient(gfx2, gfy2 - 3, 1, gfx2, gfy2 - 3, 42 * gflk);
+        gfp.addColorStop(0, 'rgba(255,160,70,0.30)');                                // warm pool over blanket + players
+        gfp.addColorStop(1, 'rgba(255,160,70,0)');
+        ctx.fillStyle = gfp;
+        ctx.beginPath(); ctx.ellipse(gfx2 + 16, gfy2, 52 * gflk, 17 * gflk, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = 'rgb(52,32,16)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';   // crossed sticks
+        ctx.beginPath(); ctx.moveTo(gfx2 - 4, gfy2 + 1); ctx.lineTo(gfx2 + 4, gfy2 - 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(gfx2 - 4, gfy2 - 2); ctx.lineTo(gfx2 + 4, gfy2 + 1); ctx.stroke();
+        ctx.fillStyle = `rgba(255,${Math.round(170 + 30 * gflk)},80,0.95)`;              // small flame
+        ctx.beginPath(); ctx.ellipse(gfx2, gfy2 - 5, 2.4, 4.6 * gflk, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(255,240,180,0.9)';
+        ctx.beginPath(); ctx.ellipse(gfx2, gfy2 - 4, 1.1, 2.2 * gflk, 0, 0, 6.283); ctx.fill();
+        // the blanket + moccasins, larger and firelit so the GAME is visible
+        ctx.fillStyle = 'rgba(96,52,36,0.95)';
+        ctx.beginPath(); ctx.ellipse(mgx, mgy + 1, 13, 3.6, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgb(88,60,34)';                                             // the four moccasins
         for (let m2 = 0; m2 < 4; m2++) {
-          ctx.beginPath(); ctx.ellipse(mgx - 6 + m2 * 4, mgy - 0.5, 1.7, 1.0, 0, 0, 6.283); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(mgx - 7.5 + m2 * 5, mgy - 0.8, 2.2, 1.3, 0, 0, 6.283); ctx.fill();
         }
-        fig(mgx - 15, mgy, 1.3, 'sit', 0.6, { shirt: '#1f4e8f', hairStyle: 'short', dir: 1 });   // the hider
-        fig(mgx + 15, mgy, 1.35, 'sit', 1.8, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 }); // the guesser
+        fig(mgx - 16, mgy, 1.3, 'sit', 0.6, { shirt: '#1f4e8f', hairStyle: 'short', dir: 1 });   // the hider
+        fig(mgx + 16, mgy, 1.35, 'sit', 1.8, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1 }); // the guesser
         const strike = 0.5 + Math.sin(tt * 2.6) * 0.45;                              // striker stick swings, always HELD UP from the hand
-        ctx.strokeStyle = 'rgb(120,90,50)'; ctx.lineWidth = 1.3; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(mgx + 10, mgy - 10);
-        ctx.lineTo(mgx + 10 - Math.sin(strike) * 7, mgy - 10 - Math.cos(strike) * 8); ctx.stroke();
+        ctx.strokeStyle = 'rgb(140,104,58)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(mgx + 11, mgy - 10);
+        ctx.lineTo(mgx + 11 - Math.sin(strike) * 7, mgy - 10 - Math.cos(strike) * 8); ctx.stroke();
       }
       // (3) STARGAZERS — two figures lying back on the high bank, one arm
       //     raised, tracing the star stories across the night sky.
