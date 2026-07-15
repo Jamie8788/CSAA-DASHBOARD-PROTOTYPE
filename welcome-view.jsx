@@ -2034,8 +2034,8 @@ function drawScene(ctx, W, H, p, tt, now) {
         clr.addColorStop(0, `rgba(${Math.round(_lerp(206,104,nm))},${Math.round(_lerp(184,90,nm))},${Math.round(_lerp(140,58,nm))},0.72)`);
         clr.addColorStop(1, `rgba(${Math.round(_lerp(178,86,nm))},${Math.round(_lerp(150,72,nm))},${Math.round(_lerp(104,44,nm))},0)`);
         ctx.fillStyle = clr; ctx.beginPath(); ctx.ellipse(paX, paY, paR, paR * 0.40, 0, 0, 6.283); ctx.fill();
-        ctx.strokeStyle = `rgba(${Math.round(_lerp(120,58,nm))},${Math.round(_lerp(92,44,nm))},${Math.round(_lerp(52,26,nm))},0.75)`;
-        ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(paX, paY, paR, paR * 0.40, 0, 0, 6.283); ctx.stroke();
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(120,58,nm))},${Math.round(_lerp(92,44,nm))},${Math.round(_lerp(52,26,nm))},0.85)`;
+        ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(paX, paY, paR, paR * 0.40, 0, 0, 6.283); ctx.stroke();
         ctx.restore();
 
         // one feather (COLOURED vane + contrast tip), drawn from its base at
@@ -2170,22 +2170,19 @@ function drawScene(ctx, W, H, p, tt, now) {
         //   families seated on blankets, a little kid dancing along at the
         //   edge. (Hassan: "real spectators clapping and cheering, OUTSIDE
         //   the circle".) The left side belongs to the drum arbor. ----
+        // EIGHT groups, widely spaced, at a REAL distance from the ring —
+        // twelve at radius 1.5 packed into a wall and merged with the dancers
+        // (Hassan: "spectators must be at a distance").
         const crowd = [
-          [3.92, 'cheer', 0.92, '#1f4e8f', 'braid'],
-          [4.14, 'clap', 0.88, '#5a7d3a', 'long'],
-          [4.38, 'clap', 0.95, '#7c2f6b', 'short'],
-          [4.62, 'cheer', 0.9, '#b04a2a', 'braid'],
-          [4.88, 'sitfam', 1.0, '#b04a2a', 'long'],
-          [5.14, 'clap', 0.92, '#d68a1f', 'short'],
-          [5.38, 'clap', 0.9, '#3a4658', 'braid'],
-          [5.62, 'cheer', 0.95, '#c93a1e', 'long'],
-          [5.88, 'clap', 0.88, '#1f4e8f', 'short'],
-          [6.12, 'sitfam', 1.0, '#7c2f6b', 'braid'],
-          [0.22, 'cheer', 0.92, '#5a7d3a', 'long'],
-          [0.48, 'sitfam', 1.0, '#5a7d3a', 'braid'],
-        ];
+          [4.05, 'cheer', 0.9, '#1f4e8f', 'braid'],
+          [4.45, 'clap', 0.92, '#7c2f6b', 'short'],
+          [4.85, 'clap', 0.9, '#b04a2a', 'long'],       // top-centre stands (a seated family here read as "inside the circle")
+          [5.25, 'cheer', 0.9, '#3a4658', 'braid'],
+          [5.65, 'clap', 0.92, '#d68a1f', 'short'],
+          [6.05, 'sitfam', 1.0, '#1f4e8f', 'long'],
+        ];   // right side keeps ONE family + the kid — the cheer/family/kid trio there stood inside each other
         crowd.forEach(([a, kind2, sc2, sh, hs], i) => {
-          const rf = kind2 === 'sitfam' ? 1.28 : 1.40;
+          const rf = kind2 === 'sitfam' ? 1.68 : 1.78;   // a clear band of open grass between the ring and the audience
           const sx2 = paX + Math.cos(a) * paR * rf, sy2 = paY + Math.sin(a) * paR * 0.44 * rf;
           const facing = sx2 < paX ? 1 : -1;                        // everyone faces the dancing
           if (kind2 === 'sitfam') {
@@ -2195,26 +2192,39 @@ function drawScene(ctx, W, H, p, tt, now) {
             fig(sx2 - 6, sy2, 1.0, 'sit', i * 1.3, { shirt: sh, hairStyle: hs, dir: facing });
             fig(sx2 + 8, sy2 + 1, 0.68, 'sit', i * 1.3 + 2, { shirt: '#d68a1f', hairStyle: 'short', dir: facing });
           } else {
-            const bounce = kind2 === 'cheer' ? Math.abs(Math.sin(tt * 3.4 + i)) * 2.2 : 0;   // cheerers bounce on the beat
-            fig(sx2, sy2 - bounce, sc2, kind2 === 'cheer' ? 'wave' : 'idle', i * 2.1, { shirt: sh, hairStyle: hs, dir: facing });
+            const bounce = kind2 === 'cheer' ? Math.abs(Math.sin(tt * 3.4 + i)) * 2.0 : 0;
+            fig(sx2, sy2 - bounce, sc2, 'idle', i * 2.1, { shirt: sh, hairStyle: hs, dir: facing });
+            const shY = sy2 - bounce - 26 * sc2;                     // shoulder height
+            ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2 * sc2; ctx.lineCap = 'round';
             if (kind2 === 'clap') {
-              // two hands meeting in front, on the drum beat
-              const clap = Math.abs(Math.sin(tt * 3.4 + i * 0.2));
-              const chx = sx2 + facing * 6 * sc2, chy = sy2 - 26 * sc2;
-              ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2 * sc2; ctx.lineCap = 'round';
-              ctx.beginPath(); ctx.moveTo(sx2 + facing * 3 * sc2, sy2 - 24 * sc2); ctx.lineTo(chx, chy - clap * 2.5); ctx.stroke();
-              ctx.beginPath(); ctx.moveTo(sx2 + facing * 3 * sc2, sy2 - 20 * sc2); ctx.lineTo(chx, chy - clap * 2.5 + 1.5); ctx.stroke();
+              // REAL clapping: both forearms swing and the hands MEET on the
+              // drum beat, opening apart between beats
+              const cl = Math.abs(Math.sin(tt * 3.4 + i * 0.3));    // 1 = hands together
+              const meetX = sx2 + facing * 7 * sc2, meetY = shY + 2 * sc2;
+              const gap = (1 - cl) * 5 * sc2;                        // opens between claps
+              ctx.beginPath(); ctx.moveTo(sx2 + facing * 2 * sc2, shY);
+              ctx.lineTo(meetX, meetY - gap); ctx.stroke();          // upper arm+hand
+              ctx.beginPath(); ctx.moveTo(sx2 + facing * 2 * sc2, shY + 5 * sc2);
+              ctx.lineTo(meetX, meetY + gap); ctx.stroke();          // lower arm+hand
+              if (cl > 0.92) {                                       // little flash at contact
+                ctx.strokeStyle = 'rgba(255,240,200,0.85)'; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(meetX + facing * 2, meetY - 3); ctx.lineTo(meetX + facing * 4, meetY - 5); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(meetX + facing * 3, meetY + 3); ctx.lineTo(meetX + facing * 5, meetY + 5); ctx.stroke();
+              }
             } else {
-              // cheering: the second arm thrown up too
-              ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2 * sc2; ctx.lineCap = 'round';
-              ctx.beginPath(); ctx.moveTo(sx2 - facing * 3 * sc2, sy2 - bounce - 26 * sc2);
-              ctx.lineTo(sx2 - facing * 7 * sc2, sy2 - bounce - 36 * sc2); ctx.stroke();
+              // REAL cheering: BOTH arms thrown up in a V, waving side to side
+              const wv = Math.sin(tt * 3.0 + i * 1.3) * 2.5;
+              ctx.beginPath(); ctx.moveTo(sx2 - 3 * sc2, shY);
+              ctx.lineTo(sx2 - (7 + wv) * sc2, shY - 11 * sc2); ctx.stroke();
+              ctx.beginPath(); ctx.moveTo(sx2 + 3 * sc2, shY);
+              ctx.lineTo(sx2 + (7 - wv) * sc2, shY - 11 * sc2); ctx.stroke();
             }
           }
         });
-        // a little kid dancing along OUTSIDE the ring, copying the dancers
+        // a little kid dancing along OUTSIDE the ring, copying the dancers —
+        // pushed past the seated family so the two never stack
         {
-          const kx = paX + paR * 1.34, ky = paY - paR * 0.14;
+          const kx = paX + paR * 2.0, ky = paY + paR * 0.09;
           const khop = Math.abs(Math.sin(tt * 3.4 + 0.6)) * 2;
           fig(kx, ky - khop, 0.62, 'dance', 2.6, { shirt: '#2f9f4f', hairStyle: 'short', dir: -1 });
         }
@@ -2224,7 +2234,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         //   the top-right arc (the arbor owns the left). ----
         for (let pr2 = 0; pr2 < 7; pr2++) {
           const pa2 = 4.25 + pr2 * 0.34;                              // top → right arc
-          const ppx = paX + Math.cos(pa2) * paR * 1.72, ppy = paY + Math.sin(pa2) * paR * 0.46 * 1.72;
+          const ppx = paX + Math.cos(pa2) * paR * 2.05, ppy = paY + Math.sin(pa2) * paR * 0.46 * 2.05;   // outside the (further-out) crowd
           ctx.strokeStyle = `rgba(${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(120,62,nm))},${Math.round(_lerp(46,26,nm))},0.95)`;
           ctx.lineWidth = 1.2; ctx.lineCap = 'round';
           for (let bl2 = 0; bl2 < 5; bl2++) {
@@ -2482,9 +2492,11 @@ function drawScene(ctx, W, H, p, tt, now) {
       // work-station (they were merging with the rice-pounders at ~0.70).
       // geese in the BIG EMPTY bottom-middle foreground grass — far from every
       // villager, station, plant clump and the horse (they kept merging before).
-      drawGoose(W * 0.70, H - 34, 1.9, true, 0);                           // the honker (neck up)
-      drawGoose(W * 0.675, H - 26, 1.7, false, 1.5);                      // grazing
-      drawGoose(W * 0.73, H - 28, 1.75, false, 3.0);                      // grazing
+      // (shifted LEFT — the pow wow's drum arbor now owns ~0.72W and the flock
+      //  was standing in the middle of the singers)
+      drawGoose(W * 0.565, H - 34, 1.9, true, 0);                          // the honker (neck up)
+      drawGoose(W * 0.54, H - 26, 1.7, false, 1.5);                       // grazing
+      drawGoose(W * 0.595, H - 28, 1.75, false, 3.0);                     // grazing
 
       // ---- DEER (waawaashkeshi) on the upper bank — a CLAN animal (poets &
       //   peacemakers). Stands grazing, lifts its head ALERT now and then, ears
