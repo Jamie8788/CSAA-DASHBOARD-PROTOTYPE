@@ -2034,8 +2034,8 @@ function drawScene(ctx, W, H, p, tt, now) {
         clr.addColorStop(0, `rgba(${Math.round(_lerp(206,104,nm))},${Math.round(_lerp(184,90,nm))},${Math.round(_lerp(140,58,nm))},0.72)`);
         clr.addColorStop(1, `rgba(${Math.round(_lerp(178,86,nm))},${Math.round(_lerp(150,72,nm))},${Math.round(_lerp(104,44,nm))},0)`);
         ctx.fillStyle = clr; ctx.beginPath(); ctx.ellipse(paX, paY, paR, paR * 0.40, 0, 0, 6.283); ctx.fill();
-        ctx.strokeStyle = `rgba(${Math.round(_lerp(120,58,nm))},${Math.round(_lerp(92,44,nm))},${Math.round(_lerp(52,26,nm))},0.75)`;
-        ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(paX, paY, paR, paR * 0.40, 0, 0, 6.283); ctx.stroke();
+        ctx.strokeStyle = `rgba(${Math.round(_lerp(120,58,nm))},${Math.round(_lerp(92,44,nm))},${Math.round(_lerp(52,26,nm))},0.85)`;
+        ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(paX, paY, paR, paR * 0.40, 0, 0, 6.283); ctx.stroke();
         ctx.restore();
 
         // one feather (COLOURED vane + contrast tip), drawn from its base at
@@ -2175,17 +2175,17 @@ function drawScene(ctx, W, H, p, tt, now) {
           [4.14, 'clap', 0.88, '#5a7d3a', 'long'],
           [4.38, 'clap', 0.95, '#7c2f6b', 'short'],
           [4.62, 'cheer', 0.9, '#b04a2a', 'braid'],
-          [4.88, 'sitfam', 1.0, '#b04a2a', 'long'],
+          [4.88, 'clap', 0.9, '#b04a2a', 'long'],      // top-centre stays STANDING — a seated blanket family here read as "someone inside the circle"
           [5.14, 'clap', 0.92, '#d68a1f', 'short'],
           [5.38, 'clap', 0.9, '#3a4658', 'braid'],
           [5.62, 'cheer', 0.95, '#c93a1e', 'long'],
-          [5.88, 'clap', 0.88, '#1f4e8f', 'short'],
+          [5.88, 'sitfam', 1.0, '#1f4e8f', 'short'],
           [6.12, 'sitfam', 1.0, '#7c2f6b', 'braid'],
           [0.22, 'cheer', 0.92, '#5a7d3a', 'long'],
           [0.48, 'sitfam', 1.0, '#5a7d3a', 'braid'],
         ];
         crowd.forEach(([a, kind2, sc2, sh, hs], i) => {
-          const rf = kind2 === 'sitfam' ? 1.28 : 1.40;
+          const rf = kind2 === 'sitfam' ? 1.45 : 1.52;   // pushed well clear of the rim — at 1.28/1.40 the top row stood ON the arena's far edge and read as "inside"
           const sx2 = paX + Math.cos(a) * paR * rf, sy2 = paY + Math.sin(a) * paR * 0.44 * rf;
           const facing = sx2 < paX ? 1 : -1;                        // everyone faces the dancing
           if (kind2 === 'sitfam') {
@@ -2224,7 +2224,7 @@ function drawScene(ctx, W, H, p, tt, now) {
         //   the top-right arc (the arbor owns the left). ----
         for (let pr2 = 0; pr2 < 7; pr2++) {
           const pa2 = 4.25 + pr2 * 0.34;                              // top → right arc
-          const ppx = paX + Math.cos(pa2) * paR * 1.72, ppy = paY + Math.sin(pa2) * paR * 0.46 * 1.72;
+          const ppx = paX + Math.cos(pa2) * paR * 1.88, ppy = paY + Math.sin(pa2) * paR * 0.46 * 1.88;   // outside the (further-out) crowd
           ctx.strokeStyle = `rgba(${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(120,62,nm))},${Math.round(_lerp(46,26,nm))},0.95)`;
           ctx.lineWidth = 1.2; ctx.lineCap = 'round';
           for (let bl2 = 0; bl2 < 5; bl2++) {
