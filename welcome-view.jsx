@@ -2051,6 +2051,53 @@ function drawScene(ctx, W, H, p, tt, now) {
           ctx.restore();
         };
 
+        // one spectator group — clap (hands meet on the beat), cheer (arms in a
+        // waving V), or sitfam (adult + child on a blanket)
+        const spectator = (a, kind2, sc2, sh, hs, i, rf) => {
+          const sx2 = paX + Math.cos(a) * paR * rf, sy2 = paY + Math.sin(a) * paR * 0.44 * rf;
+          const facing = sx2 < paX ? 1 : -1;                        // everyone faces the dancing
+          if (kind2 === 'sitfam') {
+            ctx.fillStyle = 'rgba(120,84,52,0.85)';
+            ctx.beginPath(); ctx.ellipse(sx2, sy2 + 3, 17 * sc2, 4 * sc2, 0, 0, 6.283); ctx.fill();
+            fig(sx2 - 6 * sc2, sy2, sc2, 'sit', i * 1.3, { shirt: sh, hairStyle: hs, dir: facing });
+            fig(sx2 + 8 * sc2, sy2 + 1, 0.68 * sc2, 'sit', i * 1.3 + 2, { shirt: '#d68a1f', hairStyle: 'short', dir: facing });
+            return;
+          }
+          const bounce = kind2 === 'cheer' ? Math.abs(Math.sin(tt * 3.4 + i)) * 2.0 : 0;
+          fig(sx2, sy2 - bounce, sc2, 'idle', i * 2.1, { shirt: sh, hairStyle: hs, dir: facing });
+          const shY = sy2 - bounce - 26 * sc2;                       // shoulder height
+          ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2 * sc2; ctx.lineCap = 'round';
+          if (kind2 === 'clap') {
+            // REAL clapping: both forearms swing and the hands MEET on the beat
+            const cl = Math.abs(Math.sin(tt * 3.4 + i * 0.3));      // 1 = hands together
+            const meetX = sx2 + facing * 7 * sc2, meetY = shY + 2 * sc2;
+            const gap = (1 - cl) * 5 * sc2;                          // opens between claps
+            ctx.beginPath(); ctx.moveTo(sx2 + facing * 2 * sc2, shY);
+            ctx.lineTo(meetX, meetY - gap); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(sx2 + facing * 2 * sc2, shY + 5 * sc2);
+            ctx.lineTo(meetX, meetY + gap); ctx.stroke();
+            if (cl > 0.92) {                                         // little flash at contact
+              ctx.strokeStyle = 'rgba(255,240,200,0.85)'; ctx.lineWidth = 1;
+              ctx.beginPath(); ctx.moveTo(meetX + facing * 2, meetY - 3); ctx.lineTo(meetX + facing * 4, meetY - 5); ctx.stroke();
+              ctx.beginPath(); ctx.moveTo(meetX + facing * 3, meetY + 3); ctx.lineTo(meetX + facing * 5, meetY + 5); ctx.stroke();
+            }
+          } else {
+            // REAL cheering: BOTH arms thrown up in a V, waving side to side
+            const wv = Math.sin(tt * 3.0 + i * 1.3) * 2.5;
+            ctx.beginPath(); ctx.moveTo(sx2 - 3 * sc2, shY);
+            ctx.lineTo(sx2 - (7 + wv) * sc2, shY - 11 * sc2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(sx2 + 3 * sc2, shY);
+            ctx.lineTo(sx2 + (7 - wv) * sc2, shY - 11 * sc2); ctx.stroke();
+          }
+        };
+
+        // ---- FAR-SIDE CROWD, drawn FIRST so the arena and dancers paint OVER
+        //   them (true depth): a smaller back row up the hill behind the ring.
+        //   Drawing them after the dancers made the two rows smear together —
+        //   no radius can separate them at the top of a squashed ellipse. ----
+        [[4.1, 'cheer', '#1f4e8f', 'braid'], [4.5, 'clap', '#7c2f6b', 'short'], [4.9, 'clap', '#b04a2a', 'long'], [5.3, 'cheer', '#3a4658', 'braid'], [5.7, 'clap', '#d68a1f', 'short']]
+          .forEach(([a, k2, sh, hs], i) => spectator(a, k2, 0.74, sh, hs, i, 2.05));
+
         // ---- EAGLE STAFF planted at the centre of the arena (the dancers own
         //   the circle — at a real pow wow the drum groups sit in the ring
         //   OUTSIDE the dance arena, not in the middle of it. Hassan + sources:
@@ -2165,64 +2212,11 @@ function drawScene(ctx, W, H, p, tt, now) {
           });
         }
 
-        // ---- THE CROWD — real spectators ringing the arena from outside:
-        //   standing clappers, cheerers with arms up bouncing on the beat,
-        //   families seated on blankets, a little kid dancing along at the
-        //   edge. (Hassan: "real spectators clapping and cheering, OUTSIDE
-        //   the circle".) The left side belongs to the drum arbor. ----
-        // EIGHT groups, widely spaced, at a REAL distance from the ring —
-        // twelve at radius 1.5 packed into a wall and merged with the dancers
-        // (Hassan: "spectators must be at a distance").
-        const crowd = [
-          [4.05, 'cheer', 0.9, '#1f4e8f', 'braid'],
-          [4.45, 'clap', 0.92, '#7c2f6b', 'short'],
-          [4.85, 'clap', 0.9, '#b04a2a', 'long'],       // top-centre stands (a seated family here read as "inside the circle")
-          [5.25, 'cheer', 0.9, '#3a4658', 'braid'],
-          [5.65, 'clap', 0.92, '#d68a1f', 'short'],
-          [6.05, 'sitfam', 1.0, '#1f4e8f', 'long'],
-        ];   // right side keeps ONE family + the kid — the cheer/family/kid trio there stood inside each other
-        crowd.forEach(([a, kind2, sc2, sh, hs], i) => {
-          const rf = kind2 === 'sitfam' ? 1.68 : 1.78;   // a clear band of open grass between the ring and the audience
-          const sx2 = paX + Math.cos(a) * paR * rf, sy2 = paY + Math.sin(a) * paR * 0.44 * rf;
-          const facing = sx2 < paX ? 1 : -1;                        // everyone faces the dancing
-          if (kind2 === 'sitfam') {
-            // a family on a blanket: adult + child, watching
-            ctx.fillStyle = 'rgba(120,84,52,0.85)';
-            ctx.beginPath(); ctx.ellipse(sx2, sy2 + 3, 17, 4, 0, 0, 6.283); ctx.fill();
-            fig(sx2 - 6, sy2, 1.0, 'sit', i * 1.3, { shirt: sh, hairStyle: hs, dir: facing });
-            fig(sx2 + 8, sy2 + 1, 0.68, 'sit', i * 1.3 + 2, { shirt: '#d68a1f', hairStyle: 'short', dir: facing });
-          } else {
-            const bounce = kind2 === 'cheer' ? Math.abs(Math.sin(tt * 3.4 + i)) * 2.0 : 0;
-            fig(sx2, sy2 - bounce, sc2, 'idle', i * 2.1, { shirt: sh, hairStyle: hs, dir: facing });
-            const shY = sy2 - bounce - 26 * sc2;                     // shoulder height
-            ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2 * sc2; ctx.lineCap = 'round';
-            if (kind2 === 'clap') {
-              // REAL clapping: both forearms swing and the hands MEET on the
-              // drum beat, opening apart between beats
-              const cl = Math.abs(Math.sin(tt * 3.4 + i * 0.3));    // 1 = hands together
-              const meetX = sx2 + facing * 7 * sc2, meetY = shY + 2 * sc2;
-              const gap = (1 - cl) * 5 * sc2;                        // opens between claps
-              ctx.beginPath(); ctx.moveTo(sx2 + facing * 2 * sc2, shY);
-              ctx.lineTo(meetX, meetY - gap); ctx.stroke();          // upper arm+hand
-              ctx.beginPath(); ctx.moveTo(sx2 + facing * 2 * sc2, shY + 5 * sc2);
-              ctx.lineTo(meetX, meetY + gap); ctx.stroke();          // lower arm+hand
-              if (cl > 0.92) {                                       // little flash at contact
-                ctx.strokeStyle = 'rgba(255,240,200,0.85)'; ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.moveTo(meetX + facing * 2, meetY - 3); ctx.lineTo(meetX + facing * 4, meetY - 5); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(meetX + facing * 3, meetY + 3); ctx.lineTo(meetX + facing * 5, meetY + 5); ctx.stroke();
-              }
-            } else {
-              // REAL cheering: BOTH arms thrown up in a V, waving side to side
-              const wv = Math.sin(tt * 3.0 + i * 1.3) * 2.5;
-              ctx.beginPath(); ctx.moveTo(sx2 - 3 * sc2, shY);
-              ctx.lineTo(sx2 - (7 + wv) * sc2, shY - 11 * sc2); ctx.stroke();
-              ctx.beginPath(); ctx.moveTo(sx2 + 3 * sc2, shY);
-              ctx.lineTo(sx2 + (7 - wv) * sc2, shY - 11 * sc2); ctx.stroke();
-            }
-          }
-        });
-        // a little kid dancing along OUTSIDE the ring, copying the dancers —
-        // pushed past the seated family so the two never stack
+        // ---- NEAR-SIDE CROWD (drawn after the dancers — they're in front):
+        //   one blanket family on the right, and the kid dancing along,
+        //   spread far apart. The far-side back row was drawn BEFORE the
+        //   arena so the dancers correctly pass in front of it. ----
+        spectator(6.05, 'sitfam', 1.0, '#1f4e8f', 'long', 5, 1.68);
         {
           const kx = paX + paR * 2.0, ky = paY + paR * 0.09;
           const khop = Math.abs(Math.sin(tt * 3.4 + 0.6)) * 2;
