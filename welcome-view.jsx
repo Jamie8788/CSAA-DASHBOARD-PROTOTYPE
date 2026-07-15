@@ -2063,33 +2063,57 @@ function drawScene(ctx, W, H, p, tt, now) {
             fig(sx2 + 8 * sc2, sy2 + 1, 0.68 * sc2, 'sit', i * 1.3 + 2, { shirt: '#d68a1f', hairStyle: 'short', dir: facing });
             return;
           }
-          const bounce = kind2 === 'cheer' ? Math.abs(Math.sin(tt * 3.4 + i)) * 2.0 : 0;
+          // the WHOLE audience moves ON the drum beat — unison is what makes it
+          // read as a crowd responding to the dance instead of random standers
+          const onBeat = Math.abs(Math.sin(tt * 3.4));               // 1 = the beat lands
+          const bounce = (kind2 === 'cheer' ? 2.4 : 1.0) * onBeat;   // everyone pulses; cheerers jump
           fig(sx2, sy2 - bounce, sc2, 'idle', i * 2.1, { shirt: sh, hairStyle: hs, dir: facing });
           const shY = sy2 - bounce - 26 * sc2;                       // shoulder height
-          ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2 * sc2; ctx.lineCap = 'round';
+          const hand = (hx3, hy3) => { ctx.fillStyle = '#a3704a'; ctx.beginPath(); ctx.arc(hx3, hy3, 1.4 * sc2, 0, 6.283); ctx.fill(); };
+          ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2.4 * sc2; ctx.lineCap = 'round';
           if (kind2 === 'clap') {
-            // REAL clapping: both forearms swing and the hands MEET on the beat
-            const cl = Math.abs(Math.sin(tt * 3.4 + i * 0.3));      // 1 = hands together
-            const meetX = sx2 + facing * 7 * sc2, meetY = shY + 2 * sc2;
-            const gap = (1 - cl) * 5 * sc2;                          // opens between claps
-            ctx.beginPath(); ctx.moveTo(sx2 + facing * 2 * sc2, shY);
-            ctx.lineTo(meetX, meetY - gap); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(sx2 + facing * 2 * sc2, shY + 5 * sc2);
-            ctx.lineTo(meetX, meetY + gap); ctx.stroke();
-            if (cl > 0.92) {                                         // little flash at contact
-              ctx.strokeStyle = 'rgba(255,240,200,0.85)'; ctx.lineWidth = 1;
-              ctx.beginPath(); ctx.moveTo(meetX + facing * 2, meetY - 3); ctx.lineTo(meetX + facing * 4, meetY - 5); ctx.stroke();
-              ctx.beginPath(); ctx.moveTo(meetX + facing * 3, meetY + 3); ctx.lineTo(meetX + facing * 5, meetY + 5); ctx.stroke();
+            // CLAPPING IN UNISON: both forearms swing WIDE and the hands meet
+            // in front on every drum beat
+            const meetX = sx2 + facing * 8 * sc2, meetY = shY + 1 * sc2;
+            const gap = (1 - onBeat) * 8 * sc2;                      // opens wide between claps
+            const h1x = meetX, h1y = meetY - gap, h2x = meetX, h2y = meetY + gap;
+            ctx.beginPath(); ctx.moveTo(sx2 + facing * 2 * sc2, shY - 2 * sc2); ctx.lineTo(h1x, h1y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(sx2 + facing * 2 * sc2, shY + 4 * sc2); ctx.lineTo(h2x, h2y); ctx.stroke();
+            hand(h1x, h1y); hand(h2x, h2y);                          // visible hands, not stick ends
+            if (onBeat > 0.9) {                                      // flash right at contact
+              ctx.strokeStyle = 'rgba(255,240,200,0.9)'; ctx.lineWidth = 1.1;
+              ctx.beginPath(); ctx.moveTo(meetX + facing * 3, meetY - 4); ctx.lineTo(meetX + facing * 6, meetY - 7); ctx.stroke();
+              ctx.beginPath(); ctx.moveTo(meetX + facing * 4, meetY + 4); ctx.lineTo(meetX + facing * 7, meetY + 7); ctx.stroke();
             }
           } else {
-            // REAL cheering: BOTH arms thrown up in a V, waving side to side
-            const wv = Math.sin(tt * 3.0 + i * 1.3) * 2.5;
-            ctx.beginPath(); ctx.moveTo(sx2 - 3 * sc2, shY);
-            ctx.lineTo(sx2 - (7 + wv) * sc2, shY - 11 * sc2); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(sx2 + 3 * sc2, shY);
-            ctx.lineTo(sx2 + (7 - wv) * sc2, shY - 11 * sc2); ctx.stroke();
+            // CHEERING: both arms high in a WIDE V, sweeping side to side,
+            // jumping on the beat
+            const wv = Math.sin(tt * 3.0 + i * 1.3) * 3.5;
+            const l1x = sx2 - (8 + wv) * sc2, l1y = shY - 13 * sc2;
+            const r1x = sx2 + (8 - wv) * sc2, r1y = shY - 13 * sc2;
+            ctx.beginPath(); ctx.moveTo(sx2 - 3 * sc2, shY); ctx.lineTo(l1x, l1y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(sx2 + 3 * sc2, shY); ctx.lineTo(r1x, r1y); ctx.stroke();
+            hand(l1x, l1y); hand(r1x, r1y);                          // visible raised hands
           }
         };
+
+        // ---- PLANT RING first (farthest back — it was painting OVER a
+        //   spectator when drawn last at the same radius as the back row) ----
+        for (let pr2 = 0; pr2 < 7; pr2++) {
+          const pa2 = 3.9 + pr2 * 0.4;                                // midpoints BETWEEN the crowd members
+          const ppx = paX + Math.cos(pa2) * paR * 2.4, ppy = paY + Math.sin(pa2) * paR * 0.46 * 2.4;
+          ctx.strokeStyle = `rgba(${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(120,62,nm))},${Math.round(_lerp(46,26,nm))},0.95)`;
+          ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+          for (let bl2 = 0; bl2 < 5; bl2++) {
+            const bx3 = ppx + (bl2 - 2) * 2.6, bh3 = 8 + (bl2 % 3) * 4;
+            const sw3 = Math.sin(tt * 1.5 + pr2 + bl2 * 0.6) * 2;
+            ctx.beginPath(); ctx.moveTo(bx3, ppy); ctx.quadraticCurveTo(bx3 + sw3 * 0.5, ppy - bh3 * 0.6, bx3 + sw3, ppy - bh3); ctx.stroke();
+          }
+          if (pr2 % 2 === 0) {
+            ctx.fillStyle = `rgba(${Math.round(_lerp(226,124,nm))},${Math.round(_lerp(168,90,nm))},${Math.round(_lerp(90,50,nm))},0.95)`;
+            ctx.beginPath(); ctx.arc(ppx + Math.sin(tt + pr2) * 2, ppy - 14, 1.5, 0, 6.283); ctx.fill();
+          }
+        }
 
         // ---- FAR-SIDE CROWD, drawn FIRST so the arena and dancers paint OVER
         //   them (true depth): a smaller back row up the hill behind the ring.
@@ -2223,24 +2247,8 @@ function drawScene(ctx, W, H, p, tt, now) {
           fig(kx, ky - khop, 0.62, 'dance', 2.6, { shirt: '#2f9f4f', hairStyle: 'short', dir: -1 });
         }
 
-        // ---- PLANT RING framing the grounds (Hassan: "mad plants around") —
-        //   swaying grass tufts + a flower head just beyond the crowd, along
-        //   the top-right arc (the arbor owns the left). ----
-        for (let pr2 = 0; pr2 < 7; pr2++) {
-          const pa2 = 4.25 + pr2 * 0.34;                              // top → right arc
-          const ppx = paX + Math.cos(pa2) * paR * 2.05, ppy = paY + Math.sin(pa2) * paR * 0.46 * 2.05;   // outside the (further-out) crowd
-          ctx.strokeStyle = `rgba(${Math.round(_lerp(72,38,nm))},${Math.round(_lerp(120,62,nm))},${Math.round(_lerp(46,26,nm))},0.95)`;
-          ctx.lineWidth = 1.2; ctx.lineCap = 'round';
-          for (let bl2 = 0; bl2 < 5; bl2++) {
-            const bx3 = ppx + (bl2 - 2) * 2.6, bh3 = 8 + (bl2 % 3) * 4;
-            const sw3 = Math.sin(tt * 1.5 + pr2 + bl2 * 0.6) * 2;
-            ctx.beginPath(); ctx.moveTo(bx3, ppy); ctx.quadraticCurveTo(bx3 + sw3 * 0.5, ppy - bh3 * 0.6, bx3 + sw3, ppy - bh3); ctx.stroke();
-          }
-          if (pr2 % 2 === 0) {
-            ctx.fillStyle = `rgba(${Math.round(_lerp(226,124,nm))},${Math.round(_lerp(168,90,nm))},${Math.round(_lerp(90,50,nm))},0.95)`;
-            ctx.beginPath(); ctx.arc(ppx + Math.sin(tt + pr2) * 2, ppy - 14, 1.5, 0, 6.283); ctx.fill();
-          }
-        }
+        // (the plant ring is drawn at the TOP of this block now — farthest back,
+        //  behind the far crowd, so it can never paint over a spectator)
       }
       // (Removed the TATANKA chase — its runners swept across the ring-of-roses,
       //  reading as "4 girls walking straight through" the dancing children.)
