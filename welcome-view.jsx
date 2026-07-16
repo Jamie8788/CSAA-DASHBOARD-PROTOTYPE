@@ -2149,23 +2149,25 @@ function drawScene(ctx, W, H, p, tt, now) {
           .forEach(([a, k2, sh, hs], i) => spectator(a, k2, 1.0, sh, hs, i, 2.1));   // BIGGER back row (Hassan: spectators too small)
 
         // ---- THE ARBOUR — the big round wooden arbour of a real pow wow
-        //   ground, drawn BEFORE the dancers so it can sit CLOSE beside the
-        //   ring (near dancers pass in front). BIG — clearly taller and wider
-        //   than any dancer — with a broad DOMED roof, radial rafters, a ring
-        //   of braced posts, GLOWING warm inside, the host drum + four singers
-        //   plainly visible beneath. ----
+        //   ground. It stands BESIDE the arena with a clear strip of open
+        //   ground between it and the dance ring (drum groups sit OUTSIDE the
+        //   circle, never in it). BIG — taller and wider than any dancer —
+        //   with a broad DOMED roof, radial rafters, a ring of braced posts,
+        //   GLOWING warm inside, the host drum + four singers plainly visible. --
         {
-          const abX = paX - paR * 1.42, abY = paY + 6;              // CLOSE to the ring's left, a touch forward
+          const RW = 98;                                             // roof half-width
+          // placed so the roof's RIGHT edge clears the arena's left edge with a
+          // gap of open grass — it must NOT overlap the dancers (Hassan)
+          const abX = paX - paR - RW - 20, abY = paY + 4;
           const eaveY = abY - 92;                                    // eave far above every head — the whole hut towers over the dancers
-          const RW = 104;                                            // roof half-width
           // warm light pooling out from inside
           const ag = ctx.createRadialGradient(abX, abY - 26, 8, abX, abY - 26, 104);
           ag.addColorStop(0, `rgba(255,190,110,${0.30 + 0.16 * nm})`);
           ag.addColorStop(1, 'rgba(255,190,110,0)');
-          ctx.fillStyle = ag; ctx.beginPath(); ctx.ellipse(abX, abY - 14, 100, 52, 0, 0, 6.283); ctx.fill();
-          // lit ground inside, blending toward the arena so they read as ONE ground
+          ctx.fillStyle = ag; ctx.beginPath(); ctx.ellipse(abX, abY - 14, 96, 52, 0, 0, 6.283); ctx.fill();
+          // lit ground under the arbour (its own — no longer bridged to the arena)
           ctx.fillStyle = `rgba(${Math.round(_lerp(210,120,nm))},${Math.round(_lerp(180,96,nm))},${Math.round(_lerp(130,58,nm))},0.55)`;
-          ctx.beginPath(); ctx.ellipse(abX + 14, abY + 4, 82, 20, 0, 0, 6.283); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(abX, abY + 4, 78, 20, 0, 0, 6.283); ctx.fill();
           // BACK ring of posts (behind the drum group)
           ctx.strokeStyle = nd('#6b4a26'); ctx.lineWidth = 3; ctx.lineCap = 'round';
           [[-58, -16], [0, -21], [58, -16]].forEach(([px2, py2]) => {
