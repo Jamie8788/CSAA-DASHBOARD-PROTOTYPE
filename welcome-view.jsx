@@ -3422,12 +3422,47 @@ function drawScene(ctx, W, H, p, tt, now) {
           const edx = W * 0.545, edy = ground(W * 0.545) + 30;
           ctx.fillStyle = 'rgba(150,116,78,0.85)';
           ctx.beginPath(); ctx.ellipse(edx, edy + 2, 10, 2.8, 0, 0, 6.283); ctx.fill();
-          fig(edx - 13, edy, 1.1, 'sit', 0.9, { shirt: '#b04a2a', hairStyle: 'short', dir: 1 });
-          fig(edx + 13, edy, 1.05, 'sit', 2.3, { shirt: '#1f4e8f', hairStyle: 'braid', dir: -1 });
-          ctx.strokeStyle = 'rgb(200,172,128)'; ctx.lineWidth = 1.2;
+          fig(edx - 13, edy, 1.15, 'sit', 0.9, { shirt: '#b04a2a', hairStyle: 'short', dir: 1 });
+          fig(edx + 13, edy, 1.1, 'sit', 2.3, { shirt: '#1f4e8f', hairStyle: 'braid', dir: -1 });
+          // the sticks TOSS up on a cycle so it clearly reads as a game
+          const tt2 = (tt % 3.2) / 3.2;
           for (let st3 = 0; st3 < 6; st3++) {
-            ctx.beginPath(); ctx.moveTo(edx - 6 + st3 * 2.2, edy + 1); ctx.lineTo(edx - 3.6 + st3 * 2.2, edy + 1); ctx.stroke();
+            const lx = edx - 6 + st3 * 2.2;
+            if (tt2 < 0.22) { const h = Math.sin(tt2 / 0.22 * Math.PI) * 14; ctx.save(); ctx.translate(lx, edy - 1 - h); ctx.rotate(tt2 * 11 + st3); ctx.strokeStyle = 'rgb(200,172,128)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-2.4, 0); ctx.lineTo(2.4, 0); ctx.stroke(); ctx.restore(); }
+            else { ctx.strokeStyle = st3 % 2 ? 'rgb(200,172,128)' : 'rgb(120,84,48)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(lx - 2.2, edy + 1); ctx.lineTo(lx + 2.2, edy + 1); ctx.stroke(); }
           }
+        }
+        // ---- LEFT-BANK EVENING WORK (Hassan: "left side just standing, do
+        //   something like the fish-rack drying"). The WEST end of the camp is
+        //   busy too: a drying rack with the catch being hung, a hide-scraper
+        //   by a small fire, and a woman folding a finished hide. ----
+        {
+          const trod = (ex, ey, w) => { const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, w); g.addColorStop(0, `rgba(${Math.round(_lerp(64,34,nm))},${Math.round(_lerp(46,24,nm))},${Math.round(_lerp(28,14,nm))},0.5)`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(ex, ey, w, w * 0.42, 0, 0, 6.283); ctx.fill(); };
+          // (a) FISH-DRYING RACK + tender hanging the day's catch
+          const frx = W * 0.44, fry = ground(W * 0.44) + 6;
+          trod(frx, fry + 6, 30);
+          ctx.strokeStyle = 'rgb(60,40,22)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(frx - 18, fry); ctx.lineTo(frx - 18, fry - 32); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(frx + 18, fry); ctx.lineTo(frx + 18, fry - 32); ctx.stroke();
+          ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(frx - 20, fry - 30); ctx.lineTo(frx + 20, fry - 30); ctx.stroke();
+          for (let f = 0; f < 6; f++) {                                   // hanging fish, swaying
+            const hx = frx - 14 + f * 5.6, sw = Math.sin(tt * 1.5 + f) * 1;
+            ctx.strokeStyle = 'rgb(40,30,18)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(hx, fry - 30); ctx.lineTo(hx + sw, fry - 26); ctx.stroke();
+            ctx.fillStyle = `rgba(${Math.round(_lerp(198,120,nm))},${Math.round(_lerp(204,128,nm))},${Math.round(_lerp(196,120,nm))},0.92)`;
+            ctx.beginPath(); ctx.ellipse(hx + sw, fry - 21, 1.8, 5, 0, 0, 6.283); ctx.fill();
+          }
+          fig(frx + 25, fry, 1.35, 'hang', 1.1, { shirt: '#5a7d3a', hairStyle: 'braid', dir: -1 });   // reaching up to hang the next fish
+          // (b) HIDE-SCRAPER by a small work fire
+          const hsx = W * 0.495, hsy = ground(W * 0.495) + 8;
+          const gp2 = ctx.createRadialGradient(hsx - 16, hsy - 2, 1, hsx - 16, hsy - 2, 26);
+          gp2.addColorStop(0, 'rgba(255,160,70,0.24)'); gp2.addColorStop(1, 'rgba(255,160,70,0)');
+          ctx.fillStyle = gp2; ctx.beginPath(); ctx.ellipse(hsx - 16, hsy, 30, 10, 0, 0, 6.283); ctx.fill();
+          ctx.fillStyle = 'rgba(255,182,84,0.92)'; ctx.beginPath(); ctx.ellipse(hsx - 16, hsy - 3, 2, 4.2, 0, 0, 6.283); ctx.fill();
+          // the stretched hide on a frame behind the scraper
+          ctx.strokeStyle = 'rgb(70,48,26)'; ctx.lineWidth = 1.4;
+          ctx.strokeRect(hsx + 8, hsy - 22, 16, 16);
+          ctx.fillStyle = 'rgba(150,116,78,0.8)'; ctx.fillRect(hsx + 9, hsy - 21, 14, 14);
+          fig(hsx, hsy, 1.3, 'scrape', 0.6, { shirt: '#7c2f6b', hairStyle: 'long', dir: 1 });
         }
         ctx.restore();
       }
