@@ -2277,20 +2277,29 @@ function drawScene(ctx, W, H, p, tt, now) {
         //   to drop it wins. Set well apart from the main circle so it reads as
         //   its own thing. ----
         {
-          const ptX = paX - paR * 2.15, ptY = paY + paR * 0.34;
-          const sway = Math.sin(tt * 1.4) * 3, lean = Math.sin(tt * 1.4 + 1.6) * 1.2;
-          earth(ptX, ptY + 5, 22);
-          fig(ptX - 7 + sway, ptY, 1.15, 'sit', 0.5, { shirt: '#b8351e', hairStyle: 'braid', dir: 1, noArms: true });
-          fig(ptX + 7 + sway, ptY, 1.15, 'sit', 2.0, { shirt: '#1f6ea0', hairStyle: 'long', dir: -1, noArms: true });
-          // their inside arms rest on each other's shoulders
-          const shy = ptY - 30;
-          ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(ptX - 9 + sway, shy); ctx.lineTo(ptX + 3 + sway, shy - 2); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(ptX + 9 + sway, shy); ctx.lineTo(ptX - 3 + sway, shy - 2); ctx.stroke();
-          // the POTATO held between their foreheads (never ON a head)
-          ctx.fillStyle = nd('#c79a5a');
-          ctx.beginPath(); ctx.ellipse(ptX + sway, shy - 12 + lean, 3, 2.4, 0.3, 0, 6.283); ctx.fill();
-          ctx.strokeStyle = nd('#8a6a38'); ctx.lineWidth = 0.5; ctx.stroke();
+          const ptX = paX - paR * 2.2, ptY = paY + paR * 0.42;
+          const sway = Math.sin(tt * 1.5) * 4;                      // the pair sway together, shuffling
+          const step = Math.abs(Math.sin(tt * 3)) * 1.5;           // little dance bob
+          earth(ptX, ptY + 6, 32);
+          // two dancers STANDING close, facing each other (bigger so they read)
+          fig(ptX - 10 + sway, ptY - step, 1.42, 'idle', 0.5, { shirt: '#b8351e', hairStyle: 'braid', dir: 1, noArms: true });
+          fig(ptX + 10 + sway, ptY - step, 1.42, 'idle', 2.0, { shirt: '#1f6ea0', hairStyle: 'long', dir: -1, noArms: true });
+          const shy = ptY - step - 34;                             // shoulder height
+          ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+          // inside arms clasped on each other's shoulders
+          ctx.beginPath(); ctx.moveTo(ptX - 12 + sway, shy); ctx.lineTo(ptX + 5 + sway, shy - 3); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(ptX + 12 + sway, shy); ctx.lineTo(ptX - 5 + sway, shy - 3); ctx.stroke();
+          // outside arms out for balance
+          ctx.beginPath(); ctx.moveTo(ptX - 12 + sway, shy + 1); ctx.lineTo(ptX - 22 + sway, shy + 6); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(ptX + 12 + sway, shy + 1); ctx.lineTo(ptX + 22 + sway, shy + 6); ctx.stroke();
+          // the POTATO pinched BETWEEN their foreheads (never on a head)
+          const fhy = ptY - step - 58;
+          ctx.fillStyle = nd('#caa063');
+          ctx.beginPath(); ctx.ellipse(ptX + sway, fhy, 3.6, 2.8, 0.3, 0, 6.283); ctx.fill();
+          ctx.strokeStyle = nd('#8a6a38'); ctx.lineWidth = 0.6; ctx.stroke();
+          ctx.fillStyle = nd('#7a5a30');                           // a couple of potato "eyes"
+          ctx.beginPath(); ctx.arc(ptX + sway - 1, fhy - 0.5, 0.5, 0, 6.283); ctx.fill();
+          ctx.beginPath(); ctx.arc(ptX + sway + 1.4, fhy + 0.6, 0.5, 0, 6.283); ctx.fill();
         }
 
         // ---- NEAR-SIDE CROWD (drawn after the dancers — they're in front):
@@ -2812,16 +2821,20 @@ function drawScene(ctx, W, H, p, tt, now) {
         const cycT = (tt * 0.55) % 3;
         const fromI = Math.floor(cycT), toI = (fromI + 1) % 3, u3 = cycT - fromI;
         pts.forEach(([px3, py3], i3) => {
-          const isCatching = i3 === toI && u3 > 0.6;
-          fig(px3, py3, 0.95, 'wave', i3 * 1.7, { shirt: ['#c93a1e', '#1f4e8f', '#d68a1f'][i3], hairStyle: ['short', 'braid', 'short'][i3], dir: px3 < pts[toI][0] ? 1 : -1 });
-          void isCatching;
-          // the netted lacrosse stick, held up
-          const sx3 = px3 + 8, sy3 = py3 - 26;
-          ctx.strokeStyle = 'rgb(110,78,42)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(px3 + 4, py3 - 12); ctx.lineTo(sx3, sy3); ctx.stroke();
-          ctx.strokeStyle = 'rgba(214,196,160,0.9)'; ctx.lineWidth = 1.1;
-          ctx.beginPath(); ctx.arc(sx3 + 1, sy3 - 2, 3.4, 0, 6.283); ctx.stroke();      // the net hoop
-          ctx.beginPath(); ctx.moveTo(sx3 - 1.5, sy3 - 3.5); ctx.lineTo(sx3 + 3.5, sy3 - 0.5); ctx.stroke();
+          const raise = (i3 === toI && u3 > 0.55) || (i3 === fromI && u3 < 0.35);   // stick lifts to throw/catch
+          const fdir = px3 < pts[toI][0] ? 1 : -1;
+          fig(px3, py3, 1.2, 'idle', i3 * 1.7, { shirt: ['#c93a1e', '#1f4e8f', '#d68a1f'][i3], hairStyle: ['short', 'braid', 'short'][i3], dir: fdir, noArms: true });
+          // BOTH hands grip the netted stick, held UP toward the ball
+          const gripX = px3 + fdir * 5, gripY = py3 - 24;
+          const sx3 = px3 + fdir * (raise ? 13 : 9), sy3 = py3 - (raise ? 40 : 32);   // net end
+          ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';    // the arms to the grip
+          ctx.beginPath(); ctx.moveTo(px3 - fdir * 3, py3 - 26); ctx.lineTo(gripX, gripY); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(px3 + fdir * 3, py3 - 24); ctx.lineTo(gripX, gripY + 2); ctx.stroke();
+          ctx.strokeStyle = 'rgb(110,78,42)'; ctx.lineWidth = 1.8;                    // the shaft
+          ctx.beginPath(); ctx.moveTo(gripX, gripY); ctx.lineTo(sx3, sy3); ctx.stroke();
+          ctx.strokeStyle = 'rgba(224,206,170,0.95)'; ctx.lineWidth = 1.2;            // the net hoop
+          ctx.beginPath(); ctx.arc(sx3, sy3 - 1, 4, 0, 6.283); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(sx3 - 2.5, sy3 - 3.5); ctx.lineTo(sx3 + 3, sy3 + 1); ctx.stroke();
         });
         // the ball in flight — a true arc between the two active sticks
         const [fx3, fy3] = pts[fromI], [tx3, ty3] = pts[toI];
@@ -2862,60 +2875,48 @@ function drawScene(ctx, W, H, p, tt, now) {
       {
         ctx.save(); ctx.globalAlpha = dayA;
         const rpx = W * 0.925, rpy = ground(W * 0.925) + 40;
-        fig(rpx, rpy, 0.95, 'wave', 0.8, { shirt: '#1f4e8f', hairStyle: 'short', dir: 1 });
-        const hx3 = rpx + 8, hy3 = rpy - 24;                                            // hand with the pin
-        ctx.strokeStyle = 'rgb(120,88,50)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(hx3, hy3); ctx.lineTo(hx3 + 7, hy3 - 6); ctx.stroke();  // the pin (stick)
+        fig(rpx, rpy, 1.25, 'idle', 0.8, { shirt: '#1f4e8f', hairStyle: 'short', dir: 1, noArms: true });
+        const hx3 = rpx + 9, hy3 = rpy - 26;                                            // the hand gripping the pin
+        ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';        // forearm to the hand
+        ctx.beginPath(); ctx.moveTo(rpx + 3, rpy - 30); ctx.lineTo(hx3, hy3); ctx.stroke();
+        ctx.strokeStyle = 'rgb(120,88,50)'; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.moveTo(hx3, hy3); ctx.lineTo(hx3 + 9, hy3 - 8); ctx.stroke();  // the pin (stick)
         const sw4 = Math.sin(tt * 2.4);                                                 // the ring swings up on its cord
-        const ringX = hx3 + 7 + Math.sin(sw4) * 8, ringY = hy3 - 6 + Math.abs(Math.cos(sw4)) * 9;
-        ctx.strokeStyle = 'rgba(214,196,160,0.8)'; ctx.lineWidth = 0.8;
-        ctx.beginPath(); ctx.moveTo(hx3 + 7, hy3 - 6); ctx.lineTo(ringX, ringY); ctx.stroke();  // the cord
-        ctx.strokeStyle = 'rgb(160,120,70)'; ctx.lineWidth = 1.4;
-        ctx.beginPath(); ctx.arc(ringX, ringY, 2.6, 0, 6.283); ctx.stroke();            // the ring
+        const ringX = hx3 + 9 + Math.sin(sw4) * 10, ringY = hy3 - 8 + Math.abs(Math.cos(sw4)) * 11;
+        ctx.strokeStyle = 'rgba(214,196,160,0.8)'; ctx.lineWidth = 0.9;
+        ctx.beginPath(); ctx.moveTo(hx3 + 9, hy3 - 8); ctx.lineTo(ringX, ringY); ctx.stroke();  // the cord
+        ctx.strokeStyle = 'rgb(160,120,70)'; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.arc(ringX, ringY, 3.2, 0, 6.283); ctx.stroke();            // the ring
         ctx.restore();
       }
 
-      // (4) HOOP GAME — the boy LAUNCHES the hoop from his own hand: while he
-      //     pushes, his arm is ON the hoop; it rolls away with TRUE rolling spin
-      //     (rotation = distance/radius), slows, wobbles flat, and the next
-      //     launch starts back at his hand. (Hassan: "the wheel is moving on its
-      //     own, her hand isn't even touching it" — no more self-moving wheel.)
+      // (4) HOOP-AND-STICK — a boy DRIVES a rolling hoop with a stick, walking
+      //     alongside it back and forth. The stick ALWAYS connects his hand to
+      //     the hoop (no elastic arm, no self-moving wheel — Hassan), and the
+      //     hoop's spin is tied to the distance it travels (true rolling).
       {
         ctx.save(); ctx.globalAlpha = dayA;
-        const hgX = W * 0.50, hgy0 = ground(W * 0.50) + 30;
-        const dist = W * 0.045;                                   // how far each roll travels
-        const T = (tt % 5) / 5;                                   // one launch every 5 s
-        const eas = 1 - (1 - Math.min(1, T / 0.7)) ** 2;          // fast off the hand, easing to a stop
-        const hoopR = 6;
-        const hoopX = hgX + 10 + eas * dist;
-        const fall = _clamp((T - 0.74) / 0.12, 0, 1);             // wobbles over once it stops
-        const gone = _clamp((T - 0.90) / 0.08, 0, 1);             // fades before resetting to the hand
-        const hoopY = hgy0 - hoopR + fall * 3;
-        // the roller boy, planted at the launch spot
-        fig(hgX, hgy0, 0.95, 'wave', 0.6, { shirt: '#5a7d3a', hairStyle: 'short', dir: 1 });
-        // while pushing, HIS ARM reaches to the hoop — visible hand-to-hoop contact
-        if (T < 0.14) {
-          ctx.strokeStyle = 'rgb(163,112,74)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(hgX + 5, hgy0 - 22); ctx.lineTo(hoopX - 1, hoopY - 2); ctx.stroke();
-        }
-        // the hoop: rotation tied EXACTLY to ground covered (real rolling)
-        ctx.save(); ctx.globalAlpha = dayA * (1 - gone);
-        ctx.translate(hoopX, hoopY); ctx.rotate((eas * dist) / hoopR);
-        ctx.scale(1, 1 - fall * 0.72);                            // tips over as it dies
-        ctx.strokeStyle = 'rgb(150,110,64)'; ctx.lineWidth = 1.6;
+        const cx0 = W * 0.50, gy = ground(cx0) + 30, span = W * 0.045, hoopR = 8;
+        const pos = Math.sin(tt * 0.8);                           // -1..1 along the run
+        const dirH = Math.cos(tt * 0.8) >= 0 ? 1 : -1;            // travel direction
+        const hoopX = cx0 + pos * span, hoopY = gy - hoopR;
+        // the boy walks just BEHIND the hoop, driving it
+        const boyX = hoopX - dirH * 17;
+        fig(boyX, gy, 1.25, 'walk', 0.6, { shirt: '#5a7d3a', hairStyle: 'short', dir: dirH, noArms: true });
+        // driving arm + stick, hand to hoop — always connected
+        const shx = boyX + dirH * 3, shy = gy - 26;
+        const hitX = hoopX - dirH * hoopR * 0.6, hitY = hoopY;
+        ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(shx, shy); ctx.lineTo((shx + hitX) / 2, (shy + hitY) / 2 - 2); ctx.stroke();   // forearm
+        ctx.strokeStyle = 'rgb(150,110,64)'; ctx.lineWidth = 1.8;
+        ctx.beginPath(); ctx.moveTo((shx + hitX) / 2, (shy + hitY) / 2 - 2); ctx.lineTo(hitX, hitY); ctx.stroke(); // stick
+        // the rolling hoop (spin = displacement / radius)
+        ctx.save(); ctx.translate(hoopX, hoopY); ctx.rotate((hoopX - cx0) / hoopR);
+        ctx.strokeStyle = 'rgb(150,110,64)'; ctx.lineWidth = 1.8;
         ctx.beginPath(); ctx.arc(0, 0, hoopR, 0, 6.283); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(-hoopR, 0); ctx.lineTo(hoopR, 0); ctx.stroke();   // the sinew cross
+        ctx.beginPath(); ctx.moveTo(-hoopR, 0); ctx.lineTo(hoopR, 0); ctx.stroke();   // sinew cross
         ctx.beginPath(); ctx.moveTo(0, -hoopR); ctx.lineTo(0, hoopR); ctx.stroke();
         ctx.restore();
-        // his friend downfield throws the short spear as the hoop passes him
-        const thX = hgX + dist * 0.62, thY = hgy0 + 16;
-        fig(thX, thY, 1.0, 'wave', 1.9, { shirt: '#c93a1e', hairStyle: 'short', dir: hoopX > thX ? 1 : -1 });
-        const spT = Math.abs(hoopX - thX) < 12 ? 1 - Math.abs(hoopX - thX) / 12 : 0;
-        if (spT > 0) {
-          ctx.strokeStyle = 'rgb(120,88,50)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-          const spx = _lerp(thX + 4, hoopX, spT), spy = _lerp(thY - 18, hoopY, spT);
-          ctx.beginPath(); ctx.moveTo(spx - 2, spy + 4); ctx.lineTo(spx + 2, spy - 4); ctx.stroke();
-        }
         ctx.restore();
       }
       // (5) MEDICINE GATHERING — two women with a basket, kneeling among the
