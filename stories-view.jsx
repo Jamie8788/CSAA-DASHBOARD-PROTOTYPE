@@ -302,6 +302,32 @@ function _journeyTruth(c) {
   return null;
 }
 
+// pull a real sentence for ONE specific field (used by the journey's choices —
+// each action reveals a DIFFERENT part of how the community cares).
+function _fieldTruth(c, key) {
+  const v = c[key];
+  if (!v) return null;
+  if (window.fieldStatus && window.fieldStatus(c, key, v) !== 'ok') return null;
+  const t = String(v).replace(/https?:\/\/\S+/g, ' ').replace(/\s+/g, ' ').trim();
+  const m = t.match(/^.*?[.!?](?:\s|$)/);
+  let out = (m ? m[0] : t).trim();
+  if (out.length < 30) return null;
+  if (out.length > 240) out = out.slice(0, 240).replace(/\s+\S*$/, '') + '…';
+  return out;
+}
+
+// the things you can DO at each fire — each is a distinct choice with its own
+// outcome (a different real teaching), its own scene reaction, and its own
+// token for your medicine pouch (Hassan: "every outcome should have a different
+// action, like a sim game — not the same two buttons").
+const _J_ACTIONS = [
+  { key: 'spiritual', icon: '🌿', label: 'Offer semaa & listen', cite: 'a spiritual teaching', react: 'smoke', tcol: '#d4a017', tname: 'Spirit', tglyph: '✦' },
+  { key: 'emotional', icon: '🔥', label: 'Sit by the fire',       cite: 'a story from the heart', react: 'ember', tcol: '#6b8d6b', tname: 'Heart', tglyph: '♡' },
+  { key: 'physical',  icon: '🍲', label: 'Share the meal',        cite: 'how the body is kept well', react: 'feast', tcol: '#b8351e', tname: 'Body', tglyph: '◐' },
+  { key: 'mental',    icon: '🚶', label: 'Walk with an elder',    cite: 'how the mind is steadied', react: 'walk', tcol: '#3a4658', tname: 'Mind', tglyph: '◍' },
+  { key: 'youth',     icon: '🌾', label: 'Meet the youth',        cite: 'the youth on the land', react: 'youth', tcol: '#2f8f4f', tname: 'Youth', tglyph: '❃' },
+];
+
 const _J_DIR = {
   East:  { season: 'Spring · Ziigwan',   col: '#d4a017', guide: 'Maang turns the bow toward the sunrise. New programs are taking root here.' },
   South: { season: 'Summer · Niibin',    col: '#b8351e', guide: 'The water is warm and full of life. The youth are on the land here.' },
@@ -377,8 +403,8 @@ function JourneyOfCare({ all, onSelect }) {
 
   const [idx, setIdx] = useState(-1);
   const [phase, setPhase] = useState('intro');     // intro | choose | paddling | arrived | done
-  const [received, setReceived] = useState(false);
-  const [beads, setBeads] = useState([]);
+  const [explored, setExplored] = useState([]);    // action keys explored at the CURRENT stop
+  const [pouch, setPouch] = useState([]);          // every token collected across the journey
   const [muted, setMuted] = useState(false);
   const canvasRef = useRef(null);
   const audioRef = useRef(null);
@@ -388,6 +414,8 @@ function JourneyOfCare({ all, onSelect }) {
   const arriveRef = useRef(0);
   const pendingIdxRef = useRef(0);
   const routeRef = useRef('shore');
+  const sceneActionRef = useRef(null);             // which reaction the arrival scene should play
+  const actionFxRef = useRef(0);                   // decays 1→0 after each choice
 
   const cur = idx >= 0 && idx < N ? stops[idx] : null;
   const truth = useMemo(() => (cur ? _journeyTruth(cur) : null), [cur]);
@@ -397,15 +425,20 @@ function JourneyOfCare({ all, onSelect }) {
   useEffect(() => () => { if (audioRef.current) audioRef.current.stop(); }, []);
   useEffect(() => { if (audioRef.current) audioRef.current.setMuted(muted); }, [muted]);
 
-  function beginJourney() { startAudio(); pendingIdxRef.current = 0; routeRef.current = 'shore'; padRef.current = 0; arriveRef.current = 0; setReceived(false); setPhase('paddling'); }
+  function beginJourney() { startAudio(); pendingIdxRef.current = 0; routeRef.current = 'shore'; padRef.current = 0; arriveRef.current = 0; sceneActionRef.current = null; actionFxRef.current = 0; setExplored([]); setPhase('paddling'); }
   function paddleOn() { if (idx + 1 >= N) { setPhase('done'); return; } setPhase('choose'); }
-  function chooseRoute(r) { routeRef.current = r; pendingIdxRef.current = idx + 1; padRef.current = 0; arriveRef.current = 0; setReceived(false); setPhase('paddling'); }
-  function restart() { setIdx(-1); setBeads([]); setReceived(false); setPhase('intro'); padRef.current = 0; arriveRef.current = 0; }
-  function receive() {
-    if (received || !cur) return;
-    setBeads(b => [...b, { dir: cur.direction || 'Central', id: cur.id, name: cur.name.trim() }]);
-    setReceived(true);
+  function chooseRoute(r) { routeRef.current = r; pendingIdxRef.current = idx + 1; padRef.current = 0; arriveRef.current = 0; sceneActionRef.current = null; actionFxRef.current = 0; setExplored([]); setPhase('paddling'); }
+  function restart() { setIdx(-1); setPouch([]); setExplored([]); setPhase('intro'); padRef.current = 0; arriveRef.current = 0; }
+  // each ACTION reveals a different real teaching, drops a token in the pouch,
+  // and triggers its own reaction in the arrival scene
+  function chooseAction(a) {
+    if (!cur || explored.includes(a.key)) return;
+    setExplored(e => [...e, a.key]);
+    setPouch(p => [...p, { stopId: cur.id, key: a.key, glyph: a.tglyph, col: a.tcol, name: a.tname }]);
+    sceneActionRef.current = a.react; actionFxRef.current = 1;
   }
+  // the actions this community can actually offer (has real content for)
+  const stopActions = useMemo(() => (cur ? _J_ACTIONS.map(a => ({ ...a, text: _fieldTruth(cur, a.key) })).filter(a => a.text) : []), [cur]);
 
   // ============================ THE SCENE ============================
   useEffect(() => {
@@ -664,6 +697,39 @@ function JourneyOfCare({ all, onSelect }) {
           ctx.beginPath(); ctx.moveTo(fx2 + gdx + 4 * gs, fy2 - 15 * gs);
           ctx.lineTo(fx2 + gdx + 9 * gs, fy2 - 24 * gs - wave * 6); ctx.stroke();
         }
+        // ---- ACTION REACTION: each choice plays out differently at the fire ----
+        const react = sceneActionRef.current, fxp = actionFxRef.current;
+        if (react === 'smoke') {                                    // semaa offering: sweetgrass smoke rises
+          for (let s = 0; s < 5; s++) { const su = ((tt * 0.4 + s * 0.2) % 1); ctx.globalAlpha = (1 - su) * 0.5; ctx.fillStyle = 'rgb(222,216,192)'; ctx.beginPath(); ctx.arc(fx2 + Math.sin(su * 6 + s) * 5, fy2 - 8 - su * 46, 2.4 + su * 4, 0, 6.283); ctx.fill(); }
+          ctx.globalAlpha = 1;
+        } else if (react === 'ember') {                            // fire story: a storyteller gestures + embers rise
+          ctx.fillStyle = '#5a3a2a'; ctx.beginPath(); ctx.ellipse(fx2 - 20, fy2 - 10, 4.6, 8, 0, 0, 6.283); ctx.fill();
+          ctx.fillStyle = 'rgb(122,84,52)'; ctx.beginPath(); ctx.arc(fx2 - 20, fy2 - 22, 3.6, 0, 6.283); ctx.fill();
+          ctx.strokeStyle = '#5a3a2a'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(fx2 - 17, fy2 - 15); ctx.lineTo(fx2 - 10, fy2 - 20 - Math.sin(tt * 2) * 4); ctx.stroke();
+          for (let e = 0; e < 6; e++) { const eu = ((tt * 0.7 + e * 0.16) % 1); ctx.globalAlpha = (1 - eu) * 0.8; ctx.fillStyle = `rgb(255,${Math.round(150 + 70 * Math.sin(e))},60)`; ctx.beginPath(); ctx.arc(fx2 + Math.sin(eu * 8 + e) * 8, fy2 - eu * 40, 1.2, 0, 6.283); ctx.fill(); }
+          ctx.globalAlpha = 1;
+        } else if (react === 'feast') {                            // share the meal: a tripod pot + steam
+          const px = fx2 + 22;
+          ctx.strokeStyle = 'rgb(60,40,22)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(px - 6, fy2); ctx.lineTo(px, fy2 - 16); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(px + 6, fy2); ctx.lineTo(px, fy2 - 16); ctx.stroke();
+          ctx.fillStyle = 'rgb(44,38,34)'; ctx.beginPath(); ctx.ellipse(px, fy2 - 6, 5, 3.4, 0, 0, Math.PI); ctx.fill(); ctx.fillRect(px - 5, fy2 - 7.5, 10, 2);
+          for (let s = 0; s < 4; s++) { const su = ((tt * 0.5 + s * 0.25) % 1); ctx.globalAlpha = (1 - su) * 0.4; ctx.fillStyle = 'rgb(226,220,208)'; ctx.beginPath(); ctx.arc(px + Math.sin(su * 5) * 4, fy2 - 16 - su * 20, 2 + su * 3, 0, 6.283); ctx.fill(); }
+          ctx.globalAlpha = 1;
+        } else if (react === 'walk') {                             // walk with an elder: two figures stroll off
+          for (let g = 0; g < 2; g++) { const wx = fx2 + 34 + g * 11 + Math.sin(tt * 0.6) * 4, wy = fy2 - 4 - g * 3; ctx.fillStyle = ['#3c5a80', '#8a4a28'][g]; ctx.beginPath(); ctx.ellipse(wx, wy - 8, 3.4, 6, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = 'rgb(122,84,52)'; ctx.beginPath(); ctx.arc(wx, wy - 16, 2.6, 0, 6.283); ctx.fill(); }
+        } else if (react === 'youth') {                            // meet the youth: a young one carries a sprig
+          const yx = fx2 - 26 - Math.sin(tt * 0.5) * 3, yy = fy2 + 2;
+          ctx.fillStyle = '#2f8f4f'; ctx.beginPath(); ctx.ellipse(yx, yy - 8, 3.4, 6, 0, 0, 6.283); ctx.fill();
+          ctx.fillStyle = 'rgb(122,84,52)'; ctx.beginPath(); ctx.arc(yx, yy - 16, 2.6, 0, 6.283); ctx.fill();
+          ctx.strokeStyle = '#2f8f4f'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(yx - 4, yy - 10); ctx.lineTo(yx - 8, yy - 16); ctx.stroke();
+          ctx.fillStyle = '#4fbf6f'; ctx.beginPath(); ctx.arc(yx - 8, yy - 17, 1.8, 0, 6.283); ctx.fill();
+        }
+        if (fxp > 0.02) {                                          // a bright ring pops out the moment you choose
+          ctx.globalAlpha = fxp * 0.8; ctx.strokeStyle = 'rgba(255,240,190,0.9)'; ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.arc(fx2, fy2 - 6, (1 - fxp) * 40 + 8, 0, 6.283); ctx.stroke(); ctx.globalAlpha = 1;
+        }
       }
 
       // ---- THE CANOE (hero of the scene) + Maang ----
@@ -761,6 +827,7 @@ function JourneyOfCare({ all, onSelect }) {
       if (phaseRef.current === 'arrived' && arriveRef.current < 1) {
         arriveRef.current = Math.min(1, arriveRef.current + (time - (last || time)) / 800);
       }
+      if (actionFxRef.current > 0) actionFxRef.current = Math.max(0, actionFxRef.current - (time - (last || time)) / 900);
       last = time;
     }
 
@@ -826,37 +893,51 @@ function JourneyOfCare({ all, onSelect }) {
               {cur.population != null && <span><b>{cur.population.toLocaleString()}</b> people</span>}
               <span><b>{window.PILLARS.filter(pl => window.pillarOn(cur, pl.key)).length}</b>/4 pillars documented</span>
             </div>
-            {!received ? (
-              <>
-                <p className="j-invite">You are welcomed to the fire. Will you receive this community's teaching?</p>
-                <div className="j-choices">
-                  <button className="j-btn" onClick={receive}>🌿 Offer semaa &amp; listen</button>
-                  <button className="j-btn ghost" onClick={receive}>🔥 Sit by the fire</button>
-                </div>
-              </>
-            ) : (
-              <>
-                {truth && (
-                  <blockquote className="j-truth">
-                    “{truth.text}”
-                    <cite>— {pillarLabel[truth.pillar] || truth.pillar}, from {cur.name.trim()}'s own records</cite>
-                  </blockquote>
-                )}
-                <div className="j-choices">
-                  <button className="j-btn ghost" onClick={() => onSelect && onSelect(cur.id)}>Open {cur.name.trim().split(' ')[0]}'s page ↗</button>
-                  <button className="j-btn" onClick={paddleOn}>{idx + 1 >= N ? '✶ Complete the journey' : '🛶 Paddle on'}</button>
-                </div>
-              </>
+            <p className="j-invite">
+              You are welcomed to the fire. What will you do here?
+              {explored.length > 0 && <span className="j-gathered"> · {explored.length} gift{explored.length > 1 ? 's' : ''} received</span>}
+            </p>
+            {/* the teachings you've already unlocked at this stop, each cited by action */}
+            {stopActions.filter(a => explored.includes(a.key)).map(a => (
+              <blockquote key={a.key} className="j-truth" style={{ borderColor: a.tcol }}>
+                <span className="j-truth-tag" style={{ color: a.tcol }}>{a.tglyph} {a.tname}</span>
+                “{a.text}”
+                <cite>— {a.cite}, from {cur.name.trim()}'s own records</cite>
+              </blockquote>
+            ))}
+            {/* distinct actions still available at this fire */}
+            {stopActions.some(a => !explored.includes(a.key)) && (
+              <div className="j-actions">
+                {stopActions.filter(a => !explored.includes(a.key)).map(a => (
+                  <button key={a.key} className="j-action" style={{ '--tc': a.tcol }} onClick={() => chooseAction(a)}>
+                    <span className="j-action-ic">{a.icon}</span>
+                    <b>{a.label}</b>
+                    <span className="j-action-sub">receive {a.cite}</span>
+                  </button>
+                ))}
+              </div>
             )}
+            <div className="j-choices">
+              {explored.length > 0 && <button className="j-btn ghost" onClick={() => onSelect && onSelect(cur.id)}>Open {cur.name.trim().split(' ')[0]}'s page ↗</button>}
+              <button className={`j-btn ${explored.length ? '' : 'ghost'}`} onClick={paddleOn}>{idx + 1 >= N ? '✶ Complete the journey' : (explored.length ? '🛶 Paddle on' : '🛶 Paddle on without stopping')}</button>
+            </div>
           </div>
         )}
 
         {phase === 'done' && (
           <div className="j-card j-done">
             <div className="j-eyebrow">Mino Bimaadiziwin · The Good Life</div>
-            <h3>You carried {beads.length} teachings through the four directions.</h3>
+            <h3>You gathered {pouch.length} gift{pouch.length === 1 ? '' : 's'} across the four directions.</h3>
+            {pouch.length > 0 && (
+              <div className="j-pouch-summary">
+                {['Body', 'Mind', 'Spirit', 'Heart', 'Youth'].map(nm => {
+                  const items = pouch.filter(p => p.name === nm); if (!items.length) return null;
+                  return <span key={nm} className="j-tok" style={{ color: items[0].col, borderColor: items[0].col }}>{items[0].glyph} {nm} ×{items.length}</span>;
+                })}
+              </div>
+            )}
             <p>
-              Every bead is a real community caring for its people — body, mind, spirit,
+              Each gift is a real community caring for its people — body, mind, spirit,
               and heart. This is what the atlas holds: {all.length} of these stories,
               waiting to be visited.
             </p>
@@ -867,9 +948,18 @@ function JourneyOfCare({ all, onSelect }) {
         )}
       </div>
 
-      <div className="j-sash" aria-label="Teachings received">
+      {/* the medicine pouch: every token gathered so far, filling as you go */}
+      {pouch.length > 0 && (
+        <div className="j-pouch" aria-label="Gifts gathered">
+          {pouch.map((p, i) => (
+            <span key={i} className="j-tok-dot" style={{ background: p.col, borderColor: p.col }} title={`${p.name} — a gift`}>{p.glyph}</span>
+          ))}
+        </div>
+      )}
+
+      <div className="j-sash" aria-label="Shores visited">
         {stops.map((sc, i) => {
-          const done = beads.some(b => b.id === sc.id);
+          const done = pouch.some(b => b.stopId === sc.id);
           const col = (_J_DIR[sc.direction || 'Central'] || _J_DIR.Central).col;
           return (
             <span key={sc.id}
