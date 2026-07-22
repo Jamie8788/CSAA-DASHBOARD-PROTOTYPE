@@ -3611,79 +3611,45 @@ function drawScene(ctx, W, H, p, tt, now) {
         ctx.restore();                                                 // (pop the curfew alpha scope)
         }                                                              // (end torch-fisher curfew gate)
       }
-      // (2) THE MOCCASIN GAME — a favourite Anishinaabe night game: two players
-      //     over a blanket, four moccasins hiding the marked bullet, the
-      //     guesser's striker stick swinging as the drum keeps time.
+      // (2) NIGHT SUPPER — a family shares the evening meal around a small fire:
+      //     everyone seated with a bowl, lifting food to their mouth on a gentle
+      //     cycle. (Replaces the moccasin game + flute — their single-line arms
+      //     read as stiff "sticks"; Hassan wanted natural activities like eating.
+      //     Here arms are drawn BENT at the elbow so they read as arms.) ----
       {
-        const mgx = W * 0.585, mgy = ground(W * 0.585) + 34;   // deep in the open field — not on the walk line
-        // a SMALL GAME FIRE beside the blanket — they play by its light. Without
-        // it the props vanished into the dark and the pair read as "two girls
-        // just sitting at night doing nothing" (Hassan).
-        const gfx2 = mgx - 30, gfy2 = mgy + 1;
-        const gflk = 0.8 + Math.sin(tt * 8.5) * 0.12 + Math.sin(tt * 21) * 0.06;
-        const gfp = ctx.createRadialGradient(gfx2, gfy2 - 3, 1, gfx2, gfy2 - 3, 42 * gflk);
-        gfp.addColorStop(0, 'rgba(255,160,70,0.30)');                                // warm pool over blanket + players
-        gfp.addColorStop(1, 'rgba(255,160,70,0)');
-        ctx.fillStyle = gfp;
-        ctx.beginPath(); ctx.ellipse(gfx2 + 16, gfy2, 52 * gflk, 17 * gflk, 0, 0, 6.283); ctx.fill();
-        ctx.strokeStyle = 'rgb(52,32,16)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';   // crossed sticks
-        ctx.beginPath(); ctx.moveTo(gfx2 - 4, gfy2 + 1); ctx.lineTo(gfx2 + 4, gfy2 - 2); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(gfx2 - 4, gfy2 - 2); ctx.lineTo(gfx2 + 4, gfy2 + 1); ctx.stroke();
-        ctx.fillStyle = `rgba(255,${Math.round(170 + 30 * gflk)},80,0.95)`;              // small flame
-        ctx.beginPath(); ctx.ellipse(gfx2, gfy2 - 5, 2.4, 4.6 * gflk, 0, 0, 6.283); ctx.fill();
-        ctx.fillStyle = 'rgba(255,240,180,0.9)';
-        ctx.beginPath(); ctx.ellipse(gfx2, gfy2 - 4, 1.1, 2.2 * gflk, 0, 0, 6.283); ctx.fill();
-        // the blanket + moccasins, larger and firelit so the GAME is visible
-        ctx.fillStyle = 'rgba(96,52,36,0.95)';
-        ctx.beginPath(); ctx.ellipse(mgx, mgy + 1, 13, 3.6, 0, 0, 6.283); ctx.fill();
-        ctx.fillStyle = 'rgb(88,60,34)';                                             // the four moccasins
-        for (let m2 = 0; m2 < 4; m2++) {
-          ctx.beginPath(); ctx.ellipse(mgx - 7.5 + m2 * 5, mgy - 0.8, 2.2, 1.3, 0, 0, 6.283); ctx.fill();
-        }
-        // noArms: WE draw both players' arms so they clearly connect shoulder→
-        // hand→prop (the old version left the striker floating in mid-air with
-        // fig's own arms hanging separately — Hassan: "moving like Harry Potter")
-        fig(mgx - 16, mgy, 1.3, 'sit', 0.6, { shirt: '#1f4e8f', hairStyle: 'short', dir: 1, noArms: true });   // the hider
-        fig(mgx + 16, mgy, 1.35, 'sit', 1.8, { shirt: '#c93a1e', hairStyle: 'braid', dir: -1, noArms: true }); // the guesser
-        const arm = (x0, y0, x1, y1) => { ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); ctx.fillStyle = '#a3704a'; ctx.beginPath(); ctx.arc(x1, y1, 1.7, 0, 6.283); ctx.fill(); };
-        // the HIDER'S hand hovers over the moccasins, shuffling the hidden bullet
-        const shf = Math.sin(tt * 1.6);
-        arm(mgx - 16 + 7, mgy - 41, mgx - 4 + shf * 5, mgy - 4);        // shoulder → hand over the row
-        // the GUESSER'S hand grips the striker; the striker taps down the row
-        const gHandX = mgx + 8, gHandY = mgy - 9;
-        arm(mgx + 16 - 7, mgy - 42, gHandX, gHandY);                    // shoulder → gripping hand
-        const tipX = mgx - 5 + Math.sin(tt * 0.7) * 9;                  // hovers along the moccasins, choosing
-        const tipY = mgy - 1 + (Math.sin(tt * 2.6) * 0.5 + 0.5) * 2.5;  // taps down on the beat
-        ctx.strokeStyle = 'rgb(150,112,60)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(gHandX, gHandY); ctx.lineTo(tipX, tipY); ctx.stroke();   // striker FROM the hand
-      }
-      // (2b) NIGHT FLUTE — a young man plays a cedar courting flute at the west
-      //     edge, fingers working the holes, soft notes drifting up (a real
-      //     Anishinaabe evening custom; keeps the otherwise-empty LEFT alive). --
-      {
-        const flx = W * 0.44, fly = ground(W * 0.44) + 8;
-        fig(flx, fly, 1.35, 'sit', 1.0, { shirt: '#5a7d3a', hairStyle: 'long', dir: 1, noArms: true });
-        const mouthX = flx + 4, mouthY = fly - 46, endX = flx + 24, endY = fly - 34;   // the flute, up to the lips
-        ctx.strokeStyle = 'rgb(140,96,52)'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(mouthX, mouthY); ctx.lineTo(endX, endY); ctx.stroke();
-        ctx.strokeStyle = 'rgb(60,40,22)'; ctx.lineWidth = 0.7;                         // finger holes
-        for (let h = 0; h < 4; h++) { const hx = mouthX + 7 + h * 4, hy = mouthY + (endY - mouthY) * ((h + 1) / 6); ctx.beginPath(); ctx.arc(hx, hy, 0.7, 0, 6.283); ctx.stroke(); }
-        // both arms from the shoulders to the flute (fingers on the holes)
-        ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(flx - 3, fly - 40); ctx.lineTo(mouthX + 8, mouthY + 4 + Math.sin(tt * 5) * 0.6); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(flx + 4, fly - 38); ctx.lineTo(endX - 5, endY + 2 + Math.sin(tt * 5 + 1) * 0.6); ctx.stroke();
-        // soft notes drifting up-right on the night air
-        ctx.save();
-        for (let n = 0; n < 3; n++) {
-          const np = (tt * 0.5 + n * 0.4) % 1;
-          ctx.globalAlpha = nightA * Math.sin(np * Math.PI) * 0.7;
-          const nx = endX + 4 + np * 22, ny = endY - np * 26;
-          ctx.fillStyle = 'rgb(232,222,186)';
-          ctx.beginPath(); ctx.ellipse(nx, ny, 1.7, 1.3, -0.3, 0, 6.283); ctx.fill();       // note head
-          ctx.strokeStyle = 'rgb(232,222,186)'; ctx.lineWidth = 0.7;
-          ctx.beginPath(); ctx.moveTo(nx + 1.5, ny); ctx.lineTo(nx + 1.5, ny - 4); ctx.stroke();  // stem
-        }
-        ctx.restore();
+        const msx = W * 0.52, msy = ground(W * 0.52) + 34;
+        // the cook-fire + warm pool of light
+        const flk = 0.8 + Math.sin(tt * 8.5) * 0.12 + Math.sin(tt * 21) * 0.06;
+        const gp = ctx.createRadialGradient(msx, msy - 3, 2, msx, msy - 3, 60 * flk);
+        gp.addColorStop(0, 'rgba(255,160,70,0.34)'); gp.addColorStop(1, 'rgba(255,160,70,0)');
+        ctx.fillStyle = gp; ctx.beginPath(); ctx.ellipse(msx, msy, 66 * flk, 22 * flk, 0, 0, 6.283); ctx.fill();
+        // a diner: seated figure (noArms) + a BENT arm lifting a bowl to the mouth
+        const diner = (dx0, dy0, sc, dir, sh, hs, phase) => {
+          fig(dx0, dy0, sc, 'sit', phase, { shirt: sh, hairStyle: hs, dir, noArms: true });
+          const eat = Math.sin(tt * 1.4 + phase) * 0.5 + 0.5;                       // 0 low, 1 at the mouth
+          const shX = dx0 + dir * 3.2 * sc, shY = dy0 - 40 * (sc / 1.3);            // shoulder
+          const hX = dx0 + dir * 5 * sc, hY = dy0 - (20 + eat * 9) * (sc / 1.3);    // hand rises to mouth
+          const eX = dx0 + dir * 8 * sc, eY = dy0 - 26 * (sc / 1.3);                // elbow OUT (bend)
+          ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 2.6 * (sc / 1.3); ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(shX, shY); ctx.lineTo(eX, eY); ctx.stroke();  // upper arm → elbow
+          ctx.beginPath(); ctx.moveTo(eX, eY); ctx.lineTo(hX, hY); ctx.stroke();    // forearm → hand
+          ctx.fillStyle = 'rgb(70,46,26)'; ctx.beginPath(); ctx.ellipse(hX, hY, 3.2 * (sc / 1.3), 1.9 * (sc / 1.3), 0, 0, 6.283); ctx.fill();  // bowl
+          ctx.fillStyle = 'rgba(214,186,132,0.95)'; ctx.beginPath(); ctx.ellipse(hX, hY - 0.5, 2.2 * (sc / 1.3), 1.1 * (sc / 1.3), 0, 0, 6.283); ctx.fill();  // food
+        };
+        // back row (drawn first), then the fire + pot, then the front row
+        diner(msx - 20, msy - 9, 1.25, 1, '#1f4e8f', 'short', 0.4);
+        diner(msx + 20, msy - 9, 1.28, -1, '#7c2f6b', 'braid', 2.1);
+        // the fire + a cook-pot on a low tripod at the centre
+        ctx.strokeStyle = 'rgb(52,32,16)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(msx - 7, msy + 1); ctx.lineTo(msx, msy - 12); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(msx + 7, msy + 1); ctx.lineTo(msx, msy - 12); ctx.stroke();
+        ctx.fillStyle = 'rgb(44,38,34)'; ctx.beginPath(); ctx.ellipse(msx, msy - 6, 5, 3.4, 0, 0, Math.PI); ctx.fill(); ctx.fillRect(msx - 5, msy - 7.5, 10, 2);  // pot
+        ctx.fillStyle = `rgba(255,${Math.round(170 + 30 * flk)},80,0.95)`; ctx.beginPath(); ctx.ellipse(msx, msy + 1, 3.2, 5 * flk, 0, 0, 6.283); ctx.fill();   // flame licking up
+        ctx.fillStyle = 'rgba(255,240,180,0.9)'; ctx.beginPath(); ctx.ellipse(msx, msy + 2, 1.4, 2.6 * flk, 0, 0, 6.283); ctx.fill();
+        puffSmoke(msx, msy - 12, 0.28, nightA * 0.4);                               // supper steam
+        diner(msx - 15, msy + 10, 1.3, 1, '#c93a1e', 'long', 3.3);
+        diner(msx + 15, msy + 10, 1.26, -1, '#5a7d3a', 'short', 1.2);
+        diner(msx + 1, msy + 15, 0.9, 1, '#d68a1f', 'short', 5.0);                  // a child, closest to us
       }
       // (3) STARGAZERS — two figures lying back on the high bank, one arm
       //     raised, tracing the star stories across the night sky.
