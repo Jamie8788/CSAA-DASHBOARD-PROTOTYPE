@@ -205,8 +205,8 @@ function AnalyticsProView({ all, onSelect, setView }) {
       </div>
 
       {/* ────────── Coverage matrix ────────── */}
-      <Panel title="Coverage map — direction × pillar"
-             sub="Reads left to right by direction, top to bottom by pillar. Darker means stronger documented coverage. White cells are blind spots worth investigating.">
+      <Panel title="Coverage map — how deeply is each pillar documented?"
+             sub="Not just 'is something written' — that made every cell read ~100%. Each cell now averages documentation DEPTH: truly empty counts 0, a 'needs review' placeholder 20, a few words 45, a real paragraph 75, rich detail 100. Paler cells are thinner records worth strengthening.">
         <CoverageMatrix matrix={cov.matrix} directions={cov.directions} pillars={cov.pillars} />
       </Panel>
 
@@ -1450,85 +1450,91 @@ function PresentationMode({ overview, facts, comparison, duplicates, report, onC
 }
 
 
-// ---- THE RESEARCHER — an animated knowledge-keeper avatar (inspired by
-// ETH's "Digital Einstein"): she blinks and sways while idle, taps her pen and
-// looks up while THINKING, and her mouth moves in sync while the answer types
-// out. Pure canvas, ~90 lines, no assets. ----
+// ---- THE RESEARCHER — a polished animated knowledge-keeper portrait (SVG,
+// Digital-Einstein style). Idle: gentle breathing + natural blinks. Thinking:
+// eyes lift, thought-dots rise. Talking: her mouth moves while the answer
+// types out. All gradients/shading inline — no external assets. ----
 function ResearcherAvatar({ state }) {
-  const ref = useRefAP(null);
-  const stRef = useRefAP(state); stRef.current = state;
-  useEffectAP(() => {
-    const canvas = ref.current; if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const DPR = Math.min(2, window.devicePixelRatio || 1);
-    canvas.width = 116 * DPR; canvas.height = 132 * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    let raf = null, t0 = null;
-    function frame(time) {
-      raf = requestAnimationFrame(frame);
-      const t = (time - (t0 == null ? (t0 = time) : t0)) / 1000;
-      const s = stRef.current;
-      const cx = 58, sway = Math.sin(t * 0.9) * 1.6;
-      const tilt = s === 'thinking' ? Math.sin(t * 0.6) * 0.06 - 0.05 : Math.sin(t * 0.8) * 0.02;
-      ctx.clearRect(0, 0, 116, 132);
-      // warm halo behind her
-      const g = ctx.createRadialGradient(cx, 62, 6, cx, 62, 60);
-      g.addColorStop(0, 'rgba(212,160,23,0.20)'); g.addColorStop(1, 'rgba(212,160,23,0)');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, 116, 132);
-      ctx.save(); ctx.translate(cx + sway, 66); ctx.rotate(tilt);
-      // shoulders / ribbon shirt
-      ctx.fillStyle = '#7c2f6b';
-      ctx.beginPath(); ctx.moveTo(-30, 62); ctx.quadraticCurveTo(0, 26, 30, 62); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(245,232,200,0.9)'; ctx.fillRect(-16, 44, 32, 3);   // chest ribbon
-      // braids, one over each shoulder
-      ctx.strokeStyle = '#1a0e08'; ctx.lineWidth = 7; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(-16, 8); ctx.quadraticCurveTo(-22, 34, -18, 56); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(16, 8); ctx.quadraticCurveTo(22, 34, 18, 56); ctx.stroke();
-      // head
-      ctx.fillStyle = '#a3704a';
-      ctx.beginPath(); ctx.arc(0, 0, 22, 0, 6.283); ctx.fill();
-      // hair crown + centre part
-      ctx.fillStyle = '#1a0e08';
-      ctx.beginPath(); ctx.arc(0, -3, 23, Math.PI * 1.02, Math.PI * 1.98); ctx.fill();
-      ctx.strokeStyle = '#3a2410'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(0, -14); ctx.stroke();
-      // beaded headband
-      ctx.fillStyle = '#c93a1e'; ctx.fillRect(-22, -12, 44, 5);
-      ctx.fillStyle = '#d4a017';
-      for (let b = -18; b <= 18; b += 6) { ctx.beginPath(); ctx.arc(b, -9.5, 1.4, 0, 6.283); ctx.fill(); }
-      // round scholar glasses
-      ctx.strokeStyle = 'rgba(40,28,16,0.9)'; ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.arc(-8, -1, 6.5, 0, 6.283); ctx.stroke();
-      ctx.beginPath(); ctx.arc(8, -1, 6.5, 0, 6.283); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-1.5, -1); ctx.lineTo(1.5, -1); ctx.stroke();
-      // eyes: blink every ~3.4s; look UP while thinking
-      const blink = (t % 3.4) > 3.25 ? 0.12 : 1;
-      const lookY = s === 'thinking' ? -2.4 : 0;
-      ctx.fillStyle = '#241407';
-      ctx.beginPath(); ctx.ellipse(-8, -1 + lookY, 2.2, 2.6 * blink, 0, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(8, -1 + lookY, 2.2, 2.6 * blink, 0, 0, 6.283); ctx.fill();
-      // mouth: TALKS in sync while the answer types; small smile otherwise
-      ctx.strokeStyle = '#5a2c14'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
-      if (s === 'talking') {
-        const open = 1.2 + Math.abs(Math.sin(t * 11)) * 3.4;
-        ctx.fillStyle = '#5a2c14';
-        ctx.beginPath(); ctx.ellipse(0, 10, 3.4, open, 0, 0, 6.283); ctx.fill();
-      } else if (s === 'thinking') {
-        ctx.beginPath(); ctx.moveTo(-3, 11); ctx.lineTo(3, 10); ctx.stroke();   // pursed, considering
-      } else {
-        ctx.beginPath(); ctx.arc(0, 8, 5, 0.25 * Math.PI, 0.75 * Math.PI); ctx.stroke();  // smile
-      }
-      ctx.restore();
-      // her pen taps the desk while she thinks
-      if (s === 'thinking') {
-        const tap = Math.abs(Math.sin(t * 5)) * 5;
-        ctx.strokeStyle = '#8a6636'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(96, 122); ctx.lineTo(103, 110 - tap); ctx.stroke();
-        ctx.fillStyle = '#d4a017'; ctx.beginPath(); ctx.arc(103, 109 - tap, 1.6, 0, 6.283); ctx.fill();
-      }
-    }
-    raf = requestAnimationFrame(frame);
-    return () => { if (raf) cancelAnimationFrame(raf); };
-  }, []);
-  return <canvas ref={ref} className="ap-avatar" style={{ width: 116, height: 132 }} aria-label="The researcher" />;
+  return (
+    <svg className={`ap-av av-${state}`} viewBox="0 0 120 138" width="120" height="138" aria-label="The researcher">
+      <defs>
+        <radialGradient id="avHalo" cx="50%" cy="38%" r="60%">
+          <stop offset="0%" stopColor="rgba(212,160,23,0.28)" /><stop offset="100%" stopColor="rgba(212,160,23,0)" />
+        </radialGradient>
+        <linearGradient id="avSkin" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#b98157" /><stop offset="100%" stopColor="#96613c" />
+        </linearGradient>
+        <linearGradient id="avHair" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#2b1a10" /><stop offset="55%" stopColor="#120a05" />
+        </linearGradient>
+        <linearGradient id="avShirt" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#8d3f7b" /><stop offset="100%" stopColor="#5f2352" />
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="120" height="138" rx="16" fill="url(#avHalo)" />
+      <g className="ap-av-body">
+        {/* shoulders / ribbon shirt */}
+        <path d="M18 132 Q22 96 60 92 Q98 96 102 132 Z" fill="url(#avShirt)" />
+        <path d="M24 118 Q60 104 96 118" stroke="#f2e3c0" strokeWidth="3" fill="none" opacity="0.9" />
+        <path d="M26 125 Q60 111 94 125" stroke="#d4a017" strokeWidth="2" fill="none" opacity="0.8" />
+        {/* back hair behind the face */}
+        <path d="M32 44 Q30 20 60 18 Q90 20 88 44 L88 66 Q88 78 60 78 Q32 78 32 66 Z" fill="url(#avHair)" />
+        {/* braids over each shoulder, with tie bands */}
+        <path d="M36 52 Q28 78 32 108" stroke="url(#avHair)" strokeWidth="11" strokeLinecap="round" fill="none" />
+        <path d="M84 52 Q92 78 88 108" stroke="url(#avHair)" strokeWidth="11" strokeLinecap="round" fill="none" />
+        <path d="M33 76 q4 3 8 1 M31 90 q4 3 8 1" stroke="#3a2410" strokeWidth="1.6" fill="none" opacity="0.8" />
+        <path d="M87 76 q-4 3 -8 1 M89 90 q-4 3 -8 1" stroke="#3a2410" strokeWidth="1.6" fill="none" opacity="0.8" />
+        <rect x="27" y="103" width="11" height="5" rx="2.5" fill="#c93a1e" />
+        <rect x="82" y="103" width="11" height="5" rx="2.5" fill="#c93a1e" />
+        {/* face */}
+        <ellipse cx="60" cy="52" rx="24" ry="26" fill="url(#avSkin)" />
+        <ellipse cx="60" cy="58" rx="18" ry="16" fill="rgba(255,220,180,0.14)" />
+        {/* hairline with centre part + sheen */}
+        <path d="M36 48 Q37 24 60 22 Q83 24 84 48 Q80 34 60 33 Q40 34 36 48 Z" fill="url(#avHair)" />
+        <path d="M60 22 L60 33" stroke="#3a2410" strokeWidth="1.2" />
+        <path d="M44 27 Q52 23 58 24" stroke="rgba(255,255,255,0.14)" strokeWidth="2" fill="none" strokeLinecap="round" />
+        {/* beaded headband */}
+        <path d="M37 40 Q60 33 83 40 L83 46 Q60 39 37 46 Z" fill="#c93a1e" />
+        {[42,49,56,63,70,77].map((bx, i) => (
+          <circle key={i} cx={bx} cy={41.5 - Math.abs(bx - 60) * 0.06} r="1.7" fill={i % 2 ? '#d4a017' : '#f2e3c0'} />
+        ))}
+        {/* earrings */}
+        <circle cx="36" cy="62" r="2.6" fill="#3fa8a0" /><circle cx="84" cy="62" r="2.6" fill="#3fa8a0" />
+        {/* round scholar glasses with glint */}
+        <g className="ap-av-eyes">
+          <circle cx="50" cy="53" r="8" fill="rgba(255,255,255,0.10)" stroke="#7a5a30" strokeWidth="1.8" />
+          <circle cx="70" cy="53" r="8" fill="rgba(255,255,255,0.10)" stroke="#7a5a30" strokeWidth="1.8" />
+          <path d="M58 53 L62 53" stroke="#7a5a30" strokeWidth="1.8" />
+          <path d="M44.5 49 a7 7 0 0 1 5 -2.6" stroke="rgba(255,255,255,0.55)" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+          <g className="ap-av-pupils">
+            <circle cx="50" cy="53.5" r="2.6" fill="#241407" />
+            <circle cx="70" cy="53.5" r="2.6" fill="#241407" />
+            <circle cx="51" cy="52.6" r="0.8" fill="#fff" opacity="0.85" />
+            <circle cx="71" cy="52.6" r="0.8" fill="#fff" opacity="0.85" />
+          </g>
+          <g className="ap-av-lids">
+            <rect x="42" y="44" width="16" height="9" rx="4" fill="url(#avSkin)" />
+            <rect x="62" y="44" width="16" height="9" rx="4" fill="url(#avSkin)" />
+          </g>
+          {/* brows */}
+          <path className="ap-av-brow" d="M43 44 Q50 41 57 44" stroke="#241407" strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path className="ap-av-brow" d="M63 44 Q70 41 77 44" stroke="#241407" strokeWidth="2" fill="none" strokeLinecap="round" />
+        </g>
+        {/* nose + cheeks */}
+        <path d="M60 58 Q58.5 63 60 65" stroke="rgba(90,44,20,0.55)" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+        <ellipse cx="46" cy="63" rx="3.6" ry="2" fill="rgba(201,58,30,0.16)" />
+        <ellipse cx="74" cy="63" rx="3.6" ry="2" fill="rgba(201,58,30,0.16)" />
+        {/* mouth: smile at rest; ellipse pulses open while talking */}
+        <path className="ap-av-smile" d="M52 69 Q60 75 68 69" stroke="#5a2c14" strokeWidth="2.2" fill="none" strokeLinecap="round" />
+        <ellipse className="ap-av-mouth" cx="60" cy="70.5" rx="5" ry="3.4" fill="#4a2210" />
+        <path className="ap-av-mouth-tongue" d="M56 72 Q60 74.5 64 72" stroke="#c96a5a" strokeWidth="2" fill="none" strokeLinecap="round" />
+      </g>
+      {/* thought dots while thinking */}
+      <g className="ap-av-dots" fill="#a67c12">
+        <circle cx="97" cy="30" r="2.2" /><circle cx="104" cy="21" r="3" /><circle cx="112" cy="11" r="3.8" />
+      </g>
+    </svg>
+  );
 }
 
 function AskTheAtlas({ onPick }) {
