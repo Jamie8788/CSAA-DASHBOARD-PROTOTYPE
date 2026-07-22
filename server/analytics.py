@@ -234,11 +234,44 @@ def cluster_communities(records: list[dict], n_clusters: int = 5) -> dict:
     return {"clusters": out, "k": k}
 
 
+_PLACEHOLDERS = {"missing information", "needs review", "n/a", "no definite value", "tbd", "-", "—"}
+
+
+def _depth_score(text) -> float:
+    """How thoroughly ONE field is documented, 0..1.
+
+    The old matrix asked only "is anything written?" — since almost every cell
+    holds SOMETHING (even the word 'needs review'), every rate rounded to
+    ~100% and the map was useless. This scores documentation DEPTH instead:
+      0.00  truly empty
+      0.20  a placeholder ('needs review', 'missing information', …)
+      0.45  a stub (a few words / a bare link)
+      0.75  a real paragraph
+      1.00  rich documentation (several sentences of substance)
+    """
+    s = str(text or "").strip()
+    if not s:
+        return 0.0
+    if s.lower() in _PLACEHOLDERS:
+        return 0.15
+    # strip URLs so a bare link doesn't masquerade as substance
+    import re as _re
+    prose = _re.sub(r"https?://\S+", " ", s).strip()
+    n = len(prose)
+    if n < 60:
+        return 0.35
+    if n < 220:
+        return 0.6
+    if n < 550:
+        return 0.8
+    return 1.0
+
+
 def coverage_matrix(records: list[dict]) -> dict:
-    """Direction × Pillar matrix of coverage rates (0..1)."""
+    """Direction × Pillar matrix of documentation DEPTH (0..1, quality-weighted)."""
     df = _records_to_df(records)
     if df.empty:
-        return {"matrix": {}, "directions": [], "pillars": PILLAR_KEYS}
+        return {"matrix": {}, "directions": [], "pillars": PILLAR_KEYS, "depthWeighted": True}
     matrix: dict[str, dict[str, float]] = {}
     for d in DIRECTIONS:
         sub = df[df["direction"] == d]
@@ -246,10 +279,10 @@ def coverage_matrix(records: list[dict]) -> dict:
             matrix[d] = {k: 0.0 for k in PILLAR_KEYS}
             continue
         matrix[d] = {
-            k: round(float(sub[f"has{k.capitalize()}"].sum()) / len(sub), 3)
+            k: round(float(sub[k].map(_depth_score).mean()) if k in sub.columns else 0.0, 3)
             for k in PILLAR_KEYS
         }
-    return {"matrix": matrix, "directions": DIRECTIONS, "pillars": PILLAR_KEYS}
+    return {"matrix": matrix, "directions": DIRECTIONS, "pillars": PILLAR_KEYS, "depthWeighted": True}
 
 
 def quality_report(records: list[dict]) -> dict:

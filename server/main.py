@@ -1030,6 +1030,28 @@ def an_ask(body: AskIn) -> dict:
         f"- {r.get('name')} ({r.get('direction') or '—'}): {r.get('snippet')}"
         for r in (retrieval.get("results") or [])[:6]
     )
+    # If the question NAMES a community, hand the model that community's FULL
+    # row (every field, trimmed) — so asking about one place gets a real,
+    # drawer-level answer instead of a one-line snippet.
+    ql = q.lower()
+    full_rows = []
+    for rec in records:
+        nm = str(rec.get("name") or "").strip()
+        if len(nm) >= 5 and nm.lower() in ql:
+            fields = {}
+            for fk in ("direction", "type", "population", "physical", "mental", "spiritual",
+                       "emotional", "youth", "survivors", "connect", "contact",
+                       "strategicPlan", "agm", "financials"):
+                fv = str(rec.get(fk) or "").strip()
+                if fv:
+                    fields[fk] = fv[:900]
+            full_rows.append({"name": nm, **fields})
+        if len(full_rows) >= 2:
+            break
+    full_block = ""
+    if full_rows:
+        full_block = ("\nFULL SHEET ROW(S) for the community/communities named in the question "
+                      "(answer from these in detail):\n" + json.dumps(full_rows, default=str) + "\n")
     system = (
         "You are the research assistant for the Mino Bimaadiziwin Community "
         "Services Atlas — First Nations community health & wellness data. "
@@ -1042,11 +1064,12 @@ def an_ask(body: AskIn) -> dict:
         "no markdown headers or bullets unless listing communities."
     )
     user = (
-        f"DATA DIGEST (computed live from the master sheet):\n{json.dumps(digest, default=str)}\n\n"
+        f"DATA DIGEST (computed live from the master sheet):\n{json.dumps(digest, default=str)}\n"
+        f"{full_block}\n"
         f"SHEET PASSAGES most relevant to the question:\n{snippets or '(none found)'}\n\n"
         f"QUESTION: {q}"
     )
-    answer = llm.chat(system, user, max_tokens=450, temperature=0.2)
+    answer = llm.chat(system, user, max_tokens=520, temperature=0.2)
     if not answer:
         retrieval["ai"] = False
         return retrieval
