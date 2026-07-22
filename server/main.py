@@ -993,6 +993,67 @@ def an_search(q: str, limit: int = 8) -> dict:
     return analytics.semantic_search(_build_records(), q, limit=limit)
 
 
+class AskIn(BaseModel):
+    question: str = Field(min_length=1, max_length=600)
+
+
+@app.post("/api/analytics/ask")
+def an_ask(body: AskIn) -> dict:
+    """AI research assistant, GROUNDED in the sheet. We compute the real
+    numbers server-side (overview + data-quality report) and retrieve the most
+    relevant sheet passages, then ask the configured LLM (Groq or xAI Grok —
+    same settings box, key auto-detected) to answer ONLY from that evidence,
+    citing communities and flagging data gaps. With no key configured we fall
+    back to the pure-retrieval answer, so the box always works."""
+    import json
+    from . import llm
+    records = _build_records()
+    q = body.question.strip()
+    retrieval = analytics.semantic_search(records, q, limit=6)
+    if not llm.available():
+        retrieval["ai"] = False
+        return retrieval
+
+    ov = analytics.overview(records)
+    quality = analytics.quality_report(records)
+    digest = {
+        "communities_total": ov.get("total"),
+        "by_direction": ov.get("byDirection"),
+        "pillars_documented_counts": ov.get("pillarsCovered"),
+        "all_four_pillars": ov.get("hasAllPillars"),
+        "population_documented_for": ov.get("populationKnown"),
+        "population_total_where_documented": ov.get("populationTotal"),
+        "avg_field_completeness_0to1": ov.get("completenessScore"),
+        "data_quality_issues": quality,
+    }
+    snippets = "\n".join(
+        f"- {r.get('name')} ({r.get('direction') or '—'}): {r.get('snippet')}"
+        for r in (retrieval.get("results") or [])[:6]
+    )
+    system = (
+        "You are the research assistant for the Mino Bimaadiziwin Community "
+        "Services Atlas — First Nations community health & wellness data. "
+        "Answer ONLY from the DATA DIGEST and SHEET PASSAGES provided. Never "
+        "invent numbers, programs, or communities. Cite community names when "
+        "you use their passages. The sheet has known gaps — when the digest's "
+        "data_quality_issues affect the answer (missing population, "
+        "needs-review fields), say so plainly in one short sentence. Write "
+        "warmly and simply (elders read this). 120 words max. Plain text only — "
+        "no markdown headers or bullets unless listing communities."
+    )
+    user = (
+        f"DATA DIGEST (computed live from the master sheet):\n{json.dumps(digest, default=str)}\n\n"
+        f"SHEET PASSAGES most relevant to the question:\n{snippets or '(none found)'}\n\n"
+        f"QUESTION: {q}"
+    )
+    answer = llm.chat(system, user, max_tokens=450, temperature=0.2)
+    if not answer:
+        retrieval["ai"] = False
+        return retrieval
+    return {"answer": answer, "results": (retrieval.get("results") or [])[:4],
+            "ai": True, "provider": llm.provider_label()}
+
+
 @app.get("/api/analytics/compare")
 def an_compare(regions: str | None = None) -> dict:
     region_list = [r.strip() for r in regions.split(",")] if regions else None

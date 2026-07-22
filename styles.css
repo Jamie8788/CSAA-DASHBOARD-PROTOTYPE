@@ -5577,6 +5577,27 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .ap-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .ap-dot.on  { background: #6b8d6b; box-shadow: 0 0 0 2px rgba(107,141,107,0.2); }
 .ap-dot.off { background: #d9cfba; }
+.ap-dot.mid { background: #d4a017; box-shadow: 0 0 0 2px rgba(212,160,23,0.22); }   /* "needs review" — not documented, not absent */
+/* three-state comparison cells: dot + evidence-depth bar + review note */
+.ap-cellstate { display: inline-flex; align-items: center; gap: 7px; }
+.ap-depth { width: 46px; height: 4px; border-radius: 2px; background: var(--paper-deep, #ece2cc); overflow: hidden; display: inline-block; }
+.ap-depth i { display: block; height: 100%; background: #6b8d6b; border-radius: 2px; }
+.ap-cell-note { font-family: var(--mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: #a67c12; }
+.ap-cmp-hint { font-weight: 400; font-size: 10.5px; color: var(--ink-3); display: block; }
+.ap-cmp-integ { font-family: var(--sans); font-size: 12.5px; }
+.ap-cmp-integ em { font-style: normal; color: #a67c12; font-size: 11px; }
+.ap-integ-bar { width: 70px; height: 6px; border-radius: 3px; background: var(--paper-deep, #ece2cc); display: inline-block; vertical-align: middle; margin-right: 6px; overflow: hidden; }
+.ap-integ-bar i { display: block; height: 100%; background: linear-gradient(90deg, #b8351e, #d4a017 55%, #6b8d6b); border-radius: 3px; }
+.ap-cmp-warn { font-family: var(--sans); font-size: 12px; font-weight: 500; color: #8a5a10; background: rgba(212,160,23,0.10); padding: 8px 12px; border-radius: 8px; }
+/* the animated researcher avatar beside the chat */
+.ap-chat-avatar { display: grid; grid-template-columns: 132px 1fr; grid-template-rows: auto auto auto auto; column-gap: 16px; }
+.ap-chat-avatar .ap-avatar-col { grid-row: 1 / span 4; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; }
+.ap-chat-avatar .ap-chat-window, .ap-chat-avatar .ap-chat-input, .ap-chat-avatar .ap-chat-suggested, .ap-chat-avatar .ap-fine { grid-column: 2; }
+.ap-avatar { border-radius: 14px; background: radial-gradient(120% 100% at 50% 20%, rgba(212,160,23,0.08), transparent); }
+.ap-avatar-name { font-family: var(--serif); font-size: 14.5px; color: var(--ink); }
+.ap-avatar-mode { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); text-align: center; }
+.ap-avatar-mode.ai { color: #7c2f6b; }
+@media (max-width: 640px) { .ap-chat-avatar { grid-template-columns: 1fr; } .ap-chat-avatar .ap-avatar-col { grid-row: auto; } .ap-chat-avatar .ap-chat-window, .ap-chat-avatar .ap-chat-input, .ap-chat-avatar .ap-chat-suggested, .ap-chat-avatar .ap-fine { grid-column: 1; } }
 .ap-spot-preview { font-size: 13px; color: var(--ink-2); margin: 4px 0; line-height: 1.5; }
 .ap-spot-extra { margin: 8px 0; }
 .ap-spot-extra summary { cursor: pointer; font-size: 13px; color: var(--ink-3); font-weight: 600; }

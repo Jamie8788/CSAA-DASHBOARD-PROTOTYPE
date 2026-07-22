@@ -1222,10 +1222,30 @@ function CompareTwo({ all, value, onChange }) {
     { k: 'financials',  label: 'Financial statements', truthy: true },
   ];
 
+  // honest three-state cell: a pillar isn't just on/off — the sheet may hold
+  // real text (documented), a "needs review" placeholder, or nothing at all.
+  // A plain green/grey dot hid that difference and made comparisons misleading.
+  const FIELD_OF = { hasPhysical: 'physical', hasMental: 'mental', hasSpiritual: 'spiritual', hasEmotional: 'emotional', hasYouth: 'youth', hasSurvivors: 'survivors' };
+  function pillarState(c, flagKey) {
+    const field = FIELD_OF[flagKey];
+    const st = window.fieldStatus ? window.fieldStatus(c, field) : (c[flagKey] ? 'ok' : 'empty');
+    if (st === 'ok') return { cls: 'on', label: 'documented', depth: Math.min(1, String(c[field] || '').length / 400) };
+    if (st === 'review') return { cls: 'mid', label: 'needs review', depth: 0 };
+    return { cls: 'off', label: st === 'missing' ? 'marked missing' : 'not documented', depth: 0 };
+  }
   function cell(c, row) {
     if (!c) return <span className="muted">—</span>;
     const v = c[row.k];
-    if (row.dot) return <span className={`ap-dot ${v ? 'on' : 'off'}`} />;
+    if (row.dot) {
+      const st = pillarState(c, row.k);
+      return (
+        <span className="ap-cellstate" title={st.label}>
+          <span className={`ap-dot ${st.cls}`} />
+          {st.cls === 'on' && <span className="ap-depth"><i style={{ width: `${Math.max(8, st.depth * 100)}%` }} /></span>}
+          {st.cls === 'mid' && <span className="ap-cell-note">review</span>}
+        </span>
+      );
+    }
     if (row.truthy) {
       const filled = !!(v && String(v).trim() && !['missing information', 'needs review', 'n/a'].includes(String(v).trim().toLowerCase()));
       return <span className={`ap-dot ${filled ? 'on' : 'off'}`} />;
@@ -1239,6 +1259,19 @@ function CompareTwo({ all, value, onChange }) {
     return ['Physical','Mental','Spiritual','Emotional','Youth','Survivors']
       .filter((p) => c['has' + p]).length;
   }
+  // how much of this community's row in the sheet is actually filled in —
+  // shown beside the score so a lopsided comparison is called out honestly
+  function integrity(c) {
+    if (!c) return null;
+    const fields = ['physical','mental','spiritual','emotional','youth','survivors','contact','connect','strategicPlan','agm','financials'];
+    let okN = 0, revN = 0;
+    for (const f of fields) {
+      const st = window.fieldStatus ? window.fieldStatus(c, f) : (c[f] ? 'ok' : 'empty');
+      if (st === 'ok') okN++; else if (st === 'review') revN++;
+    }
+    return { pct: Math.round((okN / fields.length) * 100), review: revN };
+  }
+  const iA = integrity(a), iB = integrity(b);
 
   return (
     <div className="ap-compare2">
@@ -1267,6 +1300,14 @@ function CompareTwo({ all, value, onChange }) {
               <td className="ap-cmp-score">{score(a)}/6</td>
               <td className="ap-cmp-score">{score(b)}/6</td>
             </tr>
+            <tr>
+              <th className="ap-cmp-meta">Sheet completeness <span className="ap-cmp-hint">(how much of each row is filled in — a fair-comparison check)</span></th>
+              <td className="ap-cmp-integ">{iA ? <><span className="ap-integ-bar"><i style={{ width: iA.pct + '%' }} /></span> {iA.pct}%{iA.review > 0 && <em> · {iA.review} under review</em>}</> : '—'}</td>
+              <td className="ap-cmp-integ">{iB ? <><span className="ap-integ-bar"><i style={{ width: iB.pct + '%' }} /></span> {iB.pct}%{iB.review > 0 && <em> · {iB.review} under review</em>}</> : '—'}</td>
+            </tr>
+            {iA && iB && Math.abs(iA.pct - iB.pct) >= 25 && (
+              <tr><th colSpan={3} className="ap-cmp-warn">⚠ These two rows are unevenly documented in the sheet ({iA.pct}% vs {iB.pct}%) — missing dots below may mean "not recorded yet", not "doesn't exist".</th></tr>
+            )}
           </thead>
           <tbody>
             {rows.map((row) => (
@@ -1409,35 +1450,150 @@ function PresentationMode({ overview, facts, comparison, duplicates, report, onC
 }
 
 
+// ---- THE RESEARCHER — an animated knowledge-keeper avatar (inspired by
+// ETH's "Digital Einstein"): she blinks and sways while idle, taps her pen and
+// looks up while THINKING, and her mouth moves in sync while the answer types
+// out. Pure canvas, ~90 lines, no assets. ----
+function ResearcherAvatar({ state }) {
+  const ref = useRefAP(null);
+  const stRef = useRefAP(state); stRef.current = state;
+  useEffectAP(() => {
+    const canvas = ref.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const DPR = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = 116 * DPR; canvas.height = 132 * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    let raf = null, t0 = null;
+    function frame(time) {
+      raf = requestAnimationFrame(frame);
+      const t = (time - (t0 == null ? (t0 = time) : t0)) / 1000;
+      const s = stRef.current;
+      const cx = 58, sway = Math.sin(t * 0.9) * 1.6;
+      const tilt = s === 'thinking' ? Math.sin(t * 0.6) * 0.06 - 0.05 : Math.sin(t * 0.8) * 0.02;
+      ctx.clearRect(0, 0, 116, 132);
+      // warm halo behind her
+      const g = ctx.createRadialGradient(cx, 62, 6, cx, 62, 60);
+      g.addColorStop(0, 'rgba(212,160,23,0.20)'); g.addColorStop(1, 'rgba(212,160,23,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, 116, 132);
+      ctx.save(); ctx.translate(cx + sway, 66); ctx.rotate(tilt);
+      // shoulders / ribbon shirt
+      ctx.fillStyle = '#7c2f6b';
+      ctx.beginPath(); ctx.moveTo(-30, 62); ctx.quadraticCurveTo(0, 26, 30, 62); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(245,232,200,0.9)'; ctx.fillRect(-16, 44, 32, 3);   // chest ribbon
+      // braids, one over each shoulder
+      ctx.strokeStyle = '#1a0e08'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-16, 8); ctx.quadraticCurveTo(-22, 34, -18, 56); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(16, 8); ctx.quadraticCurveTo(22, 34, 18, 56); ctx.stroke();
+      // head
+      ctx.fillStyle = '#a3704a';
+      ctx.beginPath(); ctx.arc(0, 0, 22, 0, 6.283); ctx.fill();
+      // hair crown + centre part
+      ctx.fillStyle = '#1a0e08';
+      ctx.beginPath(); ctx.arc(0, -3, 23, Math.PI * 1.02, Math.PI * 1.98); ctx.fill();
+      ctx.strokeStyle = '#3a2410'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(0, -14); ctx.stroke();
+      // beaded headband
+      ctx.fillStyle = '#c93a1e'; ctx.fillRect(-22, -12, 44, 5);
+      ctx.fillStyle = '#d4a017';
+      for (let b = -18; b <= 18; b += 6) { ctx.beginPath(); ctx.arc(b, -9.5, 1.4, 0, 6.283); ctx.fill(); }
+      // round scholar glasses
+      ctx.strokeStyle = 'rgba(40,28,16,0.9)'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(-8, -1, 6.5, 0, 6.283); ctx.stroke();
+      ctx.beginPath(); ctx.arc(8, -1, 6.5, 0, 6.283); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-1.5, -1); ctx.lineTo(1.5, -1); ctx.stroke();
+      // eyes: blink every ~3.4s; look UP while thinking
+      const blink = (t % 3.4) > 3.25 ? 0.12 : 1;
+      const lookY = s === 'thinking' ? -2.4 : 0;
+      ctx.fillStyle = '#241407';
+      ctx.beginPath(); ctx.ellipse(-8, -1 + lookY, 2.2, 2.6 * blink, 0, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(8, -1 + lookY, 2.2, 2.6 * blink, 0, 0, 6.283); ctx.fill();
+      // mouth: TALKS in sync while the answer types; small smile otherwise
+      ctx.strokeStyle = '#5a2c14'; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+      if (s === 'talking') {
+        const open = 1.2 + Math.abs(Math.sin(t * 11)) * 3.4;
+        ctx.fillStyle = '#5a2c14';
+        ctx.beginPath(); ctx.ellipse(0, 10, 3.4, open, 0, 0, 6.283); ctx.fill();
+      } else if (s === 'thinking') {
+        ctx.beginPath(); ctx.moveTo(-3, 11); ctx.lineTo(3, 10); ctx.stroke();   // pursed, considering
+      } else {
+        ctx.beginPath(); ctx.arc(0, 8, 5, 0.25 * Math.PI, 0.75 * Math.PI); ctx.stroke();  // smile
+      }
+      ctx.restore();
+      // her pen taps the desk while she thinks
+      if (s === 'thinking') {
+        const tap = Math.abs(Math.sin(t * 5)) * 5;
+        ctx.strokeStyle = '#8a6636'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(96, 122); ctx.lineTo(103, 110 - tap); ctx.stroke();
+        ctx.fillStyle = '#d4a017'; ctx.beginPath(); ctx.arc(103, 109 - tap, 1.6, 0, 6.283); ctx.fill();
+      }
+    }
+    raf = requestAnimationFrame(frame);
+    return () => { if (raf) cancelAnimationFrame(raf); };
+  }, []);
+  return <canvas ref={ref} className="ap-avatar" style={{ width: 116, height: 132 }} aria-label="The researcher" />;
+}
+
 function AskTheAtlas({ onPick }) {
   const [q, setQ] = useStateAP('');
   const [thinking, setThinking] = useStateAP(false);
+  const [typing, setTyping] = useStateAP(false);
+  const [aiOn, setAiOn] = useStateAP(null);        // null until first answer; then true (LLM) / false (retrieval)
   const [convo, setConvo] = useStateAP([
-    { role: 'bot', text: "Hi — I only know what the master sheet says. Ask me about programs, services, communities, or quote a topic and I'll find what's documented." },
+    { role: 'bot', text: "Aaniin — I'm the atlas researcher. I compute everything live from the master sheet, gaps and all. Ask me about programs, coverage, or what's missing." },
   ]);
   const inputRef = useRefAP(null);
+  const typeTimer = useRefAP(null);
+  useEffectAP(() => () => { if (typeTimer.current) clearInterval(typeTimer.current); }, []);
+
+  // typewriter: reveal the bot's answer while the avatar talks
+  function typeOut(full, results, meta) {
+    setTyping(true);
+    setConvo((c) => [...c, { role: 'bot', text: '', results: [], meta }]);
+    let i = 0;
+    typeTimer.current = setInterval(() => {
+      i = Math.min(full.length, i + 3);
+      const done = i >= full.length;
+      setConvo((c) => {
+        const copy = c.slice();
+        copy[copy.length - 1] = { role: 'bot', text: full.slice(0, i), results: done ? results : [], meta };
+        return copy;
+      });
+      if (done) { clearInterval(typeTimer.current); typeTimer.current = null; setTyping(false); }
+    }, 24);
+  }
 
   async function ask() {
     const query = q.trim();
-    if (!query) return;
+    if (!query || thinking || typing) return;
     setConvo((c) => [...c, { role: 'user', text: query }]);
     setQ('');
     setThinking(true);
     try {
-      const r = await fetch('/api/analytics/search?q=' + encodeURIComponent(query) + '&limit=6');
-      const data = r.ok ? await r.json() : { answer: 'I had trouble searching just now. Please try again.', results: [] };
-      setConvo((c) => [...c, { role: 'bot', text: data.answer || '(no answer)', results: data.results || [] }]);
+      const r = await fetch('/api/analytics/ask', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: query }),
+      });
+      const data = r.ok ? await r.json() : { answer: 'I had trouble reading the sheet just now. Please try again.', results: [] };
+      setAiOn(!!data.ai);
+      setThinking(false);
+      typeOut(data.answer || '(no answer)', data.results || [], { ai: !!data.ai, provider: data.provider });
     } catch (e) {
+      setThinking(false);
       setConvo((c) => [...c, { role: 'bot', text: 'Network hiccup — please try again.' }]);
     } finally {
-      setThinking(false);
       setTimeout(() => inputRef.current && inputRef.current.focus(), 50);
     }
   }
   function suggested(s) { setQ(s); setTimeout(ask, 50); }
+  const avatarState = thinking ? 'thinking' : (typing ? 'talking' : 'idle');
 
   return (
-    <div className="ap-chat">
+    <div className="ap-chat ap-chat-avatar">
+      <div className="ap-avatar-col">
+        <ResearcherAvatar state={avatarState} />
+        <div className="ap-avatar-name">The Researcher</div>
+        <div className={`ap-avatar-mode ${aiOn ? 'ai' : ''}`}>
+          {aiOn == null ? 'grounded in the sheet' : aiOn ? '✦ AI · grounded in the sheet' : 'retrieval · quotes the sheet'}
+        </div>
+      </div>
       <div className="ap-chat-window">
         {convo.map((m, i) => (
           <div key={i} className={`ap-msg ${m.role}`}>
@@ -1471,16 +1627,22 @@ function AskTheAtlas({ onPick }) {
           onKeyDown={(e) => e.key === 'Enter' && ask()}
           placeholder="Ask anything about the communities…"
         />
-        <button className="ap-send" onClick={ask} disabled={!q.trim() || thinking}>Ask</button>
+        <button className="ap-send" onClick={ask} disabled={!q.trim() || thinking || typing}>Ask</button>
       </div>
       <div className="ap-chat-suggested">
-        {['Who supports survivors?', 'Diabetes programs', 'Youth mental health', 'Traditional medicine'].map((s) => (
+        {['Who supports survivors?', 'Where are the biggest data gaps?', 'Youth mental health', 'How complete is the sheet?'].map((s) => (
           <button key={s} onClick={() => suggested(s)}>{s}</button>
         ))}
       </div>
       <p className="ap-fine">
-        This assistant uses pure retrieval — it only quotes the sheet, never makes things up, and always cites where the answer came from.
+        Every answer is grounded in the master sheet: the numbers are computed live, the passages are quoted with their community, and known
+        data gaps are said out loud — never papered over. With an AI key configured (Groq or Grok, Admin → AI), the researcher explains;
+        without one she quotes the sheet directly.
       </p>
     </div>
   );
 }
+
+// (exported for the standalone verification harness + reuse)
+window.AskTheAtlas = AskTheAtlas;
+window.CompareTwoCommunities = CompareTwo;
