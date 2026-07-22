@@ -2272,35 +2272,8 @@ function drawScene(ctx, W, H, p, tt, now) {
         drawArbour();
         dancers.filter(dd => dd.y >= paY).sort((A, B) => A.y - B.y).forEach(drawDancer);  // FRONT ring (in front)
 
-        // ---- POTATO DANCE (a favourite pow wow SPECIAL): a couple dance cheek
-        //   to cheek balancing a potato BETWEEN THEIR FOREHEADS — last pair not
-        //   to drop it wins. Set well apart from the main circle so it reads as
-        //   its own thing. ----
-        {
-          const ptX = paX - paR * 2.2, ptY = paY + paR * 0.42;
-          const sway = Math.sin(tt * 1.5) * 4;                      // the pair sway together, shuffling
-          const step = Math.abs(Math.sin(tt * 3)) * 1.5;           // little dance bob
-          earth(ptX, ptY + 6, 32);
-          // two dancers STANDING close, facing each other (bigger so they read)
-          fig(ptX - 10 + sway, ptY - step, 1.42, 'idle', 0.5, { shirt: '#b8351e', hairStyle: 'braid', dir: 1, noArms: true });
-          fig(ptX + 10 + sway, ptY - step, 1.42, 'idle', 2.0, { shirt: '#1f6ea0', hairStyle: 'long', dir: -1, noArms: true });
-          const shy = ptY - step - 34;                             // shoulder height
-          ctx.strokeStyle = '#a3704a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-          // inside arms clasped on each other's shoulders
-          ctx.beginPath(); ctx.moveTo(ptX - 12 + sway, shy); ctx.lineTo(ptX + 5 + sway, shy - 3); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(ptX + 12 + sway, shy); ctx.lineTo(ptX - 5 + sway, shy - 3); ctx.stroke();
-          // outside arms out for balance
-          ctx.beginPath(); ctx.moveTo(ptX - 12 + sway, shy + 1); ctx.lineTo(ptX - 22 + sway, shy + 6); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(ptX + 12 + sway, shy + 1); ctx.lineTo(ptX + 22 + sway, shy + 6); ctx.stroke();
-          // the POTATO pinched BETWEEN their foreheads (never on a head)
-          const fhy = ptY - step - 58;
-          ctx.fillStyle = nd('#caa063');
-          ctx.beginPath(); ctx.ellipse(ptX + sway, fhy, 3.6, 2.8, 0.3, 0, 6.283); ctx.fill();
-          ctx.strokeStyle = nd('#8a6a38'); ctx.lineWidth = 0.6; ctx.stroke();
-          ctx.fillStyle = nd('#7a5a30');                           // a couple of potato "eyes"
-          ctx.beginPath(); ctx.arc(ptX + sway - 1, fhy - 0.5, 0.5, 0, 6.283); ctx.fill();
-          ctx.beginPath(); ctx.arc(ptX + sway + 1.4, fhy + 0.6, 0.5, 0, 6.283); ctx.fill();
-        }
+        // (the potato-dance special was removed at Hassan's request — it read
+        //  as inappropriate)
 
         // ---- NEAR-SIDE CROWD (drawn after the dancers — they're in front):
         //   one blanket family on the right, and the kid dancing along,
