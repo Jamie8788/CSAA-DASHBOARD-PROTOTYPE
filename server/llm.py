@@ -20,6 +20,11 @@ except Exception:  # pragma: no cover
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
+# xAI ("Grok") is also OpenAI-compatible. If the configured key is an xAI key
+# (they start with "xai-"), we talk to x.ai instead of Groq — so whichever of
+# the two the admin pastes into the same settings box Just Works.
+XAI_URL = "https://api.x.ai/v1/chat/completions"
+XAI_MODEL = os.environ.get("XAI_MODEL", "grok-3-mini")
 _RUNTIME_KEY = {"key": None}   # may be set from CMS settings at runtime
 
 
@@ -28,7 +33,23 @@ def set_key(key: str | None):
 
 
 def _key() -> str | None:
-    return _RUNTIME_KEY["key"] or (os.environ.get("GROQ_API_KEY") or "").strip() or None
+    return (_RUNTIME_KEY["key"]
+            or (os.environ.get("GROQ_API_KEY") or "").strip()
+            or (os.environ.get("GROK_API_KEY") or "").strip()      # common spelling for the xAI key
+            or (os.environ.get("XAI_API_KEY") or "").strip()
+            or None)
+
+
+def _provider(key: str) -> tuple[str, str, str]:
+    """(url, model, label) for the configured key."""
+    if key.startswith("xai-"):
+        return XAI_URL, XAI_MODEL, "grok"
+    return GROQ_URL, GROQ_MODEL, "groq"
+
+
+def provider_label() -> str | None:
+    key = _key()
+    return _provider(key)[2] if key else None
 
 
 def available() -> bool:
@@ -39,10 +60,11 @@ def chat(system: str, user: str, max_tokens: int = 700, temperature: float = 0.0
     key = _key()
     if not key:
         return None
+    url, model, _label = _provider(key)
     try:
-        r = requests.post(GROQ_URL, timeout=30,
+        r = requests.post(url, timeout=45,
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            json={"model": GROQ_MODEL, "temperature": temperature, "max_tokens": max_tokens,
+            json={"model": model, "temperature": temperature, "max_tokens": max_tokens,
                   "messages": [{"role": "system", "content": system},
                                {"role": "user", "content": user}]})
         if r.status_code != 200:
