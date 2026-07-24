@@ -23,42 +23,49 @@ const _F7 = [
     sub: 'Since time out of memory',
     body: 'For thousands of years before any map was drawn of this place, nations lived here — with their own languages, laws, medicines, trade routes and ways of caring for one another. Not one people, but many. The land was not empty and it was never silent.',
     era: 'Time immemorial', accent: '#d4a017', scene: 'land',
+    geo: { c: [47.6, -84.0], z: 5 }, tiles: 'terrain',
   },
   {
     n: 2, key: 'treaty', title: 'The Agreements',
     sub: 'Nation to nation',
     body: 'Newcomers arrived, and agreements were made — wampum, and later written treaties. They were understood by the nations here as a relationship between equals: to share the land, not to surrender it. That understanding and the written text did not say the same thing.',
     era: '1600s – 1900s', accent: '#c07a1e', scene: 'contact',
+    geo: { c: [46.3, -72.0], z: 5 }, tiles: 'terrain',
   },
   {
     n: 3, key: 'act', title: 'The Law',
     sub: 'A statute over a people',
     body: 'In 1876 Canada passed the Indian Act — one law placed over hundreds of distinct nations. It defined who counted as "Indian," controlled movement, governance and land, and for decades banned ceremonies. Much of it is still in force today.',
     era: '1876 onward', accent: '#7c6a8f', scene: 'law',
+    geo: { c: [45.42, -75.70], z: 8 }, tiles: 'dark',
   },
   {
     n: 4, key: 'schools', title: 'The Taking',
     sub: 'When the children were taken',
     body: 'Over more than a century, more than 150,000 First Nations, Inuit and Métis children were taken from their families to residential schools. Thousands never came home. The last school closed in 1996. In 2015 the Truth and Reconciliation Commission called it cultural genocide.',
     era: '1831 – 1996', accent: '#c2571e', scene: 'shoes', heavy: true,
+    geo: { c: [56.0, -96.0], z: 3.6 }, tiles: 'dark',
   },
   {
     n: 5, key: 'scoop', title: 'And Again',
     sub: 'The taking did not stop at the school door',
     body: 'From the 1950s, thousands more children were removed by child welfare — the period known as the Sixties Scoop — and placed far from their nations. Today Indigenous children remain vastly over-represented in care. This is not only history.',
     era: '1950s – today', accent: '#8f5a3a', scene: 'scoop', heavy: true,
+    geo: { c: [52.0, -106.0], z: 4.4 }, tiles: 'dark',
   },
   {
     n: 6, key: 'truth', title: 'The Telling',
     sub: 'Survivors spoke, and it was written down',
     body: 'Survivors testified. Between 2008 and 2015 the Truth and Reconciliation Commission gathered thousands of statements and issued 94 Calls to Action. September 30 is now a national day of truth and reconciliation. The record exists because survivors made it exist.',
     era: '2008 – 2015', accent: '#e0a53a', scene: 'voices',
+    geo: { c: [49.9, -97.14], z: 6 }, tiles: 'dark',
   },
   {
     n: 7, key: 'now', title: 'The Return',
     sub: 'Languages, ceremony, and care coming home',
     body: 'Nations are running their own health services, child welfare, schools and language programs. Elders teach. Youth go out on the land. This is not recovery from the past tense — it is people rebuilding, right now, on their own terms.',
     era: 'Now', accent: '#d4a017', scene: 'return',
+    geo: { c: [47.2, -82.0], z: 5.4 }, tiles: 'terrain',
   },
 ];
 
@@ -103,6 +110,88 @@ function SevenFiresView({ all, setView, onSelect }) {
     window.addEventListener('resize', onScroll);
     return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); };
   }, []);
+
+  // ---- THE MAP UNDERNEATH: a real GIS basemap that flies across the actual
+  //   territory as the story moves, with the animation painted over it. ----
+  const mapElRef = useR7(null);
+  const mapRef = useR7(null);
+  const tileRef = useR7(null);
+  const markersRef = useR7(null);
+  const lastGeoRef = useR7(-1);
+
+  useE7(() => {
+    let poll = null, cancelled = false;
+    function init() {
+      if (cancelled || mapRef.current || !mapElRef.current) return true;
+      if (!window.L) return false;                 // Leaflet may still be loading
+      build();
+      return true;
+    }
+    function build() {
+    const map = window.L.map(mapElRef.current, {
+      center: _F7[0].geo.c, zoom: _F7[0].geo.z,
+      zoomControl: false, attributionControl: true,
+      scrollWheelZoom: false, dragging: false, doubleClickZoom: false,
+      boxZoom: false, keyboard: false, touchZoom: false,
+    });
+    map.attributionControl.setPrefix('');
+    tileRef.current = window.L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      { attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 18 }
+    ).addTo(map);
+    markersRef.current = window.L.layerGroup().addTo(map);
+    mapRef.current = map;
+    setTimeout(() => map.invalidateSize(), 60);
+    }
+    if (!init()) poll = setInterval(() => { if (init() && poll) { clearInterval(poll); poll = null; } }, 250);
+    return () => {
+      cancelled = true; if (poll) clearInterval(poll);
+      try { if (mapRef.current) mapRef.current.remove(); } catch (e) {}
+      mapRef.current = null;
+    };
+  }, []);
+
+  // fly the map as the chapter changes; light up the real communities at the end
+  useE7(() => {
+    const map = mapRef.current; if (!map) return;
+    const isLast = act >= _F7.length;
+    const ch = isLast ? _F7[_F7.length - 1] : _F7[Math.min(act, _F7.length - 1)];
+    if (lastGeoRef.current !== act) {
+      lastGeoRef.current = act;
+      try {
+        if (isLast) {
+          const pts = (all || []).filter(c => c.lat != null && c.lng != null).map(c => [c.lat, c.lng]);
+          if (pts.length) map.flyToBounds(window.L.latLngBounds(pts).pad(0.18), { duration: 2.2 });
+          else map.flyTo(ch.geo.c, ch.geo.z, { duration: 2.2 });
+        } else {
+          map.flyTo(ch.geo.c, ch.geo.z, { duration: 2.2 });
+        }
+      } catch (e) {}
+    }
+    // real community points appear on the closing panel
+    const mk = markersRef.current; if (!mk) return;
+    mk.clearLayers();
+    if (isLast) {
+      (all || []).forEach((c, i) => {
+        if (c.lat == null || c.lng == null) return;
+        const m = window.L.circleMarker([c.lat, c.lng], {
+          radius: 5, color: '#ffd27a', weight: 1.4, fillColor: '#ff9f2e', fillOpacity: 0.9, opacity: 0.95,
+        }).addTo(mk);
+        m.bindTooltip(String(c.name || '').trim(), { direction: 'top', offset: [0, -6] });
+        m.on('click', () => onSelect && onSelect(c.id));
+      });
+    }
+  }, [act, all, onSelect]);
+
+  // the basemap dims and desaturates through the hard chapters
+  useE7(() => {
+    const el = mapElRef.current; if (!el) return;
+    const ch = act >= _F7.length ? _F7[_F7.length - 1] : _F7[Math.min(act, _F7.length - 1)];
+    const dark = ch.tiles === 'dark';
+    el.style.filter = dark
+      ? 'grayscale(0.85) brightness(0.34) contrast(1.15) sepia(0.25)'
+      : 'saturate(0.85) brightness(0.62) contrast(1.05) sepia(0.3)';
+  }, [act]);
 
   // ---- the living fire ----
   useE7(() => {
@@ -209,78 +298,49 @@ function SevenFiresView({ all, setView, onSelect }) {
       const last = Math.max(0, Math.min(1, seg - _F7.length));   // the closing panel
       const sc = fire.scene;
 
-      // ---- SKY: warm dawn → deep night through the taking → dawn again ----
+      // ---- ATMOSPHERE OVER THE MAP (translucent — the real GIS basemap
+      //   shows through; we paint weather, light and story on top of it) ----
+      ctx.clearRect(0, 0, W, H);
       const dark = Math.min(1, Math.max(0, (seg - 2.0) / 2.2)) * (1 - last * 0.92);
-      const sky = ctx.createLinearGradient(0, 0, 0, H * 0.78);
-      sky.addColorStop(0,   `rgb(${Math.round(lerp(38,8,dark))},${Math.round(lerp(44,10,dark))},${Math.round(lerp(78,26,dark))})`);
-      sky.addColorStop(0.55,`rgb(${Math.round(lerp(150,20,dark))},${Math.round(lerp(96,22,dark))},${Math.round(lerp(96,46,dark))})`);
-      sky.addColorStop(1,   `rgb(${Math.round(lerp(238,44,dark))},${Math.round(lerp(160,30,dark))},${Math.round(lerp(96,52,dark))})`);
-      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+      // a graded wash: cold night at the top, warm horizon low down
+      const wash = ctx.createLinearGradient(0, 0, 0, H);
+      wash.addColorStop(0,   `rgba(${Math.round(lerp(30,6,dark))},${Math.round(lerp(28,8,dark))},${Math.round(lerp(64,22,dark))},${0.62 + 0.26 * dark})`);
+      wash.addColorStop(0.5, `rgba(${Math.round(lerp(120,12,dark))},${Math.round(lerp(72,14,dark))},${Math.round(lerp(84,34,dark))},${0.34 + 0.36 * dark})`);
+      wash.addColorStop(1,   `rgba(${Math.round(lerp(226,26,dark))},${Math.round(lerp(140,18,dark))},${Math.round(lerp(88,40,dark))},${0.30 + 0.34 * dark})`);
+      ctx.fillStyle = wash; ctx.fillRect(0, 0, W, H);
 
-      if (dark > 0.06) {                                        // stars
+      if (dark > 0.06) {                                        // stars over the upper sky
         for (const s of stars) {
-          ctx.globalAlpha = dark * (0.2 + 0.7 * (0.5 + 0.5 * Math.sin(tt * 1.4 + s.tw)));
+          ctx.globalAlpha = dark * (0.18 + 0.6 * (0.5 + 0.5 * Math.sin(tt * 1.4 + s.tw)));
           ctx.fillStyle = '#eef3ff';
-          ctx.beginPath(); ctx.arc(s.x * W, s.y * H * 0.68, s.r, 0, 6.283); ctx.fill();
+          ctx.beginPath(); ctx.arc(s.x * W, s.y * H * 0.5, s.r, 0, 6.283); ctx.fill();
         }
         ctx.globalAlpha = 1;
       }
-      // aurora — strongest at the beginning and the end
-      const aur = Math.max(0, Math.max(1 - seg / 2.2, last)) * 0.9;
+      // aurora over the territory — strongest at the start and at the end
+      const aur = Math.max(0, Math.max(1 - seg / 2.2, last)) * 0.95;
       if (aur > 0.04) {
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
         const cols = ['120,200,150', '212,160,23', '150,140,220'];
         for (let a = 0; a < 3; a++) {
-          ctx.globalAlpha = aur * (0.10 + 0.05 * Math.sin(tt * 0.5 + a));
-          ctx.strokeStyle = `rgb(${cols[a]})`; ctx.lineWidth = 46;
+          ctx.globalAlpha = aur * (0.11 + 0.05 * Math.sin(tt * 0.5 + a));
+          ctx.strokeStyle = `rgb(${cols[a]})`; ctx.lineWidth = 52;
           ctx.beginPath();
           for (let x = -30; x <= W + 30; x += 26) {
-            ctx.lineTo(x, H * 0.16 + a * 40 + Math.sin(x * 0.005 + tt * 0.35 + a * 1.7) * 34 + Math.sin(x * 0.011 + tt * 0.5) * 12);
+            ctx.lineTo(x, H * 0.13 + a * 42 + Math.sin(x * 0.005 + tt * 0.35 + a * 1.7) * 34 + Math.sin(x * 0.011 + tt * 0.5) * 12);
           }
           ctx.stroke();
         }
         ctx.restore(); ctx.globalAlpha = 1;
       }
-      // sun / moon low on the horizon
-      const orbX = W * (0.22 + Math.min(1, seg / 7) * 0.56), orbY = H * 0.40;
-      const og = ctx.createRadialGradient(orbX, orbY, 4, orbX, orbY, 150);
-      og.addColorStop(0, `rgba(255,${Math.round(lerp(226,244,dark))},${Math.round(lerp(170,230,dark))},${0.45 + 0.2 * (1 - dark)})`);
-      og.addColorStop(1, 'rgba(255,226,170,0)');
-      ctx.fillStyle = og; ctx.beginPath(); ctx.arc(orbX, orbY, 150, 0, 6.283); ctx.fill();
-      ctx.fillStyle = `rgba(255,${Math.round(lerp(238,250,dark))},${Math.round(lerp(198,238,dark))},0.95)`;
-      ctx.beginPath(); ctx.arc(orbX, orbY, lerp(34, 24, dark), 0, 6.283); ctx.fill();
-
-      // ---- LAYERED LAND: far ridge, mist, mid ridge, treeline, near bank ----
-      const hz = H * 0.56;
-      ridge(hz, 26, `rgba(${Math.round(lerp(96,26,dark))},${Math.round(lerp(92,30,dark))},${Math.round(lerp(112,52,dark))},1)`, 1.2, 34);
-      mist(hz + 16, 26, 0.16 * (1 - dark * 0.5), 0.12, 0.5);
-      ridge(hz + 44, 20, `rgba(${Math.round(lerp(66,18,dark))},${Math.round(lerp(74,24,dark))},${Math.round(lerp(74,42,dark))},1)`, 3.4, 30);
-      pines(hz + 58, 46, `rgba(${Math.round(lerp(30,8,dark))},${Math.round(lerp(42,14,dark))},${Math.round(lerp(34,22,dark))},1)`, 7, 24);
-      ridge(hz + 96, 16, `rgba(${Math.round(lerp(38,10,dark))},${Math.round(lerp(52,16,dark))},${Math.round(lerp(40,26,dark))},1)`, 5.1, 26);
-      // the water in front
-      const wY = H * 0.80;
-      const wat = ctx.createLinearGradient(0, wY - 40, 0, H);
-      wat.addColorStop(0, `rgba(${Math.round(lerp(96,14,dark))},${Math.round(lerp(120,22,dark))},${Math.round(lerp(124,44,dark))},1)`);
-      wat.addColorStop(1, `rgba(${Math.round(lerp(52,8,dark))},${Math.round(lerp(74,14,dark))},${Math.round(lerp(84,30,dark))},1)`);
-      ctx.fillStyle = wat; ctx.fillRect(0, wY - 40, W, H - wY + 40);
-      ctx.strokeStyle = `rgba(255,255,255,${0.05 + 0.05 * (1 - dark)})`; ctx.lineWidth = 1;
-      for (let w = 0; w < 6; w++) {
-        const yy = wY - 24 + w * 26;
-        ctx.beginPath();
-        for (let x = 0; x <= W; x += 20) ctx.lineTo(x, yy + Math.sin(x * 0.013 + tt * 0.6 + w) * 3);
-        ctx.stroke();
-      }
-      // reflection of the orb on the water
-      ctx.save(); ctx.globalAlpha = 0.18;
-      const rg = ctx.createLinearGradient(orbX, wY - 40, orbX, H);
-      rg.addColorStop(0, 'rgba(255,220,150,0.9)'); rg.addColorStop(1, 'rgba(255,220,150,0)');
-      ctx.fillStyle = rg; ctx.fillRect(orbX - 46, wY - 40, 92, H); ctx.restore();
+      mist(H * 0.52, 34, 0.13 * (1 - dark * 0.4), 0.10, 0.5);     // weather drifting over the land
+      mist(H * 0.72, 26, 0.10, 0.07, 2.2);
 
       // ================= CHAPTER SCENES =================
-      const gY = wY - 34;                                        // where people stand
+      const wY = H * 0.86, gY = wY - 34;              // the story band sits low over the map
       if (sc === 'land') {                                       // BEFORE: a living camp
         for (let l = 0; l < 3; l++) {                            // lodges
-          const lx = W * (0.16 + l * 0.1), ly = gY - 4;
+          const lx = W * (0.14 + l * 0.09), ly = gY - 4;
           ctx.fillStyle = `rgba(${Math.round(lerp(120,42,dark))},${Math.round(lerp(84,32,dark))},${Math.round(lerp(52,24,dark))},1)`;
           ctx.beginPath(); ctx.moveTo(lx - 34, ly); ctx.quadraticCurveTo(lx, ly - 52, lx + 34, ly); ctx.closePath(); ctx.fill();
           ctx.fillStyle = 'rgba(20,12,6,0.8)';
@@ -292,7 +352,7 @@ function SevenFiresView({ all, setView, onSelect }) {
       }
       if (sc === 'contact') {                                    // sails + a wampum belt of light
         for (let s = 0; s < 3; s++) {
-          const sx = W * (0.62 + s * 0.13), sy = hz + 84;
+          const sx = W * (0.62 + s * 0.13), sy = gY - 10;
           ctx.fillStyle = `rgba(238,234,224,${0.9 - dark * 0.35})`;
           ctx.beginPath(); ctx.moveTo(sx, sy - 68); ctx.lineTo(sx + 22, sy); ctx.lineTo(sx - 22, sy); ctx.closePath(); ctx.fill();
           ctx.strokeStyle = 'rgba(50,40,32,0.85)'; ctx.lineWidth = 2;
@@ -307,8 +367,8 @@ function SevenFiresView({ all, setView, onSelect }) {
       }
       if (sc === 'law') {                                        // bars of statute across the land
         ctx.save(); ctx.globalAlpha = 0.35 + u * 0.35;
-        ctx.fillStyle = 'rgba(10,8,14,0.9)';
-        for (let b = 0; b < 14; b++) ctx.fillRect(W * 0.06 + b * (W * 0.066), hz - 30, 13, H);
+        ctx.fillStyle = 'rgba(8,6,12,0.92)';
+        for (let b = 0; b < 14; b++) ctx.fillRect(W * 0.06 + b * (W * 0.066), 0, 13, H);
         ctx.restore();
         figure(W * 0.5, gY, 1.15, '#7c6a8f', { band: '#c07a1e' });
       }
@@ -407,7 +467,6 @@ function SevenFiresView({ all, setView, onSelect }) {
         ctx.beginPath(); ctx.arc(ex, ey, 1.6 + (1 - eu) * 2, 0, 6.283); ctx.fill();
       }
       ctx.globalAlpha = 1;
-      mist(wY - 60, 30, 0.10, 0.08, 2.2);                          // foreground haze for depth
     }
 
 
@@ -421,6 +480,7 @@ function SevenFiresView({ all, setView, onSelect }) {
     <div className="sf-wrap">
       <div className="sf-stage" ref={stageRef}>
         <div className="sf-pin">
+          <div ref={mapElRef} className="sf-map" />
           <canvas ref={canvasRef} className="sf-canvas" />
           <div className="sf-vig" />
 
