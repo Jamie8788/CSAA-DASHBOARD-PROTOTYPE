@@ -213,7 +213,7 @@ function AppInner() {
       {view === 'welcome' ? (
         <window.WelcomeView all={all} setView={setView} heroCtx={heroCtx} />
       ) : view === 'story' ? (
-        <window.AtlasStoryView all={all} onSelect={setSelectedId} setView={setView} />
+        <window.SevenFiresView all={all} onSelect={setSelectedId} setView={setView} />
       ) : view === 'analytics' ? (
         <window.AnalyticsProView all={all} onSelect={setSelectedId} setView={setView} />
       ) : view === 'stats' ? (
@@ -644,7 +644,7 @@ function NavStrip({ view, setView, filtered, all }) {
   const DEFAULT_NAV = [
     { view: 'map',       label: 'Map · Search',       icon: '◉' },
     { view: 'list',      label: 'Directory',          icon: '☷' },
-    { view: 'story',     label: 'Story Map',          icon: '✦' },
+    { view: 'story',     label: 'Seven Fires',        icon: '✦' },
     { view: 'stories',   label: 'Community Stories',  icon: '❋' },
     { view: 'analytics', label: 'Analytics',          icon: '◐' },
     { view: 'stats',     label: 'Insights & Stories', icon: '◭' },
