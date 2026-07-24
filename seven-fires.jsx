@@ -1,68 +1,64 @@
 /* global React */
 /*
- * THE SEVEN FIRES — Niizhwaaswi Ishkode
+ * THE LONG WALK — a scrollytelling history of this land, told with one fire.
  *
- * A scrollytelling walk through the Anishinaabe Seven Fires Prophecy, told with
- * one living fire on a hand-drawn canvas: the migration from the eastern ocean
- * to the food that grows on water, the two faces of the newcomer, the Sixth
- * Fire when the cup of life became a cup of grief and the children were taken,
- * and the Seventh Fire when the New People retrace their steps to pick up what
- * was left by the trail.
+ * DELIBERATELY GENERIC. Every nation has its own history, its own teachings and
+ * its own prophecies, and they differ. So this tells only what is publicly
+ * documented and shared across nations — the land before, the treaties, the
+ * Indian Act, residential schools, the Sixties Scoop, the TRC, and the work
+ * happening now. No sacred teaching is retold here and no community's beliefs
+ * are put in its mouth.
  *
- * The Eighth Fire is not a drawing — it is THIS ATLAS: the live count of
- * communities carrying their people's health today. The fire is lit by real data.
+ * The last panel is not a drawing: it is the LIVE COUNT from this atlas.
  *
- * The prophecy as recorded by Ojibwe elder Edward Benton-Banai in *The Mishomis
- * Book* (1988). Residential-school facts are from the Truth and Reconciliation
- * Commission of Canada (2015). Nothing here is invented, and nothing depicts
- * harm to children — the Sixth Fire is told through the empty shoes that
- * survivors and families themselves use to remember.
+ * Sources: Truth and Reconciliation Commission of Canada (2015) and its 94
+ * Calls to Action; the Indian Act (1876); public federal records.
  */
 
 const { useState: useS7, useEffect: useE7, useRef: useR7, useMemo: useM7 } = React;
 
 const _F7 = [
   {
-    n: 1, name: 'Waabanong', title: 'The First Fire',
-    sub: 'Turn toward the setting sun',
-    body: 'The people lived by the great salt water in the east. Seven prophets came and told them to move west, or they would be destroyed. They would know the way by a sacred miigis — a cowrie shell — rising in the sky, and they would know the journey\'s end when they came to the food that grows on water.',
-    era: 'Long before contact', scene: 'ocean', accent: '#d4a017',
+    n: 1, key: 'before', title: 'Before',
+    sub: 'Since time out of memory',
+    body: 'For thousands of years before any map was drawn of this place, nations lived here — with their own languages, laws, medicines, trade routes and ways of caring for one another. Not one people, but many. The land was not empty and it was never silent.',
+    era: 'Time immemorial', accent: '#d4a017', scene: 'land',
   },
   {
-    n: 2, name: 'Naawakwe', title: 'The Second Fire',
-    sub: 'The people lose their way',
-    body: 'At the second stopping place the nation would be camped by a great lake, and the people would lose their way — the sacred path faltered. A boy would dream the road back to the miigis, and the people would carry on west.',
-    era: 'The long migration', scene: 'river', accent: '#c07a1e',
+    n: 2, key: 'treaty', title: 'The Agreements',
+    sub: 'Nation to nation',
+    body: 'Newcomers arrived, and agreements were made — wampum, and later written treaties. They were understood by the nations here as a relationship between equals: to share the land, not to surrender it. That understanding and the written text did not say the same thing.',
+    era: '1600s – 1900s', accent: '#c07a1e', scene: 'contact',
   },
   {
-    n: 3, name: 'Manoomin', title: 'The Third Fire',
-    sub: 'The food that grows on water',
-    body: 'The people found the chosen ground the prophets spoke of — the place where manoomin, wild rice, grows on the water. Here the nation planted itself and grew strong. This is the country of the Great Lakes, and it is home.',
-    era: 'Arrival · the chosen ground', scene: 'rice', accent: '#6b8d6b',
+    n: 3, key: 'act', title: 'The Law',
+    sub: 'A statute over a people',
+    body: 'In 1876 Canada passed the Indian Act — one law placed over hundreds of distinct nations. It defined who counted as "Indian," controlled movement, governance and land, and for decades banned ceremonies. Much of it is still in force today.',
+    era: '1876 onward', accent: '#7c6a8f', scene: 'law',
   },
   {
-    n: 4, name: 'Niizho-doodem', title: 'The Fourth Fire',
-    sub: 'Two prophets, two faces',
-    body: 'Two prophets came as one. A light-skinned race would arrive. If they came wearing the face of brotherhood, there would be a great nation together. But if they came wearing the face of death, and the rivers ran with poison and the fish were unfit to eat — the people must be careful.',
-    era: 'The newcomers arrive', scene: 'sails', accent: '#3a4658',
+    n: 4, key: 'schools', title: 'The Taking',
+    sub: 'When the children were taken',
+    body: 'Over more than a century, more than 150,000 First Nations, Inuit and Métis children were taken from their families to residential schools. Thousands never came home. The last school closed in 1996. In 2015 the Truth and Reconciliation Commission called it cultural genocide.',
+    era: '1831 – 1996', accent: '#c2571e', scene: 'shoes', heavy: true,
   },
   {
-    n: 5, name: 'Gichi-aanimad', title: 'The Fifth Fire',
-    sub: 'A promise that was false',
-    body: 'There would come a time of great struggle. A promise of joy and salvation would be offered to the people, and those who took it would nearly lose the way of their grandfathers for many generations.',
-    era: 'The time of struggle', scene: 'storm', accent: '#5c4a6b',
+    n: 5, key: 'scoop', title: 'And Again',
+    sub: 'The taking did not stop at the school door',
+    body: 'From the 1950s, thousands more children were removed by child welfare — the period known as the Sixties Scoop — and placed far from their nations. Today Indigenous children remain vastly over-represented in care. This is not only history.',
+    era: '1950s – today', accent: '#8f5a3a', scene: 'scoop', heavy: true,
   },
   {
-    n: 6, name: 'Gaawiin', title: 'The Sixth Fire',
-    sub: 'The cup of life became a cup of grief',
-    body: 'The prophecy said the children would be taken away from the elders, and the elders would lose their reason for living. For over a century this came to pass. More than 150,000 First Nations, Inuit and Métis children were taken to residential schools; the last one closed in 1996. The Truth and Reconciliation Commission named it cultural genocide.',
-    era: '1831 – 1996', scene: 'shoes', accent: '#c2571e', heavy: true,
+    n: 6, key: 'truth', title: 'The Telling',
+    sub: 'Survivors spoke, and it was written down',
+    body: 'Survivors testified. Between 2008 and 2015 the Truth and Reconciliation Commission gathered thousands of statements and issued 94 Calls to Action. September 30 is now a national day of truth and reconciliation. The record exists because survivors made it exist.',
+    era: '2008 – 2015', accent: '#e0a53a', scene: 'voices',
   },
   {
-    n: 7, name: 'Oshkibimaadiziig', title: 'The Seventh Fire',
-    sub: 'The New People retrace their steps',
-    body: 'A New People would emerge. They would retrace their steps to pick up what was left by the trail — the language, the ceremonies, the medicines. Their steps would take them to the elders, and they would ask to be guided. Some elders would have fallen asleep; they would say nothing. But the New People would keep asking.',
-    era: 'Now · in our own lifetime', scene: 'return', accent: '#d4a017',
+    n: 7, key: 'now', title: 'The Return',
+    sub: 'Languages, ceremony, and care coming home',
+    body: 'Nations are running their own health services, child welfare, schools and language programs. Elders teach. Youth go out on the land. This is not recovery from the past tense — it is people rebuilding, right now, on their own terms.',
+    era: 'Now', accent: '#d4a017', scene: 'return',
   },
 ];
 
@@ -124,204 +120,296 @@ function SevenFiresView({ all, setView, onSelect }) {
     const lerp = (a, b, u) => a + (b - a) * u;
     const stars = Array.from({ length: 90 }, () => ({ x: Math.random(), y: Math.random() * 0.7, r: Math.random() * 1.3 + 0.3, tw: Math.random() * 6.3 }));
 
+    // ---- reusable art helpers ------------------------------------------
+    let tt = 0;                                   // animation clock, shared by the helpers below
+    const rnd = (n) => { let s = n * 9301 + 49297; return ((s * 233280) % 233280) / 233280; };
+    function ridge(y, amp, col, seed, step) {       // a soft rolling horizon band
+      ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-10, H);
+      for (let x = -10; x <= W + 10; x += (step || 26)) {
+        const h = Math.sin(x * 0.0035 + seed) * amp + Math.sin(x * 0.0012 + seed * 2) * amp * 0.7;
+        ctx.lineTo(x, y + h);
+      }
+      ctx.lineTo(W + 10, H); ctx.closePath(); ctx.fill();
+    }
+    function pines(y, h, col, seed, gap) {          // a silhouetted treeline
+      ctx.fillStyle = col;
+      for (let x = -20; x < W + 20; x += gap) {
+        const j = rnd(x + seed), hh = h * (0.65 + j * 0.7), w = hh * 0.28;
+        const bx = x + j * gap * 0.6, by = y + Math.sin(bx * 0.0035 + seed) * 6;
+        ctx.beginPath(); ctx.moveTo(bx - w, by);
+        ctx.lineTo(bx, by - hh); ctx.lineTo(bx + w, by); ctx.closePath(); ctx.fill();
+      }
+    }
+    function mist(y, hgt, alpha, speed, seed) {     // drifting fog band
+      ctx.save(); ctx.globalAlpha = alpha;
+      const g = ctx.createLinearGradient(0, y - hgt, 0, y + hgt);
+      g.addColorStop(0, 'rgba(226,232,240,0)'); g.addColorStop(0.5, 'rgba(226,232,240,0.85)');
+      g.addColorStop(1, 'rgba(226,232,240,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.moveTo(-20, y + hgt);
+      for (let x = -20; x <= W + 20; x += 30) ctx.lineTo(x, y + Math.sin(x * 0.004 + tt * speed + seed) * hgt * 0.5);
+      ctx.lineTo(W + 20, y + hgt); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    // a properly drawn standing person (head, hair, shaped body, jointed limbs)
+    function figure(x, y, s, col, opt) {
+      opt = opt || {};
+      const skin = opt.skin || '#a3704a', hair = '#150c06';
+      const HH = 62 * s, hipY = y - HH * 0.44, shoY = y - HH * 0.80;
+      const headR = 7.2 * s, headY = y - HH * 0.90 - headR * 0.6;
+      const step = opt.walk ? Math.sin(tt * 3 + (opt.ph || 0)) : 0;
+      const seg = (x0, y0, x1, y1, x2, y2, w, c) => {
+        ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      };
+      for (const sg of [-1, 1]) {                   // legs, bent at the knee
+        const sw = step * sg * 6 * s;
+        seg(x + sg * 2.6 * s, hipY, x + sg * 2.6 * s + sw * 0.5, hipY + HH * 0.24,
+            x + sg * 2.6 * s + sw, y, 4.6 * s, '#4e3a24');
+        ctx.fillStyle = '#241608';
+        ctx.beginPath(); ctx.ellipse(x + sg * 2.6 * s + sw, y + 0.8 * s, 3.2 * s, 1.5 * s, 0, 0, 6.283); ctx.fill();
+      }
+      const bg = ctx.createLinearGradient(x - 7 * s, shoY, x + 7 * s, hipY);   // shaded torso
+      bg.addColorStop(0, col); bg.addColorStop(1, 'rgba(0,0,0,0.35)');
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.moveTo(x - 6.6 * s, hipY); ctx.lineTo(x - 5.6 * s, shoY);
+      ctx.quadraticCurveTo(x, shoY - 2.4 * s, x + 5.6 * s, shoY);
+      ctx.lineTo(x + 6.6 * s, hipY);
+      ctx.quadraticCurveTo(x, hipY + 1.6 * s, x - 6.6 * s, hipY);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(248,238,214,0.85)';                                 // ribbon
+      ctx.fillRect(x - 5.8 * s, shoY + 5 * s, 11.6 * s, 1.5 * s);
+      const sy2 = shoY + 2.4 * s;                                               // arms, bent at the elbow
+      for (const sg of [-1, 1]) {
+        const lift = opt.raise && sg === (opt.dir || 1);
+        const ex = x + sg * 8 * s, ey = lift ? sy2 - 2 * s : sy2 + 6 * s;
+        const hx = x + sg * (lift ? 10 : 7) * s, hy = lift ? sy2 - 14 * s : sy2 + 13 * s;
+        seg(x + sg * 5.4 * s, sy2, ex, ey, hx, hy, 4 * s, skin);
+        ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(hx, hy, 2.3 * s, 0, 6.283); ctx.fill();
+      }
+      ctx.fillStyle = skin;                                                     // head
+      ctx.beginPath(); ctx.arc(x, headY, headR, 0, 6.283); ctx.fill();
+      ctx.fillStyle = hair;
+      ctx.beginPath(); ctx.arc(x, headY - 0.8 * s, headR * 1.05, Math.PI + 0.2, 2 * Math.PI - 0.2); ctx.fill();
+      ctx.strokeStyle = hair; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';     // braid
+      ctx.beginPath(); ctx.moveTo(x - headR * 0.6, headY + headR * 0.4);
+      ctx.quadraticCurveTo(x - headR * 1.4, headY + headR * 2.6, x - headR * 1.1, headY + headR * 4.6);
+      ctx.stroke();
+      if (opt.band) { ctx.fillStyle = opt.band; ctx.fillRect(x - headR, headY - headR * 0.42, headR * 2, 2.4 * s); }
+    }
+
     function draw(time) {
-      const tt = (time - (t0 == null ? (t0 = time) : t0)) / 1000;
+      tt = (time - (t0 == null ? (t0 = time) : t0)) / 1000;
       const p = pRef.current;
-      const seg = p * (_F7.length + 1);        // 0..8 across seven fires + the eighth
+      const seg = p * (_F7.length + 1);
       const i = Math.max(0, Math.min(_F7.length - 1, Math.floor(seg)));
       const u = Math.max(0, Math.min(1, seg - i));
       const fire = _F7[i];
-      const nxt = _F7[Math.min(_F7.length - 1, i + 1)];
-      const eighth = Math.max(0, Math.min(1, seg - _F7.length));   // the Eighth Fire reveal
+      const last = Math.max(0, Math.min(1, seg - _F7.length));   // the closing panel
+      const sc = fire.scene;
 
-      // ---- SKY: dawn in the east → deep night through the sixth fire → dawn again
-      const dark = Math.min(1, Math.max(0, (seg - 3.2) / 2.6)) * (1 - eighth);
-      const top = [lerp(28, 10, dark), lerp(34, 12, dark), lerp(58, 24, dark)];
-      const bot = [lerp(214, 40, dark), lerp(140, 30, dark), lerp(70, 44, dark)];
-      const sky = ctx.createLinearGradient(0, 0, 0, H);
-      sky.addColorStop(0, `rgb(${top.map(Math.round).join(',')})`);
-      sky.addColorStop(1, `rgb(${bot.map(Math.round).join(',')})`);
+      // ---- SKY: warm dawn → deep night through the taking → dawn again ----
+      const dark = Math.min(1, Math.max(0, (seg - 2.0) / 2.2)) * (1 - last * 0.92);
+      const sky = ctx.createLinearGradient(0, 0, 0, H * 0.78);
+      sky.addColorStop(0,   `rgb(${Math.round(lerp(38,8,dark))},${Math.round(lerp(44,10,dark))},${Math.round(lerp(78,26,dark))})`);
+      sky.addColorStop(0.55,`rgb(${Math.round(lerp(150,20,dark))},${Math.round(lerp(96,22,dark))},${Math.round(lerp(96,46,dark))})`);
+      sky.addColorStop(1,   `rgb(${Math.round(lerp(238,44,dark))},${Math.round(lerp(160,30,dark))},${Math.round(lerp(96,52,dark))})`);
       ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
-      // stars come out as it darkens
-      if (dark > 0.05) {
+
+      if (dark > 0.06) {                                        // stars
         for (const s of stars) {
-          ctx.globalAlpha = dark * (0.25 + 0.6 * (0.5 + 0.5 * Math.sin(tt * 1.5 + s.tw)));
-          ctx.fillStyle = '#eaf0ff';
-          ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, 6.283); ctx.fill();
+          ctx.globalAlpha = dark * (0.2 + 0.7 * (0.5 + 0.5 * Math.sin(tt * 1.4 + s.tw)));
+          ctx.fillStyle = '#eef3ff';
+          ctx.beginPath(); ctx.arc(s.x * W, s.y * H * 0.68, s.r, 0, 6.283); ctx.fill();
         }
         ctx.globalAlpha = 1;
       }
-      // the miigis shell rising — guides fires 1-3
-      const miig = Math.max(0, 1 - Math.abs(seg - 1.2) / 2.2);
-      if (miig > 0.02) {
-        const mx = W * 0.5 + Math.sin(tt * 0.3) * 20, my = H * (0.30 - miig * 0.06);
-        const gl = ctx.createRadialGradient(mx, my, 2, mx, my, 90);
-        gl.addColorStop(0, `rgba(255,235,190,${0.5 * miig})`); gl.addColorStop(1, 'rgba(255,235,190,0)');
-        ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(mx, my, 90, 0, 6.283); ctx.fill();
-        ctx.globalAlpha = miig; ctx.fillStyle = '#f6ead0';
-        ctx.beginPath(); ctx.ellipse(mx, my, 16, 11, 0.2, 0, 6.283); ctx.fill();
-        ctx.strokeStyle = 'rgba(160,120,70,0.7)'; ctx.lineWidth = 1;
-        for (let r = -3; r <= 3; r++) { ctx.beginPath(); ctx.moveTo(mx - 14, my + r * 2.6); ctx.lineTo(mx + 14, my + r * 2.2); ctx.stroke(); }
-        ctx.globalAlpha = 1;
+      // aurora — strongest at the beginning and the end
+      const aur = Math.max(0, Math.max(1 - seg / 2.2, last)) * 0.9;
+      if (aur > 0.04) {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        const cols = ['120,200,150', '212,160,23', '150,140,220'];
+        for (let a = 0; a < 3; a++) {
+          ctx.globalAlpha = aur * (0.10 + 0.05 * Math.sin(tt * 0.5 + a));
+          ctx.strokeStyle = `rgb(${cols[a]})`; ctx.lineWidth = 46;
+          ctx.beginPath();
+          for (let x = -30; x <= W + 30; x += 26) {
+            ctx.lineTo(x, H * 0.16 + a * 40 + Math.sin(x * 0.005 + tt * 0.35 + a * 1.7) * 34 + Math.sin(x * 0.011 + tt * 0.5) * 12);
+          }
+          ctx.stroke();
+        }
+        ctx.restore(); ctx.globalAlpha = 1;
       }
+      // sun / moon low on the horizon
+      const orbX = W * (0.22 + Math.min(1, seg / 7) * 0.56), orbY = H * 0.40;
+      const og = ctx.createRadialGradient(orbX, orbY, 4, orbX, orbY, 150);
+      og.addColorStop(0, `rgba(255,${Math.round(lerp(226,244,dark))},${Math.round(lerp(170,230,dark))},${0.45 + 0.2 * (1 - dark)})`);
+      og.addColorStop(1, 'rgba(255,226,170,0)');
+      ctx.fillStyle = og; ctx.beginPath(); ctx.arc(orbX, orbY, 150, 0, 6.283); ctx.fill();
+      ctx.fillStyle = `rgba(255,${Math.round(lerp(238,250,dark))},${Math.round(lerp(198,238,dark))},0.95)`;
+      ctx.beginPath(); ctx.arc(orbX, orbY, lerp(34, 24, dark), 0, 6.283); ctx.fill();
 
-      // ---- WATER / LAND
-      const hY = H * 0.62;
-      const wat = ctx.createLinearGradient(0, hY, 0, H);
-      wat.addColorStop(0, `rgba(${Math.round(lerp(120, 22, dark))},${Math.round(lerp(150, 30, dark))},${Math.round(lerp(150, 56, dark))},1)`);
-      wat.addColorStop(1, `rgba(${Math.round(lerp(70, 12, dark))},${Math.round(lerp(100, 18, dark))},${Math.round(lerp(110, 36, dark))},1)`);
-      ctx.fillStyle = wat; ctx.fillRect(0, hY, W, H - hY);
-      ctx.strokeStyle = `rgba(255,255,255,${0.06 + 0.05 * (1 - dark)})`; ctx.lineWidth = 1;
-      for (let w = 0; w < 7; w++) {
-        const yy = hY + 14 + w * 22;
+      // ---- LAYERED LAND: far ridge, mist, mid ridge, treeline, near bank ----
+      const hz = H * 0.56;
+      ridge(hz, 26, `rgba(${Math.round(lerp(96,26,dark))},${Math.round(lerp(92,30,dark))},${Math.round(lerp(112,52,dark))},1)`, 1.2, 34);
+      mist(hz + 16, 26, 0.16 * (1 - dark * 0.5), 0.12, 0.5);
+      ridge(hz + 44, 20, `rgba(${Math.round(lerp(66,18,dark))},${Math.round(lerp(74,24,dark))},${Math.round(lerp(74,42,dark))},1)`, 3.4, 30);
+      pines(hz + 58, 46, `rgba(${Math.round(lerp(30,8,dark))},${Math.round(lerp(42,14,dark))},${Math.round(lerp(34,22,dark))},1)`, 7, 24);
+      ridge(hz + 96, 16, `rgba(${Math.round(lerp(38,10,dark))},${Math.round(lerp(52,16,dark))},${Math.round(lerp(40,26,dark))},1)`, 5.1, 26);
+      // the water in front
+      const wY = H * 0.80;
+      const wat = ctx.createLinearGradient(0, wY - 40, 0, H);
+      wat.addColorStop(0, `rgba(${Math.round(lerp(96,14,dark))},${Math.round(lerp(120,22,dark))},${Math.round(lerp(124,44,dark))},1)`);
+      wat.addColorStop(1, `rgba(${Math.round(lerp(52,8,dark))},${Math.round(lerp(74,14,dark))},${Math.round(lerp(84,30,dark))},1)`);
+      ctx.fillStyle = wat; ctx.fillRect(0, wY - 40, W, H - wY + 40);
+      ctx.strokeStyle = `rgba(255,255,255,${0.05 + 0.05 * (1 - dark)})`; ctx.lineWidth = 1;
+      for (let w = 0; w < 6; w++) {
+        const yy = wY - 24 + w * 26;
         ctx.beginPath();
-        for (let x = 0; x <= W; x += 18) ctx.lineTo(x, yy + Math.sin(x * 0.014 + tt * 0.7 + w) * 3);
+        for (let x = 0; x <= W; x += 20) ctx.lineTo(x, yy + Math.sin(x * 0.013 + tt * 0.6 + w) * 3);
         ctx.stroke();
       }
+      // reflection of the orb on the water
+      ctx.save(); ctx.globalAlpha = 0.18;
+      const rg = ctx.createLinearGradient(orbX, wY - 40, orbX, H);
+      rg.addColorStop(0, 'rgba(255,220,150,0.9)'); rg.addColorStop(1, 'rgba(255,220,150,0)');
+      ctx.fillStyle = rg; ctx.fillRect(orbX - 46, wY - 40, 92, H); ctx.restore();
 
-      // ---- SCENE ELEMENTS per fire
-      const sc = fire.scene;
-      // migration canoes (fires 1-3) travelling west
-      if (sc === 'ocean' || sc === 'river' || sc === 'rice') {
-        const nC = sc === 'rice' ? 3 : 2;
-        for (let c = 0; c < nC; c++) {
-          const cx = ((tt * 12 + c * 220 + i * 120) % (W + 260)) - 130;
-          const cy = hY + 60 + c * 34, s2 = 0.8 + c * 0.12;
-          ctx.save(); ctx.translate(cx, cy + Math.sin(tt * 1.2 + c) * 2); ctx.scale(s2, s2);
-          ctx.fillStyle = 'rgb(146,104,64)';
-          ctx.beginPath(); ctx.moveTo(-34, 0); ctx.quadraticCurveTo(0, 9, 34, 0);
-          ctx.quadraticCurveTo(38, -5, 34, -6); ctx.quadraticCurveTo(0, 2, -34, -6);
-          ctx.quadraticCurveTo(-38, -5, -34, 0); ctx.closePath(); ctx.fill();
-          ctx.fillStyle = 'rgb(40,28,18)';
-          for (const px of [-12, 12]) {
-            ctx.beginPath(); ctx.ellipse(px, -11, 4, 7, 0, 0, 6.283); ctx.fill();
-            ctx.beginPath(); ctx.arc(px, -21, 3.4, 0, 6.283); ctx.fill();
-            ctx.strokeStyle = 'rgb(90,62,34)'; ctx.lineWidth = 2;
-            const pa = Math.sin(tt * 3 + px) * 0.5;
-            ctx.beginPath(); ctx.moveTo(px + 3, -14); ctx.lineTo(px + 11 + Math.sin(pa) * 5, 6); ctx.stroke();
-          }
-          ctx.restore();
+      // ================= CHAPTER SCENES =================
+      const gY = wY - 34;                                        // where people stand
+      if (sc === 'land') {                                       // BEFORE: a living camp
+        for (let l = 0; l < 3; l++) {                            // lodges
+          const lx = W * (0.16 + l * 0.1), ly = gY - 4;
+          ctx.fillStyle = `rgba(${Math.round(lerp(120,42,dark))},${Math.round(lerp(84,32,dark))},${Math.round(lerp(52,24,dark))},1)`;
+          ctx.beginPath(); ctx.moveTo(lx - 34, ly); ctx.quadraticCurveTo(lx, ly - 52, lx + 34, ly); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = 'rgba(20,12,6,0.8)';
+          ctx.beginPath(); ctx.ellipse(lx, ly - 2, 7, 11, 0, Math.PI, 2 * Math.PI); ctx.fill();
+        }
+        figure(W * 0.40, gY, 1.0, '#b8351e', { band: '#d4a017' });
+        figure(W * 0.47, gY + 6, 1.05, '#1f4e8f', { band: '#c93a1e', raise: true, dir: 1 });
+        figure(W * 0.545, gY + 2, 0.7, '#5a7d3a', { band: '#2f8f4f' });
+      }
+      if (sc === 'contact') {                                    // sails + a wampum belt of light
+        for (let s = 0; s < 3; s++) {
+          const sx = W * (0.62 + s * 0.13), sy = hz + 84;
+          ctx.fillStyle = `rgba(238,234,224,${0.9 - dark * 0.35})`;
+          ctx.beginPath(); ctx.moveTo(sx, sy - 68); ctx.lineTo(sx + 22, sy); ctx.lineTo(sx - 22, sy); ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = 'rgba(50,40,32,0.85)'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(sx, sy - 74); ctx.lineTo(sx, sy); ctx.stroke();
+        }
+        figure(W * 0.24, gY, 1.1, '#b8351e', { band: '#d4a017', raise: true, dir: 1 });
+        const bx = W * 0.30, by = gY - 42;                       // wampum belt
+        for (let b = 0; b < 22; b++) {
+          ctx.fillStyle = (b % 7 < 3) ? 'rgba(240,238,230,0.95)' : 'rgba(80,110,150,0.95)';
+          ctx.fillRect(bx + b * 9, by + Math.sin(b * 0.5 + tt) * 2, 7, 12);
         }
       }
-      // wild rice beds — the journey's end
-      if (sc === 'rice') {
-        ctx.strokeStyle = `rgba(${Math.round(lerp(150, 70, dark))},${Math.round(lerp(160, 80, dark))},70,0.95)`;
-        for (let r = 0; r < 46; r++) {
-          const rx = (r * 61) % W, ry = hY + 40 + ((r * 37) % 120);
-          const sw = Math.sin(tt * 1.1 + r) * 3;
-          ctx.lineWidth = 1.4;
-          ctx.beginPath(); ctx.moveTo(rx, ry); ctx.quadraticCurveTo(rx + sw * 0.5, ry - 22, rx + sw, ry - 40); ctx.stroke();
-          ctx.fillStyle = 'rgba(206,176,92,0.9)';
-          ctx.beginPath(); ctx.ellipse(rx + sw, ry - 44, 1.6, 4.4, 0, 0, 6.283); ctx.fill();
-        }
+      if (sc === 'law') {                                        // bars of statute across the land
+        ctx.save(); ctx.globalAlpha = 0.35 + u * 0.35;
+        ctx.fillStyle = 'rgba(10,8,14,0.9)';
+        for (let b = 0; b < 14; b++) ctx.fillRect(W * 0.06 + b * (W * 0.066), hz - 30, 13, H);
+        ctx.restore();
+        figure(W * 0.5, gY, 1.15, '#7c6a8f', { band: '#c07a1e' });
       }
-      // sails on the horizon — the newcomers
-      if (sc === 'sails' || sc === 'storm') {
-        const nS = sc === 'storm' ? 4 : 2;
-        for (let s = 0; s < nS; s++) {
-          const sx = W * (0.18 + s * 0.22) + Math.sin(tt * 0.2 + s) * 10, sy = hY - 4;
-          ctx.fillStyle = `rgba(236,232,222,${0.85 - dark * 0.3})`;
-          ctx.beginPath(); ctx.moveTo(sx, sy - 46); ctx.lineTo(sx + 15, sy); ctx.lineTo(sx - 15, sy); ctx.closePath(); ctx.fill();
-          ctx.strokeStyle = 'rgba(60,50,40,0.8)'; ctx.lineWidth = 1.5;
-          ctx.beginPath(); ctx.moveTo(sx, sy - 50); ctx.lineTo(sx, sy); ctx.stroke();
-        }
-      }
-      // ---- SIXTH FIRE: the empty shoes. Told the way families tell it —
-      //      small shoes on the steps, no child depicted, nothing enacted. ----
-      if (sc === 'shoes') {
-        const rows = 3, per = 9;
-        for (let r = 0; r < rows; r++) {
-          for (let c = 0; c < per; c++) {
-            const sx = W * 0.5 + (c - (per - 1) / 2) * 44 + r * 12;
-            const sy = hY + 70 + r * 40;
-            const app = Math.max(0, Math.min(1, (u * 3) - (r * per + c) / (rows * per) * 2));
-            if (app <= 0) continue;
-            ctx.globalAlpha = app;
-            ctx.fillStyle = ['#d4691e', '#c2571e', '#e07a2a'][(r + c) % 3];   // orange — Every Child Matters
-            ctx.beginPath();
-            ctx.moveTo(sx - 9, sy); ctx.lineTo(sx - 9, sy - 7);
-            ctx.quadraticCurveTo(sx - 9, sy - 12, sx - 4, sy - 12);
-            ctx.quadraticCurveTo(sx + 2, sy - 12, sx + 4, sy - 7);
-            ctx.quadraticCurveTo(sx + 10, sy - 5, sx + 10, sy);
-            ctx.closePath(); ctx.fill();
-            ctx.strokeStyle = 'rgba(60,30,10,0.35)'; ctx.lineWidth = 0.8; ctx.stroke();
-          }
+      if (sc === 'shoes' || sc === 'scoop') {                    // the taking — empty shoes
+        const rows = 3, per = 11;
+        for (let r = 0; r < rows; r++) for (let c = 0; c < per; c++) {
+          const app = Math.max(0, Math.min(1, u * 3.4 - (r * per + c) / (rows * per) * 2.2));
+          if (app <= 0) continue;
+          const sx = W * 0.5 + (c - (per - 1) / 2) * 62 + r * 16;
+          const sy = gY + 12 + r * 44;
+          ctx.globalAlpha = app * 0.96;
+          const col = sc === 'scoop' ? ['#8f5a3a', '#a4693f', '#7c4a30'] : ['#d4691e', '#c2571e', '#e07a2a'];
+          ctx.fillStyle = col[(r + c) % 3];
+          ctx.beginPath();
+          ctx.moveTo(sx - 15, sy); ctx.lineTo(sx - 15, sy - 12);
+          ctx.quadraticCurveTo(sx - 15, sy - 20, sx - 6, sy - 20);
+          ctx.quadraticCurveTo(sx + 3, sy - 20, sx + 7, sy - 12);
+          ctx.quadraticCurveTo(sx + 17, sy - 9, sx + 17, sy);
+          ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = 'rgba(30,14,4,0.5)'; ctx.lineWidth = 1.2; ctx.stroke();
+          ctx.fillStyle = 'rgba(0,0,0,0.28)';                    // shadow
+          ctx.beginPath(); ctx.ellipse(sx, sy + 3, 17, 3.5, 0, 0, 6.283); ctx.fill();
         }
         ctx.globalAlpha = 1;
       }
-      // ---- SEVENTH FIRE: the New People walking back along the trail ----
-      if (sc === 'return') {
-        for (let w = 0; w < 5; w++) {
-          const wx = W * 0.18 + w * (W * 0.13) + Math.sin(tt * 0.5 + w) * 4;
-          const wy = hY + 96 + (w % 2) * 16, s3 = 1.1 + (w % 3) * 0.12;
-          const step = Math.sin(tt * 3 + w * 1.2);
-          ctx.strokeStyle = '#6b4a2a'; ctx.lineWidth = 3 * s3; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(wx - 2 * s3, wy - 16 * s3); ctx.lineTo(wx - 2 * s3 + step * 4 * s3, wy); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(wx + 2 * s3, wy - 16 * s3); ctx.lineTo(wx + 2 * s3 - step * 4 * s3, wy); ctx.stroke();
-          ctx.fillStyle = ['#c93a1e', '#1f4e8f', '#7c2f6b', '#5a7d3a', '#d68a1f'][w];
-          ctx.beginPath();
-          ctx.moveTo(wx - 5 * s3, wy - 16 * s3); ctx.lineTo(wx - 4 * s3, wy - 30 * s3);
-          ctx.quadraticCurveTo(wx, wy - 33 * s3, wx + 4 * s3, wy - 30 * s3);
-          ctx.lineTo(wx + 5 * s3, wy - 16 * s3); ctx.closePath(); ctx.fill();
-          ctx.fillStyle = '#a3704a';
-          ctx.beginPath(); ctx.arc(wx, wy - 37 * s3, 4.6 * s3, 0, 6.283); ctx.fill();
-          ctx.fillStyle = '#1a0e08';
-          ctx.beginPath(); ctx.arc(wx, wy - 38 * s3, 4.9 * s3, Math.PI + 0.2, 2 * Math.PI - 0.2); ctx.fill();
-          // each carries a small light — what was picked up from the trail
-          const lx = wx + 8 * s3, ly = wy - 22 * s3;
-          const lg = ctx.createRadialGradient(lx, ly, 0, lx, ly, 16);
-          lg.addColorStop(0, 'rgba(255,200,110,0.85)'); lg.addColorStop(1, 'rgba(255,200,110,0)');
-          ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(lx, ly, 16, 0, 6.283); ctx.fill();
+      if (sc === 'voices') {                                     // survivors speaking — rising lights
+        for (let v = 0; v < 5; v++) {
+          const vx = W * (0.22 + v * 0.14);
+          figure(vx, gY + (v % 2) * 8, 1.0, ['#c93a1e', '#1f4e8f', '#7c2f6b', '#5a7d3a', '#d68a1f'][v], { band: '#e0a53a', raise: v % 2 === 0, dir: 1 });
+        }
+        for (let s = 0; s < 26; s++) {                            // words rising as light
+          const su = ((tt * 0.24 + s * 0.038) % 1);
+          ctx.globalAlpha = (1 - su) * 0.75;
+          ctx.fillStyle = '#ffe9b0';
+          ctx.beginPath(); ctx.arc(W * (0.2 + (s % 5) * 0.14) + Math.sin(su * 5 + s) * 16, gY - 40 - su * 260, 2.2, 0, 6.283); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+      if (sc === 'return') {                                     // people walking home with light
+        for (let w = 0; w < 6; w++) {
+          const wx = W * (0.12 + w * 0.145) + Math.sin(tt * 0.4 + w) * 5;
+          const wy = gY + (w % 3) * 10;
+          figure(wx, wy, 1.05 + (w % 3) * 0.08, ['#c93a1e', '#1f4e8f', '#7c2f6b', '#5a7d3a', '#d68a1f', '#2f8f4f'][w],
+                 { band: '#d4a017', walk: true, ph: w * 1.1 });
+          const lx = wx + 14, ly = wy - 34;                       // the light each one carries
+          const lg = ctx.createRadialGradient(lx, ly, 0, lx, ly, 34);
+          lg.addColorStop(0, 'rgba(255,206,120,0.9)'); lg.addColorStop(1, 'rgba(255,206,120,0)');
+          ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(lx, ly, 34, 0, 6.283); ctx.fill();
+          ctx.fillStyle = '#ffe9b0'; ctx.beginPath(); ctx.arc(lx, ly, 3.4, 0, 6.283); ctx.fill();
         }
       }
 
-      // ---- THE FIRE ITSELF — one fire, carried the whole way. It nearly dies
-      //      in the Sixth Fire and is rekindled by the Seventh. ----
-      const fx = W * 0.5, fy = H * 0.80;
-      let strength = 1;
-      if (sc === 'storm') strength = 0.55;
-      if (sc === 'shoes') strength = 0.12 + 0.06 * Math.sin(tt * 2);      // almost out
-      if (sc === 'return') strength = 0.5 + u * 0.8;
-      strength = Math.max(strength, eighth * 1.9);                        // the Eighth Fire blazes
-      const flk = 0.82 + Math.sin(tt * 9) * 0.12 + Math.sin(tt * 23) * 0.06;
-      const R = 110 * strength * flk;
-      const fg = ctx.createRadialGradient(fx, fy - 16, 4, fx, fy - 16, R);
-      fg.addColorStop(0, `rgba(255,214,140,${0.5 * Math.min(1, strength)})`);
-      fg.addColorStop(0.4, `rgba(255,150,60,${0.22 * Math.min(1, strength)})`);
+      // ---- THE FIRE — one fire carried the whole way ----
+      const fx = W * 0.5, fy = wY - 6;
+      let str = 1;
+      if (sc === 'law') str = 0.7;
+      if (sc === 'shoes') str = 0.10 + 0.05 * Math.sin(tt * 2.2);
+      if (sc === 'scoop') str = 0.16 + 0.05 * Math.sin(tt * 2);
+      if (sc === 'voices') str = 0.45 + u * 0.5;
+      if (sc === 'return') str = 0.9 + u * 0.7;
+      str = Math.max(str, last * 2.1);
+      const flk = 0.84 + Math.sin(tt * 8.5) * 0.11 + Math.sin(tt * 21) * 0.05;
+      const R = 190 * str * flk;
+      const fg = ctx.createRadialGradient(fx, fy - 34, 6, fx, fy - 34, R);
+      fg.addColorStop(0, `rgba(255,222,158,${0.55 * Math.min(1, str)})`);
+      fg.addColorStop(0.35, `rgba(255,150,58,${0.24 * Math.min(1, str)})`);
       fg.addColorStop(1, 'rgba(255,140,50,0)');
-      ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(fx, fy - 16, R, 0, 6.283); ctx.fill();
-      // logs
-      ctx.strokeStyle = `rgba(${Math.round(lerp(80, 44, dark))},${Math.round(lerp(54, 30, dark))},28,1)`;
-      ctx.lineWidth = 7; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(fx - 26, fy + 6); ctx.lineTo(fx + 22, fy - 6); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(fx - 22, fy - 6); ctx.lineTo(fx + 26, fy + 6); ctx.stroke();
-      // flames
-      const fh = 76 * Math.min(1.5, strength) * flk;
-      for (let f = 0; f < 3; f++) {
-        const w2 = (20 - f * 5) * Math.min(1.4, strength);
-        ctx.fillStyle = [`rgba(214,86,26,${0.9 * Math.min(1, strength)})`,
-                         `rgba(255,150,40,${0.92 * Math.min(1, strength)})`,
-                         `rgba(255,226,150,${0.95 * Math.min(1, strength)})`][f];
-        const sway = Math.sin(tt * 3 + f) * 5 * strength;
-        ctx.beginPath();
-        ctx.moveTo(fx - w2, fy);
-        ctx.quadraticCurveTo(fx - w2 * 0.5 + sway, fy - fh * (0.6 - f * 0.12), fx + sway * 0.6, fy - fh * (1 - f * 0.2));
-        ctx.quadraticCurveTo(fx + w2 * 0.5 + sway, fy - fh * (0.6 - f * 0.12), fx + w2, fy);
+      ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(fx, fy - 34, R, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(255,180,90,0.16)';                     // firelight pool on the ground
+      ctx.beginPath(); ctx.ellipse(fx, fy + 6, 130 * Math.min(1.3, str), 22 * Math.min(1.3, str), 0, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = `rgba(${Math.round(lerp(92,52,dark))},${Math.round(lerp(62,34,dark))},32,1)`;   // logs
+      ctx.lineWidth = 11; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(fx - 44, fy + 10); ctx.lineTo(fx + 38, fy - 8); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(fx - 38, fy - 8); ctx.lineTo(fx + 44, fy + 10); ctx.stroke();
+      const fh = 130 * Math.min(1.5, str) * flk;                   // layered flames
+      for (let f = 0; f < 4; f++) {
+        const w2 = (34 - f * 7) * Math.min(1.35, str);
+        ctx.fillStyle = [`rgba(190,64,18,${0.85 * Math.min(1, str)})`,
+                         `rgba(236,110,26,${0.9 * Math.min(1, str)})`,
+                         `rgba(255,168,48,${0.92 * Math.min(1, str)})`,
+                         `rgba(255,236,176,${0.95 * Math.min(1, str)})`][f];
+        const sway = Math.sin(tt * 2.6 + f * 1.3) * 9 * Math.min(1, str);
+        ctx.beginPath(); ctx.moveTo(fx - w2, fy);
+        ctx.quadraticCurveTo(fx - w2 * 0.4 + sway, fy - fh * (0.55 - f * 0.09), fx + sway * 0.7, fy - fh * (1 - f * 0.17));
+        ctx.quadraticCurveTo(fx + w2 * 0.4 + sway, fy - fh * (0.55 - f * 0.09), fx + w2, fy);
         ctx.closePath(); ctx.fill();
       }
-      // embers rising — they become the communities in the Eighth Fire
-      const nE = Math.round(10 + eighth * 40);
+      const nE = Math.round(14 + last * 54);                       // embers → become the communities
       for (let e = 0; e < nE; e++) {
-        const eu = ((tt * 0.32 + e * 0.13) % 1);
-        const spread = 30 + eighth * (W * 0.42);
-        const ex = fx + Math.sin(eu * 6 + e * 2.4) * spread * eu;
-        const ey = fy - 20 - eu * (150 + eighth * 260);
-        ctx.globalAlpha = (1 - eu) * (0.55 + 0.45 * Math.min(1, strength));
-        ctx.fillStyle = e % 4 === 0 ? '#ffe9b0' : '#ffb347';
-        ctx.beginPath(); ctx.arc(ex, ey, 1.4 + (1 - eu) * 1.4, 0, 6.283); ctx.fill();
+        const eu = ((tt * 0.3 + e * 0.11) % 1);
+        const spread = 44 + last * (W * 0.46);
+        const ex = fx + Math.sin(eu * 5.5 + e * 2.1) * spread * eu;
+        const ey = fy - 40 - eu * (230 + last * 300);
+        ctx.globalAlpha = (1 - eu) * (0.5 + 0.5 * Math.min(1, str));
+        ctx.fillStyle = e % 4 === 0 ? '#fff0c8' : '#ffb347';
+        ctx.beginPath(); ctx.arc(ex, ey, 1.6 + (1 - eu) * 2, 0, 6.283); ctx.fill();
       }
       ctx.globalAlpha = 1;
+      mist(wY - 60, 30, 0.10, 0.08, 2.2);                          // foreground haze for depth
     }
+
 
     if (reduce) { draw(performance.now()); return () => { if (ro) ro.disconnect(); }; }
     const frame = (time) => { raf = requestAnimationFrame(frame); draw(time); };
@@ -356,31 +444,33 @@ function SevenFiresView({ all, setView, onSelect }) {
 
           {/* THE EIGHTH FIRE — lit by the live atlas */}
           <div className={`sf-card sf-eighth ${act >= _F7.length ? 'on' : ''}`}>
-            <div className="sf-era">The Eighth Fire · Ishkode Niishwaaswi</div>
-            <div className="sf-num">And this is the fire, today</div>
-            <h2>It is already lit.</h2>
+            <div className="sf-era">Today</div>
+            <div className="sf-num">And here is where it stands</div>
+            <h2>Still here.</h2>
             <p>
-              The prophecy says that if the New People choose well, they light an Eighth
-              Fire — an eternal fire of peace and kinship. This atlas is not a story about
-              that fire. It is a count of it.
+              This atlas is not a story about survival. It is a count of it — every
+              one of these is a nation or partner documenting how it cares for its
+              own people, right now.
             </p>
             <div className="sf-live">
-              <div><b>{truths.total}</b><span>communities & partners standing</span></div>
+              <div><b>{truths.total}</b><span>communities &amp; partners standing</span></div>
               <div><b>{truths.withPillars}</b><span>documenting care for their people</span></div>
               <div><b>{truths.survivorSupport}</b><span>holding survivors</span></div>
               <div><b>{truths.youth}</b><span>with the youth on the land</span></div>
             </div>
             <p className="sf-close">
-              The children who were taken have grandchildren who are being cared for by
-              their own nations. That is the fire. Every ember above is one of them.
+              The children who were taken have grandchildren who are being cared for
+              by their own nations. Every ember above is one of them.
             </p>
             <div className="sf-cta">
               <button className="sf-btn" onClick={() => setView && setView('directory')}>Meet the {truths.total} →</button>
               <button className="sf-btn ghost" onClick={() => setView && setView('stories')}>Walk the teachings</button>
             </div>
             <p className="sf-src">
-              The Seven Fires as recorded by Ojibwe elder Edward Benton-Banai, <i>The Mishomis Book</i> (1988).
-              Residential-school figures from the Truth and Reconciliation Commission of Canada (2015).
+              Every nation has its own history, its own teachings and its own words for it —
+              this page deliberately tells only the shared, publicly documented record and
+              speaks for no one. Sources: Truth and Reconciliation Commission of Canada (2015)
+              and its 94 Calls to Action; the Indian Act (1876); public federal records.
               Community numbers are live from this atlas.
             </p>
           </div>
