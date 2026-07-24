@@ -316,6 +316,22 @@ function _fieldTruth(c, key) {
   return out;
 }
 
+// THE SEVEN GRANDFATHER TEACHINGS (Niizhwaaswi Gagiikwewin) — the core
+// Anishinaabe code of character, each carried by an animal teacher. Every shore
+// on the journey is one teaching, so the trip is a walk through the teachings
+// rather than a list of database rows.
+// Sources: American Indian Health Service of Chicago; Seven Generations
+// Education Institute; Ojibwe.net "Gifts of the Seven Grandfathers".
+const _TEACHINGS = [
+  { key: 'wisdom',   name: 'Nibwaakaawin',    en: 'Wisdom',   animal: 'Amik · Beaver',   line: 'To cherish knowledge is to know wisdom. The beaver uses its gift to build, and betters the whole lodge.' },
+  { key: 'love',     name: "Zaagi'idiwin",    en: 'Love',     animal: 'Migizi · Eagle',   line: 'To know love is to know peace. The eagle flies highest and so carries the people closest to Creator.' },
+  { key: 'respect',  name: 'Minaadendamowin', en: 'Respect',  animal: 'Mashkode-bizhiki · Buffalo', line: 'Honour all of Creation. The buffalo gives every part of itself so the people may live.' },
+  { key: 'bravery',  name: "Aakode'ewin",     en: 'Bravery',  animal: 'Makwa · Bear',     line: 'Face what is hard with a good heart. The mother bear finds courage for her cubs.' },
+  { key: 'honesty',  name: 'Gwayakwaadiziwin',en: 'Honesty',  animal: 'Gaag · Raven & Sabe', line: 'Walk through life with integrity. Sabe walks tall and honours the gifts each being was given.' },
+  { key: 'humility', name: 'Dabaadendiziwin', en: 'Humility', animal: "Ma'iingan · Wolf", line: 'You are a sacred part of Creation — no greater, no lesser. The wolf lives for the pack.' },
+  { key: 'truth',    name: 'Debwewin',        en: 'Truth',    animal: 'Mikinaak · Turtle',line: 'Know all of these things. The turtle carries the days on its back and was here from the beginning.' },
+];
+
 // the things you can DO at each fire — each is a distinct choice with its own
 // outcome (a different real teaching), its own scene reaction, and its own
 // token for your medicine pouch (Hassan: "every outcome should have a different
@@ -418,6 +434,7 @@ function JourneyOfCare({ all, onSelect }) {
   const actionFxRef = useRef(0);                   // decays 1→0 after each choice
 
   const cur = idx >= 0 && idx < N ? stops[idx] : null;
+  const teaching = idx >= 0 ? _TEACHINGS[idx % _TEACHINGS.length] : null;   // each shore carries one Grandfather Teaching
   const truth = useMemo(() => (cur ? _journeyTruth(cur) : null), [cur]);
   const dirInfo = cur ? (_J_DIR[cur.direction || 'Central'] || _J_DIR.Central) : null;
 
@@ -686,16 +703,83 @@ function JourneyOfCare({ all, onSelect }) {
         ctx.fillStyle = fg2; ctx.fillRect(fx2 - 50, fy2 - 54, 100, 84);
         ctx.fillStyle = `rgba(255,${Math.round(150 + 60 * fl2)},60,0.95)`;
         ctx.beginPath(); ctx.moveTo(fx2 - 6, fy2); ctx.quadraticCurveTo(fx2, fy2 - 20 * fl2, fx2 + 6, fy2); ctx.closePath(); ctx.fill();
-        const greet = [[-20, 1.0, '#8a4a28'], [16, 1.0, '#3c5a80'], [28, 0.62, '#a06a20']];
-        for (const [gdx, gs, gc] of greet) {
-          const wave = Math.sin(tt * 3 + gdx) * 0.5;
-          ctx.fillStyle = gc;
-          ctx.beginPath(); ctx.ellipse(fx2 + gdx, fy2 - 11 * gs, 4.6 * gs, 8 * gs, 0, 0, 6.283); ctx.fill();
-          ctx.fillStyle = 'rgb(122,84,52)';
-          ctx.beginPath(); ctx.arc(fx2 + gdx, fy2 - 23 * gs, 3.6 * gs, 0, 6.283); ctx.fill();
-          ctx.strokeStyle = gc; ctx.lineWidth = 2 * gs; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(fx2 + gdx + 4 * gs, fy2 - 15 * gs);
-          ctx.lineTo(fx2 + gdx + 9 * gs, fy2 - 24 * gs - wave * 6); ctx.stroke();
+        // ---- PROPER PEOPLE (not stick figures): jointed limbs with knees and
+        //   elbows, a shaped ribbon shirt with hem + sash, leggings, moccasins,
+        //   hair with braids. `act` drives the pose: 'wave' | 'idle' | 'walk'. --
+        const person = (px, py, s, dir, shirt, act, ph, opt) => {
+          opt = opt || {};
+          const skin = '#a3704a', hair = '#1a0e08', leg = '#6b4a2a';
+          const H = 34 * s;                                        // full body height
+          const hipY = py - H * 0.42, shoY = py - H * 0.80, headR = 4.6 * s;
+          const headY = py - H * 0.90 - headR;
+          const gait = act === 'walk' ? Math.sin(tt * 4 + ph) : 0;
+          const bob = Math.abs(gait) * 0.8 * s + Math.sin(tt * 1.5 + ph) * 0.4 * s;
+          const limb = (x0, y0, x1, y1, x2, y2, w, col) => {        // 2-segment jointed limb
+            ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          };
+          // legs: hip → knee (forward) → ankle, so they bend like real legs
+          for (const sg of [-1, 1]) {
+            const sw = gait * sg * 3.4 * s;
+            const kx = px + sg * 1.7 * s + sw * 0.5, ky = hipY + H * 0.22 - bob;
+            const ax = px + sg * 1.7 * s + sw,       ay = py - bob;
+            limb(px + sg * 1.7 * s, hipY - bob, kx, ky, ax, ay, 3.1 * s, leg);
+            ctx.fillStyle = '#2a1808';                              // moccasin
+            ctx.beginPath(); ctx.ellipse(ax + sg * 0.4 * s, ay + 0.4 * s, 2 * s, 1 * s, 0, 0, 6.283); ctx.fill();
+          }
+          // torso: a tapered ribbon shirt, not an ellipse
+          ctx.fillStyle = shirt;
+          ctx.beginPath();
+          ctx.moveTo(px - 4.3 * s, hipY - bob);
+          ctx.lineTo(px - 3.6 * s, shoY - bob);
+          ctx.quadraticCurveTo(px, shoY - bob - 1.3 * s, px + 3.6 * s, shoY - bob);
+          ctx.lineTo(px + 4.3 * s, hipY - bob);
+          ctx.quadraticCurveTo(px, hipY - bob + 0.9 * s, px - 4.3 * s, hipY - bob);
+          ctx.closePath(); ctx.fill();
+          ctx.fillStyle = 'rgba(245,232,200,0.92)';                 // chest ribbon
+          ctx.fillRect(px - 3.8 * s, shoY - bob + 3 * s, 7.6 * s, 0.9 * s);
+          ctx.fillStyle = opt.sash || '#d4a017';                    // hem band / sash
+          ctx.fillRect(px - 4.2 * s, hipY - bob - 1.4 * s, 8.4 * s, 1.1 * s);
+          // arms: shoulder → elbow → hand. The wave arm lifts and swings.
+          const sy = shoY - bob + 1.4 * s;
+          const w = act === 'wave' ? (Math.sin(tt * 4 + ph) * 0.5 + 0.5) : 0;
+          for (const sg of [-1, 1]) {
+            const isWave = act === 'wave' && sg === dir;
+            let ex, ey, hx, hy;
+            if (isWave) {                                            // raised, forearm waving
+              ex = px + sg * 6 * s; ey = sy - 1 * s;
+              hx = px + sg * (7.5 + w * 2.5) * s; hy = sy - (8 + w * 2) * s;
+            } else if (act === 'walk') {
+              const sw2 = -gait * sg * 2.4 * s;
+              ex = px + sg * 4.6 * s + sw2 * 0.5; ey = sy + 3.4 * s;
+              hx = px + sg * 4.2 * s + sw2;       hy = sy + 7.4 * s;
+            } else {
+              ex = px + sg * 4.8 * s; ey = sy + 3.6 * s;
+              hx = px + sg * 4.2 * s; hy = sy + 7.6 * s;
+            }
+            limb(px + sg * 3.4 * s, sy, ex, ey, hx, hy, 2.4 * s, skin);
+            ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(hx, hy, 1.4 * s, 0, 6.283); ctx.fill();
+          }
+          // head + hair
+          ctx.fillStyle = skin;
+          ctx.beginPath(); ctx.arc(px, headY - bob, headR, 0, 6.283); ctx.fill();
+          ctx.fillStyle = hair;
+          ctx.beginPath(); ctx.arc(px, headY - bob - 0.5 * s, headR * 1.06, Math.PI + 0.22, 2 * Math.PI - 0.22); ctx.fill();
+          if (opt.braid !== false) {                                 // braids down the back
+            ctx.strokeStyle = hair; ctx.lineWidth = 1.7 * s; ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(px - dir * headR * 0.7, headY - bob + headR * 0.35);
+            ctx.quadraticCurveTo(px - dir * headR * 1.5, headY - bob + headR * 2.4, px - dir * headR * 1.2, headY - bob + headR * 4);
+            ctx.stroke();
+          }
+          if (opt.band) {                                            // beaded headband
+            ctx.fillStyle = opt.band;
+            ctx.fillRect(px - headR, headY - bob - headR * 0.42, headR * 2, 1.5 * s);
+          }
+        };
+        const greet = [[-34, 1.9, '#8a4a28', '#c93a1e'], [26, 1.85, '#3c5a80', '#d4a017'], [48, 1.2, '#a06a20', '#2f8f4f']];
+        for (const [gdx, gs, gc, band] of greet) {
+          person(fx2 + gdx, fy2 + 4, gs, gdx < 0 ? 1 : -1, gc, 'wave', gdx * 0.3, { band });
         }
         // ---- ACTION REACTION: each choice plays out differently at the fire ----
         const react = sceneActionRef.current, fxp = actionFxRef.current;
@@ -893,6 +977,16 @@ function JourneyOfCare({ all, onSelect }) {
               {cur.population != null && <span><b>{cur.population.toLocaleString()}</b> people</span>}
               <span><b>{window.PILLARS.filter(pl => window.pillarOn(cur, pl.key)).length}</b>/4 pillars documented</span>
             </div>
+            {teaching && (
+              <div className="j-teaching" style={{ borderColor: dirInfo.col }}>
+                <div className="j-teach-head">
+                  <span className="j-teach-num">Grandfather Teaching {(idx % 7) + 1} of 7</span>
+                  <b>{teaching.name}</b> <span className="j-teach-en">· {teaching.en}</span>
+                </div>
+                <div className="j-teach-animal">{teaching.animal}</div>
+                <p className="j-teach-line">{teaching.line}</p>
+              </div>
+            )}
             <p className="j-invite">
               You are welcomed to the fire. What will you do here?
               {explored.length > 0 && <span className="j-gathered"> · {explored.length} gift{explored.length > 1 ? 's' : ''} received</span>}
