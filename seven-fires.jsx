@@ -1,71 +1,69 @@
 /* global React */
 /*
- * THE LONG WALK — a scrollytelling history of this land, told with one fire.
+ * THE LONG WALK — a scrollytelling history of this land, told with one fire
+ * over a real map of the territory.
  *
- * DELIBERATELY GENERIC. Every nation has its own history, its own teachings and
- * its own prophecies, and they differ. So this tells only what is publicly
- * documented and shared across nations — the land before, the treaties, the
- * Indian Act, residential schools, the Sixties Scoop, the TRC, and the work
- * happening now. No sacred teaching is retold here and no community's beliefs
- * are put in its mouth.
+ * DELIBERATELY GENERIC. Every nation has its own history and its own way of
+ * telling it, and they differ. So this holds to the shared human arc only —
+ * the people were here, newcomers came, promises were broken, the children
+ * were taken, survivors spoke, the people are rebuilding. No dates, no
+ * legislation, no institution and no sacred teaching is named, and no
+ * community's words are put in its mouth.
  *
  * The last panel is not a drawing: it is the LIVE COUNT from this atlas.
- *
- * Sources: Truth and Reconciliation Commission of Canada (2015) and its 94
- * Calls to Action; the Indian Act (1876); public federal records.
  */
 
 const { useState: useS7, useEffect: useE7, useRef: useR7, useMemo: useM7 } = React;
 
 const _F7 = [
   {
-    n: 1, key: 'before', title: 'Before',
-    sub: 'Since time out of memory',
-    body: 'For thousands of years before any map was drawn of this place, nations lived here — with their own languages, laws, medicines, trade routes and ways of caring for one another. Not one people, but many. The land was not empty and it was never silent.',
-    era: 'Time immemorial', accent: '#d4a017', scene: 'land',
-    geo: { c: [47.6, -84.0], z: 5 }, tiles: 'terrain',
+    n: 1, key: 'before', title: 'The people were here',
+    sub: 'Long before anyone drew a map of it',
+    body: 'Many nations lived across this land, each with its own language, its own laws, its own medicines and its own way of caring for one another. Families travelled the water. Elders taught. Children grew up knowing exactly who they were.',
+    era: 'In the beginning', accent: '#d4a017', scene: 'land',
+    geo: { c: [47.6, -84.0], z: 5 }, mood: 'day',
   },
   {
-    n: 2, key: 'treaty', title: 'The Agreements',
-    sub: 'Nation to nation',
-    body: 'Newcomers arrived, and agreements were made — wampum, and later written treaties. They were understood by the nations here as a relationship between equals: to share the land, not to surrender it. That understanding and the written text did not say the same thing.',
-    era: '1600s – 1900s', accent: '#c07a1e', scene: 'contact',
-    geo: { c: [46.3, -72.0], z: 5 }, tiles: 'terrain',
+    n: 2, key: 'came', title: 'The newcomers came',
+    sub: 'And agreements were made',
+    body: 'Ships arrived. Promises were exchanged — to live alongside one another and share what the land gives. The people here understood it as a relationship between equals, made to last as long as the rivers flow.',
+    era: 'Then', accent: '#c07a1e', scene: 'contact',
+    geo: { c: [46.3, -72.0], z: 5 }, mood: 'dusk',
   },
   {
-    n: 3, key: 'act', title: 'The Law',
-    sub: 'A statute over a people',
-    body: 'In 1876 Canada passed the Indian Act — one law placed over hundreds of distinct nations. It defined who counted as "Indian," controlled movement, governance and land, and for decades banned ceremonies. Much of it is still in force today.',
-    era: '1876 onward', accent: '#7c6a8f', scene: 'law',
-    geo: { c: [45.42, -75.70], z: 8 }, tiles: 'dark',
+    n: 3, key: 'law', title: 'The promises were broken',
+    sub: 'Decisions made far away',
+    body: 'Laws were written in distant rooms by people who had never been here. They decided who counted, where families could live, and what could be spoken or practised. Ceremony was pushed out of the daylight.',
+    era: 'And then', accent: '#8f7aa8', scene: 'law',
+    geo: { c: [45.42, -75.70], z: 7 }, mood: 'grey',
   },
   {
-    n: 4, key: 'schools', title: 'The Taking',
-    sub: 'When the children were taken',
-    body: 'Over more than a century, more than 150,000 First Nations, Inuit and Métis children were taken from their families to residential schools. Thousands never came home. The last school closed in 1996. In 2015 the Truth and Reconciliation Commission called it cultural genocide.',
-    era: '1831 – 1996', accent: '#c2571e', scene: 'shoes', heavy: true,
-    geo: { c: [56.0, -96.0], z: 3.6 }, tiles: 'dark',
+    n: 4, key: 'taken', title: 'The children were taken',
+    sub: 'This is the part that still hurts',
+    body: 'For generations, children were taken from their families and sent far from home to schools meant to make them someone else. Many came back changed. Many never came back at all. Every community here carries this.',
+    era: 'For generations', accent: '#e07a2a', scene: 'shoes', heavy: true,
+    geo: { c: [56.0, -96.0], z: 3.6 }, mood: 'night',
   },
   {
-    n: 5, key: 'scoop', title: 'And Again',
-    sub: 'The taking did not stop at the school door',
-    body: 'From the 1950s, thousands more children were removed by child welfare — the period known as the Sixties Scoop — and placed far from their nations. Today Indigenous children remain vastly over-represented in care. This is not only history.',
-    era: '1950s – today', accent: '#8f5a3a', scene: 'scoop', heavy: true,
-    geo: { c: [52.0, -106.0], z: 4.4 }, tiles: 'dark',
+    n: 5, key: 'again', title: 'And it did not stop',
+    sub: 'The taking wore new clothes',
+    body: 'Later, children were taken again — this time by systems that called it care, and placed them far from their nations. Families are still looking for one another. This is not only something that happened long ago.',
+    era: 'And after that', accent: '#c07a5a', scene: 'scoop', heavy: true,
+    geo: { c: [52.0, -106.0], z: 4.4 }, mood: 'night',
   },
   {
-    n: 6, key: 'truth', title: 'The Telling',
-    sub: 'Survivors spoke, and it was written down',
-    body: 'Survivors testified. Between 2008 and 2015 the Truth and Reconciliation Commission gathered thousands of statements and issued 94 Calls to Action. September 30 is now a national day of truth and reconciliation. The record exists because survivors made it exist.',
-    era: '2008 – 2015', accent: '#e0a53a', scene: 'voices',
-    geo: { c: [49.9, -97.14], z: 6 }, tiles: 'dark',
+    n: 6, key: 'spoke', title: 'Survivors spoke',
+    sub: 'And would not be quiet',
+    body: 'Those who lived it told the truth out loud — to their families, to their nations, to the whole country. It cost them something to say it. Because they spoke, it can no longer be denied, and it can no longer be repeated quietly.',
+    era: 'Then something turned', accent: '#f0b93c', scene: 'voices',
+    geo: { c: [49.9, -97.14], z: 6 }, mood: 'dawn',
   },
   {
-    n: 7, key: 'now', title: 'The Return',
-    sub: 'Languages, ceremony, and care coming home',
-    body: 'Nations are running their own health services, child welfare, schools and language programs. Elders teach. Youth go out on the land. This is not recovery from the past tense — it is people rebuilding, right now, on their own terms.',
+    n: 7, key: 'now', title: 'The people are rebuilding',
+    sub: 'On their own terms',
+    body: 'Language is being taught again. Ceremony is out in the open. Nations are running their own health care, their own child welfare, their own schools. Elders teach, youth go out on the land, and the fire that was nearly out is burning.',
     era: 'Now', accent: '#d4a017', scene: 'return',
-    geo: { c: [47.2, -82.0], z: 5.4 }, tiles: 'terrain',
+    geo: { c: [47.2, -82.0], z: 5.4 }, mood: 'day',
   },
 ];
 
@@ -183,14 +181,18 @@ function SevenFiresView({ all, setView, onSelect }) {
     }
   }, [act, all, onSelect]);
 
-  // the basemap dims and desaturates through the hard chapters
+  // the basemap shifts with the mood, but always stays readable (accessibility)
   useE7(() => {
     const el = mapElRef.current; if (!el) return;
     const ch = act >= _F7.length ? _F7[_F7.length - 1] : _F7[Math.min(act, _F7.length - 1)];
-    const dark = ch.tiles === 'dark';
-    el.style.filter = dark
-      ? 'grayscale(0.85) brightness(0.34) contrast(1.15) sepia(0.25)'
-      : 'saturate(0.85) brightness(0.62) contrast(1.05) sepia(0.3)';
+    const F = {
+      day:   'saturate(1.02) brightness(1.02) contrast(1.02)',
+      dusk:  'saturate(0.92) brightness(0.94) contrast(1.04) sepia(0.16)',
+      grey:  'saturate(0.32) brightness(0.88) contrast(1.08)',
+      night: 'saturate(0.5) brightness(0.72) contrast(1.06) hue-rotate(-8deg)',
+      dawn:  'saturate(1.0) brightness(1.0) contrast(1.02) sepia(0.10)',
+    };
+    el.style.filter = F[ch.mood] || F.day;
   }, [act]);
 
   // ---- the living fire ----
@@ -298,50 +300,79 @@ function SevenFiresView({ all, setView, onSelect }) {
       const last = Math.max(0, Math.min(1, seg - _F7.length));   // the closing panel
       const sc = fire.scene;
 
-      // ---- ATMOSPHERE OVER THE MAP (translucent — the real GIS basemap
-      //   shows through; we paint weather, light and story on top of it) ----
+      // ---- ATMOSPHERE OVER THE MAP — light, not darkness. The real basemap
+      //   shows through; we paint weather and time-of-day on top of it. Every
+      //   mood stays bright enough to read (accessibility). ----
       ctx.clearRect(0, 0, W, H);
-      const dark = Math.min(1, Math.max(0, (seg - 2.0) / 2.2)) * (1 - last * 0.92);
-      // a graded wash: cold night at the top, warm horizon low down
+      const MOOD = {
+        day:   { top: [150,196,228], bot: [252,224,172], a: 0.15, star: 0,    warm: 1.00 },
+        dusk:  { top: [162,168,220], bot: [252,196,150], a: 0.20, star: 0.12, warm: 0.95 },
+        grey:  { top: [168,170,186], bot: [216,210,208], a: 0.26, star: 0,    warm: 0.75 },
+        night: { top: [ 72, 86,136], bot: [146,132,156], a: 0.40, star: 0.85, warm: 0.62 },
+        dawn:  { top: [168,172,222], bot: [255,226,170], a: 0.16, star: 0.20, warm: 1.00 },
+      };
+      const mNow = MOOD[fire.mood] || MOOD.day;
+      const mNxt = MOOD[(_F7[Math.min(_F7.length - 1, i + 1)] || fire).mood] || mNow;
+      const bl = (k, j) => lerp(mNow[k][j], mNxt[k][j], u);          // blend between chapters
+      const mA  = lerp(mNow.a, mNxt.a, u), mStar = lerp(mNow.star, mNxt.star, u);
       const wash = ctx.createLinearGradient(0, 0, 0, H);
-      wash.addColorStop(0,   `rgba(${Math.round(lerp(30,6,dark))},${Math.round(lerp(28,8,dark))},${Math.round(lerp(64,22,dark))},${0.62 + 0.26 * dark})`);
-      wash.addColorStop(0.5, `rgba(${Math.round(lerp(120,12,dark))},${Math.round(lerp(72,14,dark))},${Math.round(lerp(84,34,dark))},${0.34 + 0.36 * dark})`);
-      wash.addColorStop(1,   `rgba(${Math.round(lerp(226,26,dark))},${Math.round(lerp(140,18,dark))},${Math.round(lerp(88,40,dark))},${0.30 + 0.34 * dark})`);
+      wash.addColorStop(0,    `rgba(${Math.round(bl('top',0))},${Math.round(bl('top',1))},${Math.round(bl('top',2))},${mA + 0.10})`);
+      wash.addColorStop(0.52, `rgba(${Math.round(lerp(bl('top',0), bl('bot',0), 0.5))},${Math.round(lerp(bl('top',1), bl('bot',1), 0.5))},${Math.round(lerp(bl('top',2), bl('bot',2), 0.5))},${mA * 0.55})`);
+      wash.addColorStop(1,    `rgba(${Math.round(bl('bot',0))},${Math.round(bl('bot',1))},${Math.round(bl('bot',2))},${mA * 0.75})`);
       ctx.fillStyle = wash; ctx.fillRect(0, 0, W, H);
 
-      if (dark > 0.06) {                                        // stars over the upper sky
+      if (mStar > 0.05) {                                            // stars, upper sky only
         for (const s of stars) {
-          ctx.globalAlpha = dark * (0.18 + 0.6 * (0.5 + 0.5 * Math.sin(tt * 1.4 + s.tw)));
-          ctx.fillStyle = '#eef3ff';
-          ctx.beginPath(); ctx.arc(s.x * W, s.y * H * 0.5, s.r, 0, 6.283); ctx.fill();
+          ctx.globalAlpha = mStar * (0.25 + 0.55 * (0.5 + 0.5 * Math.sin(tt * 1.4 + s.tw)));
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath(); ctx.arc(s.x * W, s.y * H * 0.42, s.r, 0, 6.283); ctx.fill();
         }
         ctx.globalAlpha = 1;
       }
-      // aurora over the territory — strongest at the start and at the end
-      const aur = Math.max(0, Math.max(1 - seg / 2.2, last)) * 0.95;
+      // aurora — a gift at the start and again at the end
+      const aur = Math.max(0, Math.max(1 - seg / 2.0, last)) * 0.95;
       if (aur > 0.04) {
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
-        const cols = ['120,200,150', '212,160,23', '150,140,220'];
-        for (let a = 0; a < 3; a++) {
-          ctx.globalAlpha = aur * (0.11 + 0.05 * Math.sin(tt * 0.5 + a));
-          ctx.strokeStyle = `rgb(${cols[a]})`; ctx.lineWidth = 52;
+        const cols = ['128,214,168', '236,190,86', '162,152,232'];
+        for (let a2 = 0; a2 < 3; a2++) {
+          ctx.globalAlpha = aur * (0.13 + 0.05 * Math.sin(tt * 0.5 + a2));
+          ctx.strokeStyle = `rgb(${cols[a2]})`; ctx.lineWidth = 56;
           ctx.beginPath();
           for (let x = -30; x <= W + 30; x += 26) {
-            ctx.lineTo(x, H * 0.13 + a * 42 + Math.sin(x * 0.005 + tt * 0.35 + a * 1.7) * 34 + Math.sin(x * 0.011 + tt * 0.5) * 12);
+            ctx.lineTo(x, H * 0.11 + a2 * 44 + Math.sin(x * 0.005 + tt * 0.35 + a2 * 1.7) * 32 + Math.sin(x * 0.011 + tt * 0.5) * 12);
           }
           ctx.stroke();
         }
         ctx.restore(); ctx.globalAlpha = 1;
       }
-      mist(H * 0.52, 34, 0.13 * (1 - dark * 0.4), 0.10, 0.5);     // weather drifting over the land
-      mist(H * 0.72, 26, 0.10, 0.07, 2.2);
+      mist(H * 0.50, 34, 0.14, 0.10, 0.5);                            // weather over the territory
+
+      // ---- THE STAGE: a lit foreground bank so the scene stands ON something
+      //   instead of floating over the map. ----
+      const gY = H * 0.845, wm = lerp(mNow.warm, mNxt.warm, u);
+      const bank = ctx.createLinearGradient(0, gY - 60, 0, H);
+      bank.addColorStop(0, `rgba(${Math.round(lerp(60,96,wm))},${Math.round(lerp(70,110,wm))},${Math.round(lerp(64,74,wm))},0.55)`);
+      bank.addColorStop(0.35, `rgba(${Math.round(lerp(48,80,wm))},${Math.round(lerp(60,96,wm))},${Math.round(lerp(52,60,wm))},0.92)`);
+      bank.addColorStop(1, `rgba(${Math.round(lerp(30,52,wm))},${Math.round(lerp(40,64,wm))},${Math.round(lerp(34,40,wm))},0.99)`);
+      ctx.fillStyle = bank;
+      ctx.beginPath(); ctx.moveTo(-10, H);
+      for (let x = -10; x <= W + 10; x += 24) ctx.lineTo(x, gY + Math.sin(x * 0.0032 + 1.1) * 16 + Math.sin(x * 0.0009) * 10);
+      ctx.lineTo(W + 10, H); ctx.closePath(); ctx.fill();
+      // grass fringe along the crest so the edge isn't a hard line
+      ctx.strokeStyle = `rgba(${Math.round(lerp(70,120,wm))},${Math.round(lerp(96,150,wm))},${Math.round(lerp(66,80,wm))},0.85)`;
+      ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+      for (let x = 0; x < W; x += 9) {
+        const by = gY + Math.sin(x * 0.0032 + 1.1) * 16 + Math.sin(x * 0.0009) * 10;
+        const h2 = 7 + rnd(x) * 11, sw = Math.sin(tt * 1.2 + x * 0.02) * 2.4;
+        ctx.beginPath(); ctx.moveTo(x, by + 2); ctx.quadraticCurveTo(x + sw * 0.5, by - h2 * 0.6, x + sw, by - h2); ctx.stroke();
+      }
 
       // ================= CHAPTER SCENES =================
-      const wY = H * 0.86, gY = wY - 34;              // the story band sits low over the map
+      const wY = gY;                                  // the scene stands on the lit bank
       if (sc === 'land') {                                       // BEFORE: a living camp
         for (let l = 0; l < 3; l++) {                            // lodges
           const lx = W * (0.14 + l * 0.09), ly = gY - 4;
-          ctx.fillStyle = `rgba(${Math.round(lerp(120,42,dark))},${Math.round(lerp(84,32,dark))},${Math.round(lerp(52,24,dark))},1)`;
+          ctx.fillStyle = `rgba(${Math.round(lerp(92,132,wm))},${Math.round(lerp(64,92,wm))},${Math.round(lerp(40,56,wm))},1)`;
           ctx.beginPath(); ctx.moveTo(lx - 34, ly); ctx.quadraticCurveTo(lx, ly - 52, lx + 34, ly); ctx.closePath(); ctx.fill();
           ctx.fillStyle = 'rgba(20,12,6,0.8)';
           ctx.beginPath(); ctx.ellipse(lx, ly - 2, 7, 11, 0, Math.PI, 2 * Math.PI); ctx.fill();
@@ -353,7 +384,7 @@ function SevenFiresView({ all, setView, onSelect }) {
       if (sc === 'contact') {                                    // sails + a wampum belt of light
         for (let s = 0; s < 3; s++) {
           const sx = W * (0.62 + s * 0.13), sy = gY - 10;
-          ctx.fillStyle = `rgba(238,234,224,${0.9 - dark * 0.35})`;
+          ctx.fillStyle = `rgba(246,242,232,${0.72 + 0.2 * wm})`;
           ctx.beginPath(); ctx.moveTo(sx, sy - 68); ctx.lineTo(sx + 22, sy); ctx.lineTo(sx - 22, sy); ctx.closePath(); ctx.fill();
           ctx.strokeStyle = 'rgba(50,40,32,0.85)'; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.moveTo(sx, sy - 74); ctx.lineTo(sx, sy); ctx.stroke();
@@ -372,25 +403,40 @@ function SevenFiresView({ all, setView, onSelect }) {
         ctx.restore();
         figure(W * 0.5, gY, 1.15, '#7c6a8f', { band: '#c07a1e' });
       }
-      if (sc === 'shoes' || sc === 'scoop') {                    // the taking — empty shoes
-        const rows = 3, per = 11;
+      if (sc === 'shoes' || sc === 'scoop') {                    // the taking — small shoes, laid in rows
+        const rows = 3, per = 9;
         for (let r = 0; r < rows; r++) for (let c = 0; c < per; c++) {
           const app = Math.max(0, Math.min(1, u * 3.4 - (r * per + c) / (rows * per) * 2.2));
           if (app <= 0) continue;
-          const sx = W * 0.5 + (c - (per - 1) / 2) * 62 + r * 16;
-          const sy = gY + 12 + r * 44;
-          ctx.globalAlpha = app * 0.96;
-          const col = sc === 'scoop' ? ['#8f5a3a', '#a4693f', '#7c4a30'] : ['#d4691e', '#c2571e', '#e07a2a'];
-          ctx.fillStyle = col[(r + c) % 3];
-          ctx.beginPath();
-          ctx.moveTo(sx - 15, sy); ctx.lineTo(sx - 15, sy - 12);
-          ctx.quadraticCurveTo(sx - 15, sy - 20, sx - 6, sy - 20);
-          ctx.quadraticCurveTo(sx + 3, sy - 20, sx + 7, sy - 12);
-          ctx.quadraticCurveTo(sx + 17, sy - 9, sx + 17, sy);
-          ctx.closePath(); ctx.fill();
-          ctx.strokeStyle = 'rgba(30,14,4,0.5)'; ctx.lineWidth = 1.2; ctx.stroke();
-          ctx.fillStyle = 'rgba(0,0,0,0.28)';                    // shadow
-          ctx.beginPath(); ctx.ellipse(sx, sy + 3, 17, 3.5, 0, 0, 6.283); ctx.fill();
+          const depth = 1 - r * 0.13;                             // rows recede
+          const sx = W * 0.5 + (c - (per - 1) / 2) * 74 * depth + r * 22;
+          const sy = gY + 6 + r * 34;
+          const S = 1.5 * depth;
+          const body = sc === 'scoop' ? ['#b0724a', '#c4834f', '#9c6440'] : ['#e07a2a', '#d4691e', '#ef8c3a'];
+          const col = body[(r + c) % 3];
+          ctx.save(); ctx.globalAlpha = app;
+          ctx.fillStyle = 'rgba(20,14,6,0.30)';                   // cast shadow on the ground
+          ctx.beginPath(); ctx.ellipse(sx + 2 * S, sy + 2.5 * S, 15 * S, 3.4 * S, 0, 0, 6.283); ctx.fill();
+          ctx.beginPath();                                        // upper: heel → toe, rounded
+          ctx.moveTo(sx - 12 * S, sy);
+          ctx.lineTo(sx - 12 * S, sy - 9 * S);
+          ctx.quadraticCurveTo(sx - 12 * S, sy - 15 * S, sx - 5 * S, sy - 15 * S);
+          ctx.quadraticCurveTo(sx + 1 * S, sy - 15 * S, sx + 3 * S, sy - 9 * S);
+          ctx.quadraticCurveTo(sx + 6 * S, sy - 6 * S, sx + 13 * S, sy - 4 * S);
+          ctx.quadraticCurveTo(sx + 16 * S, sy - 3 * S, sx + 15 * S, sy);
+          ctx.closePath();
+          const sg = ctx.createLinearGradient(sx, sy - 15 * S, sx, sy);
+          sg.addColorStop(0, col); sg.addColorStop(1, 'rgba(0,0,0,0.34)');
+          ctx.fillStyle = sg; ctx.fill();
+          ctx.strokeStyle = 'rgba(40,18,4,0.5)'; ctx.lineWidth = 1 * S; ctx.stroke();
+          ctx.fillStyle = 'rgba(255,232,200,0.55)';               // collar
+          ctx.beginPath(); ctx.ellipse(sx - 4.5 * S, sy - 14 * S, 7 * S, 2.4 * S, -0.12, 0, 6.283); ctx.fill();
+          ctx.strokeStyle = 'rgba(255,240,214,0.75)'; ctx.lineWidth = 1.1 * S;   // laces
+          ctx.beginPath(); ctx.moveTo(sx - 8 * S, sy - 11 * S); ctx.lineTo(sx - 1 * S, sy - 9 * S); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(sx - 8 * S, sy - 8.5 * S); ctx.lineTo(sx - 1 * S, sy - 6.5 * S); ctx.stroke();
+          ctx.fillStyle = 'rgba(28,16,8,0.85)';                   // sole
+          ctx.beginPath(); ctx.ellipse(sx + 1 * S, sy + 0.4 * S, 14 * S, 2.6 * S, 0, 0, 6.283); ctx.fill();
+          ctx.restore();
         }
         ctx.globalAlpha = 1;
       }
@@ -439,7 +485,7 @@ function SevenFiresView({ all, setView, onSelect }) {
       ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(fx, fy - 34, R, 0, 6.283); ctx.fill();
       ctx.fillStyle = 'rgba(255,180,90,0.16)';                     // firelight pool on the ground
       ctx.beginPath(); ctx.ellipse(fx, fy + 6, 130 * Math.min(1.3, str), 22 * Math.min(1.3, str), 0, 0, 6.283); ctx.fill();
-      ctx.strokeStyle = `rgba(${Math.round(lerp(92,52,dark))},${Math.round(lerp(62,34,dark))},32,1)`;   // logs
+      ctx.strokeStyle = `rgba(${Math.round(lerp(64,104,wm))},${Math.round(lerp(42,70,wm))},34,1)`;   // logs
       ctx.lineWidth = 11; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(fx - 44, fy + 10); ctx.lineTo(fx + 38, fy - 8); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(fx - 38, fy - 8); ctx.lineTo(fx + 44, fy + 10); ctx.stroke();
@@ -527,11 +573,9 @@ function SevenFiresView({ all, setView, onSelect }) {
               <button className="sf-btn ghost" onClick={() => setView && setView('stories')}>Walk the teachings</button>
             </div>
             <p className="sf-src">
-              Every nation has its own history, its own teachings and its own words for it —
-              this page deliberately tells only the shared, publicly documented record and
-              speaks for no one. Sources: Truth and Reconciliation Commission of Canada (2015)
-              and its 94 Calls to Action; the Indian Act (1876); public federal records.
-              Community numbers are live from this atlas.
+              Every nation has its own history and its own way of telling it. This page
+              holds only to what is shared, names no one, and speaks for no one. The
+              community numbers are live from this atlas.
             </p>
           </div>
 
