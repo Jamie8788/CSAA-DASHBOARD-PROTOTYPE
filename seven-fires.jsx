@@ -577,16 +577,35 @@ function SevenFiresView({ all, setView, onSelect }) {
       // survey stakes, fence and a steam train → the school and the bus that
       // took the children → a car → the community's own buildings today.
       const bldg = (bx, by, bw, bh, col, roof) => {
-        ctx.fillStyle = col;
-        ctx.fillRect(bx - bw / 2, by - bh, bw, bh);
-        ctx.fillStyle = roof || 'rgba(60,40,28,0.95)';
-        ctx.beginPath(); ctx.moveTo(bx - bw / 2 - 5, by - bh);
-        ctx.lineTo(bx, by - bh - bw * 0.34); ctx.lineTo(bx + bw / 2 + 5, by - bh); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = 'rgba(250,226,150,0.85)';                      // lit windows
-        const cols2 = Math.max(2, Math.round(bw / 22));
-        for (let r = 0; r < 2; r++) for (let c = 0; c < cols2; c++) {
-          ctx.fillRect(bx - bw / 2 + 8 + c * (bw - 16) / cols2, by - bh + 10 + r * (bh * 0.42), 7, 9);
+        const L = bx - bw / 2;
+        ctx.fillStyle = 'rgba(14,12,8,0.28)';                          // ground shadow
+        ctx.beginPath(); ctx.ellipse(bx, by + 3, bw * 0.62, 6, 0, 0, 6.283); ctx.fill();
+        const wg = ctx.createLinearGradient(L, by - bh, L + bw, by);   // shaded wall
+        wg.addColorStop(0, col); wg.addColorStop(0.6, col); wg.addColorStop(1, 'rgba(0,0,0,0.34)');
+        ctx.fillStyle = wg; ctx.fillRect(L, by - bh, bw, bh);
+        ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1;       // clapboard lines
+        for (let yy = by - bh + 8; yy < by; yy += 9) { ctx.beginPath(); ctx.moveTo(L, yy); ctx.lineTo(L + bw, yy); ctx.stroke(); }
+        ctx.fillStyle = roof || 'rgba(58,44,34,0.97)';                  // pitched roof with eaves
+        ctx.beginPath(); ctx.moveTo(L - 9, by - bh);
+        ctx.lineTo(bx, by - bh - bw * 0.30); ctx.lineTo(L + bw + 9, by - bh); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';                             // eave shadow on the wall
+        ctx.fillRect(L, by - bh, bw, 4);
+        ctx.fillStyle = roof || 'rgba(58,44,34,0.97)';                  // chimney
+        ctx.fillRect(bx + bw * 0.26, by - bh - bw * 0.24, 9, bw * 0.16);
+        const cols2 = Math.max(2, Math.round(bw / 30));                 // windows, evenly inset
+        const rows2 = bh > 74 ? 2 : 1;
+        for (let r = 0; r < rows2; r++) for (let c = 0; c < cols2; c++) {
+          const wx = L + bw * 0.12 + c * (bw * 0.76) / (cols2 - 1 || 1) - 6;
+          const wy = by - bh + 16 + r * (bh * 0.40);
+          ctx.fillStyle = 'rgba(250,226,150,0.9)'; ctx.fillRect(wx, wy, 12, 14);
+          ctx.strokeStyle = 'rgba(40,28,16,0.5)'; ctx.lineWidth = 1.4; ctx.strokeRect(wx, wy, 12, 14);
+          ctx.beginPath(); ctx.moveTo(wx + 6, wy); ctx.lineTo(wx + 6, wy + 14); ctx.stroke();
         }
+        ctx.fillStyle = 'rgba(52,36,22,0.95)';                          // a door
+        ctx.fillRect(bx - 11, by - 30, 22, 30);
+        ctx.fillStyle = 'rgba(250,226,150,0.55)'; ctx.fillRect(bx - 7, by - 26, 14, 9);
+        ctx.fillStyle = 'rgba(30,22,14,0.5)';                           // foundation
+        ctx.fillRect(L - 3, by - 4, bw + 6, 5);
       };
       const ship = (sx, sy, sc2) => {                                  // a tall sailing ship
         ctx.save(); ctx.translate(sx, sy); ctx.scale(sc2, sc2);
@@ -645,15 +664,15 @@ function SevenFiresView({ all, setView, onSelect }) {
       const wY = gY;                                  // the scene stands on the lit bank
       if (sc === 'land') {                                       // BEFORE: a living camp
         for (let l = 0; l < 3; l++) {                            // lodges
-          const lx = W * (0.14 + l * 0.09), ly = gY - 4;
+          const lx = W * (0.58 + l * 0.13), ly = gY - 4;
           ctx.fillStyle = `rgba(${Math.round(lerp(92,132,wm))},${Math.round(lerp(64,92,wm))},${Math.round(lerp(40,56,wm))},1)`;
           ctx.beginPath(); ctx.moveTo(lx - 34, ly); ctx.quadraticCurveTo(lx, ly - 52, lx + 34, ly); ctx.closePath(); ctx.fill();
           ctx.fillStyle = 'rgba(20,12,6,0.8)';
           ctx.beginPath(); ctx.ellipse(lx, ly - 2, 7, 11, 0, Math.PI, 2 * Math.PI); ctx.fill();
         }
-        figure(W * 0.40, gY, 1.0, '#b8351e', { band: '#d4a017' });
-        figure(W * 0.47, gY + 6, 1.05, '#1f4e8f', { band: '#c93a1e', raise: true, dir: 1 });
-        figure(W * 0.545, gY + 2, 0.7, '#5a7d3a', { band: '#2f8f4f' });
+        figure(W * 0.20, gY, 1.15, '#b8351e', { band: '#d4a017', shawl: true });
+        figure(W * 0.30, gY + 6, 1.2, '#1f4e8f', { band: '#c93a1e', raise: true, dir: 1, feather: true });
+        figure(W * 0.385, gY + 2, 0.8, '#5a7d3a', { band: '#2f8f4f' });
       }
       if (sc === 'contact') {                                    // THE NEWCOMERS ARRIVE: tall ships make landfall
         ship(W * 0.66, gY - 10, 1.8); ship(W * 0.86, gY - 2, 1.45); ship(W * 0.52, gY - 20, 1.15);
@@ -754,7 +773,7 @@ function SevenFiresView({ all, setView, onSelect }) {
       if (sc === 'voices') {                                     // A GATHERING: people come together to be heard
         bldg(W * 0.80, gY + 2, 150, 84, 'rgba(104,88,76,0.94)');
         for (let v = 0; v < 5; v++) {
-          const vx = W * (0.22 + v * 0.14);
+          const vx = W * (0.20 + v * 0.093);
           figure(vx, gY + (v % 2) * 8, 1.0, ['#c93a1e', '#1f4e8f', '#7c2f6b', '#5a7d3a', '#d68a1f'][v], { band: '#e0a53a', raise: v % 2 === 0, dir: 1 });
         }
         for (let s = 0; s < 26; s++) {                            // words rising as light
@@ -766,14 +785,11 @@ function SevenFiresView({ all, setView, onSelect }) {
         ctx.globalAlpha = 1;
       }
       if (sc === 'return') {                                     // THE COMMUNITY TODAY: its own buildings + a car
-        bldg(W * 0.60, gY + 2, 170, 96, 'rgba(122,100,72,0.97)'); // their own health centre
-        ctx.strokeStyle = '#f2ece0'; ctx.lineWidth = 7; ctx.lineCap = 'round';   // a care cross on its wall
-        ctx.beginPath(); ctx.moveTo(W * 0.60, gY - 74); ctx.lineTo(W * 0.60, gY - 44); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(W * 0.60 - 15, gY - 59); ctx.lineTo(W * 0.60 + 15, gY - 59); ctx.stroke();
-        bldg(W * 0.85, gY + 2, 150, 82, 'rgba(102,118,82,0.97)'); // the school they run themselves
+        bldg(W * 0.60, gY + 2, 176, 98, 'rgba(126,102,72,0.97)'); // their own community building
+        bldg(W * 0.85, gY + 2, 152, 84, 'rgba(104,120,84,0.97)'); // and the school they run themselves
         vehicle(W * 0.70 + Math.sin(tt * 0.3) * W * 0.06, gY - 4, 1.25, 'rgba(186,68,44,0.97)', false);
         for (let w = 0; w < 6; w++) {
-          const wx = W * (0.12 + w * 0.145) + Math.sin(tt * 0.4 + w) * 5;
+          const wx = W * (0.09 + w * 0.076) + Math.sin(tt * 0.4 + w) * 5;
           const wy = gY + (w % 3) * 10;
           figure(wx, wy, 1.05 + (w % 3) * 0.08, ['#c93a1e', '#1f4e8f', '#7c2f6b', '#5a7d3a', '#d68a1f', '#2f8f4f'][w],
                  { band: '#d4a017', walk: true, ph: w * 1.1 });
