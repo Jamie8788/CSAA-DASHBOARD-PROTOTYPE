@@ -644,7 +644,7 @@ function NavStrip({ view, setView, filtered, all }) {
   const DEFAULT_NAV = [
     { view: 'map',       label: 'Map · Search',       icon: '◉' },
     { view: 'list',      label: 'Directory',          icon: '☷' },
-    { view: 'story',     label: 'The Long Walk',      icon: '✦' },
+    { view: 'story',     label: 'Four Directions',    icon: '✦' },
     { view: 'stories',   label: 'Community Stories',  icon: '❋' },
     { view: 'analytics', label: 'Analytics',          icon: '◐' },
     { view: 'stats',     label: 'Insights & Stories', icon: '◭' },
