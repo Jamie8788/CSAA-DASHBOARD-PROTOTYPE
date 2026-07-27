@@ -572,6 +572,75 @@ function SevenFiresView({ all, setView, onSelect }) {
         ctx.beginPath(); ctx.moveTo(x, by + 2); ctx.quadraticCurveTo(x + sw * 0.5, by - h2 * 0.6, x + sw, by - h2); ctx.stroke();
       }
 
+      // ================= WORLD-CHANGING PROPS =================
+      // the built world arrives and grows across the chapters: sail ships →
+      // survey stakes, fence and a steam train → the school and the bus that
+      // took the children → a car → the community's own buildings today.
+      const bldg = (bx, by, bw, bh, col, roof) => {
+        ctx.fillStyle = col;
+        ctx.fillRect(bx - bw / 2, by - bh, bw, bh);
+        ctx.fillStyle = roof || 'rgba(60,40,28,0.95)';
+        ctx.beginPath(); ctx.moveTo(bx - bw / 2 - 5, by - bh);
+        ctx.lineTo(bx, by - bh - bw * 0.34); ctx.lineTo(bx + bw / 2 + 5, by - bh); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(250,226,150,0.85)';                      // lit windows
+        const cols2 = Math.max(2, Math.round(bw / 22));
+        for (let r = 0; r < 2; r++) for (let c = 0; c < cols2; c++) {
+          ctx.fillRect(bx - bw / 2 + 8 + c * (bw - 16) / cols2, by - bh + 10 + r * (bh * 0.42), 7, 9);
+        }
+      };
+      const ship = (sx, sy, sc2) => {                                  // a tall sailing ship
+        ctx.save(); ctx.translate(sx, sy); ctx.scale(sc2, sc2);
+        ctx.fillStyle = 'rgba(52,38,26,0.96)';
+        ctx.beginPath(); ctx.moveTo(-34, 0); ctx.quadraticCurveTo(0, 12, 34, 0);
+        ctx.lineTo(26, -9); ctx.lineTo(-26, -9); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(52,38,26,0.96)'; ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(0, -66); ctx.stroke();
+        ctx.fillStyle = 'rgba(246,242,232,0.96)';
+        ctx.beginPath(); ctx.moveTo(2, -62); ctx.quadraticCurveTo(26, -40, 22, -14); ctx.lineTo(2, -14); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-2, -52); ctx.quadraticCurveTo(-22, -34, -18, -14); ctx.lineTo(-2, -14); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      };
+      const train = (tx, ty, sc2) => {                                 // a steam locomotive
+        ctx.save(); ctx.translate(tx, ty); ctx.scale(sc2, sc2);
+        ctx.fillStyle = 'rgba(38,32,30,0.96)';
+        ctx.fillRect(-40, -26, 44, 22); ctx.fillRect(4, -18, 34, 14);
+        ctx.fillRect(-34, -40, 16, 14);                                 // cab roof
+        ctx.beginPath(); ctx.arc(20, -30, 6, 0, 6.283); ctx.fill();      // stack
+        ctx.fillStyle = 'rgba(250,226,150,0.9)'; ctx.fillRect(-30, -22, 9, 9);
+        ctx.fillStyle = 'rgba(38,32,30,0.96)';
+        for (const wx of [-30, -14, 12, 30]) { ctx.beginPath(); ctx.arc(wx, -2, 6, 0, 6.283); ctx.fill(); }
+        ctx.restore();
+        for (let p = 0; p < 5; p++) {                                   // smoke plume
+          const pu = ((tt * 0.5 + p * 0.2) % 1);
+          ctx.globalAlpha = (1 - pu) * 0.5;
+          ctx.fillStyle = 'rgba(216,212,204,1)';
+          ctx.beginPath(); ctx.arc(tx + 20 * sc2 + pu * 46, ty - 36 * sc2 - pu * 40, (4 + pu * 12) * sc2, 0, 6.283); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      };
+      const vehicle = (vx, vy, sc2, col, bus) => {                      // a bus (took the children) or a car
+        ctx.save(); ctx.translate(vx, vy); ctx.scale(sc2, sc2);
+        ctx.fillStyle = 'rgba(20,16,10,0.3)';
+        ctx.beginPath(); ctx.ellipse(0, 4, bus ? 44 : 30, 4, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = col;
+        if (bus) {
+          ctx.fillRect(-40, -30, 80, 28);
+          ctx.fillStyle = 'rgba(216,232,240,0.9)';
+          for (let w = 0; w < 4; w++) ctx.fillRect(-33 + w * 19, -25, 13, 11);
+        } else {
+          ctx.beginPath(); ctx.moveTo(-28, 0); ctx.lineTo(-28, -11);
+          ctx.quadraticCurveTo(-14, -24, 4, -24); ctx.quadraticCurveTo(20, -24, 26, -11);
+          ctx.lineTo(28, 0); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = 'rgba(216,232,240,0.9)';
+          ctx.beginPath(); ctx.moveTo(-16, -12); ctx.lineTo(-12, -21); ctx.lineTo(2, -21); ctx.lineTo(2, -12); ctx.closePath(); ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(24,20,18,0.96)';
+        for (const wx of bus ? [-26, 26] : [-16, 16]) { ctx.beginPath(); ctx.arc(wx, 0, bus ? 8 : 7, 0, 6.283); ctx.fill(); }
+        ctx.fillStyle = 'rgba(255,232,160,0.9)';
+        ctx.beginPath(); ctx.arc(bus ? 40 : 28, -10, 3.4, 0, 6.283); ctx.fill();
+        ctx.restore();
+      };
+
       // ================= CHAPTER SCENES =================
       const wY = gY;                                  // the scene stands on the lit bank
       if (sc === 'land') {                                       // BEFORE: a living camp
@@ -586,7 +655,8 @@ function SevenFiresView({ all, setView, onSelect }) {
         figure(W * 0.47, gY + 6, 1.05, '#1f4e8f', { band: '#c93a1e', raise: true, dir: 1 });
         figure(W * 0.545, gY + 2, 0.7, '#5a7d3a', { band: '#2f8f4f' });
       }
-      if (sc === 'contact') {                                    // sails + a wampum belt of light
+      if (sc === 'contact') {                                    // THE NEWCOMERS ARRIVE: tall ships make landfall
+        ship(W * 0.66, gY - 10, 1.8); ship(W * 0.86, gY - 2, 1.45); ship(W * 0.52, gY - 20, 1.15);
         for (let s = 0; s < 3; s++) {
           const sx = W * (0.62 + s * 0.13), sy = gY - 10;
           ctx.fillStyle = `rgba(246,242,232,${0.72 + 0.2 * wm})`;
@@ -601,14 +671,30 @@ function SevenFiresView({ all, setView, onSelect }) {
           ctx.fillRect(bx + b * 9, by + Math.sin(b * 0.5 + tt) * 2, 7, 12);
         }
       }
-      if (sc === 'law') {                                        // bars of statute across the land
+      if (sc === 'law') {                                        // THE LAND IS CUT UP: survey stakes, fence, a train
+        ctx.strokeStyle = 'rgba(70,58,46,0.95)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        for (let f = 0; f < 16; f++) {                            // a fence marching across the land
+          const fx2 = W * 0.06 + f * (W * 0.062);
+          ctx.beginPath(); ctx.moveTo(fx2, gY + 4); ctx.lineTo(fx2, gY - 26); ctx.stroke();
+        }
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(W * 0.06, gY - 20); ctx.lineTo(W * 0.98, gY - 20); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(W * 0.06, gY - 10); ctx.lineTo(W * 0.98, gY - 10); ctx.stroke();
+        train(((tt * 52) % (W + 520)) - 240, gY - 34, 1.7);       // the railway arrives
         ctx.save(); ctx.globalAlpha = 0.35 + u * 0.35;
         ctx.fillStyle = 'rgba(8,6,12,0.92)';
         for (let b = 0; b < 14; b++) ctx.fillRect(W * 0.06 + b * (W * 0.066), 0, 13, H);
         ctx.restore();
         figure(W * 0.5, gY, 1.15, '#7c6a8f', { band: '#c07a1e' });
       }
-      if (sc === 'shoes' || sc === 'scoop') {                    // the taking — one small shoe for each
+      if (sc === 'shoes' || sc === 'scoop') {                    // THE INSTITUTION + THE VEHICLE THAT TOOK THEM
+        bldg(W * 0.60, gY + 2, 210, 118, 'rgba(78,66,62,0.97)');  // the big institution, unmistakable
+        bldg(W * 0.75, gY + 4, 104, 74, 'rgba(68,58,54,0.97)');
+        const away = (tt * 0.11) % 1;                              // it drives away, and keeps driving
+        ctx.save(); ctx.globalAlpha = 0.35 + 0.65 * (1 - away);
+        if (sc === 'shoes') vehicle(W * 0.52 + away * W * 0.46, gY - 6, 1.55, 'rgba(54,48,44,0.97)', true);
+        else                vehicle(W * 0.52 + away * W * 0.46, gY - 6, 1.4, 'rgba(58,62,70,0.97)', false);
+        ctx.restore();
         const rows = 3, per = 8;
         for (let r = 0; r < rows; r++) for (let c = 0; c < per; c++) {
           const app = Math.max(0, Math.min(1, u * 3.4 - (r * per + c) / (rows * per) * 2.2));
@@ -665,7 +751,8 @@ function SevenFiresView({ all, setView, onSelect }) {
         }
         ctx.globalAlpha = 1;
       }
-      if (sc === 'voices') {                                     // survivors speaking — rising lights
+      if (sc === 'voices') {                                     // A GATHERING: people come together to be heard
+        bldg(W * 0.80, gY + 2, 150, 84, 'rgba(104,88,76,0.94)');
         for (let v = 0; v < 5; v++) {
           const vx = W * (0.22 + v * 0.14);
           figure(vx, gY + (v % 2) * 8, 1.0, ['#c93a1e', '#1f4e8f', '#7c2f6b', '#5a7d3a', '#d68a1f'][v], { band: '#e0a53a', raise: v % 2 === 0, dir: 1 });
@@ -678,7 +765,13 @@ function SevenFiresView({ all, setView, onSelect }) {
         }
         ctx.globalAlpha = 1;
       }
-      if (sc === 'return') {                                     // people walking home with light
+      if (sc === 'return') {                                     // THE COMMUNITY TODAY: its own buildings + a car
+        bldg(W * 0.60, gY + 2, 170, 96, 'rgba(122,100,72,0.97)'); // their own health centre
+        ctx.strokeStyle = '#f2ece0'; ctx.lineWidth = 7; ctx.lineCap = 'round';   // a care cross on its wall
+        ctx.beginPath(); ctx.moveTo(W * 0.60, gY - 74); ctx.lineTo(W * 0.60, gY - 44); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(W * 0.60 - 15, gY - 59); ctx.lineTo(W * 0.60 + 15, gY - 59); ctx.stroke();
+        bldg(W * 0.85, gY + 2, 150, 82, 'rgba(102,118,82,0.97)'); // the school they run themselves
+        vehicle(W * 0.70 + Math.sin(tt * 0.3) * W * 0.06, gY - 4, 1.25, 'rgba(186,68,44,0.97)', false);
         for (let w = 0; w < 6; w++) {
           const wx = W * (0.12 + w * 0.145) + Math.sin(tt * 0.4 + w) * 5;
           const wy = gY + (w % 3) * 10;
