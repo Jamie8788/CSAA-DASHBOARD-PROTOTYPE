@@ -670,12 +670,29 @@ function SevenFiresView({ all, setView, onSelect }) {
           ctx.fillStyle = 'rgba(20,12,6,0.8)';
           ctx.beginPath(); ctx.ellipse(lx, ly - 2, 7, 11, 0, Math.PI, 2 * Math.PI); ctx.fill();
         }
-        figure(W * 0.20, gY, 1.15, '#b8351e', { band: '#d4a017', shawl: true });
-        figure(W * 0.30, gY + 6, 1.2, '#1f4e8f', { band: '#c93a1e', raise: true, dir: 1, feather: true });
-        figure(W * 0.385, gY + 2, 0.8, '#5a7d3a', { band: '#2f8f4f' });
       }
-      if (sc === 'contact') {                                    // THE NEWCOMERS ARRIVE: tall ships make landfall
-        ship(W * 0.66, gY - 10, 1.8); ship(W * 0.86, gY - 2, 1.45); ship(W * 0.52, gY - 20, 1.15);
+      if (sc === 'contact') {                                    // THE NEWCOMERS ARRIVE: tall ships on the water
+        // a strip of open water beyond the shore, so the ships FLOAT
+        const shoreY = gY - 6, waterTop = shoreY - 132;
+        const wg2 = ctx.createLinearGradient(W * 0.34, 0, W * 0.62, 0);   // fades in from the shore
+        wg2.addColorStop(0, 'rgba(76,112,140,0)'); wg2.addColorStop(0.45, 'rgba(76,112,140,0.6)');
+        wg2.addColorStop(1, 'rgba(64,102,128,0.82)');
+        ctx.fillStyle = wg2;
+        ctx.beginPath();
+        ctx.moveTo(W * 0.30, shoreY);
+        for (let x = W * 0.30; x <= W + 10; x += 20) ctx.lineTo(x, waterTop + Math.sin(x * 0.004 + 1.4) * 10);
+        ctx.lineTo(W + 10, shoreY); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 1.2;   // swell lines
+        for (let wv = 0; wv < 6; wv++) {
+          const yy = waterTop + 18 + wv * 20;
+          ctx.beginPath();
+          for (let x = W * 0.40; x <= W; x += 16) ctx.lineTo(x, yy + Math.sin(x * 0.02 + tt * 1.1 + wv) * 2.6);
+          ctx.stroke();
+        }
+        // the ships ride the swell, each at its own waterline
+        ship(W * 0.58, waterTop + 46 + Math.sin(tt * 0.9) * 3, 1.05);
+        ship(W * 0.74, waterTop + 78 + Math.sin(tt * 0.8 + 1) * 3.4, 1.35);
+        ship(W * 0.90, waterTop + 112 + Math.sin(tt * 1.0 + 2) * 3.8, 1.7);
         for (let s = 0; s < 3; s++) {
           const sx = W * (0.62 + s * 0.13), sy = gY - 10;
           ctx.fillStyle = `rgba(246,242,232,${0.72 + 0.2 * wm})`;
@@ -683,7 +700,6 @@ function SevenFiresView({ all, setView, onSelect }) {
           ctx.strokeStyle = 'rgba(50,40,32,0.85)'; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.moveTo(sx, sy - 74); ctx.lineTo(sx, sy); ctx.stroke();
         }
-        figure(W * 0.24, gY, 1.1, '#b8351e', { band: '#d4a017', raise: true, dir: 1 });
         const bx = W * 0.30, by = gY - 42;                       // wampum belt
         for (let b = 0; b < 22; b++) {
           ctx.fillStyle = (b % 7 < 3) ? 'rgba(240,238,230,0.95)' : 'rgba(80,110,150,0.95)';
@@ -704,7 +720,6 @@ function SevenFiresView({ all, setView, onSelect }) {
         ctx.fillStyle = 'rgba(8,6,12,0.92)';
         for (let b = 0; b < 14; b++) ctx.fillRect(W * 0.06 + b * (W * 0.066), 0, 13, H);
         ctx.restore();
-        figure(W * 0.5, gY, 1.15, '#7c6a8f', { band: '#c07a1e' });
       }
       if (sc === 'shoes' || sc === 'scoop') {                    // THE INSTITUTION + THE VEHICLE THAT TOOK THEM
         bldg(W * 0.60, gY + 2, 210, 118, 'rgba(78,66,62,0.97)');  // the big institution, unmistakable
@@ -772,10 +787,6 @@ function SevenFiresView({ all, setView, onSelect }) {
       }
       if (sc === 'voices') {                                     // A GATHERING: people come together to be heard
         bldg(W * 0.80, gY + 2, 150, 84, 'rgba(104,88,76,0.94)');
-        for (let v = 0; v < 5; v++) {
-          const vx = W * (0.20 + v * 0.093);
-          figure(vx, gY + (v % 2) * 8, 1.0, ['#c93a1e', '#1f4e8f', '#7c2f6b', '#5a7d3a', '#d68a1f'][v], { band: '#e0a53a', raise: v % 2 === 0, dir: 1 });
-        }
         for (let s = 0; s < 26; s++) {                            // words rising as light
           const su = ((tt * 0.24 + s * 0.038) % 1);
           ctx.globalAlpha = (1 - su) * 0.75;
@@ -788,18 +799,34 @@ function SevenFiresView({ all, setView, onSelect }) {
         bldg(W * 0.60, gY + 2, 176, 98, 'rgba(126,102,72,0.97)'); // their own community building
         bldg(W * 0.85, gY + 2, 152, 84, 'rgba(104,120,84,0.97)'); // and the school they run themselves
         vehicle(W * 0.70 + Math.sin(tt * 0.3) * W * 0.06, gY - 4, 1.25, 'rgba(186,68,44,0.97)', false);
-        for (let w = 0; w < 6; w++) {
-          const wx = W * (0.09 + w * 0.076) + Math.sin(tt * 0.4 + w) * 5;
-          const wy = gY + (w % 3) * 10;
-          figure(wx, wy, 1.05 + (w % 3) * 0.08, ['#c93a1e', '#1f4e8f', '#7c2f6b', '#5a7d3a', '#d68a1f', '#2f8f4f'][w],
-                 { band: '#d4a017', walk: true, ph: w * 1.1 });
-          const lx = wx + 14, ly = wy - 34;                       // the light each one carries
-          const lg = ctx.createRadialGradient(lx, ly, 0, lx, ly, 34);
-          lg.addColorStop(0, 'rgba(255,206,120,0.9)'); lg.addColorStop(1, 'rgba(255,206,120,0)');
-          ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(lx, ly, 34, 0, 6.283); ctx.fill();
-          ctx.fillStyle = '#ffe9b0'; ctx.beginPath(); ctx.arc(lx, ly, 3.4, 0, 6.283); ctx.fill();
-        }
       }
+
+      // ---- THE PEOPLE, CHAPTER BY CHAPTER — the cast changes as the story
+      //   moves: a full busy camp → watching the horizon → penned in and few →
+      //   almost no one left → standing together again → a whole community. ----
+      const CAST = {
+        land:    [[0.16,1.2,'#b8351e','shawl'],[0.25,1.25,'#1f4e8f','raise'],[0.33,0.85,'#5a7d3a',''],[0.40,1.15,'#7c2f6b','shawl'],[0.47,1.2,'#d68a1f',''],[0.55,0.8,'#2f8f4f','']],
+        contact: [[0.14,1.2,'#b8351e','raise'],[0.22,1.15,'#1f4e8f',''],[0.30,0.85,'#5a7d3a','']],
+        law:     [[0.30,1.15,'#7c6a8f',''],[0.44,1.1,'#6b5f78','']],
+        shoes:   [[0.30,1.2,'#8a5a4a','']],
+        scoop:   [[0.28,1.15,'#8a6a5a',''],[0.40,1.1,'#7a5f52','']],
+        voices:  [[0.20,1.2,'#c93a1e','raise'],[0.28,1.2,'#1f4e8f','raise'],[0.36,1.25,'#7c2f6b','raise'],[0.44,1.2,'#5a7d3a','raise'],[0.52,1.2,'#d68a1f','raise']],
+        return:  [[0.10,1.2,'#c93a1e','walk'],[0.18,1.25,'#1f4e8f','walk'],[0.26,0.85,'#7c2f6b','walk'],[0.34,1.2,'#5a7d3a','walk'],[0.42,1.25,'#d68a1f','walk'],[0.50,0.9,'#2f8f4f','walk']],
+      };
+      (CAST[sc] || []).forEach(([fxr, fs, fc, mode], ci) => {
+        const px2 = W * fxr + (mode === 'walk' ? Math.sin(tt * 0.4 + ci) * 6 : 0);
+        figure(px2, gY + (ci % 3) * 7, fs, fc, {
+          band: sc === 'law' || sc === 'shoes' || sc === 'scoop' ? null : '#d4a017',
+          shawl: mode === 'shawl', raise: mode === 'raise', walk: mode === 'walk',
+          feather: sc === 'land' && ci === 1, ph: ci * 1.1, dir: 1,
+        });
+        if (sc === 'return') {                                   // each carries a light home
+          const lx2 = px2 + 16, ly2 = gY - 40;
+          const lg2 = ctx.createRadialGradient(lx2, ly2, 0, lx2, ly2, 30);
+          lg2.addColorStop(0, 'rgba(255,206,120,0.85)'); lg2.addColorStop(1, 'rgba(255,206,120,0)');
+          ctx.fillStyle = lg2; ctx.beginPath(); ctx.arc(lx2, ly2, 30, 0, 6.283); ctx.fill();
+        }
+      });
 
       // ---- THE FIRE — one fire carried the whole way ----
       const fx = W * 0.5, fy = wY - 6;
@@ -868,7 +895,6 @@ function SevenFiresView({ all, setView, onSelect }) {
           {_F7.map((f, i) => (
             <div key={f.n} className={`sf-card ${act === i ? 'on' : ''} ${f.heavy ? 'heavy' : ''}`}
                  style={{ '--ac': f.accent }}>
-              <MangaPanel chapter={f} on={act === i} />
               <div className="sf-era">{f.era}</div>
               <div className="sf-num">{f.title}</div>
               <h2>{f.name}</h2>
