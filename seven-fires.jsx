@@ -83,6 +83,146 @@ function _fireTruths(all) {
   return { total: list.length, withPillars, survivorSupport, youth, people };
 }
 
+// ---- MANGA PANEL — each chapter gets one big illustrated frame: bold ink
+//   outlines, screentone dots, dramatic backlight and a CLOSE-UP subject.
+//   Emotion in comics comes from framing tight, not from tiny figures in a
+//   wide landscape — so every panel is a hand, a face, or a silhouette. ----
+function MangaPanel({ chapter, on }) {
+  const k = chapter.key;
+  const ink = '#17120e';
+  return (
+    <svg className={`sf-panel ${on ? 'on' : ''}`} viewBox="0 0 340 300" aria-hidden="true">
+      <defs>
+        <pattern id="tone" width="5" height="5" patternUnits="userSpaceOnUse">
+          <circle cx="1.6" cy="1.6" r="1.15" fill={ink} opacity="0.30" />
+        </pattern>
+        <pattern id="toneFine" width="4" height="4" patternUnits="userSpaceOnUse">
+          <circle cx="1.2" cy="1.2" r="0.7" fill={ink} opacity="0.22" />
+        </pattern>
+        <radialGradient id="sunG" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fff3cf" /><stop offset="70%" stopColor="#f0b93c" /><stop offset="100%" stopColor="#e07a2a" />
+        </radialGradient>
+        <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#f7efe0" /><stop offset="100%" stopColor="#e6dac4" />
+        </linearGradient>
+        <clipPath id="frame"><rect x="6" y="6" width="328" height="288" rx="4" /></clipPath>
+      </defs>
+      <rect x="6" y="6" width="328" height="288" rx="4" fill="url(#paper)" />
+      <g clipPath="url(#frame)">
+        {/* radiating speed lines — the manga "impact" device */}
+        {(k === 'spoke' || k === 'now') && Array.from({ length: 34 }).map((_, i) => {
+          const a = (i / 34) * Math.PI * 2;
+          return <line key={i} x1={170 + Math.cos(a) * 46} y1={150 + Math.sin(a) * 46}
+                       x2={170 + Math.cos(a) * 300} y2={150 + Math.sin(a) * 300}
+                       stroke={ink} strokeWidth={i % 3 ? 1.1 : 2.4} opacity="0.16" />;
+        })}
+        {/* ---------- 1. THE PEOPLE WERE HERE — family against a huge sun */}
+        {k === 'before' && (<>
+          <circle cx="170" cy="128" r="82" fill="url(#sunG)" />
+          <rect x="0" y="0" width="340" height="300" fill="url(#toneFine)" opacity="0.5" />
+          <path d="M0 214 Q90 196 170 208 Q250 220 340 202 L340 300 L0 300 Z" fill={ink} />
+          <g fill={ink}>
+            <ellipse cx="120" cy="196" rx="15" ry="30" /><circle cx="120" cy="160" r="13" />
+            <path d="M107 158 q13 -16 26 0 q-4 26 -8 34 q-9 3 -14 -2 Z" />
+            <ellipse cx="168" cy="200" rx="17" ry="34" /><circle cx="168" cy="160" r="14" />
+            <path d="M154 158 q14 -17 28 0 q-3 30 -9 40 q-9 3 -15 -3 Z" />
+            <ellipse cx="212" cy="206" rx="11" ry="22" /><circle cx="212" cy="180" r="10" />
+            <path d="M202 179 q10 -13 20 0 q-3 20 -6 26 q-7 2 -11 -2 Z" />
+            <path d="M144 190 q12 -8 20 0" stroke={ink} strokeWidth="5" fill="none" strokeLinecap="round" />
+            <path d="M188 198 q10 -6 16 0" stroke={ink} strokeWidth="4" fill="none" strokeLinecap="round" />
+          </g>
+        </>)}
+        {/* ---------- 2. THE NEWCOMERS CAME — a hand shielding the eyes, ships beyond */}
+        {k === 'came' && (<>
+          <rect x="0" y="0" width="340" height="170" fill="url(#tone)" opacity="0.55" />
+          <path d="M0 172 L340 172 L340 300 L0 300 Z" fill="#cdbfa4" />
+          <path d="M0 172 L340 172" stroke={ink} strokeWidth="2.5" />
+          {[[70, 0.9], [160, 1.15], [250, 0.8]].map(([sx, sc], i) => (
+            <g key={i} fill={ink} transform={`translate(${sx} 172) scale(${sc})`}>
+              <path d="M-22 0 L22 0 L14 -8 L-14 -8 Z" />
+              <path d="M0 -8 L0 -62" stroke={ink} strokeWidth="2.5" />
+              <path d="M0 -60 L22 -12 L0 -12 Z" /><path d="M0 -52 L-18 -12 L0 -12 Z" />
+            </g>
+          ))}
+          <g fill={ink}>
+            <path d="M84 300 L84 214 q0 -30 30 -30 l96 0 q30 0 30 30 l0 86 Z" opacity="0.14" />
+            <path d="M120 300 q-6 -60 10 -92 q8 -16 24 -12 q-6 -22 8 -26 q14 -4 18 18 q6 -20 20 -14 q13 6 6 26 q14 -8 20 4 q7 12 -6 26 q-18 20 -22 70 Z" />
+            <path d="M154 196 q-4 -18 4 -24" stroke="#f7efe0" strokeWidth="2" fill="none" opacity="0.5" />
+            <path d="M180 192 q-2 -18 4 -22" stroke="#f7efe0" strokeWidth="2" fill="none" opacity="0.5" />
+          </g>
+        </>)}
+        {/* ---------- 3. THE PROMISES WERE BROKEN — a paper tearing across the frame */}
+        {k === 'law' && (<>
+          <rect x="0" y="0" width="340" height="300" fill="url(#tone)" opacity="0.42" />
+          <g>
+            <path d="M40 62 L182 48 L196 236 L54 250 Z" fill="#f7efe0" stroke={ink} strokeWidth="3" />
+            {[86, 104, 122, 140, 158, 176, 194, 212].map((yy, i) => (
+              <line key={i} x1="58" y1={yy} x2={168 - (i % 3) * 22} y2={yy - 1} stroke={ink} strokeWidth="2" opacity="0.55" />
+            ))}
+            <path d="M182 48 L300 60 L288 246 L196 236 Z" fill="#f7efe0" stroke={ink} strokeWidth="3" transform="rotate(9 240 150)" />
+            <path d="M182 48 L172 96 L192 132 L178 178 L196 236" fill="none" stroke={ink} strokeWidth="4" strokeLinejoin="round" />
+          </g>
+          <path d="M0 268 L340 268" stroke={ink} strokeWidth="3" />
+          <rect x="0" y="268" width="340" height="32" fill={ink} opacity="0.9" />
+        </>)}
+        {/* ---------- 4 & 5. THE CHILDREN WERE TAKEN — a small hand slipping from a
+                large hand. No child is shown; the gesture carries it. */}
+        {(k === 'taken' || k === 'again') && (<>
+          <rect x="0" y="0" width="340" height="300" fill="url(#tone)" opacity={k === 'again' ? 0.5 : 0.62} />
+          <circle cx="170" cy="140" r="96" fill="#f7efe0" />
+          <g fill={ink}>
+            {/* the adult hand, reaching from the left */}
+            <path d="M0 214 q40 -6 66 -26 q16 -12 30 -8 q-10 -16 4 -22 q14 -6 22 8 q0 -18 14 -18 q13 0 13 18 q8 -12 18 -4 q10 8 0 24 q-14 22 -44 30 q-46 12 -64 42 Z" />
+            {/* the child's hand, small, reaching back — a gap between them */}
+            <path d="M340 158 q-30 4 -50 20 q-12 10 -22 6 q8 12 -3 17 q-11 5 -17 -6 q0 14 -11 14 q-10 0 -10 -14 q-6 9 -14 3 q-8 -6 0 -18 q11 -17 34 -23 q35 -9 48 -32 Z"
+                  opacity={k === 'again' ? 0.55 : 1} />
+          </g>
+          {/* the space between the hands — the whole point of the panel */}
+          <g stroke={ink} strokeWidth="2.5" strokeLinecap="round" opacity="0.75">
+            <path d="M150 168 l10 -10" /><path d="M168 176 l12 -12" /><path d="M186 170 l10 -10" />
+          </g>
+          <rect x="0" y="0" width="340" height="300" fill="none" />
+        </>)}
+        {/* ---------- 6. SURVIVORS SPOKE — a face in profile, speaking, light bursting */}
+        {k === 'spoke' && (<>
+          <circle cx="170" cy="150" r="104" fill="url(#sunG)" opacity="0.55" />
+          <g fill={ink}>
+            <path d="M196 300 q-8 -70 -6 -104 q2 -34 -18 -52 q-22 -20 -14 -50 q7 -28 40 -30 q34 -2 44 28 q7 22 -4 40 q14 8 10 26 q-4 18 -22 18 q6 46 4 124 Z" />
+            <path d="M150 300 q-2 -60 12 -92" stroke={ink} strokeWidth="3" fill="none" />
+          </g>
+          <g fill="#f7efe0">
+            <ellipse cx="206" cy="122" rx="6" ry="7" />
+            <path d="M182 152 q16 -8 30 2 q-14 14 -30 -2 Z" />
+          </g>
+          {[0, 1, 2, 3].map(i => (
+            <path key={i} d={`M120 ${132 + i * 16} q-40 ${-6 + i * 4} -${70 + i * 14} ${2 + i * 3}`}
+                  stroke={ink} strokeWidth={3 - i * 0.5} fill="none" strokeLinecap="round" opacity={0.85 - i * 0.16} />
+          ))}
+        </>)}
+        {/* ---------- 7. THE PEOPLE ARE REBUILDING — hands joining over a fire */}
+        {k === 'now' && (<>
+          <circle cx="170" cy="196" r="72" fill="url(#sunG)" />
+          <rect x="0" y="0" width="340" height="300" fill="url(#toneFine)" opacity="0.42" />
+          <g fill={ink}>
+            <path d="M170 250 q-30 -26 -26 -56 q3 -22 20 -34 q-4 26 12 34 q-6 -34 20 -54 q-2 30 18 46 q14 12 12 34 q-3 22 -26 30 Z" fill="#e07a2a" stroke={ink} strokeWidth="3" />
+            <path d="M170 244 q-16 -16 -14 -34 q2 -14 12 -22 q-1 18 8 22 q-4 -22 12 -34 q-1 18 10 30 q8 8 6 20 q-2 14 -16 18 Z" fill="#f0b93c" />
+          </g>
+          <g fill={ink}>
+            <path d="M0 300 q30 -50 74 -66 q22 -8 30 -26 q6 14 -4 30 q-30 24 -50 62 Z" />
+            <path d="M340 300 q-30 -50 -74 -66 q-22 -8 -30 -26 q-6 14 4 30 q30 24 50 62 Z" />
+            <path d="M104 208 q-12 -14 -4 -24 q8 -10 18 0 q10 -12 18 -2 q8 10 -2 22 Z" />
+            <path d="M236 208 q12 -14 4 -24 q-8 -10 -18 0 q-10 -12 -18 -2 q-8 10 2 22 Z" />
+          </g>
+          {Array.from({ length: 9 }).map((_, i) => (
+            <circle key={i} cx={170 + Math.sin(i * 1.9) * (30 + i * 9)} cy={150 - i * 15} r={2.6 - i * 0.16} fill="#e07a2a" opacity={0.85 - i * 0.08} />
+          ))}
+        </>)}
+      </g>
+      <rect x="6" y="6" width="328" height="288" rx="4" fill="none" stroke={ink} strokeWidth="4" />
+    </svg>
+  );
+}
+
 function SevenFiresView({ all, setView, onSelect }) {
   const stageRef = useR7(null);
   const canvasRef = useR7(null);
@@ -242,53 +382,118 @@ function SevenFiresView({ all, setView, onSelect }) {
       ctx.lineTo(W + 20, y + hgt); ctx.closePath(); ctx.fill();
       ctx.restore();
     }
-    // a properly drawn standing person (head, hair, shaped body, jointed limbs)
+    // ---- AN ILLUSTRATED PERSON — storybook style, not a stick figure.
+    //   Shaded skin, a real face, hair with braids, a ribbon shirt with ribbon
+    //   bands and a sash, a shawl option, jointed limbs, and a soft shadow. ----
     function figure(x, y, s, col, opt) {
       opt = opt || {};
-      const skin = opt.skin || '#a3704a', hair = '#150c06';
-      const HH = 62 * s, hipY = y - HH * 0.44, shoY = y - HH * 0.80;
-      const headR = 7.2 * s, headY = y - HH * 0.90 - headR * 0.6;
-      const step = opt.walk ? Math.sin(tt * 3 + (opt.ph || 0)) : 0;
-      const seg = (x0, y0, x1, y1, x2, y2, w, c) => {
+      const skinL = '#c08c5e', skinD = '#8d5c33', hairD = '#150c06', hairH = '#3a2413';
+      const HH = 108 * s;                                     // full standing height
+      const hipY = y - HH * 0.46, shoY = y - HH * 0.78;
+      const headR = 12.5 * s, headY = y - HH * 0.885 - headR * 0.5;
+      const step = opt.walk ? Math.sin(tt * 2.6 + (opt.ph || 0)) : 0;
+      const bob = opt.walk ? Math.abs(step) * 2.2 * s : Math.sin(tt * 1.1 + (opt.ph || 0)) * 1.2 * s;
+      const dir = opt.dir || 1;
+      // ground shadow anchors them to the bank
+      ctx.fillStyle = 'rgba(18,26,14,0.34)';
+      ctx.beginPath(); ctx.ellipse(x, y + 2 * s, 17 * s, 4.2 * s, 0, 0, 6.283); ctx.fill();
+      const jl = (x0,y0,x1,y1,x2,y2,w,c) => {                 // 2-segment jointed limb
         ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
       };
-      for (const sg of [-1, 1]) {                   // legs, bent at the knee
-        const sw = step * sg * 6 * s;
-        seg(x + sg * 2.6 * s, hipY, x + sg * 2.6 * s + sw * 0.5, hipY + HH * 0.24,
-            x + sg * 2.6 * s + sw, y, 4.6 * s, '#4e3a24');
-        ctx.fillStyle = '#241608';
-        ctx.beginPath(); ctx.ellipse(x + sg * 2.6 * s + sw, y + 0.8 * s, 3.2 * s, 1.5 * s, 0, 0, 6.283); ctx.fill();
-      }
-      const bg = ctx.createLinearGradient(x - 7 * s, shoY, x + 7 * s, hipY);   // shaded torso
-      bg.addColorStop(0, col); bg.addColorStop(1, 'rgba(0,0,0,0.35)');
-      ctx.fillStyle = bg;
-      ctx.beginPath();
-      ctx.moveTo(x - 6.6 * s, hipY); ctx.lineTo(x - 5.6 * s, shoY);
-      ctx.quadraticCurveTo(x, shoY - 2.4 * s, x + 5.6 * s, shoY);
-      ctx.lineTo(x + 6.6 * s, hipY);
-      ctx.quadraticCurveTo(x, hipY + 1.6 * s, x - 6.6 * s, hipY);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(248,238,214,0.85)';                                 // ribbon
-      ctx.fillRect(x - 5.8 * s, shoY + 5 * s, 11.6 * s, 1.5 * s);
-      const sy2 = shoY + 2.4 * s;                                               // arms, bent at the elbow
+      // ---- legs: leggings that bend at the knee, moccasins with a cuff
       for (const sg of [-1, 1]) {
-        const lift = opt.raise && sg === (opt.dir || 1);
-        const ex = x + sg * 8 * s, ey = lift ? sy2 - 2 * s : sy2 + 6 * s;
-        const hx = x + sg * (lift ? 10 : 7) * s, hy = lift ? sy2 - 14 * s : sy2 + 13 * s;
-        seg(x + sg * 5.4 * s, sy2, ex, ey, hx, hy, 4 * s, skin);
-        ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(hx, hy, 2.3 * s, 0, 6.283); ctx.fill();
+        const sw = step * sg * 10 * s;
+        const kx = x + sg * 4.4 * s + sw * 0.45, ky = hipY + HH * 0.24 - bob;
+        const ax = x + sg * 4.4 * s + sw,        ay = y - bob;
+        jl(x + sg * 4.4 * s, hipY - bob, kx, ky, ax, ay, 8.4 * s, '#6b4a2a');
+        ctx.fillStyle = '#3a2412';                              // moccasin
+        ctx.beginPath(); ctx.ellipse(ax + sg * 1.2 * s, ay + 1.2 * s, 6.4 * s, 3 * s, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(226,196,140,0.75)';               // beaded cuff
+        ctx.fillRect(ax - 4.4 * s, ay - 4.4 * s, 8.8 * s, 1.8 * s);
       }
-      ctx.fillStyle = skin;                                                     // head
-      ctx.beginPath(); ctx.arc(x, headY, headR, 0, 6.283); ctx.fill();
-      ctx.fillStyle = hair;
-      ctx.beginPath(); ctx.arc(x, headY - 0.8 * s, headR * 1.05, Math.PI + 0.2, 2 * Math.PI - 0.2); ctx.fill();
-      ctx.strokeStyle = hair; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';     // braid
-      ctx.beginPath(); ctx.moveTo(x - headR * 0.6, headY + headR * 0.4);
-      ctx.quadraticCurveTo(x - headR * 1.4, headY + headR * 2.6, x - headR * 1.1, headY + headR * 4.6);
-      ctx.stroke();
-      if (opt.band) { ctx.fillStyle = opt.band; ctx.fillRect(x - headR, headY - headR * 0.42, headR * 2, 2.4 * s); }
+      // ---- torso: ribbon shirt, shaded, with ribbon bands + a sash
+      const tg = ctx.createLinearGradient(x - 12 * s, shoY, x + 13 * s, hipY);
+      tg.addColorStop(0, col); tg.addColorStop(0.62, col); tg.addColorStop(1, 'rgba(0,0,0,0.42)');
+      ctx.fillStyle = tg;
+      ctx.beginPath();
+      ctx.moveTo(x - 11 * s, hipY - bob + 3 * s);
+      ctx.lineTo(x - 10 * s, shoY - bob);
+      ctx.quadraticCurveTo(x, shoY - bob - 4.6 * s, x + 10 * s, shoY - bob);
+      ctx.lineTo(x + 11 * s, hipY - bob + 3 * s);
+      ctx.quadraticCurveTo(x, hipY - bob + 6 * s, x - 11 * s, hipY - bob + 3 * s);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(250,240,216,0.92)';                 // chest ribbon
+      ctx.fillRect(x - 10 * s, shoY - bob + 9 * s, 20 * s, 2.6 * s);
+      ctx.fillStyle = opt.band || '#d4a017';                    // applique band
+      ctx.fillRect(x - 10.4 * s, shoY - bob + 13 * s, 20.8 * s, 1.8 * s);
+      ctx.fillStyle = 'rgba(180,60,40,0.9)';                    // sash at the waist
+      ctx.fillRect(x - 11.4 * s, hipY - bob - 3 * s, 22.8 * s, 4 * s);
+      if (opt.shawl) {                                          // a shawl with fringe
+        ctx.fillStyle = 'rgba(140,60,120,0.9)';
+        ctx.beginPath();
+        ctx.moveTo(x - 13 * s, shoY - bob + 2 * s);
+        ctx.quadraticCurveTo(x, shoY - bob + 10 * s, x + 13 * s, shoY - bob + 2 * s);
+        ctx.lineTo(x + 11 * s, hipY - bob - 4 * s); ctx.lineTo(x - 11 * s, hipY - bob - 4 * s);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(240,214,150,0.85)'; ctx.lineWidth = 1 * s;
+        for (let f = -10; f <= 10; f += 3) {
+          ctx.beginPath(); ctx.moveTo(x + f * s, hipY - bob - 4 * s);
+          ctx.lineTo(x + f * s + Math.sin(tt * 2 + f) * 1.2 * s, hipY - bob + 4 * s); ctx.stroke();
+        }
+      }
+      // ---- arms: shoulder → elbow → hand, with visible hands
+      const sy2 = shoY - bob + 5 * s;
+      for (const sg of [-1, 1]) {
+        const up = opt.raise && sg === dir;
+        const sw2 = opt.walk ? -step * sg * 5 * s : 0;
+        const ex = x + sg * 14 * s + sw2 * 0.4, ey = up ? sy2 - 6 * s : sy2 + 11 * s;
+        const hx = x + sg * (up ? 17 : 12.5) * s + sw2, hy = up ? sy2 - 26 * s : sy2 + 24 * s;
+        jl(x + sg * 9.6 * s, sy2, ex, ey, hx, hy, 7 * s, skinD);
+        ctx.fillStyle = skinL;
+        ctx.beginPath(); ctx.arc(hx, hy, 3.6 * s, 0, 6.283); ctx.fill();
+      }
+      // ---- head: shaded skin, hair with a highlight, braids, a real face
+      const hg = ctx.createRadialGradient(x - headR * 0.35, headY - headR * 0.35, headR * 0.2, x, headY, headR);
+      hg.addColorStop(0, skinL); hg.addColorStop(1, skinD);
+      ctx.fillStyle = hg;
+      ctx.beginPath(); ctx.ellipse(x, headY, headR * 0.92, headR, 0, 0, 6.283); ctx.fill();
+      ctx.fillStyle = hairD;                                    // hair crown
+      ctx.beginPath(); ctx.ellipse(x, headY - headR * 0.22, headR * 1.02, headR * 0.94, 0, Math.PI + 0.16, 2 * Math.PI - 0.16); ctx.fill();
+      ctx.strokeStyle = hairH; ctx.lineWidth = 1.6 * s;         // hair sheen
+      ctx.beginPath(); ctx.arc(x - headR * 0.3, headY - headR * 0.42, headR * 0.5, Math.PI * 1.1, Math.PI * 1.6); ctx.stroke();
+      for (const sg of [-1, 1]) {                               // two braids, swinging
+        const bw = Math.sin(tt * 1.6 + sg) * 1.6 * s;
+        ctx.strokeStyle = hairD; ctx.lineWidth = 5 * s; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x + sg * headR * 0.82, headY + headR * 0.1);
+        ctx.quadraticCurveTo(x + sg * headR * 1.15 + bw, headY + headR * 1.5,
+                             x + sg * headR * 0.95 + bw, headY + headR * 2.5); ctx.stroke();
+        ctx.strokeStyle = opt.band || '#c93a1e'; ctx.lineWidth = 2.4 * s;   // hair tie
+        ctx.beginPath(); ctx.moveTo(x + sg * headR * 1.02 + bw * 0.8, headY + headR * 2.15);
+        ctx.lineTo(x + sg * headR * 0.86 + bw * 0.9, headY + headR * 2.35); ctx.stroke();
+      }
+      ctx.fillStyle = '#241407';                                 // eyes
+      const blink = ((tt * 0.5 + (opt.ph || 0)) % 4) > 3.9 ? 0.15 : 1;
+      ctx.beginPath(); ctx.ellipse(x - headR * 0.32, headY + headR * 0.06, 1.5 * s, 2.1 * s * blink, 0, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x + headR * 0.32, headY + headR * 0.06, 1.5 * s, 2.1 * s * blink, 0, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = 'rgba(90,44,20,0.75)'; ctx.lineWidth = 1.4 * s; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(x, headY + headR * 0.26, headR * 0.34, 0.32 * Math.PI, 0.68 * Math.PI); ctx.stroke();
+      if (opt.band) {                                            // beaded headband
+        ctx.fillStyle = opt.band;
+        ctx.beginPath(); ctx.ellipse(x, headY - headR * 0.44, headR * 0.96, headR * 0.22, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(250,240,210,0.9)';
+        for (let b = -2; b <= 2; b++) { ctx.beginPath(); ctx.arc(x + b * headR * 0.34, headY - headR * 0.46, 1.1 * s, 0, 6.283); ctx.fill(); }
+      }
+      if (opt.feather) {                                         // an upright feather
+        ctx.save(); ctx.translate(x + headR * 0.5, headY - headR * 0.9); ctx.rotate(0.28);
+        ctx.fillStyle = '#f0e6d0';
+        ctx.beginPath(); ctx.ellipse(0, -9 * s, 3 * s, 9 * s, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = '#3a2410';
+        ctx.beginPath(); ctx.ellipse(0, -16 * s, 2.6 * s, 3 * s, 0, 0, 6.283); ctx.fill();
+        ctx.restore();
+      }
     }
+
 
     function draw(time) {
       tt = (time - (t0 == null ? (t0 = time) : t0)) / 1000;
@@ -403,39 +608,59 @@ function SevenFiresView({ all, setView, onSelect }) {
         ctx.restore();
         figure(W * 0.5, gY, 1.15, '#7c6a8f', { band: '#c07a1e' });
       }
-      if (sc === 'shoes' || sc === 'scoop') {                    // the taking — small shoes, laid in rows
-        const rows = 3, per = 9;
+      if (sc === 'shoes' || sc === 'scoop') {                    // the taking — one small shoe for each
+        const rows = 3, per = 8;
         for (let r = 0; r < rows; r++) for (let c = 0; c < per; c++) {
           const app = Math.max(0, Math.min(1, u * 3.4 - (r * per + c) / (rows * per) * 2.2));
           if (app <= 0) continue;
-          const depth = 1 - r * 0.13;                             // rows recede
-          const sx = W * 0.5 + (c - (per - 1) / 2) * 74 * depth + r * 22;
-          const sy = gY + 6 + r * 34;
-          const S = 1.5 * depth;
-          const body = sc === 'scoop' ? ['#b0724a', '#c4834f', '#9c6440'] : ['#e07a2a', '#d4691e', '#ef8c3a'];
-          const col = body[(r + c) % 3];
+          const depth = 1 - r * 0.14;
+          const sx = W * 0.5 + (c - (per - 1) / 2) * 92 * depth + r * 30;
+          const sy = gY + 4 + r * 40;
+          const S = 2.1 * depth;                                  // big enough to read as a shoe
+          const warmSet = sc === 'scoop' ? ['#a8703f', '#bd8049', '#95643a'] : ['#e07a2a', '#cf6a20', '#f0913f'];
+          const base = warmSet[(r + c) % 3];
           ctx.save(); ctx.globalAlpha = app;
-          ctx.fillStyle = 'rgba(20,14,6,0.30)';                   // cast shadow on the ground
-          ctx.beginPath(); ctx.ellipse(sx + 2 * S, sy + 2.5 * S, 15 * S, 3.4 * S, 0, 0, 6.283); ctx.fill();
-          ctx.beginPath();                                        // upper: heel → toe, rounded
-          ctx.moveTo(sx - 12 * S, sy);
-          ctx.lineTo(sx - 12 * S, sy - 9 * S);
-          ctx.quadraticCurveTo(sx - 12 * S, sy - 15 * S, sx - 5 * S, sy - 15 * S);
-          ctx.quadraticCurveTo(sx + 1 * S, sy - 15 * S, sx + 3 * S, sy - 9 * S);
-          ctx.quadraticCurveTo(sx + 6 * S, sy - 6 * S, sx + 13 * S, sy - 4 * S);
-          ctx.quadraticCurveTo(sx + 16 * S, sy - 3 * S, sx + 15 * S, sy);
+          ctx.fillStyle = 'rgba(16,12,6,0.32)';                   // shadow
+          ctx.beginPath(); ctx.ellipse(sx + 1 * S, sy + 2.6 * S, 13 * S, 2.8 * S, 0, 0, 6.283); ctx.fill();
+          // ---- the upper: heel at the left, rising instep, long toe to the right
+          ctx.beginPath();
+          ctx.moveTo(sx - 10 * S, sy);                            // heel bottom
+          ctx.lineTo(sx - 10 * S, sy - 6.5 * S);                  // heel back
+          ctx.quadraticCurveTo(sx - 10 * S, sy - 10.5 * S, sx - 6 * S, sy - 10.8 * S);   // heel collar
+          ctx.quadraticCurveTo(sx - 1.5 * S, sy - 11 * S, sx + 0.5 * S, sy - 7.5 * S);   // instep dip
+          ctx.quadraticCurveTo(sx + 3 * S, sy - 5 * S, sx + 8 * S, sy - 4 * S);          // vamp
+          ctx.quadraticCurveTo(sx + 12.5 * S, sy - 3.4 * S, sx + 12.5 * S, sy - 0.6 * S);// toe cap
           ctx.closePath();
-          const sg = ctx.createLinearGradient(sx, sy - 15 * S, sx, sy);
-          sg.addColorStop(0, col); sg.addColorStop(1, 'rgba(0,0,0,0.34)');
-          ctx.fillStyle = sg; ctx.fill();
-          ctx.strokeStyle = 'rgba(40,18,4,0.5)'; ctx.lineWidth = 1 * S; ctx.stroke();
-          ctx.fillStyle = 'rgba(255,232,200,0.55)';               // collar
-          ctx.beginPath(); ctx.ellipse(sx - 4.5 * S, sy - 14 * S, 7 * S, 2.4 * S, -0.12, 0, 6.283); ctx.fill();
-          ctx.strokeStyle = 'rgba(255,240,214,0.75)'; ctx.lineWidth = 1.1 * S;   // laces
-          ctx.beginPath(); ctx.moveTo(sx - 8 * S, sy - 11 * S); ctx.lineTo(sx - 1 * S, sy - 9 * S); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(sx - 8 * S, sy - 8.5 * S); ctx.lineTo(sx - 1 * S, sy - 6.5 * S); ctx.stroke();
-          ctx.fillStyle = 'rgba(28,16,8,0.85)';                   // sole
-          ctx.beginPath(); ctx.ellipse(sx + 1 * S, sy + 0.4 * S, 14 * S, 2.6 * S, 0, 0, 6.283); ctx.fill();
+          const ug = ctx.createLinearGradient(sx, sy - 11 * S, sx, sy);
+          ug.addColorStop(0, base); ug.addColorStop(0.55, base); ug.addColorStop(1, 'rgba(0,0,0,0.4)');
+          ctx.fillStyle = ug; ctx.fill();
+          ctx.strokeStyle = 'rgba(46,20,4,0.55)'; ctx.lineWidth = 1.1 * S; ctx.stroke();
+          // toe cap seam
+          ctx.strokeStyle = 'rgba(46,20,4,0.4)'; ctx.lineWidth = 0.9 * S;
+          ctx.beginPath(); ctx.moveTo(sx + 7 * S, sy - 4.2 * S); ctx.quadraticCurveTo(sx + 7.6 * S, sy - 2 * S, sx + 7.2 * S, sy - 0.4 * S); ctx.stroke();
+          // padded collar around the opening
+          ctx.fillStyle = 'rgba(255,242,220,0.7)';
+          ctx.beginPath(); ctx.ellipse(sx - 4.4 * S, sy - 10.4 * S, 5.4 * S, 1.9 * S, -0.16, 0, 6.283); ctx.fill();
+          // tongue
+          ctx.fillStyle = 'rgba(255,238,206,0.55)';
+          ctx.beginPath(); ctx.ellipse(sx - 0.6 * S, sy - 8.4 * S, 2.2 * S, 2.6 * S, -0.4, 0, 6.283); ctx.fill();
+          // criss-cross laces
+          ctx.strokeStyle = 'rgba(255,246,226,0.92)'; ctx.lineWidth = 1.15 * S; ctx.lineCap = 'round';
+          for (let k = 0; k < 3; k++) {
+            const lx = sx - 6.5 * S + k * 2.4 * S, ly = sy - 9.4 * S + k * 1.5 * S;
+            ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 3.4 * S, ly + 1.9 * S); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(lx + 3.4 * S, ly); ctx.lineTo(lx, ly + 1.9 * S); ctx.stroke();
+          }
+          // the sole — a lighter slab that reads as rubber, slightly proud of the upper
+          ctx.fillStyle = 'rgba(238,226,206,0.95)';
+          ctx.beginPath();
+          ctx.moveTo(sx - 11 * S, sy - 0.4 * S);
+          ctx.lineTo(sx + 13.2 * S, sy - 0.8 * S);
+          ctx.quadraticCurveTo(sx + 14.2 * S, sy + 1.6 * S, sx + 12 * S, sy + 2 * S);
+          ctx.lineTo(sx - 10 * S, sy + 2 * S);
+          ctx.quadraticCurveTo(sx - 12 * S, sy + 1.6 * S, sx - 11 * S, sy - 0.4 * S);
+          ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = 'rgba(60,40,20,0.35)'; ctx.lineWidth = 0.7 * S; ctx.stroke();
           ctx.restore();
         }
         ctx.globalAlpha = 1;
@@ -534,6 +759,7 @@ function SevenFiresView({ all, setView, onSelect }) {
           {_F7.map((f, i) => (
             <div key={f.n} className={`sf-card ${act === i ? 'on' : ''} ${f.heavy ? 'heavy' : ''}`}
                  style={{ '--ac': f.accent }}>
+              <MangaPanel chapter={f} on={act === i} />
               <div className="sf-era">{f.era}</div>
               <div className="sf-num">{f.title}</div>
               <h2>{f.name}</h2>

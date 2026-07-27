@@ -7566,3 +7566,10 @@ body.elder-mode .j-route b { font-size: 19px; }
 .sf-map .leaflet-control-attribution a { color: rgba(255,255,255,.75); }
 .sf-canvas { pointer-events: none; z-index: 1; }
 .sf-vig { z-index: 2; }
+/* manga panel inside each chapter card */
+.sf-panel { display: block; width: 100%; max-width: 340px; height: auto; margin: 0 0 16px;
+  border-radius: 6px; filter: drop-shadow(0 12px 26px rgba(0,0,0,.5));
+  opacity: 0; transform: translateY(14px) scale(.97); transition: opacity .6s ease, transform .6s cubic-bezier(.2,.8,.2,1); }
+.sf-panel.on { opacity: 1; transform: none; }
+.sf-card { width: min(410px, 86vw); }
+@media (max-width: 720px) { .sf-panel { max-width: 260px; } }
