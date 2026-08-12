@@ -94,47 +94,63 @@ async def _no_cache_source(request, call_next):
 
 # ----------------------------- bootstrap ---------------------------------- #
 
+# Set when the database cannot be reached at boot. The site still serves the
+# dashboard from the bundled dataset in that case — a dead/paused database must
+# never take the whole public site down.
+DB_OFFLINE: dict = {"offline": False, "error": ""}
+
+
 @app.on_event("startup")
 def _startup() -> None:
-    db.init_db()
-    # load the saved Groq API key (if any) so the AI layer is ready
     try:
-        from . import llm as _llm0
-        _llm0.set_key(db.get_settings().get("ai.groq_key", ""))
-    except Exception:
-        pass
-    # Seed dataset from communities-data.js if DB has none yet.
-    # ALSO: when a deploy ships a NEWER bundled dataset (the repo's
-    # communities-data.js changed), re-seed it as a new dataset version so the
-    # live site reflects the latest sheet without a manual upload. Previous
-    # versions (including manual uploads) stay in history and can be
-    # re-activated from the CMS at any time.
-    import hashlib
-    try:
-        _bundle_fp = hashlib.sha256(
-            config.COMMUNITIES_JS.read_bytes()).hexdigest() if config.COMMUNITIES_JS.exists() else ""
-    except Exception:
-        _bundle_fp = ""
-    if db.current_dataset() is None:
-        records = processor.load_initial_records()
-        if records:
-            db.save_dataset(records, source_filename="communities-data.js (seed)",
-                            uploaded_by="system")
-            db.log_audit("system", "seed", "dataset",
-                         f"Seeded {len(records)} records from communities-data.js")
-            if _bundle_fp:
-                db.set_setting("seed.fingerprint", _bundle_fp, "system")
-    elif _bundle_fp and db.get_settings().get("seed.fingerprint") != _bundle_fp:
+        db.init_db()
+        # load the saved Groq API key (if any) so the AI layer is ready
         try:
-            records = processor.load_initial_records()
-            if records:
-                db.save_dataset(records, source_filename="communities-data.js (auto-reseed)",
-                                uploaded_by="system")
-                db.log_audit("system", "seed", "dataset",
-                             f"Re-seeded {len(records)} records — bundled dataset changed on deploy")
-            db.set_setting("seed.fingerprint", _bundle_fp, "system")
+            from . import llm as _llm0
+            _llm0.set_key(db.get_settings().get("ai.groq_key", ""))
         except Exception:
             pass
+        # Seed dataset from communities-data.js if DB has none yet.
+        # ALSO: when a deploy ships a NEWER bundled dataset (the repo's
+        # communities-data.js changed), re-seed it as a new dataset version so the
+        # live site reflects the latest sheet without a manual upload. Previous
+        # versions (including manual uploads) stay in history and can be
+        # re-activated from the CMS at any time.
+        import hashlib
+        try:
+            _bundle_fp = hashlib.sha256(
+                config.COMMUNITIES_JS.read_bytes()).hexdigest() if config.COMMUNITIES_JS.exists() else ""
+        except Exception:
+            _bundle_fp = ""
+        if db.current_dataset() is None:
+            records = processor.load_initial_records()
+            if records:
+                db.save_dataset(records, source_filename="communities-data.js (seed)",
+                                uploaded_by="system")
+                db.log_audit("system", "seed", "dataset",
+                             f"Seeded {len(records)} records from communities-data.js")
+                if _bundle_fp:
+                    db.set_setting("seed.fingerprint", _bundle_fp, "system")
+        elif _bundle_fp and db.get_settings().get("seed.fingerprint") != _bundle_fp:
+            try:
+                records = processor.load_initial_records()
+                if records:
+                    db.save_dataset(records, source_filename="communities-data.js (auto-reseed)",
+                                    uploaded_by="system")
+                    db.log_audit("system", "seed", "dataset",
+                                 f"Re-seeded {len(records)} records — bundled dataset changed on deploy")
+                db.set_setting("seed.fingerprint", _bundle_fp, "system")
+            except Exception:
+                pass
+    except Exception as exc:                       # noqa: BLE001 — never die at boot
+        DB_OFFLINE["offline"] = True
+        DB_OFFLINE["error"] = f"{type(exc).__name__}: {exc}"
+        print("=" * 72, flush=True)
+        print("DATABASE UNREACHABLE — starting in READ-ONLY FALLBACK mode.", flush=True)
+        print("The dashboard will still load using the bundled dataset.", flush=True)
+        print("Admin/CMS features stay disabled until the database is back.", flush=True)
+        print(f"Reason: {DB_OFFLINE['error'][:400]}", flush=True)
+        print("=" * 72, flush=True)
 
 
 # ----------------------------- schemas ------------------------------------ #
@@ -209,7 +225,22 @@ class PageIn(BaseModel):
 
 @app.get("/api/health")
 def health() -> dict:
-    ds = db.current_dataset()
+    if DB_OFFLINE["offline"]:
+        # the database is unreachable — say so plainly instead of raising
+        return {
+            "status": "degraded",
+            "version": app.version,
+            "database": "offline",
+            "mode": "fallback — the dashboard is served from the bundled dataset",
+            "detail": DB_OFFLINE["error"][:400],
+            "fix": "Resume/restore the Postgres instance, or update DATABASE_URL, then redeploy.",
+        }
+    try:
+        ds = db.current_dataset()
+    except Exception as exc:                       # noqa: BLE001
+        DB_OFFLINE["offline"] = True
+        DB_OFFLINE["error"] = f"{type(exc).__name__}: {exc}"
+        return {"status": "degraded", "database": "offline", "detail": str(exc)[:400]}
     backend = "postgres" if db.IS_POSTGRES else "sqlite"
     return {
         "status": "ok",
@@ -512,15 +543,33 @@ def _build_records() -> list[dict]:
 
 @app.get("/api/communities")
 def communities_all() -> dict:
-    records = coords.fill_missing_coords(_build_records())
-    ds = db.current_dataset()
-    return {
-        "records": records,
-        "count": len(records),
-        "datasetVersion": ds["version"] if ds else 0,
-        "datasetUploadedAt": ds["uploaded_at"] if ds else None,
-        "datasetSource": ds["source_filename"] if ds else None,
-    }
+    """The dataset. If the database is unreachable we still answer, using the
+    dataset bundled with this deploy, so the public dashboard keeps working."""
+    try:
+        records = coords.fill_missing_coords(_build_records())
+        ds = db.current_dataset()
+        return {
+            "records": records,
+            "count": len(records),
+            "datasetVersion": ds["version"] if ds else 0,
+            "datasetUploadedAt": ds["uploaded_at"] if ds else None,
+            "datasetSource": ds["source_filename"] if ds else None,
+        }
+    except Exception as exc:                       # noqa: BLE001
+        DB_OFFLINE["offline"] = True
+        DB_OFFLINE["error"] = f"{type(exc).__name__}: {exc}"
+        try:
+            records = coords.fill_missing_coords(processor.load_initial_records() or [])
+        except Exception:
+            records = []
+        return {
+            "records": records,
+            "count": len(records),
+            "datasetVersion": 0,
+            "datasetUploadedAt": None,
+            "datasetSource": "communities-data.js (fallback — database offline)",
+            "degraded": True,
+        }
 
 
 # ----- background AI enrichment job (auto-fills blanks from the web) -------- #
