@@ -48,3 +48,6 @@ secrets.*
 node_modules/
 package-lock.json
 package.json
+
+# generated handover bundles (rebuild with zip -r)
+handover/*.zip
